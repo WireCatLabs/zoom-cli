@@ -17,8 +17,7 @@ browser and gets a token for your account only.
    [`zoom-app.json`](zoom-app.json) from this folder.
 4. If Zoom asks how the app is managed, choose **User-managed**.
 5. Open **App Credentials** and copy the **Client ID** under **Development**. You do not need the
-   client secret. The development credentials work for your own account without publishing the app;
-   its production redirect, `https://wirecat.dev/zm/callback`, is there only because Zoom requires
+   client secret. The production redirect, `https://wirecat.dev/zm/callback`, is there only because Zoom requires
    an `https` address for production.
 
 Then give the client ID to `zm`:
