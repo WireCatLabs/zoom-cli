@@ -16,10 +16,15 @@ browser and gets a token for your account only.
 3. Choose **General app**, then build it **from an app manifest**, and upload
    [`zoom-app.json`](zoom-app.json) from this folder.
 4. If Zoom asks how the app is managed, choose **User-managed**.
-5. In **Basic Information → App Credentials**, turn on **Use Public Client OAuth**. The manifest
+5. Check that the import took. On the **Development** tab, **Basic Information** must show
+   `https://wirecat.dev/zoom-callback` in **OAuth Redirect URL** and in **OAuth Allow Lists**, and
+   **Scopes** must list the four scopes below. If a field is empty, fill it in by hand and press
+   **Continue**: the import can create the app and leave them blank, and Zoom then refuses the login
+   with "Invalid redirect".
+6. In **Basic Information → App Credentials**, turn on **Use Public Client OAuth**. The manifest
    asks for it, but the import may leave it off, and then Zoom refuses `zm login` with
    "Invalid redirect".
-6. Copy the **Public Client ID**. You do not need the
+7. Copy the **Public Client ID**. You do not need the
    client secret.
 
 Then give the client ID to `zm`:
