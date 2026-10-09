@@ -19,9 +19,8 @@ browser and gets a token for your account only.
 5. In **Basic Information → App Credentials**, turn on **Use Public Client OAuth**. The manifest
    asks for it, but the import may leave it off, and then Zoom refuses `zm login` with
    "Invalid redirect".
-6. Copy the **Client ID** under **Development**. You do not need the
-   client secret. The production redirect, `https://wirecat.dev/zm/callback`, is there only because Zoom requires
-   an `https` address for production.
+6. Copy the **Public Client ID**. You do not need the
+   client secret.
 
 Then give the client ID to `zm`:
 
@@ -30,9 +29,12 @@ zm config set zoom.clientId <client id>
 zm login
 ```
 
-`zm login` opens your browser on Zoom's consent page. After you allow it, Zoom returns to
-`http://127.0.0.1:<port>/callback` on your own machine, and `zm` keeps the token in your system
-keyring.
+`zm login` opens your browser on Zoom's consent page. After you allow it, Zoom sends your browser to
+[wirecat.dev/zoom-callback](https://wirecat.dev/zoom-callback), a static page that passes the answer
+straight on to `zm` on your machine. Zoom no longer accepts a `127.0.0.1` address there. The answer
+is useless on its own: it works only with a key that `zm` keeps on your machine (PKCE). If the browser
+does not pass it on, the page shows it for you to paste into `zm`. `zm` keeps the token in your
+system keyring.
 
 ## What the manifest asks for
 

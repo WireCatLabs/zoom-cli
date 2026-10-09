@@ -1,94 +1,96 @@
 {
-  "display_information" : {
-    "display_name" : "General app 334",
-    "discover_type" : "LISTED",
-    "install_type" : "APP_DIRECTORY"
+  "display_information": {
+    "display_name": "General app 334",
+    "discover_type": "LISTED",
+    "install_type": "APP_DIRECTORY"
   },
-  "oauth_information" : {
-    "usage" : "USER_OPERATION",
-    "development_redirect_uri" : "",
-    "production_redirect_uri" : "",
-    "oauth_allow_list" : [ ],
-    "strict_mode" : false,
-    "subdomain_strict_mode" : false
+  "oauth_information": {
+    "usage": "USER_OPERATION",
+    "development_redirect_uri": "https://wirecat.dev/zoom-callback",
+    "production_redirect_uri": "https://wirecat.dev/zoom-callback",
+    "oauth_allow_list": [
+      "https://wirecat.dev/zoom-callback"
+    ],
+    "strict_mode": false,
+    "subdomain_strict_mode": false
   },
-  "features" : {
-    "development_home_uri" : "",
-    "production_home_uri" : "",
-    "in_client_feature" : {
-      "zoom_app_api" : {
-        "enable" : false,
-        "zoom_app_apis" : [ ]
+  "features": {
+    "development_home_uri": "",
+    "production_home_uri": "",
+    "in_client_feature": {
+      "zoom_app_api": {
+        "enable": false,
+        "zoom_app_apis": []
       },
-      "guest_mode" : {
-        "enable" : false,
-        "enable_test_guest_mode" : false
+      "guest_mode": {
+        "enable": false,
+        "enable_test_guest_mode": false
       },
-      "in_client_oauth" : {
-        "enable" : false
+      "in_client_oauth": {
+        "enable": false
       },
-      "collaborate_mode" : {
-        "enable" : false,
-        "enable_screen_sharing" : false,
-        "enable_play_together" : false,
-        "enable_start_immediately" : false,
-        "enable_join_immediately" : false
+      "collaborate_mode": {
+        "enable": false,
+        "enable_screen_sharing": false,
+        "enable_play_together": false,
+        "enable_start_immediately": false,
+        "enable_join_immediately": false
       },
-      "team_chat_tab" : {
-        "enable_home_tab" : false,
-        "enable_channel_tab" : false
+      "team_chat_tab": {
+        "enable_home_tab": false,
+        "enable_channel_tab": false
       },
-      "waiting_room" : {
-        "enable" : false
+      "waiting_room": {
+        "enable": false
       }
     },
-    "zoom_client_support" : {
-      "mobile" : {
-        "enable" : false
+    "zoom_client_support": {
+      "mobile": {
+        "enable": false
       },
-      "zoom_room" : {
-        "enable" : false,
-        "enable_personal_zoom_room" : false,
-        "enable_shared_zoom_room" : false,
-        "enable_digital_signage" : false,
-        "enable_zoom_rooms_controller" : false
+      "zoom_room": {
+        "enable": false,
+        "enable_personal_zoom_room": false,
+        "enable_shared_zoom_room": false,
+        "enable_digital_signage": false,
+        "enable_zoom_rooms_controller": false
       },
-      "pwa_client" : {
-        "enable" : false
+      "pwa_client": {
+        "enable": false
       }
     },
-    "embed" : {
-      "meeting_sdk" : {
-        "enable" : false,
-        "enable_device" : false,
-        "devices" : [ ]
+    "embed": {
+      "meeting_sdk": {
+        "enable": false,
+        "enable_device": false,
+        "devices": []
       },
-      "contact_center_sdk" : {
-        "enable" : false
+      "contact_center_sdk": {
+        "enable": false
       },
-      "phone_sdk" : {
-        "enable" : false
+      "phone_sdk": {
+        "enable": false
       }
     },
-    "team_chat_subscription" : {
-      "enable" : false,
-      "shortcuts" : [ ]
+    "team_chat_subscription": {
+      "enable": false,
+      "shortcuts": []
     },
-    "event_subscription" : {
-      "enable" : false,
-      "events" : [ ]
+    "event_subscription": {
+      "enable": false,
+      "events": []
     },
-    "custom_form" : {
-      "enable" : false
+    "custom_form": {
+      "enable": false
     },
-    "marketplace_actions" : {
-      "enable" : false
+    "marketplace_actions": {
+      "enable": false
     },
-    "marketplace_triggers" : {
-      "enable" : false
+    "marketplace_triggers": {
+      "enable": false
     },
-    "plugin_sdk" : {
-      "enable" : false
+    "plugin_sdk": {
+      "enable": false
     }
   }
 }
