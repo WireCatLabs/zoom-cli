@@ -6,15 +6,30 @@
   "oauth_information": {
     "usage": "USER_OPERATION",
     "development_redirect_uri": "http://127.0.0.1/callback",
-    "production_redirect_uri": "http://127.0.0.1/callback",
-    "oauth_allow_list": ["http://127.0.0.1/callback"],
+    "production_redirect_uri": "https://wirecat.dev/zm/callback",
+    "oauth_allow_list": [
+      "http://127.0.0.1/callback",
+      "https://wirecat.dev/zm/callback"
+    ],
     "strict_mode": false,
     "subdomain_strict_mode": false,
     "scopes": [
-      { "scope": "meeting:read:list_meetings", "optional": false },
-      { "scope": "meeting:read:list_past_instances", "optional": false },
-      { "scope": "cloud_recording:read:meeting_transcript", "optional": false },
-      { "scope": "meeting:read:summary", "optional": true }
+      {
+        "scope": "meeting:read:list_meetings",
+        "optional": false
+      },
+      {
+        "scope": "meeting:read:list_past_instances",
+        "optional": false
+      },
+      {
+        "scope": "cloud_recording:read:meeting_transcript",
+        "optional": false
+      },
+      {
+        "scope": "meeting:read:summary",
+        "optional": true
+      }
     ],
     "scope_description": "List your past meetings and read their transcripts and AI summaries. Read only.",
     "enable_private_pkce_client": false,
