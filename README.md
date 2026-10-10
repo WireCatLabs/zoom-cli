@@ -10,7 +10,7 @@ from meetings you attended. The shared meeting model, ingestion and commands com
 Login and sources are implemented and tested. Import, pull and meeting reads are tested with an
 in-memory store. The shared SQLite meeting adapter is not available yet, so the executable refuses
 those commands until that adapter is connected. It never saves real imports to a temporary memory
-store. The shared model and contract kit come from the published cli-meetings 0.2.0 package.
+store. The shared model and contract kit come from the published cli-meetings 0.2.1 package.
 
 ## Set up your Zoom app
 
@@ -48,6 +48,21 @@ Config keys: `zoom.clientId`, `source` (`api` or `files`), `files.folder`, and `
 Directories follow the platform convention; `ZM_CONFIG_DIR` overrides the configuration directory.
 Changing that directory also changes the keyring service used for login.
 
+## Recover from errors
+
+If the browser cannot start, select an installed browser with `--browser firefox`. In an interactive
+terminal, you can also paste the callback parameters. Without paste input, a launch failure exits
+promptly. A malformed config still allows `--help` and `--version`; config commands report the error.
+
+Missing-scope errors name the required scope. Add it in your Zoom app, then log in again. A network
+failure reports a provider error; malformed provider replies report an invalid response. Diagnostic
+messages exclude raw provider error text.
+
+Once persistence is connected, use an older explicit `pull --since 2026-10-01` to revisit occurrences
+whose transcript appeared after a previous successful pull. The cursor alone does not guarantee
+that late transcripts are revisited. Serialize pulls for the same account to avoid concurrent event
+creation. A failed occurrence leaves the cursor unchanged so the next pull can retry it.
+
 ## Downloaded transcripts
 
 The files source reads ordinary `.vtt` files directly inside a folder. Names follow the existing
@@ -56,7 +71,9 @@ normalized topic; files carry no Zoom occurrence UUID. Participants remain unkno
 names are kept without guessing an identity.
 
 File times default to UTC. Set `files.timezone` to the IANA zone used when the filenames were
-created, for example `Europe/Madrid`. Ambiguous or nonexistent daylight-saving times are refused.
+created, for example `Europe/Madrid`. Ambiguous or nonexistent daylight-saving times are refused. Conflicting contents for the same
+normalized filename key are an error; correct the conflicting files before retrying. File discovery
+fails explicitly on invalid names rather than silently importing a partial folder.
 
 ## Development
 
@@ -69,7 +86,8 @@ pnpm build && pnpm smoke:bun
 ```
 
 [Architecture](docs/dev/ARCHITECTURE.md), [testing](docs/dev/TESTING.md) and
-[development setup](docs/dev/DEVELOPMENT.md) describe the local setup. Fixtures use invented
+[development setup](docs/dev/DEVELOPMENT.md) describe the local setup.
+[Releasing](docs/dev/RELEASING.md) covers package checks and trusted publishing. Fixtures use invented
 people and meetings. Tests use an injected keyring, scripted HTTP responses, temporary config
 folders and the memory meeting store.
 

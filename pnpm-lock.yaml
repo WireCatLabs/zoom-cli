@@ -12,8 +12,8 @@ importers:
         specifier: 0.18.1
         version: 0.18.1(commander@15.0.0)(typescript@7.0.2)
       '@wirecat/cli-meetings':
-        specifier: 0.2.0
-        version: 0.2.0
+        specifier: 0.2.1
+        version: 0.2.1
       commander:
         specifier: 15.0.0
         version: 15.0.0
@@ -788,8 +788,8 @@ packages:
       commander:
         optional: true
 
-  '@wirecat/cli-meetings@0.2.0':
-    resolution: {integrity: sha512-fRY2vVln95dfo/oO/wgM/PsYIfepXmYB1d4EFt/agFfXuDKivMwD/uc0siHUZzF4kDrA86Ok4AR4cGogJ82Q3w==}
+  '@wirecat/cli-meetings@0.2.1':
+    resolution: {integrity: sha512-exg66m0jGHmiFf47pnTQPGhwELAsLB6+fo8Fg1XCkq09kBwTLMrGV06n+mOJJKDyPU53DfIMTQagjcvyjgsSgw==}
     engines: {node: '>=22.12.0'}
 
   ansi-regex@5.0.1:
@@ -1880,7 +1880,7 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@wirecat/cli-meetings@0.2.0':
+  '@wirecat/cli-meetings@0.2.1':
     dependencies:
       commander: 15.0.0
 
