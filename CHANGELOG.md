@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **Archive file replacement checks** verify the opened object and path before reading bytes,
+  including on Windows where no-follow file-open flags are unavailable.
+
+### Added
+
+- **Generated command reference and measured test matrix** reuse cli-core's generators. Release
+  and manual validation install the checked tarball on Linux and Windows with Node 22.16 and 24.
+
 ## 0.2.2 — 10.10.2026
 
 ### Fixed

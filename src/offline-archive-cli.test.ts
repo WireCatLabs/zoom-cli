@@ -105,7 +105,24 @@ it("projects archive fields, supports finite JSONL and preserves true search pag
   output.length = 0
   expect(
     await run(
-      ["recordings", "archive", "search", directory, "PLAN", "--limit", "1", "--fields", "text,position", "--json"],
+      [
+        "recordings",
+        "archive",
+        "search",
+        directory,
+        "PLAN",
+        "--uuid",
+        uuid,
+        "--file-ids",
+        "example-first",
+        "--max-bytes",
+        "4096",
+        "--limit",
+        "1",
+        "--fields",
+        "text,position",
+        "--json",
+      ],
       deps,
     ),
   ).toBe(0)

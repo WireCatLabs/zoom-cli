@@ -1,6 +1,8 @@
 import { defineConfig } from "vitest/config"
 export default defineConfig({
   test: {
+    globalSetup: ["scripts/testing/argv-setup.ts"],
+    setupFiles: ["scripts/testing/argv-trace.ts"],
     include: ["src/**/*.test.ts", "scripts/**/*.test.ts"],
     coverage: {
       provider: "v8",

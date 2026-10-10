@@ -4,7 +4,8 @@ Release from a clean main equal to origin/main after the implementation and rele
 PRs have passed CI. Date the top changelog section with the package version and release day.
 `bin/release` dispatches the GitHub workflow; it never reads an npm token or publishes locally.
 
-The workflow builds, tests, checks docs and packs first. A separate job publishes only the tarball
+Full validation builds, tests, checks docs and packs once. Linux and Windows installed-package
+checks run against the resulting tarball before publication. A separate job publishes only the tarball
 through npm trusted publishing. A final job tags the version after the registry exposes it.
 An existing published version is an error; prepare the next version through a PR.
 
