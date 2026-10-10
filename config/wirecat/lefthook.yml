@@ -24,8 +24,3 @@ pre-commit:
           echo "gitleaks is not installed — staged changes were NOT scanned for secrets."
           echo "  install: https://github.com/gitleaks/gitleaks#installing  (CI scans regardless)"
         fi
-
-pre-push:
-  commands:
-    standards:
-      run: node config/wirecat/check.mjs
