@@ -1,6 +1,13 @@
 name: Full validation
 on:
   workflow_call:
+    inputs:
+      pack:
+        type: boolean
+        default: false
+    outputs:
+      package-sha256:
+        value: ${{ jobs.ci.outputs.package-sha256 }}
   workflow_dispatch:
 
 permissions:
@@ -8,7 +15,8 @@ permissions:
 jobs:
   ci:
     if: github.event_name == 'push' || !github.event.pull_request.draft
-    uses: WireCatLabs/cli-core/.github/workflows/node-ci.yml@5940608f735c6de554b6180275ad58b01149b31b # v0.18.1
+    uses: WireCatLabs/cli-core/.github/workflows/node-ci.yml@4c78a803c460317fd40a38be6d1fb53278087741
     with:
+      pack: ${{ inputs.pack || false }}
       checks: |
         pnpm docs:check
