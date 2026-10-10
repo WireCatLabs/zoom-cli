@@ -18,8 +18,8 @@ importers:
         specifier: 0.2.4
         version: 0.2.4(@wirecat/cli-core@0.19.3(commander@15.0.0)(typescript@7.0.2))
       '@wirecat/cli-messaging':
-        specifier: 0.218.0
-        version: 0.218.0(@wirecat/cli-core@0.19.3(commander@15.0.0)(typescript@7.0.2))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.5)
+        specifier: 0.219.0
+        version: 0.219.0(@wirecat/cli-core@0.19.3(commander@15.0.0)(typescript@7.0.2))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.5)
       commander:
         specifier: 15.0.0
         version: 15.0.0
@@ -983,10 +983,6 @@ packages:
       commander:
         optional: true
 
-  '@wirecat/cli-meetings@0.2.1':
-    resolution: {integrity: sha512-exg66m0jGHmiFf47pnTQPGhwELAsLB6+fo8Fg1XCkq09kBwTLMrGV06n+mOJJKDyPU53DfIMTQagjcvyjgsSgw==}
-    engines: {node: '>=22.12.0'}
-
   '@wirecat/cli-meetings@0.2.4':
     resolution: {integrity: sha512-Rq761G7dgT3D2w3mSFgujW56TAMR6sPXPRulsbyT8ZkSEFLXFWzsLO9pY3xQR+vuLNv3FfWfPoOFDDQaB7gHeg==}
     engines: {node: '>=22.12.0'}
@@ -999,8 +995,8 @@ packages:
   '@wirecat/cli-messaging-sqlite@1.0.0':
     resolution: {integrity: sha512-xdPRDx6p8189iHUikaauadrOUro1LCxkQzwP3jV8fJpA1I6NUoVNmeE3sKVtIkSiT/6XmAPEGov4AgSCuqy6wg==}
 
-  '@wirecat/cli-messaging@0.218.0':
-    resolution: {integrity: sha512-HIIUD1RCH8QE6M/cGY3+qDYpdhHouU+MY1d9Uov2LSVa+qJ1avqtcxA2z+FjHYaf/OrTKtjlFdHxWoxYQEiExQ==}
+  '@wirecat/cli-messaging@0.219.0':
+    resolution: {integrity: sha512-Y2jWEXCCON0PMxDBWLH/MwSqeEv2YpjP80IC8B2dr/DdnEcg/5gd5pMgzKjknV19+ug6sY7RA3sy17dIZTd+IQ==}
     engines: {node: ^22.16.0 || >=24}
     hasBin: true
     peerDependencies:
@@ -2927,10 +2923,6 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@wirecat/cli-meetings@0.2.1':
-    dependencies:
-      commander: 15.0.0
-
   '@wirecat/cli-meetings@0.2.4(@wirecat/cli-core@0.19.3(commander@15.0.0)(typescript@7.0.2))':
     dependencies:
       '@wirecat/cli-core': 0.19.3(commander@15.0.0)(typescript@7.0.2)
@@ -2942,7 +2934,7 @@ snapshots:
 
   '@wirecat/cli-messaging-sqlite@1.0.0': {}
 
-  '@wirecat/cli-messaging@0.218.0(@wirecat/cli-core@0.19.3(commander@15.0.0)(typescript@7.0.2))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.5)':
+  '@wirecat/cli-messaging@0.219.0(@wirecat/cli-core@0.19.3(commander@15.0.0)(typescript@7.0.2))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.5)':
     dependencies:
       '@anthropic-ai/sdk': 0.131.0(zod@4.6.5)
       '@bomb.sh/tab': 0.0.22(commander@15.0.0)
@@ -2951,7 +2943,7 @@ snapshots:
       '@resvg/resvg-js': 2.6.2
       '@valibot/to-json-schema': 1.8.0(valibot@1.5.0(typescript@7.0.2))
       '@wirecat/cli-core': 0.19.3(commander@15.0.0)(typescript@7.0.2)
-      '@wirecat/cli-meetings': 0.2.1
+      '@wirecat/cli-meetings': 0.2.4(@wirecat/cli-core@0.19.3(commander@15.0.0)(typescript@7.0.2))
       '@wirecat/cli-messaging-onnx': 1.0.0
       '@wirecat/cli-messaging-sqlite': 1.0.0
       '@wirecat/cli-tasks': 0.2.1
@@ -4238,7 +4230,7 @@ snapshots:
   wrap-ansi@10.0.2:
     dependencies:
       ansi-styles: 6.2.3
-      string-width: 8.2.1
+      string-width: 8.3.0
 
   wrappy@1.0.2: {}
 

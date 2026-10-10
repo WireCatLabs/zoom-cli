@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.2 — 10.10.2026
+
+### Fixed
+
+- **One shared meeting model** aligns cli-messaging 0.219.0 with cli-meetings 0.2.4, so the Zoom
+  commands and native meeting adapter resolve the same package version.
+
+### Changed — may break callers
+
+- **Shared store baseline** adopts automatic log pruning, checked at most daily on store open or
+  log writes: agent audit records older than 90 days are removed, and handled bot-update payloads
+  older than 30 days are cleared while their delivery rows remain.
+
 ## 0.2.1 — 10.10.2026
 
 ### Added
