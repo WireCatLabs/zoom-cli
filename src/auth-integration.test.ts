@@ -277,3 +277,24 @@ it("constructs the API source lazily and respects an injected source", async () 
   deps.source = new FilesSource([])
   expect(await run(["pull", "--since", "2026-10-01"], deps)).toBe(0)
 })
+
+it("preflights every normalized import key before saving and deduplicates identical aliases", async () => {
+  const { deps, stdout, stderr } = await setup()
+  deps.store = memoryMeetingStore()
+  deps.accountId = 1
+  const content = "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nAlice Example: Example\n"
+  const files = [
+    { name: "2026-10-10_1530_café.vtt", content },
+    { name: "2026-10-10_1530_cafe\u0301.vtt", content: content.replace("Example\n", "Different\n") },
+  ]
+  deps.readFiles = async () => files
+  expect(await run(["--json", "import", "example-folder"], deps)).toBe(2)
+  expect(await deps.store.meetings()).toEqual([])
+  expect(stdout).toEqual([])
+  expect(stderr).toHaveLength(1)
+  expect(JSON.parse(stderr[0] ?? "{}").error.code).toBe("validation_error")
+  files[1] = { name: "2026-10-10_1530_cafe\u0301.vtt", content }
+  expect(await run(["--json", "import", "example-folder"], deps)).toBe(0)
+  expect(JSON.parse(stdout[0] ?? "{}")).toMatchObject({ meetings: 1 })
+  expect(await deps.store.meetings()).toHaveLength(1)
+})

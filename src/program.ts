@@ -4,7 +4,7 @@ import { Command, CommanderError } from "commander"
 import { ZoomApiSource } from "./api.js"
 import { readConfig, setConfig } from "./config.js"
 import { ZoomError } from "./errors.js"
-import { FilesSource, importFile, readDownloadedFiles } from "./files.js"
+import { FilesSource, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { login } from "./login.js"
 import type { TokenManager } from "./tokens.js"
 import { VERSION } from "./version.js"
@@ -147,7 +147,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     accountId: deps.accountId ?? 0,
     source,
     readFiles: async (folder) =>
-      (await (deps.readFiles ?? readDownloadedFiles)(folder)).map((file) =>
+      validateDownloadedFiles(await (deps.readFiles ?? readDownloadedFiles)(folder), config.filesTimezone).map((file) =>
         importFile(file, deps.accountId ?? 0, config.filesTimezone),
       ),
     now: deps.now,
