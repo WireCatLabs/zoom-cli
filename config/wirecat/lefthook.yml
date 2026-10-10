@@ -12,7 +12,7 @@ pre-commit:
       glob: "*.{ts,tsx,js,mjs,cjs,json,jsonc}"
       # Staged files only. The whole-repo run is the CI gate; running it per-commit is how people
       # end up reaching for --no-verify, which is worse than no hook.
-      run: pnpm exec biome check --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
+      run: node node_modules/@biomejs/biome/bin/biome check --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
 
     gitleaks:
       # Staged content only, and it warns rather than blocks when gitleaks is not installed: a
@@ -26,9 +26,6 @@ pre-commit:
         fi
 
 pre-push:
-  parallel: true
   commands:
-    typecheck:
-      # A messaging CLI's parity check builds into the same dist/ as typecheck, so it runs here, after
-      # it, rather than as a command of its own beside it. A project without the script skips it.
-      run: pnpm -s run --if-present typecheck && pnpm -s run --if-present parity:check
+    standards:
+      run: node config/wirecat/check.mjs

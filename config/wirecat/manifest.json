@@ -1,10 +1,10 @@
 {
   "source": "https://github.com/WireCatLabs/community",
-  "revision": "bfd56be79ac1c39c3692bf83eb7ea8bc046682f0",
+  "revision": "90e641bae4e4f2a3410cf384cd2e67e41f5800d5",
   "files": {
     "biome.base.json": "83a43910f2530e21d720e3ad4c3fc7fcb16ba36253c6dbc720b3c68a4dd80893",
     "cspell.json": "8241122ed4d461976a838099b265ef8f2689a066608257b6fdc250d9b49b58aa",
-    "lefthook.yml": "6a19c2473a570d29e33abf90470af68af9d990aac94971f4cb6d2698788c61b4",
+    "lefthook.yml": "4dd163f91df9960ab255d31eadcee3a9f39dbda6cfdb84ff6fd19305c4036945",
     "markdownlint.json": "5ed7d6980054c539f3f3c0e47a090f1a725b15be2c486a769a836bc6cd48ad2d",
     "rumdl.toml": "048b929176f13234324f5825d1e811397f1491b9cb6684a1953e268e2c2ed863",
     "check.mjs": "34b266411eaab7707030915f645308e86784b1574b21fa44ca974861a90c9ce1"

@@ -21,7 +21,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validation:
+    if: github.ref == 'refs/heads/main' || inputs.dry_run
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci.yml
+
   build:
+    needs: validation
     if: github.ref == 'refs/heads/main' || inputs.dry_run
     runs-on: ubuntu-latest
     permissions:
