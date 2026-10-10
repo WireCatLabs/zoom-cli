@@ -1,9 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — 10.10.2026
 
 ### Added
 
+- **Persistent meeting data** connects the published shared SQLite adapter lazily. Imports and pulls
+  register the selected local profile; reads resolve it without registration. Summary/history reads,
+  Markdown/VTT exports, folder watching and MCP now use real persistence in the executable.
 - **Recording history synchronization** splits explicit date ranges into monthly requests and emits
   serial occurrence receipts with verified skipping. Folder watching rescans corrected transcripts
   and closes each ingestion connection before its receipt; headless streams require JSONL.
@@ -28,6 +31,15 @@
   terminal output uses human-readable rendering. `--quiet` suppresses non-error diagnostics.
 - **Unattended login fails promptly.** CI and terminals without interactive input cannot launch a browser;
   Piped or JSON login with an input terminal requires `--interactive`.
+
+### Fixed
+
+- **Cancellation and output cleanup** close file handles when cancellation arrives during open,
+  wait for submitted writes and drain, and preserve completed stream receipts with a bounded grace.
+  Failed close or file output never emits a successful result; existing exports are never overwritten.
+- **OAuth grants remain bound to their client.** Configuration changes cannot save tokens under a
+  different client key. Successful malformed or interrupted grants report an uncertain outcome and
+  require login before retrying.
 
 ### Security
 

@@ -1,6 +1,8 @@
 ---
 name: zoom-cli
 description: Archive Zoom cloud recordings, read stored meeting transcripts and summaries, or manage a Zoom meeting through zm. Use for Zoom CLI workflows, not joining calls or operating the desktop video client.
+metadata:
+  version: "0.2.0"
 ---
 
 # Zoom CLI
@@ -11,6 +13,8 @@ on stderr; use `--fields` to limit returned content. `zm doctor --json` checks l
 
 ## Recording archives
 
+Use `recordings sync --from <date> --to <date> --destination <directory> --jsonl` to archive history
+across months. It emits serial occurrence receipts and accepts up to ten calendar years.
 Use `recordings list` to find cloud recording occurrences, then `recordings show <id-or-uuid>` to
 inspect assets. Download with `recordings download <id-or-uuid> --destination <directory>`.
 Prefer occurrence UUIDs for recurring meetings. Download access depends on Zoom scopes and the
@@ -33,10 +37,18 @@ Export Markdown or VTT with `meetings export <id> --format markdown|vtt`; file o
 explicit `--output` path and never overwrites an existing file. VTT export requires an unambiguous
 current transcript or an explicit transcript id.
 
-Store commands need a compatible persistent connector. Treat an unavailable-store error as a missing
-integration; do not substitute an ephemeral memory store. `pull --lookback-days` revisits late
+Store commands use the shared SQLite database; `MESSAGING_STORE` selects an explicit path. Select a
+local profile before import or pull. Reads require existing profile data; they do not register it. `pull --lookback-days` revisits late
 transcripts. File imports preserve the API pull cursor. Serialize ingestion for the same account.
 Local profile labels group stored data and do not select a different OAuth account.
+
+`zm watch <folder> --jsonl` rescans legacy transcript files in the foreground; each cycle closes its
+connection before emitting a receipt. Stop with Ctrl-C. Fully completed late receipts have at most
+one second to flush; cancellation never starts another cycle. Hashed cloud archive VTT assets do
+not use legacy filenames and have no direct database-import command yet.
+
+`zm serve --mcp` provides seven read-only stored meeting tools. Discovery opens no database; reads
+use the selected account. MCP uses its own framing, so omit JSON/JSONL/field-selection flags.
 
 ## Remote meeting changes
 

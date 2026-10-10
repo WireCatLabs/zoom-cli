@@ -14,6 +14,11 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [program.ts](../../src/program.ts) | shared commands, output and injected store dependency |
 | [commands.ts](../../src/commands.ts) | shared command metadata, completion and local diagnostics |
 | [zm.ts](../../src/bin/zm.ts) | process, browser, stdin and system keyring wiring |
+| [recordings.ts](../../src/recordings.ts), [recording-archive.ts](../../src/recording-archive.ts) | asset discovery, streamed transfers, manifests and verified skipping |
+| [recording-sync.ts](../../src/recording-sync.ts) | serial calendar-month archive synchronization |
+| [store-connection.ts](../../src/store-connection.ts) | lazy public shared-store/account adapter, without SQL |
+| [mcp-server.ts](../../src/mcp-server.ts) | official SDK transport and shared read-only meeting tools |
+| [streaming.ts](../../src/streaming.ts), [watch-commands.ts](../../src/watch-commands.ts) | bounded receipts, writable completion and serial folder ingestion |
 
 The API uses the signed-in participant `id` when present, else email, else registrant id. Session
 `user_id` is retained inside sessions, never used as a stable person id. Guests without these keys
@@ -28,9 +33,10 @@ API summaries accept both the unified Markdown field and the captured legacy sec
 file pointers return null until a supported Zoom endpoint is connected. Missing participant or
 transcript scope is a clear error naming the required scope.
 
-The default executable refuses store commands before making remote requests. Tests inject
-`MeetingStore` and its account id. The SQLite implementation and account selection must be connected
-from cli-messaging when its meeting adapter ships; memory storage is never a production fallback.
+The executable connects the published cli-messaging SQLite adapter through its public meeting and
+account APIs. Only store commands open a connection; ingestion registers a profile, while reads use
+storedAccount without registration. Setup failures close the store before rejecting. Tests inject a
+meeting port or use fresh invented databases; memory storage is never a production fallback.
 
 Transcript downloads validate each redirect destination before sending bearer credentials and
 share a bounded timeout across the download. Stable participant sessions are deduplicated; guests
@@ -45,7 +51,7 @@ Installed-package acceptance tests exercise these boundaries through the actual 
 Command discovery uses cli-core's live Commander registry and completion helpers. Output uses the
 shared renderer and exit-code mapping. Discovery/completion avoid config and credentials; local
 doctor reads public config without opening the store or keyring. Session status inspects cached
-OAuth state; an explicitly requested remote check delegates to an injected verification adapter.
+OAuth state; an explicitly requested remote check uses the user profile endpoint or an injected adapter.
 The executable supplies terminal/CI context so unattended login fails before browser launch.
 
 A library caller can supply `connectStore({profile, externalId, intent})`, returning the meeting
@@ -56,5 +62,17 @@ register one. Connector failures must release any resource they opened before re
 
 Profile labels map to `zm-profile:<label>` in the Zoom provider namespace. They group local data,
 not remote OAuth users. File and API sources share the selected account and its cursor; import
-does not advance it. The standalone bin has no production connector until the compatible shared
-store and account lookup APIs are released. No guessed numeric id or memory fallback is used.
+does not advance it. The standalone connector respects the producer's MESSAGING_STORE override and
+state-directory convention. No guessed numeric id or memory fallback is used.
+
+Cloud archives keep transfer metadata rather than creating a second meeting database. Manifests
+contain asset IDs, sizes and local digests, never signed URLs or tokens. Writes use temporary files
+and no-overwrite promotion; repeated downloads verify existing entries. Stale-lock recovery removes
+recognized dead-process markers only. Local reads and checksum verification run serially.
+
+Finite command output uses shared projection, rendering, buffering and caller-owned deadlines.
+Streaming commands bound each receipt and await write completion/drain. Folder watching closes the
+cycle's connection before its receipt; a completed late receipt has a separate one-second deadline.
+MCP tool schemas and reads come from cli-meetings. Initialization/discovery are connection-free;
+each call injects the selected account and closes its read connection before replying. SDK request
+cancellation prevents new reads while allowing an active read to settle before close.

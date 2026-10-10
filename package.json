@@ -1,7 +1,7 @@
 {
   "name": "@wirecat/zoom-cli",
-  "version": "0.1.1",
-  "description": "Zoom meetings, transcripts and summaries through provider-neutral meeting tools",
+  "version": "0.2.0",
+  "description": "Zoom cloud recording archives, persistent transcripts and meeting tools",
   "license": "Apache-2.0",
   "type": "module",
   "engines": {

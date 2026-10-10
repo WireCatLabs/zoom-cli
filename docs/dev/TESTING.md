@@ -13,5 +13,9 @@ invented values and are retained until cleanup is approved.
 The acceptance suite packs and installs the actual package in a fresh `zm-test-package-*` directory
 and runs its installed bin. It overrides config/state/cache/store paths and installs a process guard
 that rejects fetch, HTTP, browser spawning and keyring-module loading. npm installation uses an
-empty test user config. Package installation needs registry access; the CLI checks themselves do
-not contact Zoom. The suite also checks imports, bin permissions and package-version agreement.
+empty test user/global configs and isolated HOME for packing, installation and build. Package
+installation needs registry access; the CLI checks themselves do not contact Zoom. The suite checks
+imports, correction history/current search, no-overwrite export, lazy MCP discovery/EOF, folder-watch
+SIGINT/reopen, bin permissions and package-version agreement. Only Node 22's known SQLite experimental
+warning is normalized in assertions; other stderr remains visible. Node 22.16/24 and Bun proofs use
+actual registry dependencies and fresh invented databases, never a same-version local snapshot.
