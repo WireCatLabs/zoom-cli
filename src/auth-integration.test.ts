@@ -150,19 +150,19 @@ describe("token validation and refresh recovery", () => {
       throw new Error("example-private-transport")
     })
     await expect(tokens.exchange({})).rejects.toMatchObject({
-      code: "provider_error",
-      message: "could not reach Zoom token endpoint; retry the command",
+      code: "outcome_unknown",
+      message: "Zoom token exchange did not finish; run zm login again before retrying",
     })
     expect(calls).toBe(1)
     await expect(manager(async () => new Response("invalid JSON")).exchange({})).rejects.toMatchObject({
-      code: "invalid_response",
+      code: "outcome_unknown",
     })
     for (const extra of [{ scope: [] }, { refresh_token: 1 }, { expires_in: Number.MAX_VALUE }])
       await expect(
         manager(async () =>
           reply({ access_token: "example", refresh_token: "example", expires_in: 60, ...extra }),
         ).exchange({}),
-      ).rejects.toMatchObject({ code: "invalid_response" })
+      ).rejects.toMatchObject({ code: "outcome_unknown" })
   })
   it("refreshes at the boundary, retries a later command after failure, and preserves rotation", async () => {
     let calls = 0
@@ -241,8 +241,8 @@ describe("CLI configuration isolation", () => {
     deps.openBrowser = async (url) => {
       await fetch(callback(url, { code: "example-code" }))
     }
-    expect(await run(["login"], deps)).toBe(11)
-    expect(JSON.parse(stderr.at(-1) ?? "{}").error.code).toBe("provider_error")
+    expect(await run(["login"], deps)).toBe(14)
+    expect(JSON.parse(stderr.at(-1) ?? "{}").error.code).toBe("outcome_unknown")
   })
   it("delegates all configured file-source parts without changing the source port", async () => {
     const { deps } = await setup()

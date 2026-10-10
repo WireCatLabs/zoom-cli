@@ -1,5 +1,50 @@
 # Changelog
 
+## 0.2.0 — 10.10.2026
+
+### Added
+
+- **Persistent meeting data** connects the published shared SQLite adapter lazily. Imports and pulls
+  register the selected local profile; reads resolve it without registration. Summary/history reads,
+  Markdown/VTT exports, folder watching and MCP now use real persistence in the executable.
+- **Recording history synchronization** splits explicit date ranges into monthly requests and emits
+  serial occurrence receipts with verified skipping. Folder watching rescans corrected transcripts
+  and closes each ingestion connection before its receipt; headless streams require JSONL.
+- **Read-only MCP serving and packaged agent instructions** reuse the shared meeting tools and
+  cli-core skill installation. MCP reads use the selected account and close before responding;
+  discovery opens no database. Native reads require a selected profile with stored meeting data.
+- **Cloud recording archives** discover assets and stream available video, audio, VTT and chat files
+  into a local archive with checksummed manifests, verified skipping, bounded transfers and explicit
+  stale lock recovery. Archive inspection and verification do not need Zoom or a meeting database.
+- **Simple remote meeting commands** list, show and retrieve invitations, and preview creation,
+  updates and cancellation. `--yes` applies once; `--dry-run` always previews. Dispatched writes with
+  an uncertain result are reported separately and never automatically retried.
+- **Command discovery and local diagnostics** expose command metadata/examples, shell completion,
+  local runtime/config checks and saved OAuth session status without opening the meeting database.
+  Session status distinguishes OAuth login from the selected local data profile.
+
+### Changed — may break callers
+
+- **Native store runtime prerequisites** add the published cli-messaging 0.218.0 dependency.
+  Node now requires 22.16 or newer within 22.x, or version 24 or newer, matching its SQLite runtime.
+- **Shared CLI output and errors** use cli-core rendering and exit codes. Piped output is JSON;
+  terminal output uses human-readable rendering. `--quiet` suppresses non-error diagnostics.
+- **Unattended login fails promptly.** CI and terminals without interactive input cannot launch a browser;
+  Piped or JSON login with an input terminal requires `--interactive`.
+
+### Fixed
+
+- **Cancellation and output cleanup** close file handles when cancellation arrives during open,
+  wait for submitted writes and drain, and preserve completed stream receipts with a bounded grace.
+  Failed close or file output never emits a successful result; existing exports are never overwritten.
+- **OAuth grants remain bound to their client.** Configuration changes cannot save tokens under a
+  different client key. Successful malformed or interrupted grants report an uncertain outcome and
+  require login before retrying.
+
+### Security
+
+- Fast secret checks remain on PRs; source, production dependency and workflow security checks run before publication. Automatic Socket checks are disabled.
+
 ## 0.1.1 — 10.10.2026
 
 ### Added

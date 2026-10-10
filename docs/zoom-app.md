@@ -4,9 +4,9 @@
 through an app registered in the Zoom App Marketplace, so — like `tg` with its Telegram app — `zm`
 uses **your own Zoom app**. You create it once.
 
-The app is read-only: it can list your past meetings and read their transcripts and AI summaries.
-It cannot join, schedule, record or change anything. It has no secret: `zm` logs in through your
-browser and gets a token for your account only.
+The supplied manifest asks for read-only access to meetings, participants, transcripts and AI
+summaries. Recording archives and remote management use additional scopes listed below. Add only
+the features you want. The app has no secret: `zm` logs in through your browser for your account.
 
 ## Create it from the manifest
 
@@ -52,6 +52,27 @@ system keyring.
 | `meeting:read:summary` | read Zoom's AI summary; optional, and it needs a Pro plan or higher |
 
 Before you upload it, you can change `developer_information` in the file to your own name and email.
+
+## Add archive or management access
+
+Add these optional user-managed scopes in your app's **Scopes** page, then run `zm login` again.
+Existing tokens do not gain newly configured scopes automatically.
+
+| Scope | Feature |
+|---|---|
+| `cloud_recording:read:list_user_recordings` | discover your cloud recording occurrences |
+| `cloud_recording:read:list_recording_files` | inspect and download available recording assets |
+| `user:read:user` | explicitly verify login with `session status --check` |
+| `meeting:read:meeting` | show a remote meeting |
+| `meeting:read:invitation` | retrieve invitation text |
+| `meeting:write:meeting` | create a remote meeting |
+| `meeting:update:meeting` | update a remote meeting |
+| `meeting:delete:meeting` | cancel a remote meeting |
+
+Remote meeting listing uses the manifest's `meeting:read:list_meetings` scope. Creation, updates
+and cancellation preview by default; `--yes` applies the change. Archive access does not require
+meeting write scopes. See Zoom's [granular scope reference](https://developers.zoom.us/docs/integrations/oauth-scopes-granular/)
+and [Meeting API](https://developers.zoom.us/docs/api/meetings/) for endpoint permissions.
 
 ## Before your first `zm pull`
 

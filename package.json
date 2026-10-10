@@ -1,11 +1,11 @@
 {
   "name": "@wirecat/zoom-cli",
-  "version": "0.1.1",
-  "description": "Zoom meetings, transcripts and summaries through provider-neutral meeting tools",
+  "version": "0.2.0",
+  "description": "Zoom cloud recording archives, persistent transcripts and meeting tools",
   "license": "Apache-2.0",
   "type": "module",
   "engines": {
-    "node": ">=22.12.0"
+    "node": "^22.16.0 || >=24"
   },
   "packageManager": "pnpm@11.20.0",
   "repository": {
@@ -17,6 +17,7 @@
   },
   "files": [
     "dist",
+    "skills",
     "README.md",
     "LICENSE"
   ],
@@ -43,23 +44,25 @@
     "ci:quick": "pnpm typecheck"
   },
   "dependencies": {
-    "@wirecat/cli-core": "0.18.1",
-    "@wirecat/cli-meetings": "0.2.3",
-    "commander": "15.0.0"
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "@wirecat/cli-core": "0.19.3",
+    "@wirecat/cli-meetings": "0.2.4",
+    "commander": "15.0.0",
+    "@wirecat/cli-messaging": "0.218.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
     "@cspell/dict-en-gb": "5.0.34",
+    "@cspell/dict-es-es": "3.0.9",
     "@cspell/dict-ru_ru": "2.3.3",
     "@types/node": "^22.20.5",
     "@vitest/coverage-v8": "^5.0.3",
     "cspell": "10.3.6",
     "lefthook": "2.1.16",
+    "markdownlint-cli2": "0.23.3",
     "rumdl": "^0.2.78",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.3",
-    "@cspell/dict-es-es": "3.0.9",
-    "markdownlint-cli2": "0.23.3"
+    "vitest": "^5.0.3"
   },
   "publishConfig": {
     "access": "public"

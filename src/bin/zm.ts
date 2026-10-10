@@ -2,14 +2,35 @@
 import { spawn } from "node:child_process"
 import { join } from "node:path"
 import { createInterface } from "node:readline/promises"
-import { resolvePaths, systemKeyring } from "@wirecat/cli-core"
-import { readConfig } from "../config.js"
+import { CliError, resolvePaths, systemKeyring } from "@wirecat/cli-core"
+import { profileAccountKey, readConfig } from "../config.js"
+import { ZoomError } from "../errors.js"
+import { writeExportFile } from "../output-file.js"
 import { run } from "../program.js"
+import { createStoreConnector } from "../store-connection.js"
+import { writeStream } from "../streaming.js"
 import { TokenManager } from "../tokens.js"
 
 const paths = resolvePaths({ appName: "zm", env: process.env })
 const configPath = join(paths.config, "config.json")
+const cancellation = new AbortController()
+let brokenPipe = false
+const cancel = () => cancellation.abort(new CliError("cancelled", "command cancelled"))
+const onPipeError = (error: NodeJS.ErrnoException) => {
+  if (error.code === "EPIPE") {
+    brokenPipe = true
+    cancellation.abort(new CliError("cancelled", "output pipe closed"))
+    process.exitCode = 0
+  } else {
+    cancellation.abort(new CliError("configuration_error", "could not write command output"))
+    process.exitCode = 3
+  }
+}
+process.once("SIGINT", cancel)
+process.once("SIGTERM", cancel)
+process.stdout.on("error", onPipeError)
 try {
+  const connectStore = createStoreConnector({ env: process.env })
   const tokens = new TokenManager({
     get clientId() {
       return readConfig(configPath).clientId ?? ""
@@ -21,9 +42,33 @@ try {
   process.exitCode = await run(process.argv.slice(2), {
     configPath,
     tokens,
+    connectStore,
+    serveMcp: async (options) => {
+      const { serveMeetingMcp } = await import("../mcp-server.js")
+      await serveMeetingMcp({
+        ...options,
+        connectStore: async () => {
+          const profile = readConfig(configPath).accountProfile
+          if (!profile)
+            throw new ZoomError(
+              "configuration_error",
+              "select a local profile with zm config set account.profile <label>",
+            )
+          return connectStore({ profile, externalId: profileAccountKey(profile), intent: "read" })
+        },
+      })
+    },
     fetch,
+    interactive: Boolean(process.stdin.isTTY),
+    outputIsTTY: Boolean(process.stdout.isTTY),
+    env: process.env,
+    signal: cancellation.signal,
+    writeFile: writeExportFile,
+    streamData: (text, signal) => writeStream(process.stdout, text, signal),
     data: (text) => process.stdout.write(text),
-    diagnostic: (text) => process.stderr.write(text),
+    diagnostic: (text) => {
+      if (!brokenPipe) process.stderr.write(text)
+    },
     openBrowser: (url, browser = "xdg-open") =>
       new Promise<void>((resolve, reject) => {
         const child = spawn(browser, [url], { detached: true, stdio: "ignore" })
@@ -49,4 +94,8 @@ try {
     `${JSON.stringify({ error: { code: "configuration_error", message: "could not load zm configuration" } })}\n`,
   )
   process.exitCode = 3
+} finally {
+  process.removeListener("SIGINT", cancel)
+  process.removeListener("SIGTERM", cancel)
+  if (brokenPipe) process.exitCode = 0
 }

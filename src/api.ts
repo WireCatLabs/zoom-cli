@@ -1,3 +1,4 @@
+import { statusToCode } from "@wirecat/cli-core/http"
 import {
   type JsonValue,
   type MeetingSource,
@@ -7,6 +8,7 @@ import {
   type SummaryContent,
 } from "@wirecat/cli-meetings"
 import { number, object, string, ZoomError } from "./errors.js"
+import { type RemoteOptions, ZoomRemote } from "./remote-http.js"
 import type { TokenManager } from "./tokens.js"
 
 const json = (value: unknown): JsonValue => {
@@ -41,54 +43,18 @@ export class ZoomApiSource implements MeetingSource {
   readonly provider = "zoom"
   readonly transcriptFormat = "vtt"
   readonly name = "api"
+  private readonly remote: ZoomRemote
   constructor(
     private readonly tokens: TokenManager,
     private readonly fetcher: typeof fetch,
-  ) {}
-  private async request(path: string, scope: string, missingCode?: number) {
-    const tokens = await this.tokens.tokens()
-    if (!tokens.scopes.includes(scope) && !tokens.scopes.includes(`${scope}:admin`))
-      throw new ZoomError(
-        "authentication_error",
-        `Zoom scope ${scope} is missing; add it to the app and run zm login again`,
-      )
-    const response = await this.get(`https://api.zoom.us/v2${path}`, tokens.accessToken)
-    let value: unknown
-    try {
-      value = await response.json()
-    } catch {
-      if (response.ok) throw new ZoomError("invalid_response", "Zoom returned an invalid response")
-      value = {}
-    }
-    const body = response.ok
-      ? object(value)
-      : typeof value === "object" && value !== null && !Array.isArray(value)
-        ? object(value)
-        : {}
-    if (body.code === 4711)
-      throw new ZoomError(
-        "authentication_error",
-        `Zoom scope ${scope} is missing; add it to the app and run zm login again`,
-      )
-    if (!response.ok) {
-      if (response.status === 404 && missingCode !== undefined && body.code === missingCode) return null
-      throw new ZoomError(
-        response.status === 401 ? "authentication_error" : "provider_error",
-        `Zoom request failed (HTTP ${response.status}${typeof body.code === "number" ? `, code ${body.code}` : ""})`,
-      )
-    }
-    return body
+    options: RemoteOptions = {},
+  ) {
+    this.remote = new ZoomRemote(tokens, fetcher, options)
   }
-  private async get(target: string | URL, accessToken: string): Promise<Response> {
-    try {
-      return await this.fetcher(target, {
-        headers: { authorization: `Bearer ${accessToken}` },
-        signal: AbortSignal.timeout(30000),
-        redirect: "manual",
-      })
-    } catch {
-      throw new ZoomError("provider_error", "Zoom request could not be completed")
-    }
+  private request(path: string, scope: string, missingCode?: number) {
+    return missingCode === undefined
+      ? this.remote.request(path, scope)
+      : this.remote.requestOptional(path, scope, missingCode)
   }
   private async pages(path: string, key: string, scope: string): Promise<Record<string, unknown>[]> {
     const rows: Record<string, unknown>[] = []
@@ -291,7 +257,8 @@ export class ZoomApiSource implements MeetingSource {
         target = validateTarget(location, target)
         continue
       }
-      if (!response.ok) throw new ZoomError("provider_error", `Transcript download failed (HTTP ${response.status})`)
+      if (!response.ok)
+        throw new ZoomError(statusToCode(response.status), `Transcript download failed (HTTP ${response.status})`)
       // A mislabeled HTML login page must not become an empty saved transcript.
       const maxBytes = 10 * 1024 * 1024
       const reader = response.body?.getReader()
