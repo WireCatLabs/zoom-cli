@@ -1,0 +1,9 @@
+# MD013 (line length): prose is wrapped by hand at 100–120 and tables cannot wrap.
+# MD041 (first line a heading): READMEs open with the logo; docs-check --pages checks the pages.
+# MD057 (relative links): docs-check follows every link and anchor already.
+[global]
+disable = ["MD013", "MD041", "MD057"]
+exclude = ["docs/commands.md", "node_modules", "dist", "docs_ai"]
+
+[MD033]
+allowed-elements = ["p", "img", "a", "br", "details", "summary", "sup", "sub", "kbd"]

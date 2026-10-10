@@ -1,7 +1,16 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "extends": ["@wirecat/cli-core/biome"],
+  "extends": ["./config/wirecat/biome.base.json"],
   "files": {
-    "includes": ["**", "!**/dist", "!**/node_modules", "!pnpm-lock.yaml", "!docs/zoom-app.json", "!package-lock.json"]
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/node_modules",
+      "!pnpm-lock.yaml",
+      "!docs/zoom-app.json",
+      "!package-lock.json",
+      "!**/.worktrees",
+      "!config/wirecat"
+    ]
   }
 }
