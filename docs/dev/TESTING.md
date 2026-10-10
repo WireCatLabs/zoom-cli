@@ -29,6 +29,5 @@ tool schemas. Plans and snapshots live in `contracts/`; changes require explicit
 full validation; ordinary PR/local checks retain their existing budget. See the
 [shared guide](https://github.com/WireCatLabs/cli-testing/blob/main/docs/ci/CONTRACTS.md).
 
-The development dependency currently pins the validated
-[toolkit preview](https://github.com/WireCatLabs/cli-testing/releases/tag/toolkit-v0.2.0)
-asset and its lockfile integrity while npm trusted publishing is being configured.
+The development dependency pins `@wirecat/cli-testing` 0.2.0 from npm, with its
+package integrity recorded in the lockfile.
