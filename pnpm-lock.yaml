@@ -43,8 +43,8 @@ importers:
         specifier: ^5.0.3
         version: 5.0.3(vitest@5.0.3)
       '@wirecat/cli-testing':
-        specifier: https://github.com/WireCatLabs/cli-testing/releases/download/toolkit-v0.2.0/wirecat-cli-testing-0.2.0.tgz
-        version: https://github.com/WireCatLabs/cli-testing/releases/download/toolkit-v0.2.0/wirecat-cli-testing-0.2.0.tgz(zod@4.6.5)
+        specifier: 0.2.0
+        version: 0.2.0(zod@4.6.5)
       cspell:
         specifier: 10.3.6
         version: 10.3.6
@@ -1020,9 +1020,8 @@ packages:
     resolution: {integrity: sha512-og9li309jbYkddyNX7joec/8CfFWsz2tjz6iSlDAyZn26Qb1OlIbHfNgz+au+ttjybf/2n9mYRgKLAafRNd03g==}
     engines: {node: '>=22'}
 
-  '@wirecat/cli-testing@https://github.com/WireCatLabs/cli-testing/releases/download/toolkit-v0.2.0/wirecat-cli-testing-0.2.0.tgz':
-    resolution: {integrity: sha512-nRGKrwfm9sHfG7xn+k9FD7H5VjG492/0slWbwbNkGO38Bj/iwzOsBEV3w50MkuEdBq9L8CdkEPZyH5z3VeKSWQ==, tarball: https://github.com/WireCatLabs/cli-testing/releases/download/toolkit-v0.2.0/wirecat-cli-testing-0.2.0.tgz}
-    version: 0.2.0
+  '@wirecat/cli-testing@0.2.0':
+    resolution: {integrity: sha512-nRGKrwfm9sHfG7xn+k9FD7H5VjG492/0slWbwbNkGO38Bj/iwzOsBEV3w50MkuEdBq9L8CdkEPZyH5z3VeKSWQ==}
     engines: {node: ^22.16.0 || >=24}
     hasBin: true
 
@@ -2980,7 +2979,7 @@ snapshots:
 
   '@wirecat/cli-tasks@0.2.1': {}
 
-  '@wirecat/cli-testing@https://github.com/WireCatLabs/cli-testing/releases/download/toolkit-v0.2.0/wirecat-cli-testing-0.2.0.tgz(zod@4.6.5)':
+  '@wirecat/cli-testing@0.2.0(zod@4.6.5)':
     dependencies:
       '@modelcontextprotocol/sdk': 1.32.1(zod@4.6.5)
     transitivePeerDependencies:
