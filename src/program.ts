@@ -7,6 +7,7 @@ import { ZoomError } from "./errors.js"
 import { FilesSource, importFile, readDownloadedFiles } from "./files.js"
 import { login } from "./login.js"
 import type { TokenManager } from "./tokens.js"
+import { VERSION } from "./version.js"
 
 export interface ProgramDeps {
   configPath: string
@@ -46,10 +47,11 @@ const render = (data: unknown, format: "json" | "jsonl" | "text"): string => {
   return `${JSON.stringify(data, null, format === "text" ? 2 : undefined)}\n`
 }
 export const createProgram = (deps: ProgramDeps): Command => {
-  const config = readConfig(deps.configPath)
+  let config: ReturnType<typeof readConfig>
+  const getConfig = () => (config ??= readConfig(deps.configPath))
   const program = new Command()
     .name("zm")
-    .version("0.1.0")
+    .version(VERSION)
     .description("Zoom meeting transcripts and summaries")
     .option("--json", "one JSON value")
     .option("--jsonl", "one JSON object per item")
@@ -57,6 +59,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .exitOverride()
     .configureOutput({ writeOut: deps.data, writeErr: deps.diagnostic, outputError: () => {} })
   program.hook("preAction", (_root, action) => {
+    getConfig()
     if (program.opts().json && program.opts().jsonl) throw new ZoomError("validation_error", "choose --json or --jsonl")
     if (!deps.store && !["login", "show", "set"].includes(action.name()))
       throw new ZoomError("configuration_error", "the shared SQLite meeting store is not available yet")
@@ -70,7 +73,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .command("show")
     .description("show local configuration")
     .action(() => {
-      output(config)
+      output(getConfig())
     })
   cfg
     .command("set")
@@ -98,39 +101,46 @@ export const createProgram = (deps: ProgramDeps): Command => {
         }),
       )
     })
-  let fileSource: Promise<FilesSource> | undefined
-  const source: MeetingSource =
-    deps.source ??
-    (config.source === "api"
-      ? new ZoomApiSource(deps.tokens, deps.fetch)
-      : {
-          provider: "zoom",
-          name: "file",
-          transcriptFormat: "vtt",
-          async meetings(since) {
-            if (!config.filesFolder)
-              throw new ZoomError("configuration_error", "set files.folder before pulling from files")
-            fileSource ??= (deps.readFiles ?? readDownloadedFiles)(config.filesFolder).then(
-              (files) => new FilesSource(files, config.filesTimezone),
-            )
-            return (await fileSource).meetings(since)
-          },
-          async participants() {
-            return null
-          },
-          async transcript(id) {
-            return fileSource ? (await fileSource).transcript(id) : null
-          },
-          async chat() {
-            return null
-          },
-          async summary() {
-            return null
-          },
-          async files() {
-            return null
-          },
-        })
+  let activeSource: Promise<MeetingSource> | undefined
+  const getSource = (): Promise<MeetingSource> => {
+    if (deps.source) return Promise.resolve(deps.source)
+    activeSource ??= (async () => {
+      const config = getConfig()
+      if (config.source === "api") return new ZoomApiSource(deps.tokens, deps.fetch)
+      if (!config.filesFolder) throw new ZoomError("configuration_error", "set files.folder before pulling from files")
+      return new FilesSource(await (deps.readFiles ?? readDownloadedFiles)(config.filesFolder), config.filesTimezone)
+    })()
+    return activeSource
+  }
+  const source: MeetingSource = {
+    get provider() {
+      return deps.source?.provider ?? "zoom"
+    },
+    get name() {
+      return deps.source?.name ?? (getConfig().source === "api" ? "api" : "file")
+    },
+    get transcriptFormat() {
+      return deps.source ? deps.source.transcriptFormat : "vtt"
+    },
+    async meetings(since) {
+      return (await getSource()).meetings(since)
+    },
+    async participants(id) {
+      return (await getSource()).participants(id)
+    },
+    async transcript(id) {
+      return (await getSource()).transcript(id)
+    },
+    async chat(id) {
+      return (await getSource()).chat(id)
+    },
+    async summary(id) {
+      return (await getSource()).summary(id)
+    },
+    async files(id) {
+      return (await getSource()).files(id)
+    },
+  }
   addMeetingCommands(program, {
     store: deps.store ?? unavailableStore,
     rootIngestion: true,

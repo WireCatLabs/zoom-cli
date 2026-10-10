@@ -56,18 +56,28 @@ export class TokenManager {
     }
   }
   async exchange(params: Record<string, string>, previous?: Tokens): Promise<Tokens> {
-    const response = await this.options.fetch("https://zoom.us/oauth/token", {
-      method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ ...params, client_id: this.options.clientId }),
-      signal: AbortSignal.timeout(30000),
-    })
+    let response: Response
+    try {
+      response = await this.options.fetch("https://zoom.us/oauth/token", {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ ...params, client_id: this.options.clientId }),
+        signal: AbortSignal.timeout(30000),
+      })
+    } catch {
+      throw new ZoomError("provider_error", "could not reach Zoom token endpoint; retry the command")
+    }
     if (!response.ok)
       throw new ZoomError(
         "authentication_error",
         `Zoom token request failed (HTTP ${response.status}); run zm login again`,
       )
-    const body = object(await response.json())
+    let body: Record<string, unknown>
+    try {
+      body = object(await response.json())
+    } catch {
+      throw new ZoomError("invalid_response", "Zoom returned an invalid token response")
+    }
     const refreshToken = typeof body.refresh_token === "string" ? body.refresh_token : previous?.refreshToken
     if (
       typeof body.access_token !== "string" ||
@@ -75,7 +85,10 @@ export class TokenManager {
       !refreshToken ||
       typeof body.expires_in !== "number" ||
       !Number.isFinite(body.expires_in) ||
-      body.expires_in <= 0
+      body.expires_in <= 0 ||
+      !Number.isFinite((this.options.now?.() ?? Date.now()) + body.expires_in * 1000) ||
+      (body.scope !== undefined && typeof body.scope !== "string") ||
+      (body.refresh_token !== undefined && typeof body.refresh_token !== "string")
     )
       throw new ZoomError("invalid_response", "Zoom returned an invalid token response")
     const tokens = {

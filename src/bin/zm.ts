@@ -10,9 +10,10 @@ import { TokenManager } from "../tokens.js"
 const paths = resolvePaths({ appName: "zm", env: process.env })
 const configPath = join(paths.config, "config.json")
 try {
-  const config = readConfig(configPath)
   const tokens = new TokenManager({
-    clientId: config.clientId ?? "",
+    get clientId() {
+      return readConfig(configPath).clientId ?? ""
+    },
     keyring: systemKeyring,
     service: `zoom-cli:${paths.config}`,
     fetch,

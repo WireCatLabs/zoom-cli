@@ -22,6 +22,8 @@ export const login = async (options: LoginOptions) => {
     accept = resolve
     fail = reject
   })
+  // Startup and paste can fail before the callback is awaited.
+  void codePromise.catch(() => {})
   const server = createServer((request, response) => {
     const query = new URL(request.url ?? "/", "http://127.0.0.1")
     if (query.pathname !== "/callback") {
@@ -67,8 +69,14 @@ export const login = async (options: LoginOptions) => {
       return query.get("code") ?? ""
     })
     // Paste remains available if the browser cannot start or the callback cannot reach loopback.
-    void options.openBrowser(authorize.toString()).catch(() => {})
+    void Promise.resolve()
+      .then(() => options.openBrowser(authorize.toString()))
+      .catch(() => {
+        if (!options.readPaste)
+          fail(new ZoomError("configuration_error", "could not open the browser; retry with --browser <program>"))
+      })
     const code = await (pastePromise ? Promise.race([codePromise, pastePromise]) : codePromise)
+    controller.abort()
     const tokens = await options.tokens.exchange({
       grant_type: "authorization_code",
       code,
