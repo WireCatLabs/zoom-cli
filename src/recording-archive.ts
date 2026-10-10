@@ -14,6 +14,24 @@ export interface DownloadOptions {
   signal?: AbortSignal
   maxBytes?: number
 }
+export const validateDownloadOptions = (options: DownloadOptions): number => {
+  const maxBytes = options.maxBytes === undefined ? 20 * 1024 ** 3 : options.maxBytes
+  if (
+    typeof options.destination !== "string" ||
+    !options.destination.trim() ||
+    !Number.isSafeInteger(maxBytes) ||
+    maxBytes <= 0
+  )
+    throw new ZoomError("validation_error", "archive destination and positive download limit are required")
+  if (
+    options.fileIds !== undefined &&
+    (!Array.isArray(options.fileIds) ||
+      options.fileIds.length === 0 ||
+      options.fileIds.some((id) => typeof id !== "string" || !id.trim()))
+  )
+    throw new ZoomError("validation_error", "recording selection must contain nonempty file ids")
+  return maxBytes
+}
 export interface ArchivedFile {
   id: string
   path: string
@@ -109,17 +127,18 @@ export const inspectArchiveLocks = async (
     if (missing(error)) return []
     throw new ZoomError("configuration_error", "archive lock directory could not be read")
   }
-  return Promise.all(
-    names.sort().map(async (name) => {
-      const owner = await lockOwner(join(folder, name), name, options.signal)
-      return {
-        name,
-        status: owner ? lockStatus(owner) : "unrecognized",
-        pid: owner?.pid ?? null,
-        host: owner?.host ?? null,
-      }
-    }),
-  )
+  const result: ArchiveLockInfo[] = []
+  for (const name of names.sort()) {
+    checkCancelled(options.signal)
+    const owner = await lockOwner(join(folder, name), name, options.signal)
+    result.push({
+      name,
+      status: owner ? lockStatus(owner) : "unrecognized",
+      pid: owner?.pid ?? null,
+      host: owner?.host ?? null,
+    })
+  }
+  return result
 }
 export const recoverArchiveLocks = async (
   destination: string,
@@ -398,9 +417,7 @@ export const archiveRecording = async (
 ): Promise<ArchiveReport> => {
   const signal = operationSignal(options.signal)
   checkCancelled(signal)
-  const maxBytes = options.maxBytes ?? 20 * 1024 ** 3
-  if (!options.destination.trim() || !Number.isSafeInteger(maxBytes) || maxBytes <= 0)
-    throw new ZoomError("validation_error", "archive destination and positive download limit are required")
+  const maxBytes = validateDownloadOptions(options)
   if (options.fileIds?.some((id) => !meeting.assets.some((asset) => asset.id === id)))
     throw new ZoomError("validation_error", "requested recording file was not found")
   let lock: string | undefined
@@ -517,9 +534,13 @@ export const inspectArchive = async (
   try {
     const root = await realpath(destination)
     const names = (await readdir(root)).filter((name) => /^\.zoom-archive-[a-f0-9]{64}\.json$/.test(name)).sort()
-    return (await Promise.all(names.map((name) => readManifest(join(root, name), options.signal)))).filter(
-      (value): value is ArchiveManifest => value !== null,
-    )
+    const manifests: ArchiveManifest[] = []
+    for (const name of names) {
+      checkCancelled(options.signal)
+      const manifest = await readManifest(join(root, name), options.signal)
+      if (manifest) manifests.push(manifest)
+    }
+    return manifests
   } catch (error) {
     checkCancelled(options.signal)
     if (error instanceof ZoomError) throw error
@@ -532,23 +553,24 @@ export const verifyArchive = async (
 ): Promise<ArchiveVerification[]> => {
   checkCancelled(options.signal)
   const manifests = await inspectArchive(destination, options)
-  return Promise.all(
-    manifests.flatMap((manifest) =>
-      manifest.files.map(async (file) => {
-        let valid = false
-        try {
-          const local = await fingerprint(join(destination, file.path), options.signal)
-          valid = local.size === file.size && local.sha256 === file.sha256
-        } catch {
-          checkCancelled(options.signal)
-        }
-        return {
-          manifestPath: join(destination, manifestName(manifest.meeting.uuid)),
-          id: file.id,
-          path: file.path,
-          valid,
-        }
-      }),
-    ),
-  )
+  const root = await realpath(destination)
+  const result: ArchiveVerification[] = []
+  for (const manifest of manifests)
+    for (const file of manifest.files) {
+      checkCancelled(options.signal)
+      let valid = false
+      try {
+        const local = await fingerprint(join(root, file.path), options.signal)
+        valid = local.size === file.size && local.sha256 === file.sha256
+      } catch {
+        checkCancelled(options.signal)
+      }
+      result.push({
+        manifestPath: join(destination, manifestName(manifest.meeting.uuid)),
+        id: file.id,
+        path: file.path,
+        valid,
+      })
+    }
+  return result
 }
