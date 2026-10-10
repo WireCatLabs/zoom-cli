@@ -1,6 +1,11 @@
 import { encodeUuid } from "./api.js"
 import { object, string, ZoomError } from "./errors.js"
-import { type ArchiveReport, archiveRecording, type DownloadOptions } from "./recording-archive.js"
+import {
+  type ArchiveReport,
+  archiveRecording,
+  type DownloadOptions,
+  validateDownloadOptions,
+} from "./recording-archive.js"
 import { operationSignal, type RemoteOptions, ZoomRemote } from "./remote-http.js"
 import type { TokenManager } from "./tokens.js"
 
@@ -145,6 +150,7 @@ export class ZoomRecordings {
     return (await this.details(id, options.signal)).meeting
   }
   async download(id: string, options: DownloadOptions): Promise<ArchiveReport> {
+    validateDownloadOptions(options)
     const signal = operationSignal(options.signal)
     const details = await this.details(id, signal)
     return archiveRecording(this.remote, details.meeting, details.urls, { ...options, signal })
