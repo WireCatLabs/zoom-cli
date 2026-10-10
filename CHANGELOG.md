@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.0 — 10.10.2026
 
 ### Added
 
@@ -27,3 +27,7 @@
   participant sessions, preserves empty unified summaries and rejects invalid timezones and
   conflicting normalized filenames. Import preflights the whole input before saving; identical
   filename aliases import once.
+
+### Changed — may break callers
+
+- **The project is now licensed under Apache License 2.0.** See `LICENSE` for the terms.
