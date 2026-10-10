@@ -1,5 +1,5 @@
-import type { KeyringStore } from "@wirecat/cli-core"
-import { object, ZoomError } from "./errors.js"
+import { CliError, type KeyringStore } from "@wirecat/cli-core"
+import { checkCancelled, object, ZoomError } from "./errors.js"
 
 export interface Tokens {
   accessToken: string
@@ -13,10 +13,26 @@ export interface TokenOptions {
   service: string
   fetch: typeof fetch
   now?: () => number
+  signal?: AbortSignal
 }
 export class TokenManager {
-  private refreshing: Promise<Tokens> | undefined
+  private refreshState: { refreshing?: Promise<Tokens> } = {}
   constructor(readonly options: TokenOptions) {}
+  withSignal(signal?: AbortSignal, fetcher: typeof fetch = this.options.fetch): TokenManager {
+    const parent = this.options
+    const scoped = new TokenManager({
+      get clientId() {
+        return parent.clientId
+      },
+      keyring: parent.keyring,
+      service: parent.service,
+      fetch: fetcher,
+      now: parent.now,
+      signal: signal && parent.signal ? AbortSignal.any([signal, parent.signal]) : (signal ?? parent.signal),
+    })
+    scoped.refreshState = this.refreshState
+    return scoped
+  }
   load(): Tokens | null {
     let saved: string | null
     try {
@@ -56,16 +72,22 @@ export class TokenManager {
     }
   }
   async exchange(params: Record<string, string>, previous?: Tokens): Promise<Tokens> {
+    checkCancelled(this.options.signal)
+    const signal = this.options.signal
+      ? AbortSignal.any([this.options.signal, AbortSignal.timeout(30000)])
+      : AbortSignal.timeout(30000)
     let response: Response
     try {
       response = await this.options.fetch("https://zoom.us/oauth/token", {
         method: "POST",
         headers: { "content-type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ ...params, client_id: this.options.clientId }),
-        signal: AbortSignal.timeout(30000),
+        signal,
+        redirect: "error",
       })
-    } catch {
-      throw new ZoomError("provider_error", "could not reach Zoom token endpoint; retry the command")
+    } catch (error) {
+      if (error instanceof CliError) throw error
+      throw new ZoomError("outcome_unknown", "Zoom token exchange did not finish; run zm login again before retrying")
     }
     if (!response.ok)
       throw new ZoomError(
@@ -101,15 +123,18 @@ export class TokenManager {
     return tokens
   }
   async tokens(): Promise<Tokens> {
+    checkCancelled(this.options.signal)
     const saved = this.load()
     if (!saved) throw new ZoomError("authentication_error", "run zm login first")
     if (saved.expiresAt > (this.options.now?.() ?? Date.now()) + 30000) return saved
-    this.refreshing ??= this.exchange(
+    this.refreshState.refreshing ??= this.exchange(
       { grant_type: "refresh_token", refresh_token: saved.refreshToken },
       saved,
     ).finally(() => {
-      this.refreshing = undefined
+      this.refreshState.refreshing = undefined
     })
-    return this.refreshing
+    const refreshed = await this.refreshState.refreshing
+    checkCancelled(this.options.signal)
+    return refreshed
   }
 }
