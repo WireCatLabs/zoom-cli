@@ -58,9 +58,11 @@ const render = (data: unknown, format: "json" | "jsonl" | "text"): string => {
   return `${JSON.stringify(data, null, format === "text" ? 2 : undefined)}\n`
 }
 export const createProgram = (deps: ProgramDeps): Command => {
-  let config: ReturnType<typeof readConfig>
+  let config: ReturnType<typeof readConfig> | undefined
   const getConfig = () => (config ??= readConfig(deps.configPath))
   let connection: StoreConnection | undefined
+  let parsing = false
+  let meetingOutput: string[] = []
   let selectedStore = deps.store
   let selectedAccountId = deps.accountId
   const requireAccount = (): number => {
@@ -123,6 +125,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .description("log in to Zoom through your browser")
     .option("--browser <program>", "browser program")
     .action(async (opts: { browser?: string }) => {
+      const config = getConfig()
       if (!config.clientId)
         throw new ZoomError("configuration_error", "run zm config set zoom.clientId <Public Client ID> first")
       if (program.opts().input === false)
@@ -185,15 +188,24 @@ export const createProgram = (deps: ProgramDeps): Command => {
       return requireAccount()
     },
     source,
-    readFiles: async (folder) =>
-      validateDownloadedFiles(await (deps.readFiles ?? readDownloadedFiles)(folder), config.filesTimezone).map((file) =>
-        importFile(file, requireAccount(), config.filesTimezone),
-      ),
+    readFiles: async (folder) => {
+      const config = getConfig()
+      return validateDownloadedFiles(await (deps.readFiles ?? readDownloadedFiles)(folder), config.filesTimezone).map(
+        (file) => importFile(file, requireAccount(), config.filesTimezone),
+      )
+    },
     now: deps.now,
-    write: (value, format) => deps.data(render(value, format)),
+    write: (value, format) => {
+      meetingOutput.push(render(value, format))
+    },
   })
   const parseAsync = program.parseAsync.bind(program)
   program.parseAsync = async (...args) => {
+    if (parsing) throw new ZoomError("validation_error", "concurrent command parsing is unavailable")
+    parsing = true
+    config = undefined
+    activeSource = undefined
+    meetingOutput = []
     let result = program
     let failed = false
     let failure: unknown
@@ -218,7 +230,13 @@ export const createProgram = (deps: ProgramDeps): Command => {
         }
       }
     }
-    if (failed) throw failure
+    parsing = false
+    if (failed) {
+      meetingOutput = []
+      throw failure
+    }
+    for (const text of meetingOutput) deps.data(text)
+    meetingOutput = []
     return result
   }
   return program

@@ -406,7 +406,7 @@ it("uses the same selected local account for file import and API pull", async ()
 })
 
 it("closes after command failures and preserves the primary error if close also fails", async () => {
-  const { deps, stderr } = await setup()
+  const { deps, stderr, stdout } = await setup()
   setConfig(deps.configPath, "account.profile", "example")
   let closes = 0
   deps.connectStore = async () => ({
@@ -423,6 +423,7 @@ it("closes after command failures and preserves the primary error if close also 
   expect(closes).toBe(1)
   expect(await run(["meetings", "list"], deps)).toBe(3)
   expect(closes).toBe(2)
+  expect(stdout).toEqual([])
   expect(JSON.parse(stderr.at(-1) ?? "{}").error.message).toBe("could not close the shared meeting store")
 })
 
@@ -490,4 +491,73 @@ it("reads older valid configuration and validates optional local profile labels"
     }),
   )
   expect(() => readConfig(deps.configPath)).toThrow(/invalid/)
+})
+
+it("refreshes profile and source configuration between sequential direct parses", async () => {
+  const { createProgram } = await import("./program.js")
+  const { deps } = await setup()
+  const profiles: string[] = []
+  deps.connectStore = async (request) => {
+    profiles.push(request.profile)
+    return { store: memoryMeetingStore(), accountId: 1, close: async () => {} }
+  }
+  const program = createProgram(deps)
+  await program.parseAsync(["config", "set", "account.profile", "first-example"], { from: "user" })
+  await program.parseAsync(["meetings", "list"], { from: "user" })
+  await program.parseAsync(["config", "set", "account.profile", "second-example"], { from: "user" })
+  await program.parseAsync(["meetings", "list"], { from: "user" })
+  expect(profiles).toEqual(["first-example", "second-example"])
+  let apiCalls = 0
+  deps.readFiles = async () => []
+  deps.fetch = async () => {
+    apiCalls++
+    return reply({ meetings: [] })
+  }
+  deps.tokens.save({
+    accessToken: "example",
+    refreshToken: "example",
+    expiresAt: 3600000,
+    scopes: ["meeting:read:list_meetings"],
+  })
+  await program.parseAsync(["config", "set", "source", "files"], { from: "user" })
+  await program.parseAsync(["config", "set", "files.folder", "example-folder"], { from: "user" })
+  await program.parseAsync(["pull", "--since", "2026-10-01"], { from: "user" })
+  expect(apiCalls).toBe(0)
+  await program.parseAsync(["config", "set", "source", "api"], { from: "user" })
+  await program.parseAsync(["pull", "--since", "2026-10-01"], { from: "user" })
+  expect(apiCalls).toBe(1)
+})
+
+it("rejects concurrent direct parses without disturbing the running connection", async () => {
+  const { createProgram } = await import("./program.js")
+  const { deps } = await setup()
+  setConfig(deps.configPath, "account.profile", "example")
+  let release: () => void = () => {}
+  const wait = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  let opened: () => void = () => {}
+  const connected = new Promise<void>((resolve) => {
+    opened = resolve
+  })
+  let closes = 0
+  deps.connectStore = async () => {
+    opened()
+    await wait
+    return {
+      store: memoryMeetingStore(),
+      accountId: 1,
+      close: async () => {
+        closes++
+      },
+    }
+  }
+  const program = createProgram(deps)
+  const first = program.parseAsync(["meetings", "list"], { from: "user" })
+  await connected
+  await expect(program.parseAsync(["meetings", "list"], { from: "user" })).rejects.toThrow(/concurrent/)
+  expect(closes).toBe(0)
+  release()
+  await first
+  expect(closes).toBe(1)
 })
