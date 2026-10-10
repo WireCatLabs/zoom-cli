@@ -3,8 +3,8 @@ name: Release
 # Started by bin/release. npm trusts this file by name (trusted publishing), so there is no npm
 # token anywhere in this repository and renaming the file breaks publishing until npm is told.
 #
-# Three jobs so that the one able to publish runs no code from our dependencies: `build` installs
-# and tests everything and hands over the tarball; `publish` holds the OIDC permission and only
+# Full validation builds, checks and packs once; `build` verifies the immutable tarball.
+# The job able to publish runs no code from our dependencies; `publish` holds the OIDC permission and only
 # runs `npm publish` on that file; `tag` is the only one that may write to the repository.
 on:
   workflow_dispatch:
@@ -26,6 +26,8 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/ci.yml
+    with:
+      pack: true
 
   checks:
     if: github.ref == 'refs/heads/main' || inputs.dry_run
@@ -47,13 +49,21 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-          # npm's own guidance for release builds: no cache that could carry credentials in.
           package-manager-cache: false
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: validated-package
+      - name: Verify validated package integrity
+        env:
+          EXPECTED_SHA256: ${{ needs.validation.outputs.package-sha256 }}
+        run: |
+          set -- ./*.tgz
+          [ "$#" -eq 1 ] && [ -f "$1" ] || { echo "Expected exactly one package tarball"; exit 1; }
+          [ -n "$EXPECTED_SHA256" ] || { echo "Missing validation digest"; exit 1; }
+          printf '%s  %s\n' "$EXPECTED_SHA256" "$1" | sha256sum --check -
 
       - name: version not yet on npm
         id: version
@@ -65,14 +75,6 @@ jobs:
             exit 1
           fi
 
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test:coverage
-      - run: pnpm docs:check
-      - run: pnpm build
-      - run: pnpm smoke:bun
-      - run: npm pack
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: package
@@ -80,8 +82,26 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  package-dry-run:
+    needs: build
+    if: inputs.dry_run
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: package
+      # Permit checking an already published version; this job has no publishing permissions.
+      - run: npm publish ./*.tgz --access public --dry-run --force
+
   publish:
     needs: build
+    if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-latest
     # npm's trusted publisher entry names this environment; without it npm
     # answers the token exchange with "package not found".
