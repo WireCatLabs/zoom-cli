@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { spawn, spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import { existsSync, mkdirSync, readFileSync, renameSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs"
+import { lstat, open } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join, resolve } from "node:path"
 import { pathToFileURL } from "node:url"
@@ -146,6 +147,22 @@ writeFileSync(
     ],
   }),
 )
+const probeFile = await open(asset, "r")
+try {
+  const stats = [
+    await lstat(asset, { bigint: true }),
+    await probeFile.stat({ bigint: true }),
+    await lstat(asset, { bigint: true }),
+  ]
+  console.log(
+    JSON.stringify({
+      platformIdentityProbe: stats.map((stat) => ({ dev: String(stat.dev), ino: String(stat.ino) })),
+      node: process.version,
+    }),
+  )
+} finally {
+  await probeFile.close()
+}
 assert.equal(json("recordings", "archive", "transcript", archive).items[0].cues[0].text, "Original invented plan")
 assert.equal(
   json("recordings", "archive", "search", archive, "invented", "--uuid", uuid, "--file-ids", fileId).items.length,

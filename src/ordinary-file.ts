@@ -24,7 +24,7 @@ export const openOrdinaryFile = async (path: string): Promise<FileHandle> => {
       !after.isFile() ||
       deviceOf(before.dev) !== deviceOf(opened.dev) ||
       before.ino !== opened.ino ||
-      before.dev !== after.dev ||
+      deviceOf(before.dev) !== deviceOf(after.dev) ||
       before.ino !== after.ino
     )
       throw new ZoomError("validation_error", "archive file changed while opening")
