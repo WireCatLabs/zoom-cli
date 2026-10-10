@@ -19,3 +19,16 @@ imports, correction history/current search, no-overwrite export, lazy MCP discov
 SIGINT/reopen, bin permissions and package-version agreement. Only Node 22's known SQLite experimental
 warning is normalized in assertions; other stderr remains visible. Node 22.16/24 and Bun proofs use
 actual registry dependencies and fresh invented databases, never a same-version local snapshot.
+
+## Offline external contracts
+
+`pnpm contracts:check` drives the built binary and MCP stdio server with isolated synthetic
+profiles. It checks help, clean JSON discovery, structured error exit codes, and reviewed
+tool schemas. Plans and snapshots live in `contracts/`; changes require explicit review with
+`pnpm exec cli-contract contracts/plan.json --update`. It runs in release, monthly, and manual
+full validation; ordinary PR/local checks retain their existing budget. See the
+[shared guide](https://github.com/WireCatLabs/cli-testing/blob/main/docs/ci/CONTRACTS.md).
+
+The development dependency currently pins the validated
+[toolkit preview](https://github.com/WireCatLabs/cli-testing/releases/tag/toolkit-v0.2.0)
+asset and its lockfile integrity while npm trusted publishing is being configured.

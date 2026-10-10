@@ -19,4 +19,5 @@ jobs:
     with:
       pack: ${{ inputs.pack || false }}
       checks: |
+        pnpm contracts:check
         pnpm docs:check
