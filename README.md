@@ -93,4 +93,4 @@ folders and the memory meeting store.
 
 ## Licence
 
-MIT.
+[Apache License 2.0](LICENSE).
