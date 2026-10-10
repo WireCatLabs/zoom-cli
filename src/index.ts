@@ -1,4 +1,13 @@
 export { encodeUuid, ZoomApiSource } from "./api.js"
+export {
+  type ArchiveTranscript,
+  type ArchiveTranscriptMatch,
+  type ArchiveTranscriptOptions,
+  type ArchiveTranscriptSearchOptions,
+  type ArchiveTranscriptSearchReport,
+  readArchiveTranscripts,
+  searchArchiveTranscripts,
+} from "./archive-transcripts.js"
 export { profileAccountKey, readConfig, setConfig, type ZoomConfig } from "./config.js"
 export { ZoomError } from "./errors.js"
 export {

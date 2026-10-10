@@ -6,21 +6,24 @@ import {
   fieldsOf,
   GENERIC_FAILURE,
   projectFields,
+  realSleep,
   type SleepLike,
 } from "@wirecat/cli-core"
-import { importFiles, MeetingError, type MeetingSource, type MeetingStore } from "@wirecat/cli-meetings"
+import { importFiles, listed, MeetingError, type MeetingSource, type MeetingStore, pull } from "@wirecat/cli-meetings"
 import { addMeetingCommands } from "@wirecat/cli-meetings/cli"
 import { Command, CommanderError } from "commander"
 import { addZoomSkillCommands } from "./agent-skill.js"
 import { ZoomApiSource } from "./api.js"
 import {
   type ArchiveService,
+  type ArchiveTranscriptService,
   addArchiveCommands,
   type RecordingsService,
   type RemoteMeetingsService,
 } from "./archive-commands.js"
+import { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
 import { addStandardCommands, annotateMeetingCommands } from "./commands.js"
-import { profileAccountKey, readConfig, setConfig } from "./config.js"
+import { profileAccountKey, readConfig, setConfig, type ZoomConfig } from "./config.js"
 import { checkCancelled, ZoomError } from "./errors.js"
 import { bytes, duration, type ExecutionState, resetCliOptions, startExecution } from "./execution.js"
 import { FilesSource, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
@@ -61,6 +64,7 @@ export interface ProgramDeps {
   recordings?: RecordingsService
   remoteMeetings?: RemoteMeetingsService
   archive?: ArchiveService
+  archiveTranscripts?: ArchiveTranscriptService
   readFiles?: typeof readDownloadedFiles
   writeFile?: (path: string, content: string, options?: { signal?: AbortSignal }) => Promise<void>
   openBrowser: (url: string, browser?: string) => Promise<void>
@@ -240,6 +244,25 @@ export const createProgram = (deps: ProgramDeps): Command => {
   })
   const output = (value: unknown) =>
     buffer(render(value, program.opts().json ? "json" : program.opts().jsonl ? "jsonl" : "text", deps, fields))
+  const outputItems = async (values: AsyncIterable<unknown>) => {
+    const format = program.opts().jsonl ? "jsonl" : program.opts().json || !deps.outputIsTTY ? "json" : "text"
+    const metadata: Partial<ReturnType<typeof listed>> = listed([])
+    delete metadata.items
+    let count = 0
+    if (format === "json") buffer('{"items":[')
+    for await (const value of values) {
+      checkCancelled(signal())
+      const projected = fields ? (projectFields(listed([value]), fields) as { items: unknown[] }).items[0] : value
+      if (format === "json") {
+        if (count) buffer(",")
+        buffer(render(projected, "json", deps).trimEnd())
+      } else buffer(render(projected, format, deps))
+      count++
+    }
+    metadata.limit = count
+    if (format === "json") buffer(`],${JSON.stringify(metadata).slice(1)}\n`)
+    else if (format === "text") buffer(render(count ? metadata : listed([]), "text", deps))
+  }
   const cfg = program.command("config").description("local Zoom configuration")
   cfg
     .command("show")
@@ -398,6 +421,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
       }
     },
   })
+  let watchConfig: ZoomConfig | undefined
+  let watchSince: string | undefined
   const watchSleep = deps.sleep
   const receipt = async (value: unknown) => {
     const text = render(value, program.opts().jsonl ? "jsonl" : "text", deps, fields)
@@ -417,9 +442,45 @@ export const createProgram = (deps: ProgramDeps): Command => {
     receipt,
     outputIsTTY: deps.outputIsTTY,
     sleep: watchSleep ? (ms, abort) => watchSleep(ms, abort, "retry") : undefined,
-    ingest: async (folder, operation) => {
+    prepare: (folder, flags) => {
+      const config = { ...getConfig() }
+      const source = flags.source ?? (folder !== undefined ? "files" : config.source)
+      const plan = {
+        source,
+        since: flags.since,
+        lookbackDays: flags.lookbackDays ?? 0,
+        intervalMs: flags.interval,
+        folder: folder ?? config.filesFolder ?? undefined,
+      }
+      if (source === "files") {
+        if (flags.since !== undefined || flags.lookbackDays !== undefined)
+          throw new ZoomError("validation_error", "since and lookback days apply only to API watching")
+        if (!plan.folder?.trim())
+          throw new ZoomError("configuration_error", "set files.folder or provide a folder for file watching")
+      } else {
+        if (folder !== undefined) throw new ZoomError("validation_error", "API watching does not accept a folder")
+        if (program.opts().offline)
+          throw new ZoomError("configuration_error", "API watching requires network access; remove --offline")
+        if (!deps.source) {
+          if (!config.clientId)
+            throw new ZoomError("configuration_error", "run zm config set zoom.clientId <Public Client ID> first")
+          if (tokens().options.clientId !== config.clientId)
+            throw new ZoomError(
+              "configuration_error",
+              "the OAuth client changed before watch started; retry with matching configuration",
+            )
+        }
+      }
+      if (!deps.store && !config.accountProfile)
+        throw new ZoomError("configuration_error", "select a local profile with zm config set account.profile <label>")
+      watchConfig = config
+      watchSince = plan.since
+      return plan
+    },
+    ingest: async (plan, operation) => {
       checkCancelled(operation)
-      const config = readConfig(deps.configPath)
+      const config = watchConfig
+      if (!config) throw new ZoomError("configuration_error", "watch configuration is unavailable")
       let cycle: StoreConnection | undefined
       let failure: unknown
       let result: Awaited<ReturnType<typeof importFiles>> | undefined
@@ -446,16 +507,70 @@ export const createProgram = (deps: ProgramDeps): Command => {
         const accountId = cycle?.accountId ?? deps.accountId
         if (!Number.isSafeInteger(accountId) || !accountId || accountId < 1)
           throw new ZoomError("configuration_error", "the selected meeting account is unavailable")
-        const files = validateDownloadedFiles(
-          await (deps.readFiles ?? readDownloadedFiles)(folder),
-          config.filesTimezone,
-        )
-        checkCancelled(operation)
-        result = await importFiles(
-          files.map((file) => importFile(file, accountId, config.filesTimezone)),
-          guardedStore(cycle?.store ?? deps.store ?? unavailableStore),
-          deps.now?.(),
-        )
+        const store = guardedStore(cycle?.store ?? deps.store ?? unavailableStore)
+        if (plan.source === "files") {
+          const files = validateDownloadedFiles(
+            await (deps.readFiles ?? readDownloadedFiles)(plan.folder ?? ""),
+            config.filesTimezone,
+          )
+          checkCancelled(operation)
+          result = await importFiles(
+            files.map((file) => importFile(file, accountId, config.filesTimezone)),
+            store,
+            deps.now?.(),
+          )
+        } else {
+          const original =
+            deps.source ??
+            new ZoomApiSource(tokens(), fetchWithSignal(deps.fetch), {
+              now: deps.now,
+              sleep: (ms, abort) => (deps.sleep ?? realSleep)(ms, AbortSignal.any([operation, abort]), "retry"),
+            })
+          let sourceFailure: CliError | undefined
+          const source = new Proxy(original, {
+            get(target, key, receiver) {
+              const method = Reflect.get(target, key, receiver)
+              return typeof method === "function"
+                ? async (...args: unknown[]) => {
+                    if (sourceFailure) throw sourceFailure
+                    checkCancelled(operation)
+                    try {
+                      const value = await method.apply(target, args)
+                      checkCancelled(operation)
+                      return value
+                    } catch (error) {
+                      if (error instanceof CliError && error.code === "outcome_unknown") {
+                        sourceFailure = error
+                        throw error
+                      }
+                      checkCancelled(operation)
+                      throw error
+                    }
+                  }
+                : method
+            },
+          })
+          let cursorAdvanced = false
+          const trackingStore = new Proxy(store, {
+            get(target, key, receiver) {
+              if (key === "setCursor")
+                return async (...args: Parameters<MeetingStore["setCursor"]>) => {
+                  await target.setCursor(...args)
+                  cursorAdvanced = true
+                }
+              return Reflect.get(target, key, receiver)
+            },
+          })
+          result = await pull(source, trackingStore, {
+            accountId,
+            since: watchSince,
+            lookbackMs: plan.lookbackDays * 86400000,
+            now: deps.now?.(),
+          })
+          if (sourceFailure) throw sourceFailure
+          checkCancelled(operation)
+          if (cursorAdvanced) watchSince = undefined
+        }
       } catch (error) {
         failure = error
       } finally {
@@ -479,6 +594,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
   }
   addArchiveCommands(program, {
     output,
+    outputItems,
+    transcripts: deps.archiveTranscripts ?? { read: readArchiveTranscripts, search: searchArchiveTranscripts },
     receipt,
     outputIsTTY: deps.outputIsTTY,
     api,
@@ -528,6 +645,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
     activeSource = undefined
     execution = undefined
     activeTokens = undefined
+    watchConfig = undefined
+    watchSince = undefined
     fields = undefined
     let result = program
     let failed = false
