@@ -9,7 +9,7 @@ permissions:
 jobs:
   ci:
     if: github.event_name == 'push' || !github.event.pull_request.draft
-    uses: WireCatLabs/cli-core/.github/workflows/node-ci.yml@404d0f94d6f87106f7b67bfc432eea5fd904caa8 # v0.18.1
+    uses: WireCatLabs/cli-core/.github/workflows/node-ci.yml@5940608f735c6de554b6180275ad58b01149b31b # v0.18.1
     with:
       checks: |
         pnpm docs:check
