@@ -1,6 +1,7 @@
 import { annotate } from "@wirecat/cli-core/commands"
 import { listed } from "@wirecat/cli-meetings"
 import type { Command } from "commander"
+import type { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
 import { ZoomError } from "./errors.js"
 import { bytes } from "./execution.js"
 import type { inspectArchive, inspectArchiveLocks, recoverArchiveLocks, verifyArchive } from "./recording-archive.js"
@@ -19,13 +20,19 @@ export interface ArchiveService {
   locks: typeof inspectArchiveLocks
   recover: typeof recoverArchiveLocks
 }
+export interface ArchiveTranscriptService {
+  read: typeof readArchiveTranscripts
+  search: typeof searchArchiveTranscripts
+}
 export interface ArchiveCommandsDeps {
   recordings: () => RecordingsService
   remoteMeetings: () => RemoteMeetingsService
   archive: ArchiveService
+  transcripts: ArchiveTranscriptService
   signal: () => AbortSignal | undefined
   api: () => void
   output: (value: unknown) => void
+  outputItems: (values: AsyncIterable<unknown>) => Promise<void>
   receipt: (value: unknown) => Promise<void>
   outputIsTTY?: boolean
   now: () => number
@@ -134,6 +141,48 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
     "local",
   )
   const archive = recordings.command("archive").description("inspect archives without Zoom or a database")
+  const transcriptOptions = (command: Command) =>
+    command
+      .option("--uuid <uuid>", "select an occurrence UUID")
+      .option("--file-ids <ids>", "select comma-separated transcript asset ids")
+      .option("--max-bytes <bytes>", "maximum VTT bytes per file (default 8 MiB)", positive)
+  const selected = (options: { uuid?: string; fileIds?: string; maxBytes?: number }) => ({
+    uuid: options.uuid,
+    fileIds: options.fileIds?.split(",").map((id) => id.trim()),
+    maxBytes: options.maxBytes,
+    signal: deps.signal(),
+  })
+  label(
+    transcriptOptions(
+      archive
+        .command("transcript")
+        .description("read checksum-verified local VTT cues without Zoom or a database")
+        .argument("<directory>"),
+    ).action(async (directory: string, options: { uuid?: string; fileIds?: string; maxBytes?: number }) => {
+      await deps.outputItems(deps.transcripts.read(directory, selected(options)))
+    }),
+    "zm recordings archive transcript ./zoom-archive --uuid example-occurrence --json",
+  )
+  label(
+    transcriptOptions(
+      archive
+        .command("search")
+        .description("literal normalized text search across verified local VTT cues")
+        .argument("<directory>")
+        .argument("<query>"),
+    )
+      .option("--limit <matches>", "maximum matches from 1 through 1000 (default 100)", positive)
+      .action(
+        async (
+          directory: string,
+          query: string,
+          options: { uuid?: string; fileIds?: string; maxBytes?: number; limit?: number },
+        ) => {
+          deps.output(await deps.transcripts.search(directory, query, { ...selected(options), limit: options.limit }))
+        },
+      ),
+    'zm recordings archive search ./zoom-archive "example plan" --limit 10 --json',
+  )
   label(
     archive
       .command("inspect")
