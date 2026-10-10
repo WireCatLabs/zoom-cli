@@ -9,7 +9,15 @@ import {
   realSleep,
   type SleepLike,
 } from "@wirecat/cli-core"
-import { importFiles, listed, MeetingError, type MeetingSource, type MeetingStore, pull } from "@wirecat/cli-meetings"
+import {
+  importFiles,
+  listed,
+  MeetingError,
+  type MeetingSource,
+  type MeetingStore,
+  type MeetingTranscriptStore,
+  pull,
+} from "@wirecat/cli-meetings"
 import { addMeetingCommands } from "@wirecat/cli-meetings/cli"
 import { Command, CommanderError } from "commander"
 import { addZoomSkillCommands } from "./agent-skill.js"
@@ -21,12 +29,14 @@ import {
   type RecordingsService,
   type RemoteMeetingsService,
 } from "./archive-commands.js"
+import { applyArchiveImport, preflightArchiveImport } from "./archive-import.js"
 import { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
 import { addStandardCommands, annotateMeetingCommands } from "./commands.js"
 import { profileAccountKey, readConfig, setConfig, type ZoomConfig } from "./config.js"
 import { checkCancelled, ZoomError } from "./errors.js"
 import { bytes, duration, type ExecutionState, resetCliOptions, startExecution } from "./execution.js"
 import { FilesSource, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
+import { addIngestionSearchCommands } from "./ingestion-search-commands.js"
 import { login } from "./login.js"
 import {
   getZoomProfile,
@@ -40,6 +50,7 @@ import type { RemoteOptions } from "./remote-http.js"
 import { ZoomRemoteMeetings } from "./remote-meetings.js"
 import { emitReceipt } from "./streaming.js"
 import type { TokenManager } from "./tokens.js"
+import { runUnifiedSearch, type UnifiedSearch } from "./unified-search.js"
 import { VERSION } from "./version.js"
 import { addWatchCommand } from "./watch-commands.js"
 
@@ -47,11 +58,14 @@ export interface StoreConnection {
   store: MeetingStore
   accountId: number
   close: () => Promise<void>
+  appendTranscripts?: MeetingTranscriptStore["appendTranscripts"]
+  unifiedSearch?: UnifiedSearch
 }
 export interface StoreConnectRequest {
   profile: string
   externalId: string
   intent: "read" | "ingestion"
+  capability?: "transcript-append"
 }
 export interface ProgramDeps {
   configPath: string
@@ -60,6 +74,8 @@ export interface ProgramDeps {
   store?: MeetingStore
   accountId?: number
   connectStore?: (request: StoreConnectRequest) => Promise<StoreConnection>
+  transcriptStore?: MeetingTranscriptStore
+  unifiedSearch?: UnifiedSearch
   source?: MeetingSource
   recordings?: RecordingsService
   remoteMeetings?: RemoteMeetingsService
@@ -78,7 +94,11 @@ export interface ProgramDeps {
   checkSession?: (options?: { signal?: AbortSignal }) => Promise<unknown>
   signal?: AbortSignal
   sleep?: SleepLike
-  serveMcp?: (options: { signal: AbortSignal; maxResultBytes?: number }) => Promise<void>
+  serveMcp?: (options: {
+    signal: AbortSignal
+    maxResultBytes?: number
+    includeUnifiedSearch?: boolean
+  }) => Promise<void>
   streamData?: (text: string, signal: AbortSignal) => Promise<void>
 }
 const unavailable = async (): Promise<never> => {
@@ -104,6 +124,7 @@ const render = (
   format: "json" | "jsonl" | "text",
   deps: ProgramDeps,
   fields?: readonly string[],
+  preserveEnvelope = false,
 ): string => {
   if (fields) value = projectFields(value, fields)
   const chunks: string[] = []
@@ -113,6 +134,7 @@ const render = (
     streams: { data: (text) => chunks.push(`${text}\n`), diagnostic: deps.diagnostic },
   })
   if (
+    !preserveEnvelope &&
     format === "jsonl" &&
     typeof value === "object" &&
     value !== null &&
@@ -217,6 +239,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
         "serve",
         "skill",
         "watch",
+        "search",
       ].includes(family.name())
     )
       return
@@ -628,13 +651,66 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .command("serve")
     .description("serve read-only meeting tools over MCP stdio")
     .requiredOption("--mcp", "use the MCP JSON-RPC protocol")
-    .action(async () => {
+    .option("--unified-search", "include selected-profile meetings-only unified search")
+    .action(async (options: { unifiedSearch?: boolean }) => {
       const opts = program.opts()
       if (opts.json || opts.jsonl || opts.fields)
         throw new ZoomError("validation_error", "MCP stdio controls its own output; omit --json, --jsonl and --fields")
       if (!deps.serveMcp) throw new ZoomError("configuration_error", "the MCP server adapter is not available")
-      await deps.serveMcp({ signal: signal() as AbortSignal, maxResultBytes: program.opts().maxOutputBytes })
+      await deps.serveMcp({
+        signal: signal() as AbortSignal,
+        maxResultBytes: program.opts().maxOutputBytes,
+        ...(options.unifiedSearch ? { includeUnifiedSearch: true } : {}),
+      })
     })
+  addIngestionSearchCommands(program, {
+    signal,
+    output: (value) =>
+      buffer(render(value, program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text", deps, fields, true)),
+    outputItems,
+    receipt,
+    preflight: preflightArchiveImport,
+    apply: async function* (plan) {
+      if (plan.occurrences === 0) return
+      let store = deps.transcriptStore
+      let accountId = selectedAccountId
+      if (!store) {
+        const config = getConfig()
+        if (!config.accountProfile || !deps.connectStore)
+          throw new ZoomError("configuration_error", "select a local profile with an available transcript append store")
+        connection = await deps.connectStore({
+          profile: config.accountProfile,
+          externalId: profileAccountKey(config.accountProfile),
+          intent: "ingestion",
+          capability: "transcript-append",
+        })
+        accountId = connection.accountId
+        if (!connection.appendTranscripts)
+          throw new ZoomError("configuration_error", "the installed meeting store does not support transcript append")
+        store = { appendTranscripts: connection.appendTranscripts }
+      }
+      for await (const item of applyArchiveImport(plan, store, {
+        accountId: accountId ?? 0,
+        now: deps.now?.(),
+        signal: signal(),
+      }))
+        yield item
+    },
+    search: async (request) => {
+      if (deps.unifiedSearch) return runUnifiedSearch(deps.unifiedSearch, request)
+      const config = getConfig()
+      if (!config.accountProfile || !deps.connectStore)
+        throw new ZoomError("configuration_error", "select a stored local profile for unified search")
+      connection = await deps.connectStore({
+        profile: config.accountProfile,
+        externalId: profileAccountKey(config.accountProfile),
+        intent: "read",
+      })
+      if (!connection.unifiedSearch)
+        throw new ZoomError("configuration_error", "unified search is unavailable in this store connector")
+      return runUnifiedSearch(connection.unifiedSearch, request)
+    },
+  })
   annotateMeetingCommands(program)
   const parseAsync = program.parseAsync.bind(program)
   program.parseAsync = async (...args) => {

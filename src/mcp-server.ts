@@ -3,10 +3,13 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js"
 import { CallToolRequestSchema, ListToolsRequestSchema, type Tool } from "@modelcontextprotocol/sdk/types.js"
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv"
+import { CliError } from "@wirecat/cli-core"
 import type { MeetingStore } from "@wirecat/cli-meetings"
 import { callMeetingTool, meetingTools } from "@wirecat/cli-meetings/mcp"
+import type { MeetingSearchCursor } from "@wirecat/cli-messaging/services"
 import { ZoomError } from "./errors.js"
 import type { StoreConnection } from "./program.js"
+import { runUnifiedSearch } from "./unified-search.js"
 import { VERSION } from "./version.js"
 
 export interface MeetingMcpOptions {
@@ -16,6 +19,8 @@ export interface MeetingMcpOptions {
   signal?: AbortSignal
   /** Maximum UTF-8 bytes in a serialized tool result, including both content forms; zero is unlimited. */
   maxResultBytes?: number
+  /** Opt-in selected-profile meetings only; store-global notes are never exposed here. */
+  includeUnifiedSearch?: boolean
 }
 
 const failure = (code: string, message: string) => {
@@ -41,6 +46,35 @@ const buildServer = (options: MeetingMcpOptions) => {
     )
     return { ...tool, inputSchema: { ...tool.inputSchema, type: "object" as const, properties } } satisfies Tool
   })
+  if (options.includeUnifiedSearch)
+    tools.push({
+      name: "search_all",
+      description:
+        "Selected-profile meeting word-prefix search with explicit completeness and source-only continuation",
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true },
+      inputSchema: {
+        type: "object",
+        properties: {
+          query: { type: "string", minLength: 1 },
+          limit: { type: "integer", minimum: 1, maximum: 1000 },
+          max_meetings: { type: "integer", minimum: 1, maximum: 1000 },
+          exact: { type: "boolean" },
+          meeting_cursor: {
+            type: "object",
+            additionalProperties: false,
+            required: ["accountId", "query", "meetingOffset", "hitOffset"],
+            properties: {
+              accountId: { type: "integer", minimum: 1 },
+              query: { type: "string", minLength: 1 },
+              meetingOffset: { type: "integer", minimum: 0 },
+              hitOffset: { type: "integer", minimum: 0 },
+            },
+          },
+        },
+        required: ["query"],
+        additionalProperties: false,
+      },
+    })
   const validated = new Map(
     tools.map((tool) => [tool.name, validator.getValidator<Record<string, unknown>>(tool.inputSchema)]),
   )
@@ -87,13 +121,36 @@ const buildServer = (options: MeetingMcpOptions) => {
               : value
           },
         }) as MeetingStore
-        result = await callMeetingTool(store, request.params.name, {
-          ...args,
-          account_id: connection.accountId,
-        })
+        if (request.params.name === "search_all") {
+          if (!connection.unifiedSearch)
+            result = failure("configuration_error", "unified meeting search is unavailable")
+          else {
+            const found = await runUnifiedSearch(
+              connection.unifiedSearch,
+              {
+                text: args.query as string,
+                limit: (args.limit as number | undefined) ?? 100,
+                maxMeetings: args.max_meetings as number | undefined,
+                exact: args.exact as boolean | undefined,
+                meetingCursor: args.meeting_cursor as MeetingSearchCursor | undefined,
+                only: ["meetings"],
+                signal,
+              },
+              true,
+            )
+            result = { content: [{ type: "text", text: JSON.stringify(found) }], structuredContent: found }
+          }
+        } else
+          result = await callMeetingTool(store, request.params.name, {
+            ...args,
+            account_id: connection.accountId,
+          })
       }
-    } catch {
-      result = failure("generic_failure", "Meeting read failed")
+    } catch (error) {
+      result =
+        request.params.name === "search_all" && error instanceof CliError
+          ? failure(error.code, "unified meeting search failed")
+          : failure("generic_failure", "Meeting read failed")
     } finally {
       try {
         await connection.close()
