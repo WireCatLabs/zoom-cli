@@ -139,7 +139,7 @@ describe("installed package", () => {
     expect(JSON.parse(read.stdout)).toEqual(JSON.parse(saved.stdout))
     expect(read.stderr).toBe("")
     const disk = JSON.parse(readFileSync(join(config, "config.json"), "utf8"))
-    expect(Object.keys(disk).sort()).toEqual(["clientId", "filesFolder", "filesTimezone", "source"])
+    expect(Object.keys(disk).sort()).toEqual(["accountProfile", "clientId", "filesFolder", "filesTimezone", "source"])
   })
 
   it("refuses noninteractive login before external access", () => {

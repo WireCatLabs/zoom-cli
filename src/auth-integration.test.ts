@@ -298,3 +298,266 @@ it("preflights every normalized import key before saving and deduplicates identi
   expect(JSON.parse(stdout[0] ?? "{}")).toMatchObject({ meetings: 1 })
   expect(await deps.store.meetings()).toHaveLength(1)
 })
+
+it("connects lazily once with read intent and closes direct program parsing", async () => {
+  const { createProgram } = await import("./program.js")
+  const { deps, stdout } = await setup()
+  setConfig(deps.configPath, "account.profile", "example-work")
+  let opened = 0
+  let closed = 0
+  deps.connectStore = async (request) => {
+    opened++
+    expect(request).toEqual({ profile: "example-work", externalId: "zm-profile:example-work", intent: "read" })
+    return {
+      store: memoryMeetingStore(),
+      accountId: 1,
+      close: async () => {
+        closed++
+      },
+    }
+  }
+  const program = createProgram(deps)
+  await program.parseAsync(["--json", "meetings", "list"], { from: "user" })
+  expect(opened).toBe(1)
+  expect(closed).toBe(1)
+  expect(JSON.parse(stdout[0] ?? "{}").items).toEqual([])
+  await program.parseAsync(["--json", "meetings", "list"], { from: "user" })
+  expect(opened).toBe(2)
+  expect(closed).toBe(2)
+})
+
+it("never connects for help, version, config, parser failures or login", async () => {
+  const { deps } = await setup()
+  deps.connectStore = async () => {
+    throw new Error("unexpected store access")
+  }
+  for (const args of [
+    ["--help"],
+    ["--version"],
+    ["config", "show"],
+    ["config", "set", "account.profile", "example"],
+    ["unknown-command"],
+    ["--no-input", "login"],
+  ])
+    expect(await run(args, deps)).toBe(args[0] === "unknown-command" ? 2 : args.includes("login") ? 3 : 0)
+})
+
+it("requires an explicit local profile before connecting and a valid account before fetching", async () => {
+  const { deps, stderr } = await setup()
+  let opens = 0
+  let closes = 0
+  deps.connectStore = async () => {
+    opens++
+    return {
+      store: memoryMeetingStore(),
+      accountId: 0,
+      close: async () => {
+        closes++
+      },
+    }
+  }
+  expect(await run(["pull", "--since", "2026-10-01"], deps)).toBe(3)
+  expect(opens).toBe(0)
+  expect(JSON.parse(stderr.at(-1) ?? "{}").error.message).toContain("account.profile")
+  setConfig(deps.configPath, "account.profile", "example")
+  expect(await run(["pull", "--since", "2026-10-01"], deps)).toBe(3)
+  expect(opens).toBe(1)
+  expect(closes).toBe(1)
+  deps.store = memoryMeetingStore()
+  expect(await run(["meetings", "list"], deps)).toBe(3)
+  expect(opens).toBe(1)
+})
+
+it("uses the same selected local account for file import and API pull", async () => {
+  const { deps } = await setup()
+  setConfig(deps.configPath, "account.profile", "example")
+  const store = memoryMeetingStore()
+  let opens = 0
+  let closes = 0
+  deps.connectStore = async (request) => {
+    expect(request).toEqual({ profile: "example", externalId: "zm-profile:example", intent: "ingestion" })
+    opens++
+    return {
+      store,
+      accountId: 2,
+      close: async () => {
+        closes++
+      },
+    }
+  }
+  deps.readFiles = async () => [
+    {
+      name: "2026-10-10_1530_example.vtt",
+      content: "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nAlice Example: Example\n",
+    },
+  ]
+  expect(await run(["import", "example-folder"], deps)).toBe(0)
+  expect((await store.meetings())[0]?.accountId).toBe(2)
+  deps.tokens.save({
+    accessToken: "example",
+    refreshToken: "example",
+    expiresAt: 3600000,
+    scopes: ["meeting:read:list_meetings"],
+  })
+  deps.fetch = async () => reply({ meetings: [] })
+  expect(await run(["pull", "--since", "2026-10-01"], deps)).toBe(0)
+  expect(opens).toBe(2)
+  expect(closes).toBe(2)
+})
+
+it("closes after command failures and preserves the primary error if close also fails", async () => {
+  const { deps, stderr, stdout } = await setup()
+  setConfig(deps.configPath, "account.profile", "example")
+  let closes = 0
+  deps.connectStore = async () => ({
+    store: memoryMeetingStore(),
+    accountId: 1,
+    close: async () => {
+      closes++
+      throw new Error("private close detail")
+    },
+  })
+  expect(await run(["meetings", "show", "999"], deps)).toBe(6)
+  expect(stderr).toHaveLength(1)
+  expect(JSON.parse(stderr[0] ?? "{}").error.code).toBe("not_found")
+  expect(closes).toBe(1)
+  expect(await run(["meetings", "list"], deps)).toBe(3)
+  expect(closes).toBe(2)
+  expect(stdout).toEqual([])
+  expect(JSON.parse(stderr.at(-1) ?? "{}").error.message).toBe("could not close the shared meeting store")
+})
+
+it("closes after source and rejected-save errors and sanitizes connector failures", async () => {
+  const { deps, stderr, stdout } = await setup()
+  const { fakeMeetingSource } = await import("@wirecat/cli-meetings/testing")
+  setConfig(deps.configPath, "account.profile", "example")
+  let closes = 0
+  const store = memoryMeetingStore()
+  deps.connectStore = async () => ({
+    store,
+    accountId: 1,
+    close: async () => {
+      closes++
+    },
+  })
+  deps.source = fakeMeetingSource({
+    meetings: async () => {
+      throw new Error("example source failure")
+    },
+  })
+  expect(await run(["pull", "--since", "2026-10-01"], deps)).toBe(1)
+  expect(closes).toBe(1)
+  deps.readFiles = async () => [{ name: "2026-10-10_1530_example.vtt", content: "WEBVTT\n" }]
+  store.saveMeeting = async () => {
+    throw new Error("example rejected save")
+  }
+  expect(await run(["import", "example-folder"], deps)).toBe(0)
+  expect(JSON.parse(stdout.at(-1) ?? "{}").warnings).toHaveLength(1)
+  expect(closes).toBe(2)
+  deps.connectStore = async () => {
+    throw new Error("private database path")
+  }
+  expect(await run(["meetings", "list"], deps)).toBe(3)
+  expect(JSON.parse(stderr.at(-1) ?? "{}").error.message).toBe("could not open the shared meeting store")
+  const { ZoomError } = await import("./errors.js")
+  deps.connectStore = async () => {
+    throw new ZoomError("configuration_error", "selected profile was not registered")
+  }
+  expect(await run(["meetings", "list"], deps)).toBe(3)
+  expect(JSON.parse(stderr.at(-1) ?? "{}").error.message).toBe("selected profile was not registered")
+})
+
+it("reads older valid configuration and validates optional local profile labels", async () => {
+  const { readConfig, profileAccountKey } = await import("./config.js")
+  const { deps } = await setup()
+  await writeFile(
+    deps.configPath,
+    JSON.stringify({ clientId: "example-client", source: "api", filesFolder: null, filesTimezone: "UTC" }),
+  )
+  expect(readConfig(deps.configPath).accountProfile).toBeNull()
+  setConfig(deps.configPath, "account.profile", "Example-work_1.2")
+  expect(readConfig(deps.configPath).accountProfile).toBe("Example-work_1.2")
+  expect(profileAccountKey("Example-work_1.2")).toBe("zm-profile:Example-work_1.2")
+  for (const value of ["", "has space", "../example", "-example", "a".repeat(65)])
+    expect(() => setConfig(deps.configPath, "account.profile", value)).toThrow(/profile/)
+  await writeFile(
+    deps.configPath,
+    JSON.stringify({
+      clientId: "example-client",
+      source: "api",
+      filesFolder: null,
+      filesTimezone: "UTC",
+      accountProfile: [],
+    }),
+  )
+  expect(() => readConfig(deps.configPath)).toThrow(/invalid/)
+})
+
+it("refreshes profile and source configuration between sequential direct parses", async () => {
+  const { createProgram } = await import("./program.js")
+  const { deps } = await setup()
+  const profiles: string[] = []
+  deps.connectStore = async (request) => {
+    profiles.push(request.profile)
+    return { store: memoryMeetingStore(), accountId: 1, close: async () => {} }
+  }
+  const program = createProgram(deps)
+  await program.parseAsync(["config", "set", "account.profile", "first-example"], { from: "user" })
+  await program.parseAsync(["meetings", "list"], { from: "user" })
+  await program.parseAsync(["config", "set", "account.profile", "second-example"], { from: "user" })
+  await program.parseAsync(["meetings", "list"], { from: "user" })
+  expect(profiles).toEqual(["first-example", "second-example"])
+  let apiCalls = 0
+  deps.readFiles = async () => []
+  deps.fetch = async () => {
+    apiCalls++
+    return reply({ meetings: [] })
+  }
+  deps.tokens.save({
+    accessToken: "example",
+    refreshToken: "example",
+    expiresAt: 3600000,
+    scopes: ["meeting:read:list_meetings"],
+  })
+  await program.parseAsync(["config", "set", "source", "files"], { from: "user" })
+  await program.parseAsync(["config", "set", "files.folder", "example-folder"], { from: "user" })
+  await program.parseAsync(["pull", "--since", "2026-10-01"], { from: "user" })
+  expect(apiCalls).toBe(0)
+  await program.parseAsync(["config", "set", "source", "api"], { from: "user" })
+  await program.parseAsync(["pull", "--since", "2026-10-01"], { from: "user" })
+  expect(apiCalls).toBe(1)
+})
+
+it("rejects concurrent direct parses without disturbing the running connection", async () => {
+  const { createProgram } = await import("./program.js")
+  const { deps } = await setup()
+  setConfig(deps.configPath, "account.profile", "example")
+  let release: () => void = () => {}
+  const wait = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  let opened: () => void = () => {}
+  const connected = new Promise<void>((resolve) => {
+    opened = resolve
+  })
+  let closes = 0
+  deps.connectStore = async () => {
+    opened()
+    await wait
+    return {
+      store: memoryMeetingStore(),
+      accountId: 1,
+      close: async () => {
+        closes++
+      },
+    }
+  }
+  const program = createProgram(deps)
+  const first = program.parseAsync(["meetings", "list"], { from: "user" })
+  await connected
+  await expect(program.parseAsync(["meetings", "list"], { from: "user" })).rejects.toThrow(/concurrent/)
+  expect(closes).toBe(0)
+  release()
+  await first
+  expect(closes).toBe(1)
+})
