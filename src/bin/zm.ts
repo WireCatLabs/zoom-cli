@@ -22,6 +22,9 @@ try {
     configPath,
     tokens,
     fetch,
+    interactive: Boolean(process.stdin.isTTY),
+    outputIsTTY: Boolean(process.stdout.isTTY),
+    env: process.env,
     data: (text) => process.stdout.write(text),
     diagnostic: (text) => process.stderr.write(text),
     openBrowser: (url, browser = "xdg-open") =>

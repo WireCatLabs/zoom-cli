@@ -1,15 +1,15 @@
-export class ZoomError extends Error {
-  constructor(
-    readonly code:
-      | "configuration_error"
-      | "authentication_error"
-      | "validation_error"
-      | "provider_error"
-      | "invalid_response",
-    message: string,
-  ) {
-    super(message)
+import { CliError, type ErrorCode } from "@wirecat/cli-core"
+
+export class ZoomError extends CliError {
+  constructor(code: ErrorCode, message: string) {
+    super(code, message)
   }
+}
+export const checkCancelled = (signal?: AbortSignal): void => {
+  if (!signal?.aborted) return
+  if (signal.reason instanceof CliError) throw signal.reason
+  const timedOut = signal.reason instanceof Error && signal.reason.name === "TimeoutError"
+  throw new ZoomError(timedOut ? "timeout" : "cancelled", timedOut ? "command timed out" : "command cancelled")
 }
 export const object = (value: unknown): Record<string, unknown> => {
   if (typeof value !== "object" || value === null || Array.isArray(value))

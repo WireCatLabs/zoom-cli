@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Added
+
+- **Command discovery and local diagnostics** expose command metadata/examples, shell completion,
+  local runtime/config checks and saved OAuth session status without opening the meeting database.
+  Session status distinguishes OAuth login from the selected local data profile.
+
+### Changed — may break callers
+
+- **Shared CLI output and errors** use cli-core rendering and exit codes. Piped output is JSON;
+  terminal output uses human-readable rendering. `--quiet` suppresses non-error diagnostics.
+- **Unattended login fails promptly.** CI and terminals without interactive input cannot launch a browser;
+  Piped or JSON login with an input terminal requires `--interactive`.
+
 ### Security
 
 - Fast secret checks remain on PRs; source, production dependency and workflow security checks run before publication. Automatic Socket checks are disabled.
