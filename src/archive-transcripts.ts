@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto"
 import { constants } from "node:fs"
-import { open } from "node:fs/promises"
+import { open, realpath } from "node:fs/promises"
 import { join } from "node:path"
 import { parseVtt, type TranscriptLine } from "@wirecat/cli-meetings"
 import { checkCancelled, ZoomError } from "./errors.js"
@@ -26,6 +26,12 @@ export interface ArchiveTranscriptMatch extends TranscriptLine {
   /** Zero-based cue position in this asset, retaining the shared parser's file order. */
   position: number
 }
+export interface ArchiveTranscriptSearchReport {
+  items: ArchiveTranscriptMatch[]
+  page: 1
+  limit: number
+  hasMore: boolean
+}
 const validate = (destination: string, options: ArchiveTranscriptOptions): number => {
   const maxBytes = options.maxBytes === undefined ? 8 * 1024 ** 2 : options.maxBytes
   if (typeof destination !== "string" || !destination.trim() || !Number.isSafeInteger(maxBytes) || maxBytes <= 0)
@@ -50,7 +56,10 @@ const readTranscript = async (
   checkCancelled(signal)
   if (asset.size > maxBytes) throw new ZoomError("validation_error", "archive transcript exceeds the byte limit")
   try {
-    const file = await open(join(destination, asset.path), constants.O_RDONLY | constants.O_NOFOLLOW)
+    const file = await open(
+      join(destination, asset.path),
+      constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
+    )
     try {
       checkCancelled(signal)
       const stat = await file.stat()
@@ -106,7 +115,14 @@ export async function* readArchiveTranscripts(
 ): AsyncGenerator<ArchiveTranscript, void, void> {
   const maxBytes = validate(destination, options)
   checkCancelled(options.signal)
-  const manifests = await inspectArchive(destination, { signal: options.signal })
+  let root: string
+  try {
+    root = await realpath(destination)
+  } catch {
+    checkCancelled(options.signal)
+    throw new ZoomError("configuration_error", "archive destination could not be read")
+  }
+  const manifests = await inspectArchive(root, { signal: options.signal })
   const selected =
     options.uuid === undefined ? manifests : manifests.filter((item) => item.meeting.uuid === options.uuid)
   if (options.uuid !== undefined && selected.length === 0)
@@ -119,7 +135,7 @@ export async function* readArchiveTranscripts(
   for (const { manifest, asset } of transcripts) {
     checkCancelled(options.signal)
     if (options.fileIds && !options.fileIds.includes(asset.id)) continue
-    const cues = await readTranscript(destination, asset, maxBytes, options.signal)
+    const cues = await readTranscript(root, asset, maxBytes, options.signal)
     checkCancelled(options.signal)
     yield { meeting: manifest.meeting, asset, cues }
   }
@@ -130,7 +146,7 @@ export const searchArchiveTranscripts = async (
   destination: string,
   query: string,
   options: ArchiveTranscriptSearchOptions = {},
-): Promise<ArchiveTranscriptMatch[]> => {
+): Promise<ArchiveTranscriptSearchReport> => {
   const limit = options.limit === undefined ? 100 : options.limit
   if (typeof query !== "string" || !query.trim() || !Number.isSafeInteger(limit) || limit < 1 || limit > 1000)
     throw new ZoomError(
@@ -143,8 +159,8 @@ export const searchArchiveTranscripts = async (
     for (const [position, cue] of transcript.cues.entries()) {
       checkCancelled(options.signal)
       if (!cue.text.normalize("NFC").toLowerCase().includes(needle)) continue
+      if (matches.length === limit) return { items: matches, page: 1, limit, hasMore: true }
       matches.push({ meeting: transcript.meeting, asset: transcript.asset, position, ...cue })
-      if (matches.length === limit) return matches
     }
-  return matches
+  return { items: matches, page: 1, limit, hasMore: false }
 }

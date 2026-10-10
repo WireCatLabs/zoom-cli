@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import { appendFile, copyFile, mkdir, mkdtemp, rename, symlink, unlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
@@ -14,15 +15,18 @@ const handles = vi.hoisted(() => ({
   afterOpen: undefined as (() => Promise<void> | void) | undefined,
   afterStat: undefined as (() => Promise<void>) | undefined,
   afterRead: undefined as (() => void) | undefined,
+  afterList: undefined as (() => Promise<void>) | undefined,
   failure: false,
 }))
 vi.mock("node:fs/promises", async (original) => {
   const fs = await original<typeof import("node:fs/promises")>()
   return {
     ...fs,
-    readdir: (...args: Parameters<typeof fs.readdir>) => {
+    readdir: async (...args: Parameters<typeof fs.readdir>) => {
       handles.lists++
-      return fs.readdir(...args)
+      const names = await fs.readdir(...args)
+      await handles.afterList?.()
+      return names
     },
     open: async (...args: Parameters<typeof fs.open>) => {
       if (args[0] !== handles.path) return fs.open(...args)
@@ -100,6 +104,7 @@ const track = (path: string) => {
   handles.afterOpen = undefined
   handles.afterStat = undefined
   handles.afterRead = undefined
+  handles.afterList = undefined
   handles.failure = false
 }
 afterEach(() => track(""))
@@ -125,12 +130,18 @@ it("yields verified cues with provenance only after closing the same read handle
 
 it("searches NFC-normalized lowercase literal text with bounded cue positions", async () => {
   const { root, uuid, id } = await fixture()
-  expect(await searchArchiveTranscripts(root, "CAFE\u0301 [PLAN]", { limit: 1 })).toMatchObject([
+  expect((await searchArchiveTranscripts(root, "CAFE\u0301 [PLAN]", { limit: 1 })).items).toMatchObject([
     { meeting: { uuid }, asset: { id }, position: 0, startMs: 0, endMs: 2000, text: "Café [Plan]" },
   ])
-  expect((await searchArchiveTranscripts(root, "plan")).map((hit) => hit.position)).toEqual([0, 1])
-  expect(await searchArchiveTranscripts(root, "Example Speaker")).toEqual([])
-  expect(await searchArchiveTranscripts(root, ".*")).toEqual([])
+  expect((await searchArchiveTranscripts(root, "plan")).items.map((hit) => hit.position)).toEqual([0, 1])
+  expect((await searchArchiveTranscripts(root, "Example Speaker")).items).toEqual([])
+  expect((await searchArchiveTranscripts(root, ".*")).items).toEqual([])
+  expect(await searchArchiveTranscripts(root, "plan", { limit: 1 })).toMatchObject({ page: 1, limit: 1, hasMore: true })
+  expect(await searchArchiveTranscripts(root, "plan", { limit: 2 })).toMatchObject({
+    page: 1,
+    limit: 2,
+    hasMore: false,
+  })
 })
 
 it("validates selectors, limits and queries before filesystem discovery", async () => {
@@ -236,7 +247,7 @@ it("reads serially with consumer backpressure and skips unselected VTT assets", 
   track(path)
   expect((await collect(root, { fileIds: [secondId] })).map((item) => item.asset.id)).toEqual([secondId])
   expect(handles.opened).toBe(0)
-  expect((await searchArchiveTranscripts(root, "plan", { limit: 1 })).map((hit) => hit.asset.id)).toEqual([
+  expect((await searchArchiveTranscripts(root, "plan", { limit: 1 })).items.map((hit) => hit.asset.id)).toEqual([
     "example-asset",
   ])
   const abort = new AbortController()
@@ -244,6 +255,9 @@ it("reads serially with consumer backpressure and skips unselected VTT assets", 
   await cancelledReader.next()
   abort.abort()
   await expect(cancelledReader.next()).rejects.toMatchObject({ code: "cancelled" })
+  await writeFile(join(root, secondName), vtt.replace("Café", "Cafè"))
+  expect((await searchArchiveTranscripts(root, "plan", { limit: 1 })).hasMore).toBe(true)
+  await expect(searchArchiveTranscripts(root, "plan", { limit: 2 })).rejects.toThrow(/checksum/)
 })
 
 it("checks cancellation after open and read, closing owned handles without streams", async () => {
@@ -280,4 +294,29 @@ it("sanitizes unexpected local read failures", async () => {
   track(path)
   handles.failure = true
   await expect(collect(root)).rejects.toThrow("archive transcript could not be read")
+  await expect(collect(join(root, "example-missing"))).rejects.toThrow("archive destination could not be read")
 })
+
+it("keeps one canonical archive root when a destination alias changes after discovery", async () => {
+  const { root } = await fixture()
+  const other = await fixture(vtt.replace("Café", "Other"))
+  const alias = `${root}-example-alias`
+  await symlink(root, alias)
+  handles.afterList = async () => {
+    handles.afterList = undefined
+    await unlink(alias)
+    await symlink(other.root, alias)
+  }
+  expect((await collect(alias))[0]?.cues[0]?.text).toBe("Café [Plan]")
+})
+
+it.skipIf(process.platform === "win32")(
+  "rejects a FIFO without waiting for a writer",
+  async () => {
+    const { root, path } = await fixture()
+    await unlink(path)
+    execFileSync("mkfifo", [path])
+    await expect(collect(root)).rejects.toThrow(/ordinary file/)
+  },
+  1000,
+)
