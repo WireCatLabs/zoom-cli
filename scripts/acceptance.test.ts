@@ -1,8 +1,10 @@
-import { execFileSync, spawnSync } from "node:child_process"
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
+import { execFileSync, spawn, spawnSync } from "node:child_process"
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { Client } from "@modelcontextprotocol/sdk/client/index.js"
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { beforeAll, describe, expect, it } from "vitest"
 import { VERSION } from "../src/version.js"
 
@@ -13,25 +15,53 @@ let guard: string
 let marker: string
 let executable: string
 
+const environment = () => ({
+  PATH: process.env.PATH,
+  HOME: install,
+  USERPROFILE: install,
+  ZM_CONFIG_DIR: config,
+  ZM_STATE_DIR: join(install, "state"),
+  ZM_CACHE_DIR: join(install, "cache"),
+  MESSAGING_STORE: join(install, "unused.db"),
+  ZM_ACCEPTANCE_GUARD_MARKER: marker,
+  NODE_OPTIONS: `--no-addons --require ${JSON.stringify(guard)}`,
+})
+const npmEnvironment = () => ({
+  PATH: process.env.PATH,
+  HOME: install,
+  USERPROFILE: install,
+  npm_config_userconfig: join(install, "npmrc"),
+  npm_config_globalconfig: join(install, "npm-globalrc"),
+  npm_config_registry: "https://registry.npmjs.org/",
+})
+const diagnostics = (text: string): string =>
+  text.replace(
+    /\(node:\d+\) ExperimentalWarning: SQLite is an experimental feature and might change at any time\r?\n(?:\(Use `node --trace-warnings \.\.\.` to show where the warning was created\)\r?\n)?/g,
+    "",
+  )
 const invoke = (...args: string[]) => {
+  const database = join(install, "unused.db")
+  const existedBefore = existsSync(database)
+  const timestampBefore = existedBefore ? statSync(database).mtimeMs : null
+  const command = args.find(
+    (arg, index) =>
+      !arg.startsWith("--") && !["--fields", "--timeout", "--max-output-bytes"].includes(args[index - 1] ?? ""),
+  )
+  const opensStore =
+    !args.includes("--help") && ["meetings", "events", "import", "pull", "watch"].includes(command ?? "")
   const result = spawnSync(executable, args, {
     cwd: install,
     encoding: "utf8",
     timeout: 10000,
-    env: {
-      PATH: process.env.PATH,
-      ZM_CONFIG_DIR: config,
-      ZM_STATE_DIR: join(install, "state"),
-      ZM_CACHE_DIR: join(install, "cache"),
-      MESSAGING_STORE: join(install, "unused.db"),
-      ZM_ACCEPTANCE_GUARD_MARKER: marker,
-      NODE_OPTIONS: `--no-addons --require ${JSON.stringify(guard)}`,
-    },
+    env: environment(),
   })
   expect(result.error).toBeUndefined()
   expect(existsSync(marker), "unexpected network, browser or keyring access").toBe(false)
-  expect(existsSync(join(install, "unused.db"))).toBe(false)
-  return result
+  if (!opensStore) {
+    expect(existsSync(database)).toBe(existedBefore)
+    if (existedBefore) expect(statSync(database).mtimeMs).toBe(timestampBefore)
+  }
+  return { ...result, stderr: diagnostics(result.stderr) }
 }
 
 beforeAll(() => {
@@ -67,12 +97,13 @@ child.spawn = child.exec = child.execFile = child.spawnSync = child.execSync = c
 require('node:module').syncBuiltinESMExports();
 `,
   )
-  execFileSync("pnpm", ["build"], { cwd: root, stdio: "pipe", timeout: 30000 })
+  execFileSync("pnpm", ["build"], { cwd: root, stdio: "pipe", timeout: 30000, env: npmEnvironment() })
   const packed = JSON.parse(
     execFileSync("npm", ["pack", "--ignore-scripts", "--json", "--pack-destination", install], {
       cwd: root,
       encoding: "utf8",
       timeout: 30000,
+      env: npmEnvironment(),
     }),
   ) as { filename: string }[]
   const filename = packed[0]?.filename
@@ -84,12 +115,7 @@ require('node:module').syncBuiltinESMExports();
       cwd: install,
       stdio: "pipe",
       timeout: 90000,
-      env: {
-        PATH: process.env.PATH,
-        npm_config_userconfig: join(install, "npmrc"),
-        npm_config_globalconfig: join(install, "npm-globalrc"),
-        npm_config_registry: "https://registry.npmjs.org/",
-      },
+      env: npmEnvironment(),
     },
   )
   executable = join(install, "node_modules", ".bin", "zm")
@@ -123,11 +149,7 @@ describe("installed package", () => {
         cwd: install,
         encoding: "utf8",
         timeout: 10000,
-        env: {
-          PATH: process.env.PATH,
-          NODE_OPTIONS: `--no-addons --require ${JSON.stringify(guard)}`,
-          ZM_ACCEPTANCE_GUARD_MARKER: marker,
-        },
+        env: environment(),
       },
     )
     expect(exports.status, exports.stderr).toBe(0)
@@ -145,6 +167,40 @@ describe("installed package", () => {
     const disk = JSON.parse(readFileSync(join(config, "config.json"), "utf8"))
     expect(Object.keys(disk).sort()).toEqual(["accountProfile", "clientId", "filesFolder", "filesTimezone", "source"])
   })
+
+  it("discovers the installed MCP tools without a profile or database and exits on EOF", async () => {
+    const isolated = join(install, "mcp-config")
+    const child = spawn(executable, ["serve", "--mcp"], {
+      cwd: install,
+      env: { ...environment(), ZM_CONFIG_DIR: isolated, MESSAGING_STORE: join(install, "mcp-unused.db") },
+      stdio: ["pipe", "pipe", "pipe"],
+    })
+    let errors = ""
+    child.stderr.on("data", (chunk) => {
+      errors += String(chunk)
+    })
+    const exited = new Promise<number | null>((resolve, reject) => {
+      child.once("error", reject)
+      child.once("close", resolve)
+    })
+    const client = new Client({ name: "invented-install-check", version: "1" })
+    try {
+      await client.connect(new StdioServerTransport(child.stdout, child.stdin))
+      const listed = await client.listTools()
+      expect(listed.tools).toHaveLength(7)
+      expect(listed.tools.every((tool) => tool.annotations?.readOnlyHint === true)).toBe(true)
+      expect(existsSync(isolated)).toBe(false)
+      expect(existsSync(join(install, "mcp-unused.db"))).toBe(false)
+      child.stdin.end()
+      expect(await exited).toBe(0)
+      expect(errors).toBe("")
+      expect(existsSync(marker)).toBe(false)
+    } finally {
+      await client.close()
+      if (child.exitCode === null && child.signalCode === null) child.kill("SIGTERM")
+      await exited
+    }
+  }, 15000)
 
   it("selects a local profile and rejects invalid labels", () => {
     const selected = invoke("--json", "config", "set", "account.profile", "personal")
@@ -166,7 +222,7 @@ describe("installed package", () => {
     expect(JSON.parse(result.stderr).error.code).toBe("configuration_error")
   })
 
-  it("classifies invalid commands and refuses unavailable persistence", () => {
+  it("classifies invalid commands and rejects a profile without stored data", () => {
     const invalid = invoke("does-not-exist")
     expect(invalid.status).toBe(2)
     expect(invalid.stdout).toBe("")
@@ -176,6 +232,130 @@ describe("installed package", () => {
     expect(store.stdout).toBe("")
     expect(JSON.parse(store.stderr).error.code).toBe("configuration_error")
   })
+
+  it("persists imports across processes and searches only the current correction", () => {
+    const files = join(install, "transcripts")
+    mkdirSync(files)
+    const transcript = join(files, "2026-10-10_1530_example.vtt")
+    const original = "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nAlice Example: Original example\n"
+    writeFileSync(transcript, original)
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const imported = invoke("--json", "import", files)
+      expect(imported.status, imported.stderr).toBe(0)
+      expect(imported.stderr).toBe("")
+    }
+    const listed = invoke("--json", "meetings", "list")
+    expect(listed.status, listed.stderr).toBe(0)
+    const meetings = JSON.parse(listed.stdout).items
+    expect(meetings).toHaveLength(1)
+    const id = String(meetings[0].id)
+    expect(JSON.parse(invoke("--json", "meetings", "show", id).stdout).transcripts).toHaveLength(1)
+
+    writeFileSync(transcript, original.replace("Original", "Corrected"))
+    const corrected = invoke("--json", "import", files)
+    expect(corrected.status, corrected.stderr).toBe(0)
+    expect(JSON.parse(invoke("--json", "meetings", "show", id).stdout).transcripts).toHaveLength(2)
+    expect(JSON.parse(invoke("--json", "meetings", "search", "Corrected").stdout).items).toHaveLength(1)
+    expect(JSON.parse(invoke("--json", "meetings", "search", "Original").stdout).items).toHaveLength(0)
+    expect(JSON.parse(invoke("--json", "events", "list").stdout).items).toHaveLength(1)
+    expect(JSON.parse(invoke("--json", "meetings", "transcript", id, "--history").stdout).items).toHaveLength(2)
+    expect(JSON.parse(invoke("--json", "meetings", "summary", id).stdout).items).toHaveLength(0)
+    const exported = invoke("--json", "meetings", "export", id, "--format", "vtt")
+    expect(exported.status, exported.stderr).toBe(0)
+    const content = JSON.parse(exported.stdout).content
+    expect(content).toContain("Corrected example")
+    expect(content).not.toContain("Original example")
+    const destination = join(install, "exported.vtt")
+    const written = invoke("--json", "meetings", "export", id, "--format", "vtt", "--output", destination)
+    expect(written.status, written.stderr).toBe(0)
+    expect(readFileSync(destination, "utf8")).toBe(content)
+    const overwrite = invoke("--json", "meetings", "export", id, "--format", "vtt", "--output", destination)
+    expect(overwrite.status).toBe(2)
+    expect(overwrite.stdout).toBe("")
+    expect(readFileSync(destination, "utf8")).toBe(content)
+
+    const selected = invoke("config", "set", "account.profile", "absent-example")
+    expect(selected.status, selected.stderr).toBe(0)
+    const absent = invoke("--json", "meetings", "list")
+    expect(absent.status).toBe(3)
+    expect(absent.stdout).toBe("")
+    expect(JSON.parse(absent.stderr).error.code).toBe("configuration_error")
+    const accounts = spawnSync(
+      process.execPath,
+      [
+        "--input-type=module",
+        "-e",
+        `
+      const { openStore } = await import('@wirecat/cli-messaging/store');
+      const store = await openStore();
+      try { console.log(JSON.stringify(await store.storedAccounts())); }
+      finally { await store.close(); }
+    `,
+      ],
+      {
+        cwd: install,
+        encoding: "utf8",
+        timeout: 10000,
+        env: environment(),
+      },
+    )
+    expect(accounts.status, accounts.stderr).toBe(0)
+    expect(JSON.parse(accounts.stdout)).toEqual([
+      expect.objectContaining({ provider: "zoom", account: "zm-profile:personal" }),
+    ])
+    expect(existsSync(marker)).toBe(false)
+    expect(invoke("config", "set", "account.profile", "personal").status).toBe(0)
+  })
+
+  it("stops an installed folder watch after its receipt and leaves persistent data readable", async () => {
+    const folder = join(install, "watch-transcripts")
+    mkdirSync(folder)
+    writeFileSync(
+      join(folder, "2026-10-11_1530_watch-example.vtt"),
+      "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nAlice Example: Watched example\n",
+    )
+    const child = spawn(executable, ["watch", folder, "--interval", "10s", "--jsonl"], {
+      cwd: install,
+      env: environment(),
+      stdio: ["pipe", "pipe", "pipe"],
+    })
+    let output = ""
+    let errors = ""
+    let stopped = false
+    child.stdout.on("data", (chunk) => {
+      output += String(chunk)
+      if (!stopped && output.includes("\n")) {
+        stopped = true
+        child.kill("SIGINT")
+      }
+    })
+    child.stderr.on("data", (chunk) => {
+      errors += String(chunk)
+    })
+    const exited = new Promise<number | null>((resolve, reject) => {
+      child.once("error", reject)
+      child.once("close", resolve)
+    })
+    const deadline = setTimeout(() => child.kill("SIGTERM"), 10000)
+    try {
+      expect(await exited, errors).toBe(130)
+      const receipts = output
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line))
+      expect(receipts).toHaveLength(1)
+      expect(receipts[0].meetings).toBe(1)
+      expect(JSON.parse(diagnostics(errors)).error.code).toBe("cancelled")
+      const reopened = invoke("--json", "meetings", "search", "Watched")
+      expect(reopened.status, reopened.stderr).toBe(0)
+      expect(JSON.parse(reopened.stdout).items).toHaveLength(1)
+      expect(existsSync(marker)).toBe(false)
+    } finally {
+      clearTimeout(deadline)
+      if (child.exitCode === null && child.signalCode === null) child.kill("SIGTERM")
+      await exited
+    }
+  }, 15000)
 
   it("keeps malformed public config from blocking help and version", () => {
     mkdirSync(config, { recursive: true })

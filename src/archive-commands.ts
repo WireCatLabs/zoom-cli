@@ -4,6 +4,7 @@ import type { Command } from "commander"
 import { ZoomError } from "./errors.js"
 import { bytes } from "./execution.js"
 import type { inspectArchive, inspectArchiveLocks, recoverArchiveLocks, verifyArchive } from "./recording-archive.js"
+import { syncRecordingArchive } from "./recording-sync.js"
 import type { ZoomRecordings } from "./recordings.js"
 import type { MeetingChange, MutationOptions, ZoomRemoteMeetings } from "./remote-meetings.js"
 
@@ -25,6 +26,8 @@ export interface ArchiveCommandsDeps {
   signal: () => AbortSignal | undefined
   api: () => void
   output: (value: unknown) => void
+  receipt: (value: unknown) => Promise<void>
+  outputIsTTY?: boolean
   now: () => number
 }
 const label = (command: Command, example: string, mutation: "none" | "local" | "remote" = "none") =>
@@ -77,6 +80,25 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         deps.output(listed(await deps.recordings().list({ from, to, signal: deps.signal() })))
       }),
     "zm recordings list --from 2026-10-01 --to 2026-10-10 --json",
+  )
+  label(
+    recordings
+      .command("sync")
+      .description("serial monthly recording archive synchronization with completed JSONL receipts")
+      .requiredOption("--from <date>", "first YYYY-MM-DD date")
+      .requiredOption("--to <date>", "last YYYY-MM-DD date (at most ten years)")
+      .requiredOption("--destination <directory>", "explicit archive directory")
+      .option("--max-bytes <bytes>", "maximum bytes per recording file", positive)
+      .action(async (options: { from: string; to: string; destination: string; maxBytes?: number }) => {
+        if (!program.opts().jsonl && !deps.outputIsTTY)
+          throw new ZoomError("validation_error", "headless recording sync requires --jsonl")
+        if (program.opts().json) throw new ZoomError("validation_error", "recording sync streams receipts; use --jsonl")
+        deps.api()
+        for await (const receipt of syncRecordingArchive(deps.recordings(), { ...options, signal: deps.signal() }))
+          await deps.receipt(receipt)
+      }),
+    "zm recordings sync --from 2026-01-01 --to 2026-10-10 --destination ./archive --jsonl",
+    "local",
   )
   label(
     recordings

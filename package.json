@@ -5,7 +5,7 @@
   "license": "Apache-2.0",
   "type": "module",
   "engines": {
-    "node": ">=22.12.0"
+    "node": "^22.16.0 || >=24"
   },
   "packageManager": "pnpm@11.20.0",
   "repository": {
@@ -46,7 +46,8 @@
     "@modelcontextprotocol/sdk": "1.32.1",
     "@wirecat/cli-core": "0.19.3",
     "@wirecat/cli-meetings": "0.2.4",
-    "commander": "15.0.0"
+    "commander": "15.0.0",
+    "@wirecat/cli-messaging": "0.218.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

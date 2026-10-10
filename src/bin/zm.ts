@@ -3,9 +3,12 @@ import { spawn } from "node:child_process"
 import { join } from "node:path"
 import { createInterface } from "node:readline/promises"
 import { CliError, resolvePaths, systemKeyring } from "@wirecat/cli-core"
-import { readConfig } from "../config.js"
+import { profileAccountKey, readConfig } from "../config.js"
+import { ZoomError } from "../errors.js"
 import { writeExportFile } from "../output-file.js"
 import { run } from "../program.js"
+import { createStoreConnector } from "../store-connection.js"
+import { writeStream } from "../streaming.js"
 import { TokenManager } from "../tokens.js"
 
 const paths = resolvePaths({ appName: "zm", env: process.env })
@@ -27,6 +30,7 @@ process.once("SIGINT", cancel)
 process.once("SIGTERM", cancel)
 process.stdout.on("error", onPipeError)
 try {
+  const connectStore = createStoreConnector({ env: process.env })
   const tokens = new TokenManager({
     get clientId() {
       return readConfig(configPath).clientId ?? ""
@@ -38,12 +42,29 @@ try {
   process.exitCode = await run(process.argv.slice(2), {
     configPath,
     tokens,
+    connectStore,
+    serveMcp: async (options) => {
+      const { serveMeetingMcp } = await import("../mcp-server.js")
+      await serveMeetingMcp({
+        ...options,
+        connectStore: async () => {
+          const profile = readConfig(configPath).accountProfile
+          if (!profile)
+            throw new ZoomError(
+              "configuration_error",
+              "select a local profile with zm config set account.profile <label>",
+            )
+          return connectStore({ profile, externalId: profileAccountKey(profile), intent: "read" })
+        },
+      })
+    },
     fetch,
     interactive: Boolean(process.stdin.isTTY),
     outputIsTTY: Boolean(process.stdout.isTTY),
     env: process.env,
     signal: cancellation.signal,
     writeFile: writeExportFile,
+    streamData: (text, signal) => writeStream(process.stdout, text, signal),
     data: (text) => process.stdout.write(text),
     diagnostic: (text) => {
       if (!brokenPipe) process.stderr.write(text)
