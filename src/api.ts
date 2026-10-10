@@ -337,9 +337,11 @@ export class ZoomApiSource implements MeetingSource {
     const details = Array.isArray(body.summary_details) ? body.summary_details.map(object) : []
     const steps = edited?.next_steps ?? body.next_steps
     const content = typeof body.summary_content === "string" ? body.summary_content : null
+    const editedDetails = typeof edited?.summary_details === "string" ? edited.summary_details : null
+    const editedOverview = typeof edited?.summary_overview === "string" ? edited.summary_overview : null
     return {
       source: "zoom-ai",
-      content: content ?? string(edited?.summary_details),
+      content: content ?? editedDetails,
       docUrl: string(body.summary_doc_url),
       externalCreatedAt: time(body.summary_created_time),
       externalUpdatedAt: time(body.summary_last_modified_time),
@@ -355,9 +357,9 @@ export class ZoomApiSource implements MeetingSource {
         "summary_last_modified_time",
       ]),
       title: string(body.summary_title),
-      overview: string(edited?.summary_overview) ?? string(body.summary_overview),
+      overview: editedOverview ?? string(body.summary_overview),
       sections:
-        content !== null
+        content !== null || editedDetails !== null
           ? []
           : details.map((part) => ({ label: string(part.label) ?? "", text: string(part.summary) ?? "" })),
       nextSteps:

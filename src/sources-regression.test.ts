@@ -221,3 +221,22 @@ it("deduplicates recurring occurrence UUIDs and includes the exact since boundar
     ).meetings("2026-10-01"),
   ).rejects.toThrow(/occurrences/)
 })
+
+it("uses edited legacy detail text without restoring the original sections or overview", async () => {
+  const source = new ZoomApiSource(tokens(), async () =>
+    response({
+      edited_summary: {
+        summary_details: "Edited example",
+        summary_overview: "",
+        next_steps: ["Edited example next step"],
+      },
+      summary_overview: "Obsolete example overview",
+      summary_details: [{ label: "Obsolete", summary: "Obsolete example details" }],
+    }),
+  )
+  const summary = await source.summary("example")
+  expect(summary?.content).toBe("Edited example")
+  expect(summary?.overview).toBe("")
+  expect(summary?.sections).toEqual([])
+  expect(summary?.nextSteps).toEqual(["Edited example next step"])
+})
