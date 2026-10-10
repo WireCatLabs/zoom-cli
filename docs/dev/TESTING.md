@@ -9,3 +9,9 @@ Integration cases exercise command import and transcript search, grouped partici
 API occurrence ids, missing scopes, corrected/idempotent imports, time zones and daylight-saving
 ambiguity. Temporary config and transcript fixtures live under `/tmp/zm-test-*`; they contain only
 invented values and are retained until cleanup is approved.
+
+The acceptance suite packs and installs the actual package in a fresh `zm-test-package-*` directory
+and runs its installed bin. It overrides config/state/cache/store paths and installs a process guard
+that rejects fetch, HTTP, browser spawning and keyring-module loading. npm installation uses an
+empty test user config. Package installation needs registry access; the CLI checks themselves do
+not contact Zoom. The suite also checks imports, bin permissions and package-version agreement.

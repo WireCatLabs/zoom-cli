@@ -1,0 +1,38 @@
+#!/usr/bin/env sh
+set -eu
+
+cd "$(dirname "$0")/.."
+[ "$#" -eq 0 ] || { echo "usage: bin/release" >&2; exit 2; }
+git fetch -q origin
+[ "$(git branch --show-current)" = main ] || { echo "run from main" >&2; exit 1; }
+[ -z "$(git status --porcelain --untracked-files=no)" ] || { echo "uncommitted changes" >&2; exit 1; }
+[ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || { echo "update main to origin/main first" >&2; exit 1; }
+version=$(node -p 'require("./package.json").version')
+top=$(sed -n '/^## /{p;q;}' CHANGELOG.md)
+case "$top" in
+  "## $version — "*) ;;
+  *) echo "date the top changelog section for $version before releasing" >&2; exit 1 ;;
+esac
+if npm view "@wirecat/zoom-cli@$version" version --prefer-online >/dev/null 2>&1; then
+  echo "$version is already published; prepare a new version in a pull request" >&2
+  exit 1
+fi
+last_run() {
+  gh run list --workflow release.yml --branch main --event workflow_dispatch --limit 1 \
+    --json databaseId --jq '.[0].databaseId // ""'
+}
+previous=$(last_run)
+gh workflow run release.yml --ref main
+run=""
+for _ in $(seq 30); do
+  run=$(last_run)
+  [ -n "$run" ] && [ "$run" != "$previous" ] && break
+  run=""
+  sleep 2
+done
+[ -n "$run" ] || { echo "release dispatch not found; check GitHub Actions" >&2; exit 1; }
+gh run watch "$run" --exit-status
+npm view "@wirecat/zoom-cli@$version" version --prefer-online
+git fetch -q --tags origin
+git rev-parse --verify "refs/tags/v$version" >/dev/null
+echo "published @wirecat/zoom-cli@$version"

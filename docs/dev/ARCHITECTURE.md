@@ -30,3 +30,13 @@ transcript scope is a clear error naming the required scope.
 The default executable refuses store commands before making remote requests. Tests inject
 `MeetingStore` and its account id. The SQLite implementation and account selection must be connected
 from cli-messaging when its meeting adapter ships; memory storage is never a production fallback.
+
+Transcript downloads validate each redirect destination before sending bearer credentials and
+share a bounded timeout across the download. Stable participant sessions are deduplicated; guests
+without stable identity keys stay separate. Files with equal normalized occurrence keys must have
+identical contents. Source discovery errors are explicit, so a partial discovery cannot silently
+advance the shared cursor.
+
+The CLI reads its version from the packaged metadata. Config and source loading are lazy so help
+and version remain available even with corrupt config, without opening a database or keyring.
+Installed-package acceptance tests exercise these boundaries through the actual npm bin.

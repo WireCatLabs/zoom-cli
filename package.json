@@ -39,7 +39,7 @@
   },
   "dependencies": {
     "@wirecat/cli-core": "0.18.1",
-    "@wirecat/cli-meetings": "0.2.0",
+    "@wirecat/cli-meetings": "0.2.1",
     "commander": "15.0.0"
   },
   "devDependencies": {
