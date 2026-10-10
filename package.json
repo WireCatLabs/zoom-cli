@@ -5,7 +5,7 @@
   "license": "Apache-2.0",
   "type": "module",
   "engines": {
-    "node": ">=22.12.0"
+    "node": "^22.16.0 || >=24"
   },
   "packageManager": "pnpm@11.20.0",
   "repository": {
@@ -38,7 +38,7 @@
     "docs:check": "node node_modules/@wirecat/cli-core/dist/dev/bin.js docs-check --rules scripts/docs-rules.ts && cspell --no-progress --no-summary README.md && node node_modules/rumdl/bin/rumdl check --config node_modules/@wirecat/cli-core/config/rumdl.toml README.md CHANGELOG.md CLAUDE.md docs/dev/*.md"
   },
   "dependencies": {
-    "@wirecat/cli-core": "0.18.1",
+    "@wirecat/cli-core": "0.19.0",
     "@wirecat/cli-meetings": "0.2.3",
     "commander": "15.0.0"
   },

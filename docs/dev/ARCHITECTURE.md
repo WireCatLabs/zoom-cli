@@ -27,9 +27,9 @@ API summaries accept both the unified Markdown field and the captured legacy sec
 file pointers return null until a supported Zoom endpoint is connected. Missing participant or
 transcript scope is a clear error naming the required scope.
 
-The default executable refuses store commands before making remote requests. Tests inject
-`MeetingStore` and its account id. The SQLite implementation and account selection must be connected
-from cli-messaging when its meeting adapter ships; memory storage is never a production fallback.
+The executable supplies a lazy connector to cli-messaging's public store API. Tests also inject
+`MeetingStore` and its account id. cli-messaging owns SQLite and account registration; memory
+storage is never a production fallback. Store setup completes before source requests begin.
 
 Transcript downloads validate each redirect destination before sending bearer credentials and
 share a bounded timeout across the download. Stable participant sessions are deduplicated; guests
@@ -49,5 +49,7 @@ register one. Connector failures must release any resource they opened before re
 
 Profile labels map to `zm-profile:<label>` in the Zoom provider namespace. They group local data,
 not remote OAuth users. File and API sources share the selected account and its cursor; import
-does not advance it. The standalone bin has no production connector until the compatible shared
-store and account lookup APIs are released. No guessed numeric id or memory fallback is used.
+does not advance it. Ingestion registers the selected account; read commands look it up without
+creating it. A missing account produces an actionable configuration error. Numeric ids come from
+the shared store and must be positive safe integers. The native binding requires a compatible
+cli-messaging registry release before this branch can ship.

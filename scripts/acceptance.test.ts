@@ -185,6 +185,69 @@ describe("installed package", () => {
     expect(JSON.parse(store.stderr).error.code).toBe("configuration_error")
   })
 
+  it("persists imports across processes and searches only the current correction", () => {
+    const files = join(install, "transcripts")
+    mkdirSync(files)
+    const transcript = join(files, "2026-10-10_1530_example.vtt")
+    const original = "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nAlice Example: Original example\n"
+    writeFileSync(transcript, original)
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const imported = invoke("--json", "import", files)
+      expect(imported.status, imported.stderr).toBe(0)
+      expect(imported.stderr).toBe("")
+    }
+    const listed = invoke("--json", "meetings", "list")
+    expect(listed.status, listed.stderr).toBe(0)
+    const meetings = JSON.parse(listed.stdout).items
+    expect(meetings).toHaveLength(1)
+    const id = String(meetings[0].id)
+    expect(JSON.parse(invoke("--json", "meetings", "show", id).stdout).transcripts).toHaveLength(1)
+
+    writeFileSync(transcript, original.replace("Original", "Corrected"))
+    const corrected = invoke("--json", "import", files)
+    expect(corrected.status, corrected.stderr).toBe(0)
+    expect(JSON.parse(invoke("--json", "meetings", "show", id).stdout).transcripts).toHaveLength(2)
+    expect(JSON.parse(invoke("--json", "meetings", "search", "Corrected").stdout).items).toHaveLength(1)
+    expect(JSON.parse(invoke("--json", "meetings", "search", "Original").stdout).items).toHaveLength(0)
+    expect(JSON.parse(invoke("--json", "events", "list").stdout).items).toHaveLength(1)
+
+    const selected = invoke("config", "set", "account.profile", "absent-example")
+    expect(selected.status, selected.stderr).toBe(0)
+    const absent = invoke("--json", "meetings", "list")
+    expect(absent.status).toBe(3)
+    expect(absent.stdout).toBe("")
+    expect(JSON.parse(absent.stderr).error.code).toBe("configuration_error")
+    const accounts = spawnSync(
+      process.execPath,
+      [
+        "--input-type=module",
+        "-e",
+        `
+      const { openStore } = await import('@wirecat/cli-messaging/store');
+      const store = await openStore();
+      try { console.log(JSON.stringify(await store.storedAccounts())); }
+      finally { await store.close(); }
+    `,
+      ],
+      {
+        cwd: install,
+        encoding: "utf8",
+        timeout: 10000,
+        env: {
+          PATH: process.env.PATH,
+          MESSAGING_STORE: join(install, "unused.db"),
+          NODE_OPTIONS: `--no-addons --require ${JSON.stringify(guard)}`,
+          ZM_ACCEPTANCE_GUARD_MARKER: marker,
+        },
+      },
+    )
+    expect(accounts.status, accounts.stderr).toBe(0)
+    expect(JSON.parse(accounts.stdout)).toEqual([
+      expect.objectContaining({ provider: "zoom", account: "zm-profile:personal" }),
+    ])
+    expect(existsSync(marker)).toBe(false)
+  })
+
   it("keeps malformed public config from blocking help and version", () => {
     mkdirSync(config, { recursive: true })
     writeFileSync(join(config, "config.json"), "{invalid")

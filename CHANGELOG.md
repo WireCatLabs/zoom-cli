@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Persistent profile connections** use the shared store's public account API. Import and pull
+  register the selected profile; read commands require an existing account. Connections open lazily
+  and close after success or failure. Delivery requires a compatible cli-messaging registry release.
+- **Installed persistence checks** cover separate-process reads, idempotent imports, transcript
+  corrections, current-only search and missing profile reads without account creation.
+
+### Changed — may break callers
+
+- **Runtime requirements** match the shared store: Node 22.16 within Node 22, or Node 24 and newer,
+  with cli-core 0.19.0.
+
 ## 0.1.1 — 10.10.2026
 
 ### Added

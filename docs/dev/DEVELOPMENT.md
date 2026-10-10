@@ -11,5 +11,7 @@ pnpm build && pnpm smoke:bun
 `bin/zm` runs the local executable. OAuth tests use a memory keyring and a loopback listener;
 source and ingestion tests use invented meetings and the shared memory store.
 
-Real import and pull remain unavailable until cli-messaging publishes its SQLite meeting adapter
-and account selection is connected. Do not use the test memory store for the owner's data.
+The native binding requires cli-messaging's public meeting adapter and stored account lookup API.
+Until those APIs are published, this branch remains a draft: local validation against a built
+producer snapshot does not establish that registry dependencies are ready. Do not substitute a
+local artifact path in the committed manifest or use the test memory store for the owner's data.

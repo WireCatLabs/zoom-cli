@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@wirecat/cli-core':
-        specifier: 0.18.1
-        version: 0.18.1(commander@15.0.0)(typescript@7.0.2)
+        specifier: 0.19.0
+        version: 0.19.0(commander@15.0.0)(typescript@7.0.2)
       '@wirecat/cli-meetings':
         specifier: 0.2.3
         version: 0.2.3
@@ -778,8 +778,8 @@ packages:
   '@vitest/spy@5.0.3':
     resolution: {integrity: sha512-XhFysQTB8AZ+P4gMi+Lpo99vg2AZi0qKpaB9yXQl37+CaMEAPO3iH/wGVnSyL5MPERiLezpqTVtrR6UZH5GCXg==}
 
-  '@wirecat/cli-core@0.18.1':
-    resolution: {integrity: sha512-eDf4p3Y+UMgt1NXj/DIqmbH9GBTPypGmqszViJWgyKhVGG0KS0Gyhb6pfdZ4AN/LCAeNPAH0vfsTPiOvEaCrhA==}
+  '@wirecat/cli-core@0.19.0':
+    resolution: {integrity: sha512-pGtphpeXqS87eRu20CJoB28MRwKdqKuHQe7ORuyiFo+BgA/IZ1KMPfP4VYXye3/kSAWksDLojOLvfyeslhk4wA==}
     engines: {node: '>=22'}
     hasBin: true
     peerDependencies:
@@ -1866,7 +1866,7 @@ snapshots:
 
   '@vitest/spy@5.0.3': {}
 
-  '@wirecat/cli-core@0.18.1(commander@15.0.0)(typescript@7.0.2)':
+  '@wirecat/cli-core@0.19.0(commander@15.0.0)(typescript@7.0.2)':
     dependencies:
       cli-table3: 0.6.5
       cross-spawn: 7.0.6

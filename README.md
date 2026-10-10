@@ -7,10 +7,10 @@ from meetings you attended. The shared meeting model, ingestion and commands com
 
 ## Current availability
 
-Login and sources are implemented and tested. Import, pull and meeting reads are tested with an
-in-memory store. The shared SQLite meeting adapter is not available yet, so the executable refuses
-those commands until that adapter is connected. It never saves real imports to a temporary memory
-store. The shared model and contract kit come from the published cli-meetings 0.2.3 package.
+Login and sources are implemented and tested. This development branch connects import, pull and
+meeting reads to cli-messaging's shared SQLite store. It requires a compatible cli-messaging release
+with the meeting adapter and stored account lookup; the published Zoom 0.1.1 executable still
+refuses persistence commands. The shared model and contract kit use cli-meetings 0.2.3.
 
 ## Set up your Zoom app
 
@@ -34,7 +34,7 @@ is an error; tokens are never written to a config file.
 | `config show` | show local configuration |
 | `config set <key> <value>` | configure the public client or file source |
 | `login [--browser <program>]` | approve access through your browser |
-| `import <folder>` | import downloaded transcripts once the shared store is available |
+| `import <folder>` | import downloaded transcripts into the selected profile |
 | `pull [--since <date>]` | fetch occurrences from the configured source |
 | `meetings list`, `meetings show <meeting>` | read stored meetings |
 | `meetings transcript <meeting>` | read current transcripts |
@@ -63,8 +63,10 @@ separate labels for data you want kept in separate accounts. File import and API
 selected profile. Folder import leaves its pull cursor unchanged; switching pull sources may need
 an older explicit `--since` to revisit earlier occurrences.
 
-The executable's persistent store connection is still pending. Selecting a profile prepares its
-configuration; store commands report that the adapter is unavailable until it is connected.
+Import or pull registers the selected profile in the shared store. Read commands require an
+existing profile and never register an empty account. The default database is the shared
+`wirecat.db`; `MESSAGING_STORE` overrides its path. The connection opens only for store commands
+and closes after success or failure. The old `messages.db` is left untouched.
 
 ## Recover from errors
 
@@ -95,7 +97,7 @@ fails explicitly on invalid names rather than silently importing a partial folde
 
 ## Development
 
-Node 22.12 or newer:
+Node 22.16 or newer within Node 22, or Node 24 or newer:
 
 ```sh
 pnpm install
