@@ -1,16 +1,18 @@
 # @wirecat/zoom-cli
 
 `zm` logs in to Zoom with your own public OAuth app and reads hosted meetings, participants,
-transcripts and AI summaries. Downloaded WebVTT files can also be imported, including transcripts
+transcripts and AI summaries. It archives available cloud recording video, audio, transcripts and
+chat files. Downloaded WebVTT files can also be imported, including transcripts
 from meetings you attended. The shared meeting model, ingestion and commands come from
 `@wirecat/cli-meetings`.
 
 ## Current availability
 
-Login and sources are implemented and tested. Import, pull and meeting reads are tested with an
+Login, cloud recording downloads and remote meeting commands work independently of the meeting
+database. Import, pull and meeting reads are tested with an
 in-memory store. The shared SQLite meeting adapter is not available yet, so the executable refuses
 those commands until that adapter is connected. It never saves real imports to a temporary memory
-store. The shared model and contract kit come from the published cli-meetings 0.2.3 package.
+store. The shared model, exports and ingestion loop come from `@wirecat/cli-meetings`.
 
 ## Set up your Zoom app
 
@@ -42,8 +44,16 @@ is an error; tokens are never written to a config file.
 | `pull [--since <date>]` | fetch occurrences from the configured source |
 | `meetings list`, `meetings show <meeting>` | read stored meetings |
 | `meetings transcript <meeting>` | read current transcripts |
+| `meetings summary <meeting>` | read stored summaries |
+| `meetings export <meeting> --format markdown\|vtt` | export stored meeting content |
 | `meetings search <query>`, `meetings people <query>` | find stored text or participants |
 | `events list` | read stored events |
+| `recordings list`, `recordings show <meeting>` | discover cloud recordings and asset metadata |
+| `recordings download <meeting> --destination <directory>` | archive available recording files |
+| `recordings archive inspect\|verify\|locks <directory>` | inspect local manifests, checksums or locks |
+| `recordings archive recover <directory>` | preview recovery of stale local locks |
+| `remote-meetings list\|show\|invitation` | read upcoming Zoom meetings and invitations |
+| `remote-meetings create\|update\|cancel` | preview or apply a simple Zoom meeting change |
 
 Use `--json` for one JSON value or `--jsonl` for one item per line. Errors go to stderr. `--no-input`
 refuses browser login. `--help` and `--version` work without a configured app or login.
@@ -53,7 +63,12 @@ uses the shared human-readable renderer. Completion emits its shell protocol unl
 Browser login requires an input terminal. Piped or JSON login also requires
 `--interactive`; CI and terminals without interactive input do not launch a browser. `session status` reads
 cached login state without refreshing credentials. Remote verification through `session status
---check` requires a host-supplied verification adapter; the standalone adapter is not connected yet.
+--check` explicitly contacts Zoom and requires the corresponding user-read scope.
+
+Use `--fields id,title` to select result fields. `--offline` refuses network requests. Finite commands
+buffer successful output until resource cleanup completes, with a default output limit of 4 MiB;
+`--max-output-bytes 0` removes that limit. `--timeout <milliseconds>` sets a positive whole-command
+deadline. Defaults are 30 seconds for reads, five minutes for login and one hour for recording downloads.
 
 Config keys: `zoom.clientId`, `account.profile`, `source` (`api` or `files`), `files.folder`,
 and `files.timezone`.
@@ -103,6 +118,52 @@ File times default to UTC. Set `files.timezone` to the IANA zone used when the f
 created, for example `Europe/Madrid`. Ambiguous or nonexistent daylight-saving times are refused. Conflicting contents for the same
 normalized filename key are an error; correct the conflicting files before retrying. File discovery
 fails explicitly on invalid names rather than silently importing a partial folder.
+
+## Archive cloud recordings
+
+Find an occurrence and download its available files to an explicit destination:
+
+```sh
+zm recordings list --from 2026-10-01 --to 2026-10-10 --json
+zm recordings show example-occurrence --json
+zm recordings download example-occurrence --destination ./zoom-archive --json
+zm recordings archive verify ./zoom-archive --offline --json
+```
+
+Recording lists accept an ordered date range of at most 31 days. Downloads stream to disk rather
+than loading a video into memory. The default per-file limit is 20 GiB; change it with `--max-bytes`.
+Use `--file-ids` to select comma-separated asset ids. Only completed, downloadable assets are saved;
+the receipt reports unavailable assets separately. Zoom permissions, recording retention and account
+features determine what can be downloaded. Assets from a meeting you attended are not necessarily
+available through your cloud recording API.
+
+Each occurrence has a manifest containing metadata, file sizes and SHA-256 checksums. Signed
+download URLs and OAuth tokens are excluded. Repeating a download verifies existing manifest files
+and skips matching assets. Existing files are never overwritten; a mismatch requires a new destination.
+Interrupted downloads restart a file rather than using HTTP byte-range resume. Completed manifest
+entries remain available if a later transfer fails.
+
+Archive commands inspect and verify local data without logging in or opening a database. Concurrent
+writers to the same destination are refused. After a process crash, inspect `recordings archive locks`
+and preview `recordings archive recover`. Add `--yes` to remove recognized locks owned by a dead process
+on this machine; active, foreign and unrecognized locks are preserved. Recovery removes stale lock
+markers only. It does not repair an incomplete manifest or adopt an untracked file.
+
+## Manage a Zoom meeting
+
+Remote meeting ids are Zoom's numeric ids; stored `meetings` commands use local database ids.
+Create, update and cancel show the proposed request by default. Add `--yes` to apply it once;
+`--dry-run` always keeps the preview, including when `--yes` is present.
+
+```sh
+zm remote-meetings create --topic "Example planning" --start-time 2026-10-20T10:00:00Z --duration-minutes 30 --json
+zm remote-meetings update 123456789 --topic "Example review" --yes --json
+zm remote-meetings cancel 123456789 --dry-run --json
+```
+
+Only instant and scheduled creation and basic changes are supported. Remote writes are never
+automatically retried. If a write was dispatched and its result is uncertain, inspect Zoom before
+repeating it; the CLI reports an uncertain outcome with exit code 14.
 
 ## Development
 

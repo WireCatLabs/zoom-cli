@@ -1,13 +1,39 @@
-import { CliError, createRenderer, exitCodeFor, GENERIC_FAILURE } from "@wirecat/cli-core"
+import {
+  CliError,
+  createRenderer,
+  exitCodeFor,
+  fieldsOf,
+  GENERIC_FAILURE,
+  projectFields,
+  type SleepLike,
+} from "@wirecat/cli-core"
 import { MeetingError, type MeetingSource, type MeetingStore } from "@wirecat/cli-meetings"
 import { addMeetingCommands } from "@wirecat/cli-meetings/cli"
 import { Command, CommanderError } from "commander"
+import { addZoomSkillCommands } from "./agent-skill.js"
 import { ZoomApiSource } from "./api.js"
+import {
+  type ArchiveService,
+  addArchiveCommands,
+  type RecordingsService,
+  type RemoteMeetingsService,
+} from "./archive-commands.js"
 import { addStandardCommands, annotateMeetingCommands } from "./commands.js"
 import { profileAccountKey, readConfig, setConfig } from "./config.js"
-import { ZoomError } from "./errors.js"
+import { checkCancelled, ZoomError } from "./errors.js"
+import { bytes, duration, type ExecutionState, resetCliOptions, startExecution } from "./execution.js"
 import { FilesSource, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { login } from "./login.js"
+import {
+  getZoomProfile,
+  inspectArchive,
+  inspectArchiveLocks,
+  recoverArchiveLocks,
+  verifyArchive,
+  ZoomRecordings,
+} from "./recordings.js"
+import type { RemoteOptions } from "./remote-http.js"
+import { ZoomRemoteMeetings } from "./remote-meetings.js"
 import type { TokenManager } from "./tokens.js"
 import { VERSION } from "./version.js"
 
@@ -29,7 +55,11 @@ export interface ProgramDeps {
   accountId?: number
   connectStore?: (request: StoreConnectRequest) => Promise<StoreConnection>
   source?: MeetingSource
+  recordings?: RecordingsService
+  remoteMeetings?: RemoteMeetingsService
+  archive?: ArchiveService
   readFiles?: typeof readDownloadedFiles
+  writeFile?: (path: string, content: string, options?: { signal?: AbortSignal }) => Promise<void>
   openBrowser: (url: string, browser?: string) => Promise<void>
   readPaste?: (signal: AbortSignal) => Promise<string>
   data: (text: string) => void
@@ -38,7 +68,11 @@ export interface ProgramDeps {
   interactive?: boolean
   outputIsTTY?: boolean
   env?: NodeJS.ProcessEnv
-  checkSession?: () => Promise<unknown>
+  checkSession?: (options?: { signal?: AbortSignal }) => Promise<unknown>
+  signal?: AbortSignal
+  sleep?: SleepLike
+  serveMcp?: (options: { signal: AbortSignal }) => Promise<void>
+  streamData?: (text: string, signal: AbortSignal) => Promise<void>
 }
 const unavailable = async (): Promise<never> => {
   throw new ZoomError("configuration_error", "the shared SQLite meeting store is not available yet")
@@ -58,7 +92,13 @@ const unavailableStore: MeetingStore = {
   cursor: unavailable,
   setCursor: unavailable,
 }
-const render = (value: unknown, format: "json" | "jsonl" | "text", deps: ProgramDeps): string => {
+const render = (
+  value: unknown,
+  format: "json" | "jsonl" | "text",
+  deps: ProgramDeps,
+  fields?: readonly string[],
+): string => {
+  if (fields) value = projectFields(value, fields)
   const chunks: string[] = []
   const renderer = createRenderer({
     format: format === "text" ? (deps.outputIsTTY ? "pretty" : "json") : format,
@@ -81,7 +121,42 @@ export const createProgram = (deps: ProgramDeps): Command => {
   const getConfig = () => (config ??= readConfig(deps.configPath))
   let connection: StoreConnection | undefined
   let parsing = false
-  let meetingOutput: string[] = []
+  let execution: ExecutionState | undefined
+  let fields: string[] | undefined
+  let activeTokens: TokenManager | undefined
+  const currentExecution = () => execution
+  const signal = () => currentExecution()?.deadline.signal ?? deps.signal
+  const fetchWithSignal =
+    (fetcher: typeof fetch): typeof fetch =>
+    (input, init) => {
+      checkCancelled(signal())
+      if (program.opts().offline)
+        throw new ZoomError("configuration_error", "the command requires network access; remove --offline")
+      const operation = signal()
+      return fetcher(input, {
+        ...init,
+        signal: operation && init?.signal ? AbortSignal.any([operation, init.signal]) : (operation ?? init?.signal),
+      })
+    }
+  const tokens = () => (activeTokens ??= deps.tokens.withSignal(signal(), fetchWithSignal(deps.tokens.options.fetch)))
+  const buffer = (text: string) => {
+    if (!execution) throw new ZoomError("configuration_error", "command execution is not initialized")
+    execution.output.data(text)
+  }
+  const guardedStore = (store: MeetingStore): MeetingStore =>
+    new Proxy(store, {
+      get(target, key, receiver) {
+        const method = Reflect.get(target, key, receiver)
+        return typeof method === "function"
+          ? async (...args: unknown[]) => {
+              checkCancelled(signal())
+              const result = await method.apply(target, args)
+              checkCancelled(signal())
+              return result
+            }
+          : method
+      },
+    })
   let selectedStore = deps.store
   let selectedAccountId = deps.accountId
   const requireAccount = (): number => {
@@ -98,17 +173,48 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .option("--no-input", "disable interactive login")
     .option("--interactive", "permit browser approval in an interactive terminal")
     .option("--quiet", "suppress non-error diagnostics")
+    .option("--fields <paths>", "project result fields, such as id,title")
+    .option(
+      "--timeout <duration>",
+      "command deadline: reads 30s, login 5m, downloads 1h; watch has no default",
+      duration,
+    )
+    .option("--max-output-bytes <bytes>", "bound rendered result bytes (default 4194304; zero is unlimited)", bytes)
+    .option("--offline", "refuse network requests")
     .exitOverride()
     .configureOutput({ writeOut: deps.data, writeErr: deps.diagnostic, outputError: () => {} })
+  const api = () => {
+    if (program.opts().offline)
+      throw new ZoomError("configuration_error", "the command requires network access; remove --offline")
+    if (!getConfig().clientId)
+      throw new ZoomError("configuration_error", "run zm config set zoom.clientId <Public Client ID> first")
+  }
   program.hook("preAction", async (_root, action) => {
     const opts = action.optsWithGlobals()
     if (opts.json && opts.jsonl) throw new ZoomError("validation_error", "choose --json or --jsonl")
+    fields = opts.fields === undefined ? undefined : fieldsOf(opts.fields)
+    execution = startExecution(action, { signal: deps.signal, sleep: deps.sleep })
+    checkCancelled(signal())
+    let family = action
+    while (family.parent && family.parent !== program) family = family.parent
     if (
-      ["login", "commands", "complete", "doctor"].includes(action.name()) ||
-      ["config", "session"].includes(action.parent?.name() ?? "")
+      [
+        "login",
+        "commands",
+        "complete",
+        "doctor",
+        "config",
+        "session",
+        "recordings",
+        "remote-meetings",
+        "serve",
+        "skill",
+      ].includes(family.name())
     )
       return
     const config = getConfig()
+    if (opts.offline && action.name() === "pull" && config.source === "api" && !deps.source)
+      throw new ZoomError("configuration_error", "API pull requires network access; remove --offline")
     if (!selectedStore) {
       if (!deps.connectStore) return unavailable()
       if (!config.accountProfile)
@@ -129,7 +235,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     requireAccount()
   })
   const output = (value: unknown) =>
-    deps.data(render(value, program.opts().json ? "json" : program.opts().jsonl ? "jsonl" : "text", deps))
+    buffer(render(value, program.opts().json ? "json" : program.opts().jsonl ? "jsonl" : "text", deps, fields))
   const cfg = program.command("config").description("local Zoom configuration")
   cfg
     .command("show")
@@ -154,6 +260,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
       if (!config.clientId)
         throw new ZoomError("configuration_error", "run zm config set zoom.clientId <Public Client ID> first")
       const globals = program.opts()
+      if (globals.offline) throw new ZoomError("configuration_error", "login requires network access; remove --offline")
       const headless =
         deps.interactive === false ||
         Boolean(deps.env?.CI) ||
@@ -164,7 +271,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
         throw new ZoomError("configuration_error", "login requires browser approval; remove --no-input")
       output(
         await login({
-          tokens: deps.tokens,
+          tokens: tokens(),
+          signal: signal(),
           openBrowser: (url) => deps.openBrowser(url, opts.browser),
           readPaste: deps.readPaste,
           showUrl: (url) => {
@@ -178,7 +286,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     if (deps.source) return Promise.resolve(deps.source)
     activeSource ??= (async () => {
       const config = getConfig()
-      if (config.source === "api") return new ZoomApiSource(deps.tokens, deps.fetch)
+      if (config.source === "api") return new ZoomApiSource(tokens(), fetchWithSignal(deps.fetch))
       if (!config.filesFolder) throw new ZoomError("configuration_error", "set files.folder before pulling from files")
       return new FilesSource(await (deps.readFiles ?? readDownloadedFiles)(config.filesFolder), config.filesTimezone)
     })()
@@ -213,9 +321,9 @@ export const createProgram = (deps: ProgramDeps): Command => {
       return (await getSource()).files(id)
     },
   }
-  addMeetingCommands(program, {
+  const meetingCommands: Parameters<typeof addMeetingCommands>[1] = {
     get store() {
-      return selectedStore ?? unavailableStore
+      return guardedStore(selectedStore ?? unavailableStore)
     },
     rootIngestion: true,
     get accountId() {
@@ -230,12 +338,23 @@ export const createProgram = (deps: ProgramDeps): Command => {
     },
     now: deps.now,
     write: (value, format) => {
-      meetingOutput.push(render(value, format, deps))
+      buffer(render(value, format, deps, fields))
     },
-  })
+    writeFile: deps.writeFile
+      ? async (path, content) => {
+          checkCancelled(signal())
+          await deps.writeFile?.(path, content, { signal: signal() })
+          checkCancelled(signal())
+        }
+      : undefined,
+  }
+  addMeetingCommands(program, meetingCommands)
   addStandardCommands(program, {
     output,
-    raw: deps.data,
+    discovery: (value) =>
+      buffer(render(value, program.opts().json ? "json" : program.opts().jsonl ? "jsonl" : "text", deps)),
+    fields: () => fields,
+    raw: buffer,
     doctor: () => {
       const config = getConfig()
       return {
@@ -252,14 +371,17 @@ export const createProgram = (deps: ProgramDeps): Command => {
       if (!config.clientId)
         return { configured: false, state: "not_configured", dataProfile: config.accountProfile, verified: false }
       if (check) {
-        if (!deps.checkSession)
-          throw new ZoomError("configuration_error", "remote session verification is not available")
+        if (program.opts().offline)
+          throw new ZoomError("configuration_error", "session verification requires network access; remove --offline")
+        api()
         return {
           configured: true,
           state: "verified",
           dataProfile: config.accountProfile,
           verified: true,
-          profile: await deps.checkSession(),
+          profile: await (deps.checkSession
+            ? deps.checkSession({ signal: signal() })
+            : getZoomProfile(tokens(), fetchWithSignal(deps.fetch), { signal: signal() })),
         }
       }
       const saved = deps.tokens.load()
@@ -272,20 +394,71 @@ export const createProgram = (deps: ProgramDeps): Command => {
       }
     },
   })
+  const retrySleep = deps.sleep
+  const remoteOptions: RemoteOptions = {
+    now: deps.now,
+    sleep: retrySleep ? (ms, abort) => retrySleep(ms, abort, "retry") : undefined,
+  }
+  addArchiveCommands(program, {
+    output,
+    api,
+    signal,
+    now: deps.now ?? Date.now,
+    recordings: () => deps.recordings ?? new ZoomRecordings(tokens(), fetchWithSignal(deps.fetch), remoteOptions),
+    remoteMeetings: () =>
+      deps.remoteMeetings ?? new ZoomRemoteMeetings(tokens(), fetchWithSignal(deps.fetch), remoteOptions),
+    archive: deps.archive ?? {
+      inspect: inspectArchive,
+      verify: verifyArchive,
+      locks: inspectArchiveLocks,
+      recover: recoverArchiveLocks,
+    },
+  })
+  addZoomSkillCommands(program, () => {
+    const renderer = createRenderer({
+      format: program.opts().json ? "json" : program.opts().jsonl ? "jsonl" : deps.outputIsTTY ? "pretty" : "json",
+      color: false,
+      quiet: Boolean(program.opts().quiet),
+      streams: { data: buffer, diagnostic: deps.diagnostic },
+    })
+    return {
+      renderer: { ...renderer, result: output, stream: (items) => output({ items: [...items] }) },
+      streams: { data: (text) => buffer(`${text}\n`), diagnostic: deps.diagnostic },
+      env: deps.env,
+    }
+  })
+  program
+    .command("serve")
+    .description("serve read-only meeting tools over MCP stdio")
+    .requiredOption("--mcp", "use the MCP JSON-RPC protocol")
+    .action(async () => {
+      const opts = program.opts()
+      if (opts.json || opts.jsonl || opts.fields)
+        throw new ZoomError("validation_error", "MCP stdio controls its own output; omit --json, --jsonl and --fields")
+      if (!deps.serveMcp) throw new ZoomError("configuration_error", "the MCP server adapter is not available")
+      await deps.serveMcp({ signal: signal() as AbortSignal })
+    })
   annotateMeetingCommands(program)
   const parseAsync = program.parseAsync.bind(program)
   program.parseAsync = async (...args) => {
     if (parsing) throw new ZoomError("validation_error", "concurrent command parsing is unavailable")
+    resetCliOptions(program)
     parsing = true
     config = undefined
     activeSource = undefined
-    meetingOutput = []
+    execution = undefined
+    activeTokens = undefined
+    fields = undefined
     let result = program
     let failed = false
     let failure: unknown
+    const running = parseAsync(...args)
+    void running.catch(() => {})
     try {
-      result = await parseAsync(...args)
+      const active = currentExecution()
+      result = active ? await active.deadline.race(() => running) : await running
     } catch (error) {
+      await running.catch(() => {})
       failed = true
       failure = error
     } finally {
@@ -304,13 +477,22 @@ export const createProgram = (deps: ProgramDeps): Command => {
         }
       }
     }
+    if (!failed) {
+      try {
+        checkCancelled(signal())
+      } catch (error) {
+        failed = true
+        failure = error
+      }
+    }
+    currentExecution()?.deadline.dispose()
     parsing = false
     if (failed) {
-      meetingOutput = []
+      currentExecution()?.output.discard()
       throw failure
     }
-    for (const text of meetingOutput) deps.data(text)
-    meetingOutput = []
+    currentExecution()?.output.flush(deps.data)
+    execution = undefined
     return result
   }
   return program

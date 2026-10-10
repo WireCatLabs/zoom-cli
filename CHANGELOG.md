@@ -4,6 +4,12 @@
 
 ### Added
 
+- **Cloud recording archives** discover assets and stream available video, audio, VTT and chat files
+  into a local archive with checksummed manifests, verified skipping, bounded transfers and explicit
+  stale lock recovery. Archive inspection and verification do not need Zoom or a meeting database.
+- **Simple remote meeting commands** list, show and retrieve invitations, and preview creation,
+  updates and cancellation. `--yes` applies once; `--dry-run` always previews. Dispatched writes with
+  an uncertain result are reported separately and never automatically retried.
 - **Command discovery and local diagnostics** expose command metadata/examples, shell completion,
   local runtime/config checks and saved OAuth session status without opening the meeting database.
   Session status distinguishes OAuth login from the selected local data profile.

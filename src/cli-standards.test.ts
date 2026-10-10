@@ -19,6 +19,7 @@ const setup = async () => {
       clientId: "example-client",
       service: "example",
       keyring: memoryKeyring(),
+      now: () => 0,
       fetch: async () => {
         throw new Error("unexpected network")
       },
@@ -107,6 +108,7 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(JSON.parse(stdout.at(-1) ?? "{}").state).toBe("expired")
     expect(stdout.join("")).not.toContain("example-access-secret")
     expect(stdout.join("")).not.toContain("example-refresh-secret")
+    deps.tokens.save({ accessToken: "example", refreshToken: "example", expiresAt: 3600000, scopes: ["example:read"] })
     expect(await run(["--json", "session", "status", "--check"], deps)).toBe(3)
     deps.checkSession = async () => ({ id: "example-user" })
     expect(await run(["--json", "session", "status", "--check"], deps)).toBe(0)

@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto"
 import { createServer } from "node:http"
-import { ZoomError } from "./errors.js"
+import { checkCancelled, ZoomError } from "./errors.js"
 import type { TokenManager } from "./tokens.js"
 
 export const REDIRECT = "https://wirecat.dev/zoom-callback"
@@ -10,8 +10,10 @@ export interface LoginOptions {
   readPaste?: (signal: AbortSignal) => Promise<string>
   showUrl?: (url: string) => void
   timeoutMs?: number
+  signal?: AbortSignal
 }
 export const login = async (options: LoginOptions) => {
+  checkCancelled(options.signal)
   const verifier = randomBytes(48).toString("base64url")
   const challenge = createHash("sha256").update(verifier).digest("base64url")
   const controller = new AbortController()
@@ -22,6 +24,14 @@ export const login = async (options: LoginOptions) => {
     accept = resolve
     fail = reject
   })
+  const onAbort = () => {
+    try {
+      checkCancelled(options.signal)
+    } catch (error) {
+      fail(error instanceof Error ? error : new ZoomError("cancelled", "command cancelled"))
+    }
+  }
+  options.signal?.addEventListener("abort", onAbort, { once: true })
   // Startup and paste can fail before the callback is awaited.
   void codePromise.catch(() => {})
   const server = createServer((request, response) => {
@@ -61,6 +71,7 @@ export const login = async (options: LoginOptions) => {
       code_challenge_method: "S256",
       state,
     }).toString()
+    checkCancelled(options.signal)
     options.showUrl?.(authorize.toString())
     const pastePromise = options.readPaste?.(controller.signal).then((text) => {
       const query = new URLSearchParams(text.includes("?") ? text.slice(text.indexOf("?") + 1) : text)
@@ -85,6 +96,7 @@ export const login = async (options: LoginOptions) => {
     })
     return { loggedIn: true, scopes: tokens.scopes }
   } finally {
+    options.signal?.removeEventListener("abort", onAbort)
     clearTimeout(timer)
     controller.abort()
     server.close()
