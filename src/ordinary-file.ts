@@ -2,6 +2,9 @@ import { constants } from "node:fs"
 import { type FileHandle, lstat, open } from "node:fs/promises"
 import { ZoomError } from "./errors.js"
 
+// Node 22's Windows path stat uses a 64-bit volume serial; handle stat uses its low DWORD.
+const deviceOf = (dev: bigint) => (process.platform === "win32" ? BigInt.asUintN(32, dev) : dev)
+
 /** Check the opened object before reading: Windows has no O_NOFOLLOW support. */
 export const openOrdinaryFile = async (path: string): Promise<FileHandle> => {
   const before = await lstat(path, { bigint: true })
@@ -19,7 +22,7 @@ export const openOrdinaryFile = async (path: string): Promise<FileHandle> => {
     if (
       !opened.isFile() ||
       !after.isFile() ||
-      before.dev !== opened.dev ||
+      deviceOf(before.dev) !== deviceOf(opened.dev) ||
       before.ino !== opened.ino ||
       before.dev !== after.dev ||
       before.ino !== after.ino
