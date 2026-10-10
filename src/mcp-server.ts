@@ -15,6 +15,7 @@ import {
   validateTaskKind,
   validateTaskProposal,
 } from "./meeting-context.js"
+import { type MeetingModelOptions, validateMeetingModel, validateMeetingSemantic } from "./meeting-semantic-commands.js"
 import type { StoreConnection } from "./program.js"
 import { runUnifiedSearch } from "./unified-search.js"
 import { VERSION } from "./version.js"
@@ -29,6 +30,8 @@ export interface MeetingMcpOptions {
   /** Opt-in selected-profile meetings only; store-global notes are never exposed here. */
   includeUnifiedSearch?: boolean
   includeMeetingContext?: boolean
+  /** Explicit server-selected query model; tool callers cannot select models or generate vectors. */
+  semanticModel?: MeetingModelOptions
 }
 
 const failure = (code: string, message: string) => {
@@ -54,6 +57,28 @@ const buildServer = (options: MeetingMcpOptions) => {
     )
     return { ...tool, inputSchema: { ...tool.inputSchema, type: "object" as const, properties } } satisfies Tool
   })
+  if (options.semanticModel) {
+    validateMeetingModel(options.semanticModel)
+    tools.push({
+      name: "meeting_semantic_search",
+      description:
+        "Selected-account stored vector search; ranks scanned candidates only, using the server's explicit query model",
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
+      inputSchema: {
+        type: "object",
+        properties: {
+          query: { type: "string", minLength: 1 },
+          limit: { type: "integer", minimum: 1, maximum: 1000 },
+          max_chunks: { type: "integer", minimum: 1, maximum: 10000 },
+          after_chunk_id: { type: "integer", minimum: 1 },
+          max_rows: { type: "integer", minimum: 1, maximum: 100000 },
+          max_text_bytes: { type: "integer", minimum: 1, maximum: 67108864 },
+        },
+        required: ["query"],
+        additionalProperties: false,
+      },
+    })
+  }
   if (options.includeUnifiedSearch)
     tools.push({
       name: "search_all",
@@ -178,7 +203,29 @@ const buildServer = (options: MeetingMcpOptions) => {
               : value
           },
         }) as MeetingStore
-        if (["meeting_evidence", "person_meeting_context", "meeting_task_proposal"].includes(request.params.name)) {
+        if (request.params.name === "meeting_semantic_search") {
+          if (!options.semanticModel || !connection.meetingSemantic)
+            throw new ZoomError("configuration_error", "meeting semantic capability is unavailable")
+          const request = {
+            ...options.semanticModel,
+            limit: args.limit as number | undefined,
+            maxChunks: args.max_chunks as number | undefined,
+            afterChunkId: args.after_chunk_id as number | undefined,
+            maxRows: args.max_rows as number | undefined,
+            maxTextBytes: args.max_text_bytes as number | undefined,
+            signal,
+          }
+          validateMeetingSemantic(args.query as string, request)
+          const value = await connection.meetingSemantic.search(args.query as string, request)
+          if (typeof value !== "object" || value === null || Array.isArray(value))
+            throw new ZoomError("invalid_response", "meeting semantic returned an invalid report")
+          result = {
+            content: [{ type: "text", text: JSON.stringify(value) }],
+            structuredContent: value as Record<string, unknown>,
+          }
+        } else if (
+          ["meeting_evidence", "person_meeting_context", "meeting_task_proposal"].includes(request.params.name)
+        ) {
           const context = connection.meetingContext
           let value: unknown
           if (request.params.name === "meeting_evidence") {
@@ -240,9 +287,13 @@ const buildServer = (options: MeetingMcpOptions) => {
       }
     } catch (error) {
       result =
-        ["search_all", "meeting_evidence", "person_meeting_context", "meeting_task_proposal"].includes(
-          request.params.name,
-        ) && error instanceof CliError
+        [
+          "search_all",
+          "meeting_evidence",
+          "person_meeting_context",
+          "meeting_task_proposal",
+          "meeting_semantic_search",
+        ].includes(request.params.name) && error instanceof CliError
           ? failure(error.code, "selected-account meeting operation failed")
           : failure("generic_failure", "Meeting read failed")
     } finally {

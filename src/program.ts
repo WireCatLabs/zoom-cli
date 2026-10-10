@@ -41,6 +41,12 @@ import { login } from "./login.js"
 import type { MeetingContextCapabilities } from "./meeting-context.js"
 import { addMeetingContextCommands } from "./meeting-context-commands.js"
 import {
+  addMeetingSemanticCommands,
+  type MeetingModelOptions,
+  type MeetingSemanticCapabilities,
+  validateMeetingModel,
+} from "./meeting-semantic-commands.js"
+import {
   getZoomProfile,
   inspectArchive,
   inspectArchiveLocks,
@@ -63,6 +69,7 @@ export interface StoreConnection {
   appendTranscripts?: MeetingTranscriptStore["appendTranscripts"]
   unifiedSearch?: UnifiedSearch
   meetingContext?: MeetingContextCapabilities
+  meetingSemantic?: MeetingSemanticCapabilities
 }
 export interface StoreConnectRequest {
   profile: string
@@ -80,6 +87,7 @@ export interface ProgramDeps {
   transcriptStore?: MeetingTranscriptStore
   unifiedSearch?: UnifiedSearch
   meetingContext?: MeetingContextCapabilities
+  meetingSemantic?: MeetingSemanticCapabilities
   source?: MeetingSource
   recordings?: RecordingsService
   remoteMeetings?: RemoteMeetingsService
@@ -103,6 +111,7 @@ export interface ProgramDeps {
     maxResultBytes?: number
     includeUnifiedSearch?: boolean
     includeMeetingContext?: boolean
+    semanticModel?: MeetingModelOptions
   }) => Promise<void>
   streamData?: (text: string, signal: AbortSignal) => Promise<void>
 }
@@ -246,7 +255,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
         "watch",
         "search",
       ].includes(family.name()) ||
-      (family.name() === "meetings" && ["evidence", "context", "task-proposal"].includes(action.name()))
+      (family.name() === "meetings" &&
+        ["evidence", "context", "task-proposal", "semantic", "embeddings"].includes(action.name()))
     )
       return
     const config = getConfig()
@@ -659,18 +669,41 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .requiredOption("--mcp", "use the MCP JSON-RPC protocol")
     .option("--unified-search", "include selected-profile meetings-only unified search")
     .option("--meeting-context", "include account-fixed evidence, person context and task proposals")
-    .action(async (options: { unifiedSearch?: boolean; meetingContext?: boolean }) => {
-      const opts = program.opts()
-      if (opts.json || opts.jsonl || opts.fields)
-        throw new ZoomError("validation_error", "MCP stdio controls its own output; omit --json, --jsonl and --fields")
-      if (!deps.serveMcp) throw new ZoomError("configuration_error", "the MCP server adapter is not available")
-      await deps.serveMcp({
-        signal: signal() as AbortSignal,
-        maxResultBytes: program.opts().maxOutputBytes,
-        ...(options.unifiedSearch ? { includeUnifiedSearch: true } : {}),
-        ...(options.meetingContext ? { includeMeetingContext: true } : {}),
-      })
-    })
+    .option("--semantic", "include read-only meeting vector search with an explicit query model")
+    .option("--model <id>", "explicit installed query model, or remote model at --base-url")
+    .option("--base-url <url>", "explicit remote embedding endpoint for semantic queries")
+    .option("--dims <count>", "remote embedding dimensions", bytes)
+    .action(
+      async (options: {
+        unifiedSearch?: boolean
+        meetingContext?: boolean
+        semantic?: boolean
+        model?: string
+        baseUrl?: string
+        dims?: number
+      }) => {
+        const opts = program.opts()
+        if (opts.json || opts.jsonl || opts.fields)
+          throw new ZoomError(
+            "validation_error",
+            "MCP stdio controls its own output; omit --json, --jsonl and --fields",
+          )
+        if (!deps.serveMcp) throw new ZoomError("configuration_error", "the MCP server adapter is not available")
+        if (options.semantic)
+          validateMeetingModel({ model: options.model ?? "", baseUrl: options.baseUrl, dims: options.dims })
+        else if (options.model !== undefined || options.baseUrl !== undefined || options.dims !== undefined)
+          throw new ZoomError("validation_error", "MCP model options require --semantic")
+        await deps.serveMcp({
+          signal: signal() as AbortSignal,
+          maxResultBytes: program.opts().maxOutputBytes,
+          ...(options.unifiedSearch ? { includeUnifiedSearch: true } : {}),
+          ...(options.meetingContext ? { includeMeetingContext: true } : {}),
+          ...(options.semantic
+            ? { semanticModel: { model: options.model ?? "", baseUrl: options.baseUrl, dims: options.dims } }
+            : {}),
+        })
+      },
+    )
   addIngestionSearchCommands(program, {
     signal,
     output: (value) =>
@@ -736,6 +769,28 @@ export const createProgram = (deps: ProgramDeps): Command => {
       if (!connection.meetingContext)
         throw new ZoomError("configuration_error", "meeting context is unavailable in this store connector")
       return connection.meetingContext
+    },
+  })
+  addMeetingSemanticCommands(program, {
+    signal,
+    output: (value) =>
+      buffer(render(value, program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text", deps, fields, true)),
+    capabilities: async () => {
+      if (deps.meetingSemantic) return deps.meetingSemantic
+      const config = getConfig()
+      if (!config.accountProfile || !deps.connectStore)
+        throw new ZoomError("configuration_error", "select a stored local profile for meeting vectors")
+      connection = await deps.connectStore({
+        profile: config.accountProfile,
+        externalId: profileAccountKey(config.accountProfile),
+        intent: "read",
+      })
+      if (!connection.meetingSemantic)
+        throw new ZoomError(
+          "configuration_error",
+          "meeting vector capabilities are unavailable in this store connector",
+        )
+      return connection.meetingSemantic
     },
   })
   annotateMeetingCommands(program)

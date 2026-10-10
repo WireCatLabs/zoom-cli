@@ -11,6 +11,7 @@ import {
   validateTaskKind,
   validateTaskProposal,
 } from "./meeting-context.js"
+import type { MeetingEmbeddingOptions } from "./meeting-semantic-commands.js"
 import { type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
 
@@ -213,4 +214,40 @@ it("CLI validates before connection, uses one read connection, closes before std
   ])
     expect(await run(["meetings", ...args, "--json"], deps)).toBe(3)
   expect(output).toEqual([])
+})
+
+it("requires an explicit semantic model, preserves scan coverage, and previews generation until --yes", async () => {
+  const { deps, output } = await setup()
+  const report = { items: [], ranking: "scanned-candidates", complete: false, hasMore: true, nextChunkId: 12 }
+  const search = vi.fn(async () => report)
+  const generate = vi.fn(async (options: MeetingEmbeddingOptions) => ({ applied: options.yes === true }))
+  deps.meetingSemantic = { search, generate }
+  expect(await run(["meetings", "semantic", "example", "--json"], deps)).toBe(2)
+  expect(
+    await run(["meetings", "semantic", "example", "--model", "installed-example", "--max-chunks", "10001"], deps),
+  ).toBe(2)
+  expect(
+    await run(
+      ["meetings", "semantic", "example", "--model", "served-example", "--base-url", "https://example.invalid/v1"],
+      deps,
+    ),
+  ).toBe(2)
+  expect(search).not.toHaveBeenCalled()
+  expect(
+    await run(
+      ["meetings", "semantic", "example", "--model", "installed-example", "--after-chunk-id", "4", "--jsonl"],
+      deps,
+    ),
+  ).toBe(0)
+  expect(JSON.parse(output.pop() ?? "{}")).toEqual(report)
+  expect(search).toHaveBeenCalledWith(
+    "example",
+    expect.objectContaining({ model: "installed-example", afterChunkId: 4 }),
+  )
+  expect(await run(["meetings", "embeddings", "--model", "installed-example", "--json"], deps)).toBe(0)
+  expect(JSON.parse(output.pop() ?? "{}").applied).toBe(false)
+  expect(generate).toHaveBeenLastCalledWith(expect.not.objectContaining({ yes: true }))
+  expect(await run(["meetings", "embeddings", "--model", "installed-example", "--yes", "--json"], deps)).toBe(0)
+  expect(JSON.parse(output.pop() ?? "{}").applied).toBe(true)
+  expect(search).toHaveBeenCalledOnce()
 })

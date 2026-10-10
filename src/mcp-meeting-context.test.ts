@@ -60,3 +60,50 @@ it("discovers opt-in context without IO, rejects account overrides, and closes b
     await server.close()
   }
 })
+
+it("exposes semantic queries only with a server-selected model and never exposes vector generation", async () => {
+  const report = { items: [], ranking: "scanned-candidates", complete: false, hasMore: true, nextChunkId: 12 }
+  const search = vi.fn(async () => report)
+  const generate = vi.fn()
+  const close = vi.fn(async () => {})
+  const connect = vi.fn(async () => ({
+    store: memoryMeetingStore(),
+    accountId: 3,
+    meetingSemantic: { search, generate },
+    close,
+  }))
+  const server = createMeetingMcpServer({ connectStore: connect, semanticModel: { model: "installed-example" } })
+  const [left, right] = InMemoryTransport.createLinkedPair()
+  await server.connect(right)
+  const client = new Client({ name: "example-semantic-client", version: "1" })
+  await client.connect(left)
+  try {
+    const { tools } = await client.listTools()
+    expect(tools).toHaveLength(8)
+    expect(tools.find((tool) => tool.name === "meeting_semantic_search")?.annotations?.readOnlyHint).toBe(true)
+    expect(tools.some((tool) => tool.name.includes("generate"))).toBe(false)
+    expect(connect).not.toHaveBeenCalled()
+    for (const arguments_ of [
+      { query: "example", model: "foreign-model" },
+      { query: "example", account_id: 99 },
+      { query: "example", yes: true },
+      { query: "example", max_chunks: 10001 },
+    ])
+      expect(await client.callTool({ name: "meeting_semantic_search", arguments: arguments_ })).toMatchObject({
+        isError: true,
+      })
+    expect(connect).not.toHaveBeenCalled()
+    expect(
+      await client.callTool({ name: "meeting_semantic_search", arguments: { query: "example", after_chunk_id: 4 } }),
+    ).toMatchObject({ structuredContent: report })
+    expect(search).toHaveBeenCalledWith(
+      "example",
+      expect.objectContaining({ model: "installed-example", afterChunkId: 4 }),
+    )
+    expect(close).toHaveBeenCalledOnce()
+    expect(generate).not.toHaveBeenCalled()
+  } finally {
+    await client.close()
+    await server.close()
+  }
+})
