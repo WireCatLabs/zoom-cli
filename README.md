@@ -10,7 +10,7 @@ from meetings you attended. The shared meeting model, ingestion and commands com
 Login and sources are implemented and tested. Import, pull and meeting reads are tested with an
 in-memory store. The shared SQLite meeting adapter is not available yet, so the executable refuses
 those commands until that adapter is connected. It never saves real imports to a temporary memory
-store. The shared model and contract kit come from the published cli-meetings 0.2.1 package.
+store. The shared model and contract kit come from the published cli-meetings 0.2.3 package.
 
 ## Set up your Zoom app
 
@@ -44,9 +44,27 @@ is an error; tokens are never written to a config file.
 Use `--json` for one JSON value or `--jsonl` for one item per line. Errors go to stderr. `--no-input`
 refuses browser login. `--help` and `--version` work without a configured app or login.
 
-Config keys: `zoom.clientId`, `source` (`api` or `files`), `files.folder`, and `files.timezone`.
+Config keys: `zoom.clientId`, `account.profile`, `source` (`api` or `files`), `files.folder`,
+and `files.timezone`.
 Directories follow the platform convention; `ZM_CONFIG_DIR` overrides the configuration directory.
 Changing that directory also changes the keyring service used for login.
+
+## Select a local profile
+
+Choose a label for the stored meetings:
+
+```sh
+zm config set account.profile personal
+```
+
+Labels contain 1–64 letters, digits, dots, underscores or hyphens and start with a letter or digit.
+The label groups local meeting data; OAuth login uses the configured client and keyring entry. Use
+separate labels for data you want kept in separate accounts. File import and API pull share the
+selected profile. Folder import leaves its pull cursor unchanged; switching pull sources may need
+an older explicit `--since` to revisit earlier occurrences.
+
+The executable's persistent store connection is still pending. Selecting a profile prepares its
+configuration; store commands report that the adapter is unavailable until it is connected.
 
 ## Recover from errors
 
@@ -58,8 +76,8 @@ Missing-scope errors name the required scope. Add it in your Zoom app, then log 
 failure reports a provider error; malformed provider replies report an invalid response. Diagnostic
 messages exclude raw provider error text.
 
-Once persistence is connected, use an older explicit `pull --since 2026-10-01` to revisit occurrences
-whose transcript appeared after a previous successful pull. The cursor alone does not guarantee
+Once persistence is connected, use `pull --lookback-days 7` to revisit the last seven days, or an
+older explicit `pull --since 2026-10-01` for earlier occurrences whose transcript appeared later. The cursor alone does not guarantee
 that late transcripts are revisited. Serialize pulls for the same account to avoid concurrent event
 creation. A failed occurrence leaves the cursor unchanged so the next pull can retry it.
 

@@ -40,3 +40,14 @@ advance the shared cursor.
 The CLI reads its version from the packaged metadata. Config and source loading are lazy so help
 and version remain available even with corrupt config, without opening a database or keyring.
 Installed-package acceptance tests exercise these boundaries through the actual npm bin.
+
+A library caller can supply `connectStore({profile, externalId, intent})`, returning the meeting
+port, a positive numeric account id and an asynchronous close method. The program opens only for
+store commands, distinguishes read from ingestion, validates the account before source requests
+and closes on every parse path. Read connectors must resolve an existing account; ingestion may
+register one. Connector failures must release any resource they opened before rejecting.
+
+Profile labels map to `zm-profile:<label>` in the Zoom provider namespace. They group local data,
+not remote OAuth users. File and API sources share the selected account and its cursor; import
+does not advance it. The standalone bin has no production connector until the compatible shared
+store and account lookup APIs are released. No guessed numeric id or memory fallback is used.

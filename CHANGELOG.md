@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.1 — 10.10.2026
+
+### Added
+
+- **Local account profiles and lazy connections** let library callers select a stored account, open
+  only for store commands and close after success or failure. The standalone SQLite binding remains
+  pending the shared store release.
+- **Bounded late-transcript recovery** exposes `pull --lookback-days` from zero through 31 days.
+  Zoom uses the shared cli-meetings 0.2.3 package.
+
 ## 0.1.0 — 10.10.2026
 
 ### Added
