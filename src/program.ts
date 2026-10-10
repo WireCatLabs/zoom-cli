@@ -2,19 +2,30 @@ import { MeetingError, type MeetingSource, type MeetingStore } from "@wirecat/cl
 import { addMeetingCommands } from "@wirecat/cli-meetings/cli"
 import { Command, CommanderError } from "commander"
 import { ZoomApiSource } from "./api.js"
-import { readConfig, setConfig } from "./config.js"
+import { profileAccountKey, readConfig, setConfig } from "./config.js"
 import { ZoomError } from "./errors.js"
 import { FilesSource, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { login } from "./login.js"
 import type { TokenManager } from "./tokens.js"
 import { VERSION } from "./version.js"
 
+export interface StoreConnection {
+  store: MeetingStore
+  accountId: number
+  close: () => Promise<void>
+}
+export interface StoreConnectRequest {
+  profile: string
+  externalId: string
+  intent: "read" | "ingestion"
+}
 export interface ProgramDeps {
   configPath: string
   tokens: TokenManager
   fetch: typeof fetch
   store?: MeetingStore
   accountId?: number
+  connectStore?: (request: StoreConnectRequest) => Promise<StoreConnection>
   source?: MeetingSource
   readFiles?: typeof readDownloadedFiles
   openBrowser: (url: string, browser?: string) => Promise<void>
@@ -49,6 +60,14 @@ const render = (data: unknown, format: "json" | "jsonl" | "text"): string => {
 export const createProgram = (deps: ProgramDeps): Command => {
   let config: ReturnType<typeof readConfig>
   const getConfig = () => (config ??= readConfig(deps.configPath))
+  let connection: StoreConnection | undefined
+  let selectedStore = deps.store
+  let selectedAccountId = deps.accountId
+  const requireAccount = (): number => {
+    if (!Number.isSafeInteger(selectedAccountId) || !selectedAccountId || selectedAccountId < 1)
+      throw new ZoomError("configuration_error", "the selected meeting account is unavailable")
+    return selectedAccountId
+  }
   const program = new Command()
     .name("zm")
     .version(VERSION)
@@ -58,13 +77,29 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .option("--no-input", "disable interactive login")
     .exitOverride()
     .configureOutput({ writeOut: deps.data, writeErr: deps.diagnostic, outputError: () => {} })
-  program.hook("preAction", (_root, action) => {
-    getConfig()
-    if (program.opts().json && program.opts().jsonl) throw new ZoomError("validation_error", "choose --json or --jsonl")
-    if (!deps.store && !["login", "show", "set"].includes(action.name()))
-      throw new ZoomError("configuration_error", "the shared SQLite meeting store is not available yet")
-    if (!deps.store && action.parent?.name() === "meetings")
-      throw new ZoomError("configuration_error", "the shared SQLite meeting store is not available yet")
+  program.hook("preAction", async (_root, action) => {
+    const config = getConfig()
+    const opts = action.optsWithGlobals()
+    if (opts.json && opts.jsonl) throw new ZoomError("validation_error", "choose --json or --jsonl")
+    if (action.name() === "login" || action.parent?.name() === "config") return
+    if (!selectedStore) {
+      if (!deps.connectStore) return unavailable()
+      if (!config.accountProfile)
+        throw new ZoomError("configuration_error", "select a local profile with zm config set account.profile <label>")
+      try {
+        connection = await deps.connectStore({
+          profile: config.accountProfile,
+          externalId: profileAccountKey(config.accountProfile),
+          intent: ["pull", "import"].includes(action.name()) ? "ingestion" : "read",
+        })
+      } catch (error) {
+        if (error instanceof ZoomError || error instanceof MeetingError) throw error
+        throw new ZoomError("configuration_error", "could not open the shared meeting store")
+      }
+      selectedStore = connection.store
+      selectedAccountId = connection.accountId
+    }
+    requireAccount()
   })
   const output = (value: unknown) =>
     deps.data(render(value, program.opts().json ? "json" : program.opts().jsonl ? "jsonl" : "text"))
@@ -142,17 +177,50 @@ export const createProgram = (deps: ProgramDeps): Command => {
     },
   }
   addMeetingCommands(program, {
-    store: deps.store ?? unavailableStore,
+    get store() {
+      return selectedStore ?? unavailableStore
+    },
     rootIngestion: true,
-    accountId: deps.accountId ?? 0,
+    get accountId() {
+      return requireAccount()
+    },
     source,
     readFiles: async (folder) =>
       validateDownloadedFiles(await (deps.readFiles ?? readDownloadedFiles)(folder), config.filesTimezone).map((file) =>
-        importFile(file, deps.accountId ?? 0, config.filesTimezone),
+        importFile(file, requireAccount(), config.filesTimezone),
       ),
     now: deps.now,
     write: (value, format) => deps.data(render(value, format)),
   })
+  const parseAsync = program.parseAsync.bind(program)
+  program.parseAsync = async (...args) => {
+    let result = program
+    let failed = false
+    let failure: unknown
+    try {
+      result = await parseAsync(...args)
+    } catch (error) {
+      failed = true
+      failure = error
+    } finally {
+      if (connection) {
+        const closing = connection
+        connection = undefined
+        selectedStore = deps.store
+        selectedAccountId = deps.accountId
+        try {
+          await closing.close()
+        } catch {
+          if (!failed) {
+            failed = true
+            failure = new ZoomError("configuration_error", "could not close the shared meeting store")
+          }
+        }
+      }
+    }
+    if (failed) throw failure
+    return result
+  }
   return program
 }
 export const run = async (args: string[], deps: ProgramDeps): Promise<number> => {
