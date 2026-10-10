@@ -310,11 +310,57 @@ describe("archive and explicit remote command wiring", () => {
       request: { method: "POST", body: { topic: "Example planning", duration: 30 } },
     })
     expect(
-      await run(["--json", "remote-meetings", "update", "123456789", "--topic", "Example", "--yes", "--dry-run"], deps),
+      await run(
+        [
+          "--json",
+          "remote-meetings",
+          "update",
+          "123456789",
+          "--topic",
+          "Example",
+          "--start-time",
+          "2026-10-10T15:30:00Z",
+          "--duration-minutes",
+          "45",
+          "--timezone",
+          "UTC",
+          "--agenda",
+          "Invented agenda",
+          "--type",
+          "2",
+          "--yes",
+          "--dry-run",
+        ],
+        deps,
+      ),
     ).toBe(0)
-    expect(value(stdout)).toMatchObject({ action: "update", applied: false })
+    expect(value(stdout)).toMatchObject({
+      action: "update",
+      applied: false,
+      request: {
+        body: {
+          start_time: "2026-10-10T15:30:00.000Z",
+          duration: 45,
+          timezone: "UTC",
+          agenda: "Invented agenda",
+          type: 2,
+        },
+      },
+    })
     expect(
-      await run(["--json", "remote-meetings", "cancel", "123456789", "--occurrence-id", "example-occurrence"], deps),
+      await run(
+        [
+          "--json",
+          "remote-meetings",
+          "cancel",
+          "123456789",
+          "--occurrence-id",
+          "example-occurrence",
+          "--yes",
+          "--dry-run",
+        ],
+        deps,
+      ),
     ).toBe(0)
     expect(value(stdout)).toMatchObject({
       action: "cancel",

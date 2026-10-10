@@ -259,11 +259,14 @@ pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm docs:check
 pnpm build && pnpm smoke:bun
 ```
 
-[Architecture](docs/dev/ARCHITECTURE.md), [testing](docs/dev/TESTING.md) and
+[Commands](docs/commands.md), [architecture](docs/dev/ARCHITECTURE.md), [testing](docs/dev/TESTING.md) and
 [development setup](docs/dev/DEVELOPMENT.md) describe the local setup.
 [Releasing](docs/dev/RELEASING.md) covers package checks and trusted publishing. Fixtures use invented
 people and meetings. Tests use an injected keyring, scripted HTTP responses, temporary config
 folders and the memory meeting store.
+
+`pnpm generate:check` checks the generated command reference. `pnpm test:matrix` measures CLI
+command and option coverage; its [matrix](docs/dev/test-matrix.md) records explicit exceptions.
 
 ## Licence
 

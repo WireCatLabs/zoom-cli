@@ -1,10 +1,10 @@
 import { createHash, randomUUID } from "node:crypto"
-import { constants } from "node:fs"
 import { type FileHandle, link, lstat, mkdir, open, readdir, realpath, rename, rmdir, unlink } from "node:fs/promises"
 import { hostname } from "node:os"
 import { join } from "node:path"
 import { retryableStatus, statusToCode } from "@wirecat/cli-core/http"
 import { checkCancelled, string, ZoomError } from "./errors.js"
+import { openOrdinaryFile } from "./ordinary-file.js"
 import type { RecordingAsset, RecordingMeeting } from "./recordings.js"
 import { operationSignal, type ZoomRemote } from "./remote-http.js"
 
@@ -200,10 +200,7 @@ const filename = (uuid: string, asset: RecordingAsset) =>
   `${digest(uuid)}-${digest(asset.id ?? "")}.${/^(mp4|m4a|mp3|wav|vtt|txt|json)$/i.test(asset.format ?? "") ? asset.format?.toLowerCase() : "bin"}`
 const missing = (error: unknown) =>
   typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT"
-const localFile = async (path: string) => {
-  if (!(await lstat(path)).isFile()) throw new ZoomError("validation_error", "archive path must be an ordinary file")
-  return open(path, constants.O_RDONLY | constants.O_NOFOLLOW)
-}
+const localFile = openOrdinaryFile
 const fingerprint = async (path: string, signal?: AbortSignal): Promise<{ size: number; sha256: string }> => {
   checkCancelled(signal)
   const file = await localFile(path)

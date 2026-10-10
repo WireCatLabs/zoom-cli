@@ -1,4 +1,5 @@
 name: Full validation
+
 on:
   workflow_call:
     inputs:
@@ -12,12 +13,72 @@ on:
 
 permissions:
   contents: read
+
 jobs:
   ci:
-    if: github.event_name == 'push' || !github.event.pull_request.draft
     uses: WireCatLabs/cli-core/.github/workflows/node-ci.yml@4c78a803c460317fd40a38be6d1fb53278087741
     with:
-      pack: ${{ inputs.pack || false }}
+      pack: ${{ inputs.pack || github.event_name == 'workflow_dispatch' }}
       checks: |
         pnpm contracts:check
         pnpm docs:check
+        pnpm generate:check
+        pnpm test:matrix:check
+
+  installed-platforms:
+    needs: ci
+    if: inputs.pack || github.event_name == 'workflow_dispatch'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: ['22.16.0', '24.19.0']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: validated-package
+          path: platform-artifact
+      - name: Install and exercise the validated artifact
+        shell: pwsh
+        env:
+          EXPECTED_SHA256: ${{ needs.ci.outputs.package-sha256 }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tarballs = @(Get-ChildItem platform-artifact -Filter '*.tgz')
+          if ($tarballs.Count -ne 1) { throw 'Expected exactly one validated package' }
+          $tarball = $tarballs[0].FullName
+          if ((Get-FileHash $tarball -Algorithm SHA256).Hash.ToLowerInvariant() -ne $env:EXPECTED_SHA256) { throw 'Package digest mismatch' }
+          $sandbox = Join-Path $env:RUNNER_TEMP ('zm-test-platform-' + [guid]::NewGuid())
+          New-Item $sandbox -ItemType Directory | Out-Null
+          $env:HOME = $sandbox
+          $env:USERPROFILE = $sandbox
+          $env:APPDATA = Join-Path $sandbox 'appdata'
+          $env:LOCALAPPDATA = Join-Path $sandbox 'localappdata'
+          $env:NPM_CONFIG_USERCONFIG = Join-Path $sandbox 'npmrc'
+          $env:NPM_CONFIG_GLOBALCONFIG = Join-Path $sandbox 'npm-globalrc'
+          $env:NPM_CONFIG_CACHE = Join-Path $sandbox 'npm-cache'
+          [IO.File]::WriteAllText($env:NPM_CONFIG_USERCONFIG, '')
+          [IO.File]::WriteAllText($env:NPM_CONFIG_GLOBALCONFIG, '')
+          [IO.File]::WriteAllText((Join-Path $sandbox 'package.json'), '{"private":true,"type":"module"}')
+          $script = Join-Path $PWD 'scripts/installed-platform.mjs'
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          Push-Location $sandbox
+          npm install --ignore-scripts --no-audit --no-fund $tarball
+          if ($LASTEXITCODE -ne 0) { throw 'Artifact install failed' }
+          Pop-Location
+          node $script $sandbox $version
+          if ($LASTEXITCODE -ne 0) { throw 'Installed platform proof failed' }
+          Copy-Item (Join-Path $sandbox 'proof.json') platform-proof.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: platform-proof-${{ matrix.os }}-${{ matrix.node }}
+          path: platform-proof.json
+          if-no-files-found: error

@@ -42,8 +42,8 @@ vi.mock("node:fs/promises", async (original) => {
               await target.close()
             }
           if (key === "stat")
-            return async () => {
-              const result = await target.stat()
+            return async (...options: Parameters<typeof file.stat>) => {
+              const result = await target.stat(...options)
               await handles.afterStat?.()
               return result
             }
@@ -278,14 +278,14 @@ it("checks cancellation after open and read, closing owned handles without strea
   expect(handles.closed).toBe(2)
 })
 
-it("uses the verified opened file even when its directory entry is replaced", async () => {
+it("rejects a directory entry replaced during open before reading its content", async () => {
   const { root, path } = await fixture()
   track(path)
   handles.afterOpen = async () => {
     await rename(path, `${path}.example-backup`)
     await writeFile(path, "Example replacement must not be parsed")
   }
-  expect((await collect(root))[0]?.cues[0]?.text).toBe("Café [Plan]")
+  await expect(collect(root)).rejects.toThrow("archive file changed while opening")
   expect(handles.closed).toBe(1)
 })
 

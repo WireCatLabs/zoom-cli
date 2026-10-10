@@ -94,7 +94,8 @@ it("streams bounded archive sync receipts with consumer backpressure", async () 
   deps.recordings = {
     list: async () => [meeting, { ...meeting, uuid: "example-second" }],
     show: async () => meeting,
-    download: async (uuid) => {
+    download: async (uuid, options) => {
+      expect(options?.maxBytes).toBe(1024)
       downloaded.push(uuid)
       return { ...report, uuid }
     },
@@ -109,7 +110,19 @@ it("streams bounded archive sync receipts with consumer backpressure", async () 
     }
   }
   const pending = run(
-    ["recordings", "sync", "--from", "2026-10-01", "--to", "2026-10-10", "--destination", "example", "--jsonl"],
+    [
+      "recordings",
+      "sync",
+      "--from",
+      "2026-10-01",
+      "--to",
+      "2026-10-10",
+      "--destination",
+      "example",
+      "--max-bytes",
+      "1024",
+      "--jsonl",
+    ],
     deps,
   )
   await queued

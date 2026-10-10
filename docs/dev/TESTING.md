@@ -31,3 +31,28 @@ full validation; ordinary PR/local checks retain their existing budget. See the
 
 The development dependency pins `@wirecat/cli-testing` 0.2.0 from npm, with its
 package integrity recorded in the lockfile.
+
+## Command coverage
+
+`pnpm test:matrix` runs the offline suite and generates the [measured matrix](test-matrix.md).
+The test-only Commander hook records command paths and option names in `coverage/argv.jsonl`;
+it never records arguments or option values. Tests run with two workers to avoid local contention.
+`pnpm test:matrix:check` consumes an existing full test run, including the coverage run in CI.
+Exceptions in `scripts/test-matrix-untested.ts` identify the independent check and its reason.
+The installed bin version exits before the action hook and is checked by package acceptance.
+The generated [command reference](../commands.md) uses cli-core's shared command-page generator;
+`pnpm generate:check` detects drift from the executable command tree.
+
+## Installed platforms
+
+Full manual validation and release validation pack once, then install that exact tarball on Linux
+and Windows with Node 22.16.0 and 24.19.0. `scripts/installed-platform.mjs` exercises native SQLite
+imports across processes, corrections, historical reads, no-overwrite export, local archive
+verification, symlink and replacement rejection, cancellation and default MCP reads. All paths,
+including Windows APPDATA and LOCALAPPDATA, point into retained temporary directories. Runtime
+guards reject network, browser spawning and keyring loading; registry access is limited to installation.
+The jobs retain JSON proofs and check the validation tarball's SHA-256 before installation.
+
+Archive reads compare the opened file's identity with its path before reading bytes. This also
+checks replacement races on Windows, where libuv does not support `O_NOFOLLOW`:
+[libuv file-system flags](https://docs.libuv.org/en/v1.x/fs.html).

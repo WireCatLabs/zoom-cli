@@ -150,7 +150,7 @@ describe("portable CLI discovery and diagnostics", () => {
     const { deps, stdout } = await setup()
     setConfig(deps.configPath, "zoom.clientId", "example-client")
     deps.interactive = false
-    expect(await run(["login"], deps)).toBe(3)
+    expect(await run(["--interactive", "login"], deps)).toBe(3)
     deps.interactive = true
     deps.env = { CI: "1" }
     expect(await run(["login"], deps)).toBe(3)

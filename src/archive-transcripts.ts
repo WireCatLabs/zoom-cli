@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto"
-import { constants } from "node:fs"
-import { open, realpath } from "node:fs/promises"
+import { realpath } from "node:fs/promises"
 import { join } from "node:path"
 import { parseVtt, type TranscriptLine } from "@wirecat/cli-meetings"
 import { checkCancelled, ZoomError } from "./errors.js"
+import { openOrdinaryFile } from "./ordinary-file.js"
 import { type ArchivedFile, type ArchiveManifest, inspectArchive } from "./recording-archive.js"
 
 export interface ArchiveTranscriptOptions {
@@ -56,10 +56,7 @@ const readTranscript = async (
   checkCancelled(signal)
   if (asset.size > maxBytes) throw new ZoomError("validation_error", "archive transcript exceeds the byte limit")
   try {
-    const file = await open(
-      join(destination, asset.path),
-      constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
-    )
+    const file = await openOrdinaryFile(join(destination, asset.path))
     try {
       checkCancelled(signal)
       const stat = await file.stat()
