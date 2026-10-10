@@ -34,6 +34,10 @@ is an error; tokens are never written to a config file.
 | `config show` | show local configuration |
 | `config set <key> <value>` | configure the public client or file source |
 | `login [--browser <program>]` | approve access through your browser |
+| `commands --json` | discover command arguments, flags and examples |
+| `complete -- <words...>` | answer shell completion requests |
+| `doctor` | inspect local runtime and public config without login or database access |
+| `session status` | inspect saved OAuth state separately from local data profiles |
 | `import <folder>` | import downloaded transcripts once the shared store is available |
 | `pull [--since <date>]` | fetch occurrences from the configured source |
 | `meetings list`, `meetings show <meeting>` | read stored meetings |
@@ -43,6 +47,13 @@ is an error; tokens are never written to a config file.
 
 Use `--json` for one JSON value or `--jsonl` for one item per line. Errors go to stderr. `--no-input`
 refuses browser login. `--help` and `--version` work without a configured app or login.
+Use `--quiet` to suppress non-error diagnostics. Piped output defaults to JSON; terminal output
+uses the shared human-readable renderer. Completion emits its shell protocol unless JSON is requested.
+
+Browser login requires an input terminal. Piped or JSON login also requires
+`--interactive`; CI and terminals without interactive input do not launch a browser. `session status` reads
+cached login state without refreshing credentials. Remote verification through `session status
+--check` requires a host-supplied verification adapter; the standalone adapter is not connected yet.
 
 Config keys: `zoom.clientId`, `account.profile`, `source` (`api` or `files`), `files.folder`,
 and `files.timezone`.

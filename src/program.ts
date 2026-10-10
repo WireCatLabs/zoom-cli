@@ -1,7 +1,9 @@
+import { CliError, createRenderer, exitCodeFor, GENERIC_FAILURE } from "@wirecat/cli-core"
 import { MeetingError, type MeetingSource, type MeetingStore } from "@wirecat/cli-meetings"
 import { addMeetingCommands } from "@wirecat/cli-meetings/cli"
 import { Command, CommanderError } from "commander"
 import { ZoomApiSource } from "./api.js"
+import { addStandardCommands, annotateMeetingCommands } from "./commands.js"
 import { profileAccountKey, readConfig, setConfig } from "./config.js"
 import { ZoomError } from "./errors.js"
 import { FilesSource, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
@@ -33,6 +35,10 @@ export interface ProgramDeps {
   data: (text: string) => void
   diagnostic: (text: string) => void
   now?: () => number
+  interactive?: boolean
+  outputIsTTY?: boolean
+  env?: NodeJS.ProcessEnv
+  checkSession?: () => Promise<unknown>
 }
 const unavailable = async (): Promise<never> => {
   throw new ZoomError("configuration_error", "the shared SQLite meeting store is not available yet")
@@ -52,10 +58,23 @@ const unavailableStore: MeetingStore = {
   cursor: unavailable,
   setCursor: unavailable,
 }
-const render = (data: unknown, format: "json" | "jsonl" | "text"): string => {
-  if (format === "jsonl" && typeof data === "object" && data !== null && "items" in data && Array.isArray(data.items))
-    return data.items.map((row) => `${JSON.stringify(row)}\n`).join("")
-  return `${JSON.stringify(data, null, format === "text" ? 2 : undefined)}\n`
+const render = (value: unknown, format: "json" | "jsonl" | "text", deps: ProgramDeps): string => {
+  const chunks: string[] = []
+  const renderer = createRenderer({
+    format: format === "text" ? (deps.outputIsTTY ? "pretty" : "json") : format,
+    color: false,
+    streams: { data: (text) => chunks.push(`${text}\n`), diagnostic: deps.diagnostic },
+  })
+  if (
+    format === "jsonl" &&
+    typeof value === "object" &&
+    value !== null &&
+    "items" in value &&
+    Array.isArray(value.items)
+  )
+    renderer.stream(value.items)
+  else renderer.result(value)
+  return chunks.join("")
 }
 export const createProgram = (deps: ProgramDeps): Command => {
   let config: ReturnType<typeof readConfig> | undefined
@@ -77,13 +96,19 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .option("--json", "one JSON value")
     .option("--jsonl", "one JSON object per item")
     .option("--no-input", "disable interactive login")
+    .option("--interactive", "permit browser approval in an interactive terminal")
+    .option("--quiet", "suppress non-error diagnostics")
     .exitOverride()
     .configureOutput({ writeOut: deps.data, writeErr: deps.diagnostic, outputError: () => {} })
   program.hook("preAction", async (_root, action) => {
-    const config = getConfig()
     const opts = action.optsWithGlobals()
     if (opts.json && opts.jsonl) throw new ZoomError("validation_error", "choose --json or --jsonl")
-    if (action.name() === "login" || action.parent?.name() === "config") return
+    if (
+      ["login", "commands", "complete", "doctor"].includes(action.name()) ||
+      ["config", "session"].includes(action.parent?.name() ?? "")
+    )
+      return
+    const config = getConfig()
     if (!selectedStore) {
       if (!deps.connectStore) return unavailable()
       if (!config.accountProfile)
@@ -104,7 +129,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     requireAccount()
   })
   const output = (value: unknown) =>
-    deps.data(render(value, program.opts().json ? "json" : program.opts().jsonl ? "jsonl" : "text"))
+    deps.data(render(value, program.opts().json ? "json" : program.opts().jsonl ? "jsonl" : "text", deps))
   const cfg = program.command("config").description("local Zoom configuration")
   cfg
     .command("show")
@@ -128,14 +153,23 @@ export const createProgram = (deps: ProgramDeps): Command => {
       const config = getConfig()
       if (!config.clientId)
         throw new ZoomError("configuration_error", "run zm config set zoom.clientId <Public Client ID> first")
-      if (program.opts().input === false)
+      const globals = program.opts()
+      const headless =
+        deps.interactive === false ||
+        Boolean(deps.env?.CI) ||
+        (deps.interactive !== undefined &&
+          (globals.json || globals.jsonl || deps.outputIsTTY === false) &&
+          !globals.interactive)
+      if (globals.input === false || headless)
         throw new ZoomError("configuration_error", "login requires browser approval; remove --no-input")
       output(
         await login({
           tokens: deps.tokens,
           openBrowser: (url) => deps.openBrowser(url, opts.browser),
           readPaste: deps.readPaste,
-          showUrl: (url) => deps.diagnostic(`Open this URL to approve Zoom login:\n${url}\n`),
+          showUrl: (url) => {
+            if (!program.opts().quiet) deps.diagnostic(`Open this URL to approve Zoom login:\n${url}\n`)
+          },
         }),
       )
     })
@@ -196,9 +230,49 @@ export const createProgram = (deps: ProgramDeps): Command => {
     },
     now: deps.now,
     write: (value, format) => {
-      meetingOutput.push(render(value, format))
+      meetingOutput.push(render(value, format, deps))
     },
   })
+  addStandardCommands(program, {
+    output,
+    raw: deps.data,
+    doctor: () => {
+      const config = getConfig()
+      return {
+        version: VERSION,
+        runtime: { node: process.versions.node },
+        config: { readable: true, path: deps.configPath, source: config.source },
+        dataProfile: config.accountProfile,
+        authentication: { configured: config.clientId !== null, state: "not_checked" },
+        database: "not_checked",
+      }
+    },
+    sessionStatus: async (check) => {
+      const config = getConfig()
+      if (!config.clientId)
+        return { configured: false, state: "not_configured", dataProfile: config.accountProfile, verified: false }
+      if (check) {
+        if (!deps.checkSession)
+          throw new ZoomError("configuration_error", "remote session verification is not available")
+        return {
+          configured: true,
+          state: "verified",
+          dataProfile: config.accountProfile,
+          verified: true,
+          profile: await deps.checkSession(),
+        }
+      }
+      const saved = deps.tokens.load()
+      return {
+        configured: true,
+        state: saved ? (saved.expiresAt > (deps.now?.() ?? Date.now()) ? "saved" : "expired") : "missing",
+        dataProfile: config.accountProfile,
+        verified: false,
+        ...(saved ? { expiresAt: saved.expiresAt, scopes: saved.scopes } : {}),
+      }
+    },
+  })
+  annotateMeetingCommands(program)
   const parseAsync = program.parseAsync.bind(program)
   program.parseAsync = async (...args) => {
     if (parsing) throw new ZoomError("validation_error", "concurrent command parsing is unavailable")
@@ -253,29 +327,10 @@ export const run = async (args: string[], deps: ProgramDeps): Promise<number> =>
       ["commander.helpDisplayed", "commander.help", "commander.version"].includes(String(error.code))
     )
       return 0
-    const code =
-      error instanceof ZoomError || error instanceof MeetingError
-        ? error.code
-        : error instanceof CommanderError
-          ? "validation_error"
-          : "generic_failure"
-    const message =
-      error instanceof ZoomError || error instanceof MeetingError
-        ? error.message
-        : "command failed; use --help for usage"
+    const typed = error instanceof CliError || error instanceof MeetingError
+    const code = typed ? error.code : error instanceof CommanderError ? "validation_error" : "generic_failure"
+    const message = typed ? error.message : "command failed; use --help for usage"
     deps.diagnostic(`${JSON.stringify({ error: { code, message } })}\n`)
-    return code === "configuration_error"
-      ? 3
-      : code === "authentication_error"
-        ? 4
-        : code === "provider_error"
-          ? 11
-          : code === "invalid_response"
-            ? 13
-            : code === "not_found"
-              ? 6
-              : code === "generic_failure"
-                ? 1
-                : 2
+    return code === "generic_failure" ? GENERIC_FAILURE : exitCodeFor(code)
   }
 }
