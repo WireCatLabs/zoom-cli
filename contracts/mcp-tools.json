@@ -1,0 +1,185 @@
+[
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": ["markdown", "vtt"],
+          "type": "string"
+        },
+        "meeting": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "transcript_id": {
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": ["meeting", "format"],
+      "type": "object"
+    },
+    "name": "meeting_export"
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "query": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": ["query"],
+      "type": "object"
+    },
+    "name": "meeting_people"
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "meeting": {
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": ["meeting"],
+      "type": "object"
+    },
+    "name": "meeting_show"
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "meeting": {
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": ["meeting"],
+      "type": "object"
+    },
+    "name": "meeting_summary"
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "history": {
+          "type": "boolean"
+        },
+        "meeting": {
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": ["meeting"],
+      "type": "object"
+    },
+    "name": "meeting_transcript"
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "event_id": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "limit": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "page": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "series_id": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "since": {
+          "type": "number"
+        },
+        "until": {
+          "type": "number"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "name": "meetings_list"
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "event_id": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "query": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "series_id": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "since": {
+          "type": "number"
+        },
+        "until": {
+          "type": "number"
+        }
+      },
+      "required": ["query"],
+      "type": "object"
+    },
+    "name": "meetings_search"
+  }
+]

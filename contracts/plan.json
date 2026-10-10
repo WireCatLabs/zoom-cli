@@ -1,0 +1,42 @@
+{
+  "command": "node",
+  "args": ["../dist/bin/zm.js"],
+  "cases": [
+    {
+      "id": "help",
+      "args": ["--help"],
+      "exit": 0,
+      "stream": "stdout",
+      "kind": "text",
+      "snapshot": "help.snap"
+    },
+    {
+      "id": "discovery",
+      "args": ["commands", "--json"],
+      "exit": 0,
+      "stream": "stdout",
+      "kind": "json",
+      "contains": "\"commands\""
+    },
+    {
+      "id": "invalid-command-path",
+      "args": ["commands", "__contract_missing__", "--json"],
+      "exit": 2,
+      "stream": "stderr",
+      "kind": "json",
+      "errorCode": "validation_error"
+    },
+    {
+      "id": "invalid-option",
+      "args": ["--json", "--__contract_unknown_flag", "commands"],
+      "exit": 2,
+      "stream": "stderr",
+      "kind": "json",
+      "errorCode": "validation_error"
+    }
+  ],
+  "mcp": {
+    "args": ["serve", "--mcp"],
+    "snapshot": "mcp-tools.json"
+  }
+}

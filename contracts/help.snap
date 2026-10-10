@@ -1,0 +1,41 @@
+Usage: zm [options] [command]
+
+Zoom meeting transcripts and summaries
+
+Options:
+  -V, --version               output the version number
+  --json                      one JSON value
+  --jsonl                     one JSON object per item
+  --no-input                  disable interactive login
+  --interactive               permit browser approval in an interactive terminal
+  --quiet                     suppress non-error diagnostics
+  --fields <paths>            project result fields, such as id,title
+  --timeout <duration>        command deadline: reads 30s, login 5m, downloads
+                              1h; watch/MCP have no default
+  --max-output-bytes <bytes>  bound rendered result bytes (default 4194304; zero
+                              is unlimited)
+  --offline                   refuse network requests
+  -h, --help                  display help for command
+
+Commands:
+  config                      local Zoom configuration
+  login [options]             log in to Zoom through your browser
+  meetings                    stored meetings and their records
+  pull [options]              fetch meeting records from the connected account
+  import [options] <folder>   import downloaded meeting transcripts
+  events                      the owner's stored events
+  commands [path...]          discover commands, flags and examples, optionally
+                              scoped to a command path
+  complete [words...]         answer shell completion requests
+  doctor                      check local runtime and public config without a
+                              login or database
+  session                     inspect the saved OAuth session separately from
+                              local data profiles
+  watch [options] [folder]    foreground serial API pulls or folder rescans,
+                              with closed-store receipts
+  recordings                  cloud recording assets and verified local archives
+  remote-meetings             upcoming Zoom meetings; stored meeting reads
+                              remain under meetings
+  skill                       the instructions an agent is given for this tool
+  serve [options]             serve read-only meeting tools over MCP stdio
+  help [command]              display help for command
