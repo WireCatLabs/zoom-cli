@@ -1,0 +1,60 @@
+{
+  "name": "@wirecat/zoom-cli",
+  "version": "0.1.0",
+  "description": "Zoom meetings, transcripts and summaries through provider-neutral meeting tools",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "packageManager": "pnpm@11.20.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WireCatLabs/zoom-cli.git"
+  },
+  "bin": {
+    "zm": "dist/bin/zm.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "typecheck": "tsc --build --force --emitDeclarationOnly && tsc -p tsconfig.test.json && tsc -p tsconfig.scripts.json",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "smoke:bun": "bun run scripts/smoke.ts",
+    "prepublishOnly": "pnpm build",
+    "docs:check": "node node_modules/@wirecat/cli-core/dist/dev/bin.js docs-check --rules scripts/docs-rules.ts && cspell --no-progress --no-summary README.md && rumdl check --config node_modules/@wirecat/cli-core/config/rumdl.toml README.md CHANGELOG.md CLAUDE.md docs/dev/*.md"
+  },
+  "dependencies": {
+    "@wirecat/cli-core": "0.18.1",
+    "@wirecat/cli-meetings": "0.2.0",
+    "commander": "15.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "@cspell/dict-en-gb": "^5.0.34",
+    "@cspell/dict-ru_ru": "^2.3.2",
+    "@types/node": "^22.20.5",
+    "@vitest/coverage-v8": "^5.0.3",
+    "cspell": "^10.3.6",
+    "lefthook": "^2.1.16",
+    "rumdl": "^0.2.78",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

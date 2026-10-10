@@ -1,0 +1,39 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+*.log
+.DS_Store
+
+# The working trail, kept on the machine doing the work: plans, the journal, the handoff.
+/docs_ai/
+/HANDOFF.md
+.claude/settings.local.json
+.rumdl_cache/
+
+# Worktrees, when kept inside the main checkout: each a checkout of its own, never part of this one.
+/.worktrees/
+
+# What the Bash sandbox lays over these names in the working folder (character devices and empty
+# folders, never on disk): without this, `git add -A` inside the sandbox fails on them.
+/.bash_profile
+/.bashrc
+/.profile
+/.zprofile
+/.zshrc
+/.gitconfig
+/.gitmodules
+/.ripgreprc
+/.mcp.json
+/.idea
+/.vscode
+/.claude/.cc-writes
+/.claude/agents
+/.claude/commands
+/.claude/launch.json
+/.claude/loop.md
+/.claude/output-styles
+/.claude/skills
+/.claude/routines
+/.claude/scheduled_tasks.json
+/.claude/workflows

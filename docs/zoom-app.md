@@ -18,7 +18,7 @@ browser and gets a token for your account only.
 4. If Zoom asks how the app is managed, choose **User-managed**.
 5. Check that the import took. On the **Development** tab, **Basic Information** must show
    `https://wirecat.dev/zoom-callback` in **OAuth Redirect URL** and in **OAuth Allow Lists**, and
-   **Scopes** must list the four scopes below. If a field is empty, fill it in by hand and press
+   **Scopes** must list the five scopes below. If a field is empty, fill it in by hand and press
    **Continue**: the import can create the app and leave them blank, and Zoom then refuses the login
    with "Invalid redirect".
 6. In **Basic Information → App Credentials**, turn on **Use Public Client OAuth**. The manifest
@@ -48,6 +48,7 @@ system keyring.
 | `meeting:read:list_meetings` | find your past meetings |
 | `meeting:read:list_past_instances` | tell apart the occurrences of a recurring meeting |
 | `cloud_recording:read:meeting_transcript` | read a meeting's transcript — also for meetings that were not recorded |
+| `meeting:read:list_past_participants` | read participants and their join/leave sessions |
 | `meeting:read:summary` | read Zoom's AI summary; optional, and it needs a Pro plan or higher |
 
 Before you upload it, you can change `developer_information` in the file to your own name and email.
