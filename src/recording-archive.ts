@@ -208,6 +208,7 @@ const fingerprint = async (path: string, signal?: AbortSignal): Promise<{ size: 
   checkCancelled(signal)
   const file = await localFile(path)
   try {
+    checkCancelled(signal)
     const hash = createHash("sha256")
     let size = 0
     for await (const chunk of file.createReadStream({ autoClose: false, ...(signal ? { signal } : {}) })) {
