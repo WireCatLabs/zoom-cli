@@ -1,0 +1,6 @@
+allowBuilds:
+  esbuild: true
+  lefthook: true
+minimumReleaseAgeExclude:
+  - '@wirecat/cli-core@0.18.1'
+  - '@wirecat/cli-meetings@0.2.0'

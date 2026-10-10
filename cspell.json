@@ -1,0 +1,6 @@
+{
+  "version": "0.2",
+  "import": ["@wirecat/cli-core/cspell", "@cspell/dict-en-gb/cspell-ext.json", "@cspell/dict-ru_ru/cspell-ext.json"],
+  "ignorePaths": ["docs/dev/**", "CHANGELOG.md"],
+  "words": ["wirecat", "PKCE"]
+}

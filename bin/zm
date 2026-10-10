@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+set -eu
+cd "$(dirname "$0")/.."
+if [ ! -f dist/bin/zm.js ]; then
+  pnpm --config.verify-deps-before-run=false build
+fi
+exec node dist/bin/zm.js "$@"
