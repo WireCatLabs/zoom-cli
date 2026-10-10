@@ -97,7 +97,23 @@ child.spawn = child.exec = child.execFile = child.spawnSync = child.execSync = c
 require('node:module').syncBuiltinESMExports();
 `,
   )
-  execFileSync("pnpm", ["build"], { cwd: root, stdio: "pipe", timeout: 30000, env: npmEnvironment() })
+  // Invoke the installed compiler directly: fixture HOME must not select a different package manager.
+  try {
+    execFileSync(process.execPath, [join(root, "node_modules", "typescript", "bin", "tsc"), "--build"], {
+      cwd: root,
+      encoding: "utf8",
+      timeout: 30000,
+      maxBuffer: 65536,
+      env: npmEnvironment(),
+    })
+  } catch (error) {
+    const output = (value: unknown): string => {
+      const text = typeof value === "string" ? value : Buffer.isBuffer(value) ? value.toString("utf8") : ""
+      return text.slice(0, 8192)
+    }
+    const failure = error as { stdout?: unknown; stderr?: unknown }
+    throw new Error(`installed-package TypeScript build failed\n${output(failure.stdout)}\n${output(failure.stderr)}`)
+  }
   const packed = JSON.parse(
     execFileSync("npm", ["pack", "--ignore-scripts", "--json", "--pack-destination", install], {
       cwd: root,
