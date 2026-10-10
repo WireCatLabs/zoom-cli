@@ -40,7 +40,8 @@
     "standards:check": "node config/wirecat/check.mjs",
     "docs:lint": "markdownlint-cli2",
     "docs:spell": "cspell lint --config cspell.json --no-progress README.md",
-    "prepare": "lefthook install || true"
+    "prepare": "lefthook install || true",
+    "ci:quick": "pnpm typecheck"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",
