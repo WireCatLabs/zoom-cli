@@ -1,23 +1,15 @@
-# Prerelease development
+# Development setup
 
-cli-meetings 0.2.0 is not yet published. For local checks, build and pack the cli-meetings release
-worktree, then install that tarball without changing this package's declared dependencies:
+Install the published dependencies with the committed lockfile:
 
 ```sh
-npm install --no-save --package-lock=false --ignore-scripts /tmp/wirecat-cli-meetings-0.2.0.tgz
-pnpm --config.verify-deps-before-run=false lint
-pnpm --config.verify-deps-before-run=false typecheck
-pnpm --config.verify-deps-before-run=false test:coverage
-pnpm --config.verify-deps-before-run=false docs:check
-pnpm --config.verify-deps-before-run=false build
-pnpm --config.verify-deps-before-run=false smoke:bun
+pnpm install --frozen-lockfile
+pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm docs:check
+pnpm build && pnpm smoke:bun
 ```
 
-The pnpm flag prevents its dependency check from trying to replace the local tarball with the
-unpublished registry version. After 0.2.0 is published, run a normal `pnpm install` and commit its
-lockfile. The repository owner creates `WireCatLabs/zoom-cli` before this branch can be pushed or
-made into a pull request.
+`bin/zm` runs the local executable. OAuth tests use a memory keyring and a loopback listener;
+source and ingestion tests use invented meetings and the shared memory store.
 
-`bin/zm` runs the local executable. Real login is an owner check; import and pull remain unavailable
-until the shared SQLite meeting adapter is connected. Do not run them against the owner's data
-using the test memory store.
+Real import and pull remain unavailable until cli-messaging publishes its SQLite meeting adapter
+and account selection is connected. Do not use the test memory store for the owner's data.

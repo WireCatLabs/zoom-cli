@@ -10,7 +10,7 @@ from meetings you attended. The shared meeting model, ingestion and commands com
 Login and sources are implemented and tested. Import, pull and meeting reads are tested with an
 in-memory store. The shared SQLite meeting adapter is not available yet, so the executable refuses
 those commands until that adapter is connected. It never saves real imports to a temporary memory
-store. This package depends on cli-meetings 0.2.0, which must be released before a normal install.
+store. The shared model and contract kit come from the published cli-meetings 0.2.0 package.
 
 ## Set up your Zoom app
 
@@ -60,7 +60,7 @@ created, for example `Europe/Madrid`. Ambiguous or nonexistent daylight-saving t
 
 ## Development
 
-Node 22.12 or newer. After cli-meetings 0.2.0 is released:
+Node 22.12 or newer:
 
 ```sh
 pnpm install
@@ -69,7 +69,7 @@ pnpm build && pnpm smoke:bun
 ```
 
 [Architecture](docs/dev/ARCHITECTURE.md), [testing](docs/dev/TESTING.md) and
-[prerelease development](docs/dev/DEVELOPMENT.md) describe the local setup. Fixtures use invented
+[development setup](docs/dev/DEVELOPMENT.md) describe the local setup. Fixtures use invented
 people and meetings. Tests use an injected keyring, scripted HTTP responses, temporary config
 folders and the memory meeting store.
 
