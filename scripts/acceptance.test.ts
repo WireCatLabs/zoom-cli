@@ -107,6 +107,10 @@ describe("installed package", () => {
     expect(help.status).toBe(0)
     expect(help.stdout).toContain("import")
     expect(help.stderr).toBe("")
+    const pullHelp = invoke("pull", "--help")
+    expect(pullHelp.status).toBe(0)
+    expect(pullHelp.stdout).toContain("--lookback-days")
+    expect(pullHelp.stderr).toBe("")
     expect(existsSync(config)).toBe(false)
     const exports = spawnSync(
       process.execPath,
@@ -140,6 +144,19 @@ describe("installed package", () => {
     expect(read.stderr).toBe("")
     const disk = JSON.parse(readFileSync(join(config, "config.json"), "utf8"))
     expect(Object.keys(disk).sort()).toEqual(["accountProfile", "clientId", "filesFolder", "filesTimezone", "source"])
+  })
+
+  it("selects a local profile and rejects invalid labels", () => {
+    const selected = invoke("--json", "config", "set", "account.profile", "personal")
+    expect(selected.status).toBe(0)
+    expect(selected.stderr).toBe("")
+    expect(JSON.parse(selected.stdout).accountProfile).toBe("personal")
+    const invalid = invoke("config", "set", "account.profile", "bad profile")
+    expect(invalid.status).toBe(2)
+    expect(invalid.stdout).toBe("")
+    expect(JSON.parse(invalid.stderr).error.code).toBe("validation_error")
+    const saved = invoke("--json", "config", "show")
+    expect(JSON.parse(saved.stdout).accountProfile).toBe("personal")
   })
 
   it("refuses noninteractive login before external access", () => {

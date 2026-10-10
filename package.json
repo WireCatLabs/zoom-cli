@@ -1,6 +1,6 @@
 {
   "name": "@wirecat/zoom-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Zoom meetings, transcripts and summaries through provider-neutral meeting tools",
   "license": "Apache-2.0",
   "type": "module",
@@ -39,7 +39,7 @@
   },
   "dependencies": {
     "@wirecat/cli-core": "0.18.1",
-    "@wirecat/cli-meetings": "0.2.1",
+    "@wirecat/cli-meetings": "0.2.3",
     "commander": "15.0.0"
   },
   "devDependencies": {

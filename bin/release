@@ -31,7 +31,11 @@ for _ in $(seq 30); do
   sleep 2
 done
 [ -n "$run" ] || { echo "release dispatch not found; check GitHub Actions" >&2; exit 1; }
-gh run watch "$run" --exit-status
+if ! gh run watch "$run" --exit-status; then
+  echo "release failed; inspect: gh run view $run --log-failed" >&2
+  echo "for an unpublished package, check the first-publication setup in docs/dev/RELEASING.md" >&2
+  exit 1
+fi
 npm view "@wirecat/zoom-cli@$version" version --prefer-online
 git fetch -q --tags origin
 git rev-parse --verify "refs/tags/v$version" >/dev/null
