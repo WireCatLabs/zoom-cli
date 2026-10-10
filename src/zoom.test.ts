@@ -501,3 +501,13 @@ it("config reads expose only supported public fields and parser failures are one
   expect(setup.stderr).toHaveLength(1)
   expect(JSON.parse(setup.stderr[0] ?? "{}")).toHaveProperty("error.code", "validation_error")
 })
+
+it("keeps a file's native key when its timezone interpretation is corrected", async () => {
+  expect(fileMeeting(file.name).occurrence.id).toBe(fileMeeting(file.name, "Europe/Madrid").occurrence.id)
+  const store = memoryMeetingStore()
+  await importFiles([importFile(file, 1, "UTC")], store)
+  await importFiles([importFile(file, 1, "Europe/Madrid")], store)
+  const meetings = await store.meetings()
+  expect(meetings).toHaveLength(1)
+  expect(meetings[0]?.startedAt).toBe(Date.parse("2026-10-10T13:30:00Z"))
+})

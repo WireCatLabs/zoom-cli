@@ -39,6 +39,7 @@ const requiredString = (value: unknown): string => {
 }
 export class ZoomApiSource implements MeetingSource {
   readonly provider = "zoom"
+  readonly transcriptFormat = "vtt"
   readonly name = "api"
   constructor(
     private readonly tokens: TokenManager,

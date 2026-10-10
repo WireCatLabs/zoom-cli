@@ -64,7 +64,7 @@ export const fileMeeting = (name: string, timezone = "UTC"): SourceMeeting => {
   const [, year, month, day, hour, minute, topic = ""] = match
   const startedAt = localTimestamp(Number(year), Number(month), Number(day), Number(hour), Number(minute), timezone)
   const slug = topic.normalize("NFC")
-  const id = `file:${createHash("sha256").update(`${startedAt}:${slug}`).digest("hex")}`
+  const id = `file:${createHash("sha256").update(`${year}-${month}-${day}_${hour}${minute}_${slug}`).digest("hex")}`
   const seriesId = `file:${slug}`
   const title = slug.replace(/-/g, " ")
   return {
@@ -118,6 +118,7 @@ export const readDownloadedFiles = async (folder: string): Promise<DownloadedFil
 }
 export class FilesSource implements MeetingSource {
   readonly provider = "zoom"
+  readonly transcriptFormat = "vtt"
   readonly name = "file"
   constructor(
     private readonly filesData: DownloadedFile[],

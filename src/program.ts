@@ -106,6 +106,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
       : {
           provider: "zoom",
           name: "file",
+          transcriptFormat: "vtt",
           async meetings(since) {
             if (!config.filesFolder)
               throw new ZoomError("configuration_error", "set files.folder before pulling from files")

@@ -37,3 +37,6 @@ coverage/
 /.claude/routines
 /.claude/scheduled_tasks.json
 /.claude/workflows
+
+# The owner's raw Marketplace exports are not the public app template.
+/docs/General app*.json
