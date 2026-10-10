@@ -123,6 +123,9 @@ exporter's `YYYY-MM-DD_HHMM_topic-slug.vtt` format. Occurrence ids derive from t
 normalized topic; files carry no Zoom occurrence UUID. Participants remain unknown, and speaker
 names are kept without guessing an identity.
 
+Cloud archive assets use hashed filenames and retain their identity in manifests. Folder import
+currently accepts legacy transcript filenames; a direct cloud archive-to-database import is planned.
+
 File times default to UTC. Set `files.timezone` to the IANA zone used when the filenames were
 created, for example `Europe/Madrid`. Ambiguous or nonexistent daylight-saving times are refused. Conflicting contents for the same
 normalized filename key are an error; correct the conflicting files before retrying. File discovery
@@ -180,7 +183,7 @@ Watching rescans the folder for each cycle, so corrected older files are revisit
 closes the cycle's store connection before emitting its receipt and waits for output to drain before
 starting another cycle. Intervals range from one second to one day. This is a foreground process;
 stop it with Ctrl-C. Headless watching requires `--jsonl`; a stream cannot use `--json`.
-The persistent connector is required, just as for a one-time import.
+Select a local profile before watching, just as for a one-time import.
 
 Cancellation allows up to one second to flush a fully completed receipt if it arrives during
 store close. A blocked output pipe stops that flush; no later cycle starts.
@@ -194,7 +197,8 @@ a caller cannot override the account. File exports and remote mutations are not 
 
 MCP clients can launch `zm` with arguments `["serve", "--mcp"]`. Keep stdout for protocol messages;
 omit `--json`, `--jsonl` and `--fields`. `--max-output-bytes` bounds each tool result, with zero meaning
-unlimited. Actual reads require the compatible persistent connector; discovery is available before it.
+unlimited. Select a profile and import or pull its data before reading tools; discovery is available
+without stored data.
 
 `zm skill show` prints the packaged instructions for an agent. `zm skill install --for agents` writes
 a version-stamped copy to the agent skills directory; `--for claude` selects Claude Code instead.
