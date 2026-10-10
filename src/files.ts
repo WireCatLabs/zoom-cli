@@ -112,14 +112,31 @@ export const importFile = (file: DownloadedFile, accountId: number, timezone = "
     },
   }
 }
+const indexDownloadedFiles = (
+  files: DownloadedFile[],
+  timezone: string,
+): Map<string, { meeting: SourceMeeting; file: DownloadedFile }> => {
+  const result = new Map<string, { meeting: SourceMeeting; file: DownloadedFile }>()
+  for (const file of [...files].sort((a, b) => a.name.localeCompare(b.name))) {
+    const meeting = fileMeeting(file.name, timezone)
+    const existing = result.get(meeting.occurrence.id)
+    if (existing && existing.file.content !== file.content)
+      throw new ZoomError("validation_error", "conflicting transcript files have the same occurrence key")
+    if (!existing) result.set(meeting.occurrence.id, { meeting, file })
+  }
+  return result
+}
+export const validateDownloadedFiles = (files: DownloadedFile[], timezone = "UTC"): DownloadedFile[] =>
+  [...indexDownloadedFiles(files, timezone).values()].map(({ file }) => file)
 export const readDownloadedFiles = async (folder: string): Promise<DownloadedFile[]> => {
   const entries = await readdir(folder, { withFileTypes: true })
-  return Promise.all(
+  const files = await Promise.all(
     entries
       .filter((entry) => entry.isFile() && /\.vtt$/i.test(entry.name))
       .sort((a, b) => a.name.localeCompare(b.name))
       .map(async (entry) => ({ name: entry.name, content: await readFile(join(folder, entry.name), "utf8") })),
   )
+  return validateDownloadedFiles(files)
 }
 export class FilesSource implements MeetingSource {
   readonly provider = "zoom"
@@ -132,16 +149,8 @@ export class FilesSource implements MeetingSource {
   private indexed: Map<string, { meeting: SourceMeeting; file: DownloadedFile }> | undefined
   private index(): Map<string, { meeting: SourceMeeting; file: DownloadedFile }> {
     if (this.indexed) return this.indexed
-    const result = new Map<string, { meeting: SourceMeeting; file: DownloadedFile }>()
-    for (const file of [...this.filesData].sort((a, b) => a.name.localeCompare(b.name))) {
-      const meeting = fileMeeting(file.name, this.timezone)
-      const existing = result.get(meeting.occurrence.id)
-      if (existing && existing.file.content !== file.content)
-        throw new ZoomError("validation_error", "conflicting transcript files have the same occurrence key")
-      if (!existing) result.set(meeting.occurrence.id, { meeting, file })
-    }
-    this.indexed = result
-    return result
+    this.indexed = indexDownloadedFiles(this.filesData, this.timezone)
+    return this.indexed
   }
   async meetings(since: string): Promise<SourceMeeting[]> {
     const lower = Date.parse(since)

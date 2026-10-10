@@ -1,7 +1,10 @@
+import { mkdtemp, writeFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-core"
 import { describe, expect, it } from "vitest"
 import { ZoomApiSource } from "./api.js"
-import { FilesSource, fileMeeting } from "./files.js"
+import { FilesSource, fileMeeting, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { TokenManager } from "./tokens.js"
 
 const scopes = [
@@ -248,4 +251,24 @@ it("preserves shared-parser compatibility with lone CR WebVTT line endings", asy
       : new Response(vtt.replaceAll("\n", "\r")),
   )
   expect(await source.transcript("example")).toHaveLength(1)
+})
+
+it("preflights actual folder imports and injected files before choosing normalized contents", async () => {
+  const folder = await mkdtemp(join(tmpdir(), "zm-test-source-"))
+  const name = "2026-10-10_1530_example.vtt"
+  await writeFile(join(folder, name), vtt)
+  await writeFile(join(folder, name.replace(".vtt", ".VTT")), `${vtt}\nChanged example`)
+  await expect(readDownloadedFiles(folder)).rejects.toThrow(/conflicting/)
+  await writeFile(join(folder, name.replace(".vtt", ".VTT")), vtt)
+  expect(await readDownloadedFiles(folder)).toHaveLength(1)
+  expect(
+    validateDownloadedFiles(
+      [
+        { name, content: vtt },
+        { name: name.replace(".vtt", ".VTT"), content: vtt },
+      ],
+      "Europe/Madrid",
+    ),
+  ).toHaveLength(1)
+  expect(() => validateDownloadedFiles([{ name: "bad.vtt", content: vtt }])).toThrow(/expected a transcript/)
 })
