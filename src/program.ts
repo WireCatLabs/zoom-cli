@@ -1,5 +1,6 @@
 import {
   CliError,
+  createDeadline,
   createRenderer,
   exitCodeFor,
   fieldsOf,
@@ -7,7 +8,7 @@ import {
   projectFields,
   type SleepLike,
 } from "@wirecat/cli-core"
-import { MeetingError, type MeetingSource, type MeetingStore } from "@wirecat/cli-meetings"
+import { importFiles, MeetingError, type MeetingSource, type MeetingStore } from "@wirecat/cli-meetings"
 import { addMeetingCommands } from "@wirecat/cli-meetings/cli"
 import { Command, CommanderError } from "commander"
 import { addZoomSkillCommands } from "./agent-skill.js"
@@ -34,8 +35,10 @@ import {
 } from "./recordings.js"
 import type { RemoteOptions } from "./remote-http.js"
 import { ZoomRemoteMeetings } from "./remote-meetings.js"
+import { emitReceipt } from "./streaming.js"
 import type { TokenManager } from "./tokens.js"
 import { VERSION } from "./version.js"
+import { addWatchCommand } from "./watch-commands.js"
 
 export interface StoreConnection {
   store: MeetingStore
@@ -71,7 +74,7 @@ export interface ProgramDeps {
   checkSession?: (options?: { signal?: AbortSignal }) => Promise<unknown>
   signal?: AbortSignal
   sleep?: SleepLike
-  serveMcp?: (options: { signal: AbortSignal }) => Promise<void>
+  serveMcp?: (options: { signal: AbortSignal; maxResultBytes?: number }) => Promise<void>
   streamData?: (text: string, signal: AbortSignal) => Promise<void>
 }
 const unavailable = async (): Promise<never> => {
@@ -176,7 +179,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .option("--fields <paths>", "project result fields, such as id,title")
     .option(
       "--timeout <duration>",
-      "command deadline: reads 30s, login 5m, downloads 1h; watch has no default",
+      "command deadline: reads 30s, login 5m, downloads 1h; watch/MCP have no default",
       duration,
     )
     .option("--max-output-bytes <bytes>", "bound rendered result bytes (default 4194304; zero is unlimited)", bytes)
@@ -209,6 +212,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
         "remote-meetings",
         "serve",
         "skill",
+        "watch",
       ].includes(family.name())
     )
       return
@@ -394,6 +398,80 @@ export const createProgram = (deps: ProgramDeps): Command => {
       }
     },
   })
+  const watchSleep = deps.sleep
+  const receipt = async (value: unknown) => {
+    const text = render(value, program.opts().jsonl ? "jsonl" : "text", deps, fields)
+    const operation = signal() as AbortSignal
+    const grace = operation.aborted ? createDeadline({ timeoutMs: 1000 }) : undefined
+    try {
+      await emitReceipt(text, program.opts().maxOutputBytes, async (serialized) => {
+        if (deps.streamData) await deps.streamData(serialized, grace?.signal ?? operation)
+        else deps.data(serialized)
+      })
+    } finally {
+      grace?.dispose()
+    }
+  }
+  addWatchCommand(program, {
+    signal: () => signal() as AbortSignal,
+    receipt,
+    outputIsTTY: deps.outputIsTTY,
+    sleep: watchSleep ? (ms, abort) => watchSleep(ms, abort, "retry") : undefined,
+    ingest: async (folder, operation) => {
+      checkCancelled(operation)
+      const config = readConfig(deps.configPath)
+      let cycle: StoreConnection | undefined
+      let failure: unknown
+      let result: Awaited<ReturnType<typeof importFiles>> | undefined
+      try {
+        if (!deps.store) {
+          if (!deps.connectStore) return unavailable()
+          if (!config.accountProfile)
+            throw new ZoomError(
+              "configuration_error",
+              "select a local profile with zm config set account.profile <label>",
+            )
+          try {
+            cycle = await deps.connectStore({
+              profile: config.accountProfile,
+              externalId: profileAccountKey(config.accountProfile),
+              intent: "ingestion",
+            })
+          } catch (error) {
+            if (error instanceof CliError || error instanceof MeetingError) throw error
+            throw new ZoomError("configuration_error", "could not open the shared meeting store")
+          }
+        }
+        checkCancelled(operation)
+        const accountId = cycle?.accountId ?? deps.accountId
+        if (!Number.isSafeInteger(accountId) || !accountId || accountId < 1)
+          throw new ZoomError("configuration_error", "the selected meeting account is unavailable")
+        const files = validateDownloadedFiles(
+          await (deps.readFiles ?? readDownloadedFiles)(folder),
+          config.filesTimezone,
+        )
+        checkCancelled(operation)
+        result = await importFiles(
+          files.map((file) => importFile(file, accountId, config.filesTimezone)),
+          guardedStore(cycle?.store ?? deps.store ?? unavailableStore),
+          deps.now?.(),
+        )
+      } catch (error) {
+        failure = error
+      } finally {
+        if (cycle) {
+          try {
+            await cycle.close()
+          } catch {
+            failure ??= new ZoomError("configuration_error", "could not close the shared meeting store")
+          }
+        }
+      }
+      if (failure) throw failure
+      if (!result) return unavailable()
+      return result
+    },
+  })
   const retrySleep = deps.sleep
   const remoteOptions: RemoteOptions = {
     now: deps.now,
@@ -401,6 +479,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
   }
   addArchiveCommands(program, {
     output,
+    receipt,
+    outputIsTTY: deps.outputIsTTY,
     api,
     signal,
     now: deps.now ?? Date.now,
@@ -436,7 +516,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
       if (opts.json || opts.jsonl || opts.fields)
         throw new ZoomError("validation_error", "MCP stdio controls its own output; omit --json, --jsonl and --fields")
       if (!deps.serveMcp) throw new ZoomError("configuration_error", "the MCP server adapter is not available")
-      await deps.serveMcp({ signal: signal() as AbortSignal })
+      await deps.serveMcp({ signal: signal() as AbortSignal, maxResultBytes: program.opts().maxOutputBytes })
     })
   annotateMeetingCommands(program)
   const parseAsync = program.parseAsync.bind(program)

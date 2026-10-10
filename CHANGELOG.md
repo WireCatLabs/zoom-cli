@@ -4,6 +4,12 @@
 
 ### Added
 
+- **Recording history synchronization** splits explicit date ranges into monthly requests and emits
+  serial occurrence receipts with verified skipping. Folder watching rescans corrected transcripts
+  and closes each ingestion connection before its receipt; headless streams require JSONL.
+- **Read-only MCP serving and packaged agent instructions** reuse the shared meeting tools and
+  cli-core skill installation. MCP reads use the selected account and close before responding;
+  discovery opens no database. Native reads require a selected profile with stored meeting data.
 - **Cloud recording archives** discover assets and stream available video, audio, VTT and chat files
   into a local archive with checksummed manifests, verified skipping, bounded transfers and explicit
   stale lock recovery. Archive inspection and verification do not need Zoom or a meeting database.
@@ -16,6 +22,8 @@
 
 ### Changed — may break callers
 
+- **Native store runtime prerequisites** add the published cli-messaging 0.218.0 dependency.
+  Node now requires 22.16 or newer within 22.x, or version 24 or newer, matching its SQLite runtime.
 - **Shared CLI output and errors** use cli-core rendering and exit codes. Piped output is JSON;
   terminal output uses human-readable rendering. `--quiet` suppresses non-error diagnostics.
 - **Unattended login fails promptly.** CI and terminals without interactive input cannot launch a browser;

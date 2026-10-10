@@ -9,10 +9,10 @@ from meetings you attended. The shared meeting model, ingestion and commands com
 ## Current availability
 
 Login, cloud recording downloads and remote meeting commands work independently of the meeting
-database. Import, pull and meeting reads are tested with an
-in-memory store. The shared SQLite meeting adapter is not available yet, so the executable refuses
-those commands until that adapter is connected. It never saves real imports to a temporary memory
-store. The shared model, exports and ingestion loop come from `@wirecat/cli-meetings`.
+database. Import, pull, folder watching and meeting reads use the published shared SQLite adapter.
+Store connections open lazily and close before successful results are emitted. Meeting data persists
+in the shared WireCat database; `MESSAGING_STORE` selects an explicit database path. The shared model,
+exports and ingestion loop come from `@wirecat/cli-meetings`.
 
 ## Set up your Zoom app
 
@@ -40,7 +40,7 @@ is an error; tokens are never written to a config file.
 | `complete -- <words...>` | answer shell completion requests |
 | `doctor` | inspect local runtime and public config without login or database access |
 | `session status` | inspect saved OAuth state separately from local data profiles |
-| `import <folder>` | import downloaded transcripts once the shared store is available |
+| `import <folder>` | import downloaded transcripts into the selected local profile |
 | `pull [--since <date>]` | fetch occurrences from the configured source |
 | `meetings list`, `meetings show <meeting>` | read stored meetings |
 | `meetings transcript <meeting>` | read current transcripts |
@@ -48,12 +48,16 @@ is an error; tokens are never written to a config file.
 | `meetings export <meeting> --format markdown\|vtt` | export stored meeting content |
 | `meetings search <query>`, `meetings people <query>` | find stored text or participants |
 | `events list` | read stored events |
+| `watch <folder> --jsonl` | repeatedly import a transcript folder in the foreground |
 | `recordings list`, `recordings show <meeting>` | discover cloud recordings and asset metadata |
 | `recordings download <meeting> --destination <directory>` | archive available recording files |
+| `recordings sync --from <date> --to <date> --destination <directory> --jsonl` | archive recording history across calendar months |
 | `recordings archive inspect\|verify\|locks <directory>` | inspect local manifests, checksums or locks |
 | `recordings archive recover <directory>` | preview recovery of stale local locks |
 | `remote-meetings list\|show\|invitation` | read upcoming Zoom meetings and invitations |
 | `remote-meetings create\|update\|cancel` | preview or apply a simple Zoom meeting change |
+| `serve --mcp` | serve read-only stored meeting tools over MCP stdio |
+| `skill show`, `skill install --for agents` | print or explicitly install the packaged agent guide |
 
 Use `--json` for one JSON value or `--jsonl` for one item per line. Errors go to stderr. `--no-input`
 refuses browser login. `--help` and `--version` work without a configured app or login.
@@ -68,7 +72,10 @@ cached login state without refreshing credentials. Remote verification through `
 Use `--fields id,title` to select result fields. `--offline` refuses network requests. Finite commands
 buffer successful output until resource cleanup completes, with a default output limit of 4 MiB;
 `--max-output-bytes 0` removes that limit. `--timeout <milliseconds>` sets a positive whole-command
-deadline. Defaults are 30 seconds for reads, five minutes for login and one hour for recording downloads.
+deadline. Durations also accept units such as `30s`, `5m` and `1h`. Defaults are 30 seconds for reads,
+five minutes for login and one hour for recording downloads, sync and archive verification.
+Foreground watching and MCP serving have no default deadline. Cancellation waits for active operations
+and cleanup; an injected operation that ignores its signal can delay shutdown.
 
 Config keys: `zoom.clientId`, `account.profile`, `source` (`api` or `files`), `files.folder`,
 and `files.timezone`.
@@ -89,8 +96,10 @@ separate labels for data you want kept in separate accounts. File import and API
 selected profile. Folder import leaves its pull cursor unchanged; switching pull sources may need
 an older explicit `--since` to revisit earlier occurrences.
 
-The executable's persistent store connection is still pending. Selecting a profile prepares its
-configuration; store commands report that the adapter is unavailable until it is connected.
+Import and pull register the selected profile when ingestion begins. Read commands look up an
+existing profile and never register an account; import transcripts or pull first if no stored
+meetings exist. `MESSAGING_STORE` overrides the shared database path for all these commands and MCP
+reads. Metadata, help, configuration and login commands do not open the database.
 
 ## Recover from errors
 
@@ -130,6 +139,18 @@ zm recordings download example-occurrence --destination ./zoom-archive --json
 zm recordings archive verify ./zoom-archive --offline --json
 ```
 
+For recording history across months, use:
+
+```sh
+zm recordings sync --from 2026-01-01 --to 2026-10-10 --destination ./zoom-archive --jsonl
+```
+
+Sync accepts explicit ordered dates spanning at most ten calendar years. It splits them into monthly
+requests, deduplicates occurrence UUIDs and downloads serially. Each JSONL receipt describes one
+completed occurrence; earlier receipts and completed files remain if a later request fails. Repeat the
+same range or an overlapping recent range to discover new assets and skip verified files. Sync has no
+durable date cursor; the requested range determines what is revisited. Headless sync requires `--jsonl`.
+
 Recording lists accept an ordered date range of at most 31 days. Downloads stream to disk rather
 than loading a video into memory. The default per-file limit is 20 GiB; change it with `--max-bytes`.
 Use `--file-ids` to select comma-separated asset ids. Only completed, downloadable assets are saved;
@@ -149,6 +170,36 @@ and preview `recordings archive recover`. Add `--yes` to remove recognized locks
 on this machine; active, foreign and unrecognized locks are preserved. Recovery removes stale lock
 markers only. It does not repair an incomplete manifest or adopt an untracked file.
 
+## Watch a transcript folder
+
+```sh
+zm watch ./downloaded-transcripts --interval 10s --jsonl
+```
+
+Watching rescans the folder for each cycle, so corrected older files are revisited. It imports serially,
+closes the cycle's store connection before emitting its receipt and waits for output to drain before
+starting another cycle. Intervals range from one second to one day. This is a foreground process;
+stop it with Ctrl-C. Headless watching requires `--jsonl`; a stream cannot use `--json`.
+The persistent connector is required, just as for a one-time import.
+
+Cancellation allows up to one second to flush a fully completed receipt if it arrives during
+store close. A blocked output pipe stops that flush; no later cycle starts.
+
+## Read meeting tools through MCP
+
+`zm serve --mcp` uses MCP's stdio protocol and serves seven read-only tools: meeting list/show,
+transcripts, summaries, exports, text search and participant search. Tool discovery does not open a
+database. Each read uses the selected local account and closes its connection before the response;
+a caller cannot override the account. File exports and remote mutations are not exposed as tools.
+
+MCP clients can launch `zm` with arguments `["serve", "--mcp"]`. Keep stdout for protocol messages;
+omit `--json`, `--jsonl` and `--fields`. `--max-output-bytes` bounds each tool result, with zero meaning
+unlimited. Actual reads require the compatible persistent connector; discovery is available before it.
+
+`zm skill show` prints the packaged instructions for an agent. `zm skill install --for agents` writes
+a version-stamped copy to the agent skills directory; `--for claude` selects Claude Code instead.
+Installation is explicit and does not run when a command starts.
+
 ## Manage a Zoom meeting
 
 Remote meeting ids are Zoom's numeric ids; stored `meetings` commands use local database ids.
@@ -167,7 +218,7 @@ repeating it; the CLI reports an uncertain outcome with exit code 14.
 
 ## Development
 
-Node 22.12 or newer:
+Node 22.16 or newer within 22.x, or Node 24 or newer:
 
 ```sh
 pnpm install

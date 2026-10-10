@@ -94,6 +94,8 @@ export const annotateMeetingCommands = (program: Command): void => {
   }
 }
 const exampleFor = (path: string): string => {
+  if (path === "serve") return "zm serve --mcp"
+  if (path === "login") return "zm login --interactive"
   const argumentsByPath: Record<string, string> = {
     "config set": "account.profile personal",
     "meetings show": "1",
