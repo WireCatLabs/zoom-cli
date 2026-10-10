@@ -52,24 +52,43 @@ export class ZoomApiSource implements MeetingSource {
         "authentication_error",
         `Zoom scope ${scope} is missing; add it to the app and run zm login again`,
       )
-    const response = await this.fetcher(`https://api.zoom.us/v2${path}`, {
-      headers: { authorization: `Bearer ${tokens.accessToken}` },
-      signal: AbortSignal.timeout(30000),
-    })
-    const body = object(await response.json())
+    const response = await this.get(`https://api.zoom.us/v2${path}`, tokens.accessToken)
+    let value: unknown
+    try {
+      value = await response.json()
+    } catch {
+      if (response.ok) throw new ZoomError("invalid_response", "Zoom returned an invalid response")
+      value = {}
+    }
+    const body = response.ok
+      ? object(value)
+      : typeof value === "object" && value !== null && !Array.isArray(value)
+        ? object(value)
+        : {}
     if (body.code === 4711)
       throw new ZoomError(
         "authentication_error",
         `Zoom scope ${scope} is missing; add it to the app and run zm login again`,
       )
     if (!response.ok) {
-      if (response.status === 404 && body.code === missingCode) return null
+      if (response.status === 404 && missingCode !== undefined && body.code === missingCode) return null
       throw new ZoomError(
         response.status === 401 ? "authentication_error" : "provider_error",
         `Zoom request failed (HTTP ${response.status}${typeof body.code === "number" ? `, code ${body.code}` : ""})`,
       )
     }
     return body
+  }
+  private async get(target: string | URL, accessToken: string): Promise<Response> {
+    try {
+      return await this.fetcher(target, {
+        headers: { authorization: `Bearer ${accessToken}` },
+        signal: AbortSignal.timeout(30000),
+        redirect: "manual",
+      })
+    } catch {
+      throw new ZoomError("provider_error", "Zoom request could not be completed")
+    }
   }
   private async pages(path: string, key: string, scope: string): Promise<Record<string, unknown>[]> {
     const rows: Record<string, unknown>[] = []
@@ -97,7 +116,7 @@ export class ZoomApiSource implements MeetingSource {
     const meetings: SourceMeeting[] = []
     const seen = new Set<string>()
     for (const row of series) {
-      if (!(typeof row.id === "string" || (typeof row.id === "number" && Number.isSafeInteger(row.id))))
+      if (!(string(row.id) !== null || (typeof row.id === "number" && Number.isSafeInteger(row.id) && row.id > 0)))
         throw new ZoomError("invalid_response", "Zoom meeting is missing its series id")
       const seriesId = String(row.id)
       const recurring = row.type === 3 || row.type === 8
@@ -117,7 +136,9 @@ export class ZoomApiSource implements MeetingSource {
         if (startedAt === null) throw new ZoomError("invalid_response", "Zoom occurrence is missing its start time")
         if (startedAt < lower || seen.has(id)) continue
         seen.add(id)
-        const duration = recurring ? null : number(row.duration)
+        const rawDuration = recurring ? null : number(row.duration)
+        const end = rawDuration !== null && rawDuration >= 0 ? startedAt + rawDuration * 60000 : Number.NaN
+        const endedAt = Number.isFinite(end) && Math.abs(end) <= 8640000000000000 ? new Date(end).toISOString() : null
         meetings.push({
           series: {
             id: seriesId,
@@ -132,7 +153,7 @@ export class ZoomApiSource implements MeetingSource {
             seriesId,
             title: string(row.topic),
             startedAt: new Date(startedAt).toISOString(),
-            endedAt: duration === null ? null : new Date(startedAt + duration * 60000).toISOString(),
+            endedAt,
           },
           description: string(row.agenda),
           joinUrl: string(row.join_url),
@@ -161,6 +182,7 @@ export class ZoomApiSource implements MeetingSource {
       "meeting:read:list_past_participants",
     )
     const participants = new Map<string, SourceParticipant>()
+    const seenSessions = new Set<string>()
     for (const [position, row] of rows.entries()) {
       const stableId = string(row.id)
       const email = string(row.user_email)
@@ -174,7 +196,16 @@ export class ZoomApiSource implements MeetingSource {
             : `unknown:${position}`
       const joinedAt = time(row.join_time)
       const leftAt = time(row.leave_time)
-      const duration = number(row.duration)
+      const rawDuration = number(row.duration)
+      const duration =
+        rawDuration !== null && rawDuration >= 0 && Number.isFinite(rawDuration * 1000) ? rawDuration : null
+      // Only stable identities with a concrete session id can be deduplicated safely.
+      const sessionId = string(row.user_id)
+      if (key !== `unknown:${position}` && sessionId) {
+        const fingerprint = JSON.stringify([key, sessionId, joinedAt, leftAt, duration])
+        if (seenSessions.has(fingerprint)) continue
+        seenSessions.add(fingerprint)
+      }
       const session = {
         joinedAt,
         leftAt,
@@ -220,29 +251,92 @@ export class ZoomApiSource implements MeetingSource {
       3322,
     )
     if (!body) return null
-    const target = new URL(requiredString(body.download_url))
-    if (
-      target.protocol !== "https:" ||
-      target.username ||
-      target.password ||
-      !/(^|\.)zoom\.(us|com)$/.test(target.hostname)
-    )
-      throw new ZoomError("invalid_response", "Zoom returned an unexpected transcript download host")
+    const validateTarget = (value: string, base?: URL): URL => {
+      let target: URL
+      try {
+        target = new URL(value, base)
+      } catch {
+        throw new ZoomError("invalid_response", "Zoom returned an unexpected transcript download host")
+      }
+      if (
+        target.protocol !== "https:" ||
+        target.username ||
+        target.password ||
+        (target.port && target.port !== "443") ||
+        !/(^|\.)zoom\.(us|com)$/.test(target.hostname)
+      )
+        throw new ZoomError("invalid_response", "Zoom returned an unexpected transcript download host")
+      return target
+    }
+    let target = validateTarget(requiredString(body.download_url))
     const tokens = await this.tokens.tokens()
-    const response = await this.fetcher(target, {
-      headers: { authorization: `Bearer ${tokens.accessToken}` },
-      signal: AbortSignal.timeout(30000),
-    })
-    if (!response.ok) throw new ZoomError("provider_error", `Transcript download failed (HTTP ${response.status})`)
-    return parseVtt(await response.text())
+    const signal = AbortSignal.timeout(30000)
+    for (let redirects = 0; ; redirects++) {
+      // One deadline covers every redirect and the streamed body.
+      let response: Response
+      try {
+        response = await this.fetcher(target, {
+          headers: { authorization: `Bearer ${tokens.accessToken}` },
+          signal,
+          redirect: "manual",
+        })
+      } catch {
+        throw new ZoomError("provider_error", "Transcript download could not be completed")
+      }
+      if ([301, 302, 303, 307, 308].includes(response.status)) {
+        const location = response.headers.get("location")
+        await response.body?.cancel()
+        if (!location || redirects >= 5)
+          throw new ZoomError("invalid_response", "Zoom returned invalid transcript redirects")
+        target = validateTarget(location, target)
+        continue
+      }
+      if (!response.ok) throw new ZoomError("provider_error", `Transcript download failed (HTTP ${response.status})`)
+      // A mislabeled HTML login page must not become an empty saved transcript.
+      const maxBytes = 10 * 1024 * 1024
+      const reader = response.body?.getReader()
+      if (!reader) throw new ZoomError("invalid_response", "Zoom returned an invalid transcript")
+      const chunks: Uint8Array[] = []
+      let size = 0
+      try {
+        for (;;) {
+          const { done, value } = await reader.read()
+          if (done) break
+          size += value.byteLength
+          if (size > maxBytes) {
+            await reader.cancel()
+            throw new ZoomError("invalid_response", "Zoom transcript exceeds the download size limit")
+          }
+          chunks.push(value)
+        }
+      } catch (error) {
+        if (error instanceof ZoomError) throw error
+        throw new ZoomError("provider_error", "Transcript download could not be completed")
+      }
+      const bytes = new Uint8Array(size)
+      let offset = 0
+      for (const chunk of chunks) {
+        bytes.set(chunk, offset)
+        offset += chunk.byteLength
+      }
+      const content = new TextDecoder().decode(bytes)
+      if (!/^WEBVTT(?:[ \t]|\r?\n|$)/.test(content))
+        throw new ZoomError("invalid_response", "Zoom returned an invalid transcript")
+      try {
+        return parseVtt(content)
+      } catch {
+        throw new ZoomError("invalid_response", "Zoom returned an invalid transcript")
+      }
+    }
   }
+
   async summary(id: string): Promise<SummaryContent | null> {
     const body = await this.request(`/meetings/${encodeUuid(id)}/meeting_summary`, "meeting:read:summary", 3001)
     if (!body) return null
     const edited = body.edited_summary && typeof body.edited_summary === "object" ? object(body.edited_summary) : null
     const details = Array.isArray(body.summary_details) ? body.summary_details.map(object) : []
     const steps = edited?.next_steps ?? body.next_steps
-    const content = string(body.summary_content)
+    const content = typeof body.summary_content === "string" ? body.summary_content : null
     return {
       source: "zoom-ai",
       content: content ?? string(edited?.summary_details),
@@ -262,10 +356,12 @@ export class ZoomApiSource implements MeetingSource {
       ]),
       title: string(body.summary_title),
       overview: string(edited?.summary_overview) ?? string(body.summary_overview),
-      sections: content
-        ? []
-        : details.map((part) => ({ label: string(part.label) ?? "", text: string(part.summary) ?? "" })),
-      nextSteps: content ? [] : Array.isArray(steps) ? steps.filter((s): s is string => typeof s === "string") : [],
+      sections:
+        content !== null
+          ? []
+          : details.map((part) => ({ label: string(part.label) ?? "", text: string(part.summary) ?? "" })),
+      nextSteps:
+        content !== null ? [] : Array.isArray(steps) ? steps.filter((s): s is string => typeof s === "string") : [],
     }
   }
   async chat() {
