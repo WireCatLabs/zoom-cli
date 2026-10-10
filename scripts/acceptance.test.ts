@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process"
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -14,6 +14,11 @@ let marker: string
 let executable: string
 
 const invoke = (...args: string[]) => {
+  const database = join(install, "unused.db")
+  const existedBefore = existsSync(database)
+  const timestampBefore = existedBefore ? statSync(database).mtimeMs : null
+  const command = args.find((arg) => !arg.startsWith("--"))
+  const opensStore = !args.includes("--help") && ["meetings", "events", "import", "pull"].includes(command ?? "")
   const result = spawnSync(executable, args, {
     cwd: install,
     encoding: "utf8",
@@ -30,7 +35,10 @@ const invoke = (...args: string[]) => {
   })
   expect(result.error).toBeUndefined()
   expect(existsSync(marker), "unexpected network, browser or keyring access").toBe(false)
-  expect(existsSync(join(install, "unused.db"))).toBe(false)
+  if (!opensStore) {
+    expect(existsSync(database)).toBe(existedBefore)
+    if (existedBefore) expect(statSync(database).mtimeMs).toBe(timestampBefore)
+  }
   return result
 }
 
@@ -166,7 +174,7 @@ describe("installed package", () => {
     expect(JSON.parse(result.stderr).error.code).toBe("configuration_error")
   })
 
-  it("classifies invalid commands and refuses unavailable persistence", () => {
+  it("classifies invalid commands and rejects a profile without stored data", () => {
     const invalid = invoke("does-not-exist")
     expect(invalid.status).toBe(2)
     expect(invalid.stdout).toBe("")
