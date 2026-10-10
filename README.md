@@ -48,12 +48,14 @@ is an error; tokens are never written to a config file.
 | `meetings export <meeting> --format markdown\|vtt` | export stored meeting content |
 | `meetings search <query>`, `meetings people <query>` | find stored text or participants |
 | `events list` | read stored events |
-| `watch <folder> --jsonl` | repeatedly import a transcript folder in the foreground |
+| `watch [folder] --source api\|files --jsonl` | repeatedly ingest the configured source in the foreground |
 | `recordings list`, `recordings show <meeting>` | discover cloud recordings and asset metadata |
 | `recordings download <meeting> --destination <directory>` | archive available recording files |
 | `recordings sync --from <date> --to <date> --destination <directory> --jsonl` | archive recording history across calendar months |
 | `recordings archive inspect\|verify\|locks <directory>` | inspect local manifests, checksums or locks |
 | `recordings archive recover <directory>` | preview recovery of stale local locks |
+| `recordings archive transcript <directory>` | read verified archived WebVTT cues without a database |
+| `recordings archive search <directory> <query>` | search verified archived cue text without a database |
 | `remote-meetings list\|show\|invitation` | read upcoming Zoom meetings and invitations |
 | `remote-meetings create\|update\|cancel` | preview or apply a simple Zoom meeting change |
 | `serve --mcp` | serve read-only stored meeting tools over MCP stdio |
@@ -125,6 +127,33 @@ names are kept without guessing an identity.
 
 Cloud archive assets use hashed filenames and retain their identity in manifests. Folder import
 currently accepts legacy transcript filenames; a direct cloud archive-to-database import is planned.
+
+Read or search archived transcripts directly:
+
+```sh
+zm recordings archive transcript ./zoom-archive --offline --json
+zm recordings archive search ./zoom-archive "example plan" --limit 100 --offline --json
+```
+
+Both commands verify each WebVTT file they read against manifest sizes and SHA-256 digests before
+returning parsed cues. Search stops after finding one match beyond its limit; later files remain
+unread. They need no login, configuration or database. Use `--uuid` or comma-separated
+`--file-ids` to select assets, and `--max-bytes` to change the default 8 MiB per-file read limit.
+Search matches literal cue text after Unicode normalization and lowercasing; speaker names are
+not searched. Its default limit is 100, with a maximum of 1000. `hasMore` means another matching cue
+exists; increase the limit or narrow the occurrence, file or query selection to read more.
+Results have no continuation cursor. Finite output remains
+bounded by `--max-output-bytes`, and a failed verification emits no successful result.
+
+For repeated API ingestion, use `zm watch --source api --lookback-days 7 --jsonl`. A folder argument
+selects file watching; otherwise the configured source applies. File watching can use `files.folder`.
+API watching accepts `--since` and revisits zero through 31 days, and requires online access.
+`--since` sets the initial lower bound; after a successful cursor write, later cycles use the cursor
+with the selected overlap. Failed cycles retain the initial bound until a cursor write succeeds.
+The overlap also subtracts from the initial `--since` bound.
+`--interval` controls the delay between completed cycles. Profile, source and file settings are
+captured, along with the OAuth client, before watching begins; changing configuration requires restarting the watch. Cycles never
+overlap and close their store connection before emitting a receipt. Stop with Ctrl-C.
 
 File times default to UTC. Set `files.timezone` to the IANA zone used when the filenames were
 created, for example `Europe/Madrid`. Ambiguous or nonexistent daylight-saving times are refused. Conflicting contents for the same

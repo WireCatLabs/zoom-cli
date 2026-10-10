@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.1 — 10.10.2026
+
+### Added
+
+- **Offline archive transcript reads and search** verify manifest size and SHA-256 before parsing
+  WebVTT. Select occurrences or files, bound per-file reads and results, and search literal cue text
+  without login or a meeting database. Successful finite output is withheld if verification fails.
+- **API foreground watching** repeatedly pulls the configured source with an optional late-part
+  lookback. File watching retains its positional folder form. Configuration is captured before the
+  first cycle; cycles serialize ingestion and close each store connection before emitting a receipt.
+
 ## 0.2.0 — 10.10.2026
 
 ### Added
