@@ -484,3 +484,37 @@ it("classifies dispatched token failures as uncertain while preflight cancellati
   await expect(tokens.exchange({})).rejects.toMatchObject({ code: "cancelled" })
   expect(fetcher).not.toHaveBeenCalled()
 })
+
+it("keeps token grants bound to the client sent and separates refresh singleflight by client", async () => {
+  const { deps } = await setup()
+  let client = "example-first-client"
+  const keyring = memoryKeyring()
+  const requests: string[] = []
+  const tokens = new TokenManager({
+    ...deps.tokens.options,
+    keyring,
+    get clientId() {
+      return client
+    },
+    fetch: async (_url, init) => {
+      requests.push(new URLSearchParams(String(init?.body)).get("client_id") ?? "")
+      client = "example-second-client"
+      await Promise.resolve()
+      return response({ access_token: "example-new", refresh_token: "example-refresh", expires_in: 60 })
+    },
+  })
+  await tokens.exchange({})
+  expect(tokens.load("example-first-client")).not.toBeNull()
+  expect(tokens.load("example-second-client")).toBeNull()
+  client = "example-first-client"
+  const first = tokens.withSignal()
+  expect(first.options.clientId).toBe("example-first-client")
+  client = "example-second-client"
+  expect(first.options.clientId).toBe("example-first-client")
+  const second = tokens.withSignal()
+  const expired = { accessToken: "example-old", refreshToken: "example-old-refresh", expiresAt: 0, scopes: [] }
+  tokens.save(expired, "example-first-client")
+  tokens.save(expired, "example-second-client")
+  await Promise.all([first.tokens(), second.tokens()])
+  expect(requests).toEqual(["example-first-client", "example-first-client", "example-second-client"])
+})
