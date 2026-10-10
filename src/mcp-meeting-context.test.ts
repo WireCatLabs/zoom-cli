@@ -1,0 +1,62 @@
+import { Client } from "@modelcontextprotocol/sdk/client/index.js"
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js"
+import { memoryMeetingStore } from "@wirecat/cli-meetings/testing"
+import { expect, it, vi } from "vitest"
+import { createMeetingMcpServer } from "./mcp-server.js"
+import { createMeetingContextCapabilities } from "./meeting-context.js"
+
+it("discovers opt-in context without IO, rejects account overrides, and closes before returning owned evidence", async () => {
+  const read = vi.fn(async () => ({ items: [], coverage: { complete: false }, source: "meeting:3/15" }))
+  const proposal = vi.fn(async () => ({ applied: false, persistence: "proposal-only", source: "meeting:3/15" }))
+  const context = createMeetingContextCapabilities({}, { meeting: vi.fn() }, 3, async () => ({
+    parseMeetingReference: (text) => ({ accountId: Number(text.slice(8).split("/")[0]) }),
+    canonicalMeetingReference: (text) => text,
+    readMeetingEvidence: read,
+    personMeetingContext: read,
+    proposeMeetingTask: proposal,
+  }))
+  const close = vi.fn(async () => {})
+  const connect = vi.fn(async () => ({ store: memoryMeetingStore(), accountId: 3, meetingContext: context, close }))
+  const server = createMeetingMcpServer({ connectStore: connect, includeMeetingContext: true })
+  const [left, right] = InMemoryTransport.createLinkedPair()
+  await server.connect(right)
+  const client = new Client({ name: "example-context-client", version: "1" })
+  await client.connect(left)
+  try {
+    const { tools } = await client.listTools()
+    expect(tools).toHaveLength(10)
+    expect(tools.every((tool) => tool.annotations?.readOnlyHint === true)).toBe(true)
+    expect(connect).not.toHaveBeenCalled()
+    for (const request of [
+      { name: "meeting_evidence", arguments: { reference: "meeting:3/15", account_id: 99 } },
+      { name: "person_meeting_context", arguments: { person: "person:7", accountIds: [99] } },
+      { name: "meeting_task_proposal", arguments: { reference: "meeting:3/15", kind: "invalid" } },
+      { name: "meeting_evidence", arguments: { reference: "meeting:3/15", cues: 0 } },
+    ])
+      expect(await client.callTool(request)).toMatchObject({ isError: true })
+    expect(connect).not.toHaveBeenCalled()
+    expect(
+      await client.callTool({ name: "meeting_evidence", arguments: { reference: "meeting:99/15" } }),
+    ).toMatchObject({ isError: true, structuredContent: { error: { code: "not_found" } } })
+    expect(read).not.toHaveBeenCalled()
+    expect(close).toHaveBeenCalledOnce()
+    expect(await client.callTool({ name: "meeting_evidence", arguments: { reference: "meeting:3/15" } })).toMatchObject(
+      { structuredContent: { source: "meeting:3/15", coverage: { complete: false } } },
+    )
+    expect(close).toHaveBeenCalledTimes(2)
+    expect(await client.callTool({ name: "person_meeting_context", arguments: { person: "person:7" } })).toMatchObject({
+      structuredContent: { coverage: { complete: false } },
+    })
+    expect(read).toHaveBeenLastCalledWith({}, "person:7", expect.objectContaining({ accountIds: [3] }))
+    expect(
+      await client.callTool({
+        name: "meeting_task_proposal",
+        arguments: { reference: "meeting:3/15", kind: "promise" },
+      }),
+    ).toMatchObject({ structuredContent: { applied: false, persistence: "proposal-only" } })
+    expect(close).toHaveBeenCalledTimes(4)
+  } finally {
+    await client.close()
+    await server.close()
+  }
+})

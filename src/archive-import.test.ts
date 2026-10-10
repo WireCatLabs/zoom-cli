@@ -8,6 +8,7 @@ import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-meetings/testing
 import { expect, it, vi } from "vitest"
 import { applyArchiveImport, preflightArchiveImport } from "./archive-import.js"
 import { setConfig } from "./config.js"
+import { ZoomError } from "./errors.js"
 import { type ProgramDeps, run } from "./program.js"
 import { writeStream } from "./streaming.js"
 import { TokenManager } from "./tokens.js"
@@ -21,6 +22,8 @@ const archiveFixture = async (
     assets?: number
     text?: string
     timing?: string
+    assetStartedAt?: string
+    assetEndedAt?: string
   } = {},
 ) => {
   const root = options.root ?? (await mkdtemp(join(tmpdir(), "zm-test-archive-import-")))
@@ -41,8 +44,8 @@ const archiveFixture = async (
       remoteSize: null,
       type: "audio_transcript",
       format: "vtt",
-      startedAt: null,
-      endedAt: null,
+      startedAt: options.assetStartedAt ?? null,
+      endedAt: options.assetEndedAt ?? null,
     })
   }
   await writeFile(
@@ -92,7 +95,11 @@ const cli = async () => {
 }
 
 it("appends a verified per-occurrence batch and preserves owner metadata, other parts and cursor", async () => {
-  const { root, uuid } = await archiveFixture({ assets: 2 })
+  const { root, uuid } = await archiveFixture({
+    assets: 2,
+    assetStartedAt: "2026-10-10T15:30:00.000Z",
+    assetEndedAt: "2026-10-10T15:31:00.000Z",
+  })
   const store = memoryMeetingStore()
   const original = await store.saveMeeting(sampleMeeting())
   await store.setCursor(1, "example-owner-cursor", 4000)
@@ -113,7 +120,13 @@ it("appends a verified per-occurrence batch and preserves owner metadata, other 
   expect(after?.transcripts[1]?.transcript.metadata).toMatchObject({
     occurrenceUuid: uuid,
     recordingFileId: "example-asset-0",
+    archiveManifestVersion: 1,
+    recordingType: "audio_transcript",
+    recordingFormat: "vtt",
+    recordingStartedAt: "2026-10-10T15:30:00.000Z",
+    recordingEndedAt: "2026-10-10T15:31:00.000Z",
   })
+  expect(after?.transcripts[1]?.transcript.externalCreatedAt).toBeNull()
   expect(await store.cursor(1)).toBe("example-owner-cursor")
   expect(await collect(applyArchiveImport(plan, store, { accountId: 1, now: 6000 }))).toEqual(receipts)
   expect(await store.meeting(original.meeting.id)).toEqual(after)
@@ -127,6 +140,7 @@ it("uses real starts for creation and reports missing or deleted targets without
   )
   const saved = await store.meeting(receipts[0]?.meetingId ?? 0)
   expect(saved?.meeting.startedAt).toBe(Date.parse("2026-10-10T15:30:00.000Z"))
+  expect(saved?.meeting.timezone).toBeNull()
   expect(saved?.participants).toEqual([])
   const missing = await archiveFixture({ uuid: "example-missing", startedAt: null })
   expect(
@@ -164,6 +178,8 @@ it("rejects corrupted later assets and aggregate oversize before producing a wri
   await expect(preflightArchiveImport(fixture.root)).rejects.toThrow(/verification/)
   const invalidTimes = await archiveFixture({ timing: "00:02.000 --> 00:01.000" })
   await expect(preflightArchiveImport(invalidTimes.root)).rejects.toThrow(/cue times/)
+  const invalidStart = await archiveFixture({ startedAt: "not-an-ISO-time" })
+  await expect(preflightArchiveImport(invalidStart.root)).rejects.toMatchObject({ code: "validation_error" })
 })
 
 it("preserves an acknowledged receipt on late cancellation and starts no next append", async () => {
@@ -310,4 +326,52 @@ it("CLI preserves one acknowledged JSONL receipt after append cancellation and c
   expect(JSON.parse(output.join("")).status).toBe("acknowledged")
   expect(append).toHaveBeenCalledOnce()
   expect(close).toHaveBeenCalledOnce()
+})
+
+it("preserves uncertain append outcomes over cancellation in library and CLI, with no acknowledged receipt", async () => {
+  const { root } = await archiveFixture()
+  const controller = new AbortController()
+  const append = vi.fn(async () => {
+    controller.abort()
+    throw new ZoomError("outcome_unknown", "example ambiguous transaction")
+  })
+  const plan = await preflightArchiveImport(root)
+  await expect(
+    collect(applyArchiveImport(plan, { appendTranscripts: append }, { accountId: 1, signal: controller.signal })),
+  ).rejects.toMatchObject({ code: "outcome_unknown" })
+  const { deps, output, errors } = await cli()
+  const cancellation = new AbortController()
+  deps.signal = cancellation.signal
+  setConfig(deps.configPath, "account.profile", "example")
+  const close = vi.fn(async () => {})
+  deps.connectStore = async () => ({
+    store: memoryMeetingStore(),
+    accountId: 1,
+    appendTranscripts: async () => {
+      cancellation.abort()
+      throw new ZoomError("outcome_unknown", "example ambiguous transaction")
+    },
+    close,
+  })
+  expect(await run(["recordings", "archive", "import", root, "--jsonl"], deps)).toBe(14)
+  expect(output).toEqual([])
+  expect(JSON.parse(errors.join("")).error.code).toBe("outcome_unknown")
+  expect(close).toHaveBeenCalledOnce()
+})
+
+it("rejects a returned meeting from a different account or occurrence before acknowledgement", async () => {
+  const { root } = await archiveFixture()
+  const plan = await preflightArchiveImport(root)
+  const store = memoryMeetingStore()
+  const details = await store.saveMeeting(sampleMeeting())
+  for (const changes of [{ accountId: 99 }, { externalId: "example-other" }, { id: 0 }, { deletedAt: 1000 }])
+    await expect(
+      collect(
+        applyArchiveImport(
+          plan,
+          { appendTranscripts: async () => ({ ...details, meeting: { ...details.meeting, ...changes } }) },
+          { accountId: 1 },
+        ),
+      ),
+    ).rejects.toMatchObject({ code: "outcome_unknown" })
 })

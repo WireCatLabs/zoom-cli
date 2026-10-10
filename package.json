@@ -51,7 +51,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",
     "@wirecat/cli-core": "0.19.3",
-    "@wirecat/cli-meetings": "0.2.5",
+    "@wirecat/cli-meetings": "0.2.6",
     "@wirecat/cli-messaging": "0.219.0",
     "commander": "15.0.0"
   },

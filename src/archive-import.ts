@@ -52,13 +52,21 @@ export const preflightArchiveImport = async (
       throw new ZoomError("validation_error", "archive transcript cue times must be safe nonnegative ordered integers")
     totalBytes += asset.size
     if (totalBytes > maximum) throw new ZoomError("validation_error", "archive import exceeds the aggregate byte limit")
+    let startedAt: number | null = null
+    if (meeting.startedAt !== null) {
+      startedAt = Date.parse(meeting.startedAt)
+      if (
+        !Number.isSafeInteger(startedAt) ||
+        Math.abs(startedAt) > 8640000000000000 ||
+        new Date(startedAt).toISOString() !== meeting.startedAt
+      )
+        throw new ZoomError("validation_error", "archive occurrence start must be a real ISO timestamp")
+    }
     const group = prepared.get(meeting.uuid) ?? {
       uuid: meeting.uuid,
       assetIds: [],
       transcripts: [],
-      ...(meeting.startedAt
-        ? { create: { title: meeting.title, startedAt: Date.parse(meeting.startedAt), timezone: "UTC" } }
-        : {}),
+      ...(startedAt !== null ? { create: { title: meeting.title, startedAt, timezone: null } } : {}),
     }
     group.assetIds.push(asset.id)
     group.transcripts.push({
@@ -66,7 +74,7 @@ export const preflightArchiveImport = async (
       contentHash: asset.sha256,
       format: "vtt",
       language: null,
-      externalCreatedAt: asset.startedAt === null ? null : Date.parse(asset.startedAt),
+      externalCreatedAt: null,
       deletedAt: null,
       metadata: {
         provider: "zoom",
@@ -74,6 +82,11 @@ export const preflightArchiveImport = async (
         recordingFileId: asset.id,
         archivePath: asset.path,
         sha256: asset.sha256,
+        archiveManifestVersion: 1,
+        recordingType: asset.type,
+        recordingFormat: asset.format,
+        recordingStartedAt: asset.startedAt,
+        recordingEndedAt: asset.endedAt,
       },
       rows: cues.map((cue, position) => ({
         position,
@@ -116,6 +129,18 @@ export async function* applyArchiveImport(
         transcripts: structuredClone(group.transcripts),
         now,
       })
+      if (
+        !details?.meeting ||
+        details.meeting.accountId !== options.accountId ||
+        details.meeting.externalId !== group.uuid ||
+        !Number.isSafeInteger(details.meeting.id) ||
+        details.meeting.id < 1 ||
+        details.meeting.deletedAt !== null
+      )
+        throw new ZoomError(
+          "outcome_unknown",
+          "archive append returned inconsistent ownership; verify stored state before retrying",
+        )
       receipt = {
         uuid: group.uuid,
         assetIds: [...group.assetIds],
@@ -123,6 +148,8 @@ export async function* applyArchiveImport(
         meetingId: details.meeting.id,
       }
     } catch (error) {
+      if (error instanceof Error && "code" in error && error.code === "outcome_unknown")
+        throw new ZoomError("outcome_unknown", "archive append outcome is unknown; verify stored state before retrying")
       if (error instanceof Error && "code" in error && error.code === "not_found")
         receipt = {
           uuid: group.uuid,

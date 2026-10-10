@@ -8,6 +8,13 @@ import type { MeetingStore } from "@wirecat/cli-meetings"
 import { callMeetingTool, meetingTools } from "@wirecat/cli-meetings/mcp"
 import type { MeetingSearchCursor } from "@wirecat/cli-messaging/services"
 import { ZoomError } from "./errors.js"
+import {
+  type MeetingTaskKind,
+  validateEvidenceOptions,
+  validatePersonContext,
+  validateTaskKind,
+  validateTaskProposal,
+} from "./meeting-context.js"
 import type { StoreConnection } from "./program.js"
 import { runUnifiedSearch } from "./unified-search.js"
 import { VERSION } from "./version.js"
@@ -21,6 +28,7 @@ export interface MeetingMcpOptions {
   maxResultBytes?: number
   /** Opt-in selected-profile meetings only; store-global notes are never exposed here. */
   includeUnifiedSearch?: boolean
+  includeMeetingContext?: boolean
 }
 
 const failure = (code: string, message: string) => {
@@ -75,6 +83,55 @@ const buildServer = (options: MeetingMcpOptions) => {
         additionalProperties: false,
       },
     })
+  if (options.includeMeetingContext) {
+    const hints = { readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true }
+    const limits = {
+      cues: { type: "integer", minimum: 1, maximum: 1000 },
+      bytes: { type: "integer", minimum: 2, maximum: 4194304 },
+    }
+    tools.push({
+      name: "meeting_evidence",
+      description: "Stored selected-account meeting evidence; coverage and revision are explicit",
+      annotations: hints,
+      inputSchema: {
+        type: "object",
+        properties: { reference: { type: "string", minLength: 1 }, ...limits },
+        required: ["reference"],
+        additionalProperties: false,
+      },
+    })
+    tools.push({
+      name: "person_meeting_context",
+      description: "Identity-linked meeting context restricted to the selected profile account",
+      annotations: hints,
+      inputSchema: {
+        type: "object",
+        properties: {
+          person: { type: "string", pattern: "^person:[1-9][0-9]*$" },
+          ...limits,
+          meetings: { type: "integer", minimum: 1, maximum: 100 },
+          scan_limit: { type: "integer", minimum: 1, maximum: 1000 },
+          since: { type: "integer", minimum: -8640000000000000, maximum: 8640000000000000 },
+        },
+        required: ["person"],
+        additionalProperties: false,
+      },
+    })
+    tools.push({
+      name: "meeting_task_proposal",
+      description: "Preview provenance-linked question/request/mention/promise; never creates a task",
+      annotations: hints,
+      inputSchema: {
+        type: "object",
+        properties: {
+          reference: { type: "string", minLength: 1 },
+          kind: { type: "string", enum: ["question", "request", "mention", "promise"] },
+        },
+        required: ["reference", "kind"],
+        additionalProperties: false,
+      },
+    })
+  }
   const validated = new Map(
     tools.map((tool) => [tool.name, validator.getValidator<Record<string, unknown>>(tool.inputSchema)]),
   )
@@ -121,7 +178,42 @@ const buildServer = (options: MeetingMcpOptions) => {
               : value
           },
         }) as MeetingStore
-        if (request.params.name === "search_all") {
+        if (["meeting_evidence", "person_meeting_context", "meeting_task_proposal"].includes(request.params.name)) {
+          const context = connection.meetingContext
+          let value: unknown
+          if (request.params.name === "meeting_evidence") {
+            const options = { cues: args.cues as number | undefined, bytes: args.bytes as number | undefined, signal }
+            validateEvidenceOptions(options)
+            if (!context?.evidence)
+              throw new ZoomError("configuration_error", "meeting evidence capability is unavailable")
+            value = await context.evidence(args.reference as string, options)
+          } else if (request.params.name === "person_meeting_context") {
+            const options = {
+              meetings: args.meetings as number | undefined,
+              cues: args.cues as number | undefined,
+              bytes: args.bytes as number | undefined,
+              scanLimit: args.scan_limit as number | undefined,
+              since: args.since as number | undefined,
+              signal,
+            }
+            validatePersonContext(args.person as string, options)
+            if (!context?.personContext)
+              throw new ZoomError("configuration_error", "person meeting context capability is unavailable")
+            value = await context.personContext(args.person as string, options)
+          } else {
+            validateTaskKind(args.kind as string)
+            if (!context?.taskProposal)
+              throw new ZoomError("configuration_error", "meeting task proposal capability is unavailable")
+            value = await context.taskProposal(args.reference as string, args.kind as MeetingTaskKind, signal)
+            validateTaskProposal(value)
+          }
+          if (typeof value !== "object" || value === null || Array.isArray(value))
+            throw new ZoomError("invalid_response", "meeting context returned an invalid report")
+          result = {
+            content: [{ type: "text", text: JSON.stringify(value) }],
+            structuredContent: value as Record<string, unknown>,
+          }
+        } else if (request.params.name === "search_all") {
           if (!connection.unifiedSearch)
             result = failure("configuration_error", "unified meeting search is unavailable")
           else {
@@ -148,8 +240,10 @@ const buildServer = (options: MeetingMcpOptions) => {
       }
     } catch (error) {
       result =
-        request.params.name === "search_all" && error instanceof CliError
-          ? failure(error.code, "unified meeting search failed")
+        ["search_all", "meeting_evidence", "person_meeting_context", "meeting_task_proposal"].includes(
+          request.params.name,
+        ) && error instanceof CliError
+          ? failure(error.code, "selected-account meeting operation failed")
           : failure("generic_failure", "Meeting read failed")
     } finally {
       try {

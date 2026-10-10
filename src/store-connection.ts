@@ -3,6 +3,7 @@ import type { MeetingTranscriptStore } from "@wirecat/cli-meetings"
 import type { MessageStore, StoreOptions } from "@wirecat/cli-messaging/store"
 import { profileAccountKey } from "./config.js"
 import { ZoomError } from "./errors.js"
+import { createMeetingContextCapabilities } from "./meeting-context.js"
 import type { StoreConnection, StoreConnectRequest } from "./program.js"
 import { validateUnifiedSearch } from "./unified-search.js"
 
@@ -59,6 +60,7 @@ export const createStoreConnector =
             env: options.env,
           })
         },
+        meetingContext: createMeetingContextCapabilities(connected, connected.meetings, accountId),
       }
     } catch (error) {
       if (store) {

@@ -38,6 +38,8 @@ import { bytes, duration, type ExecutionState, resetCliOptions, startExecution }
 import { FilesSource, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { addIngestionSearchCommands } from "./ingestion-search-commands.js"
 import { login } from "./login.js"
+import type { MeetingContextCapabilities } from "./meeting-context.js"
+import { addMeetingContextCommands } from "./meeting-context-commands.js"
 import {
   getZoomProfile,
   inspectArchive,
@@ -60,6 +62,7 @@ export interface StoreConnection {
   close: () => Promise<void>
   appendTranscripts?: MeetingTranscriptStore["appendTranscripts"]
   unifiedSearch?: UnifiedSearch
+  meetingContext?: MeetingContextCapabilities
 }
 export interface StoreConnectRequest {
   profile: string
@@ -76,6 +79,7 @@ export interface ProgramDeps {
   connectStore?: (request: StoreConnectRequest) => Promise<StoreConnection>
   transcriptStore?: MeetingTranscriptStore
   unifiedSearch?: UnifiedSearch
+  meetingContext?: MeetingContextCapabilities
   source?: MeetingSource
   recordings?: RecordingsService
   remoteMeetings?: RemoteMeetingsService
@@ -98,6 +102,7 @@ export interface ProgramDeps {
     signal: AbortSignal
     maxResultBytes?: number
     includeUnifiedSearch?: boolean
+    includeMeetingContext?: boolean
   }) => Promise<void>
   streamData?: (text: string, signal: AbortSignal) => Promise<void>
 }
@@ -240,7 +245,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
         "skill",
         "watch",
         "search",
-      ].includes(family.name())
+      ].includes(family.name()) ||
+      (family.name() === "meetings" && ["evidence", "context", "task-proposal"].includes(action.name()))
     )
       return
     const config = getConfig()
@@ -652,7 +658,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .description("serve read-only meeting tools over MCP stdio")
     .requiredOption("--mcp", "use the MCP JSON-RPC protocol")
     .option("--unified-search", "include selected-profile meetings-only unified search")
-    .action(async (options: { unifiedSearch?: boolean }) => {
+    .option("--meeting-context", "include account-fixed evidence, person context and task proposals")
+    .action(async (options: { unifiedSearch?: boolean; meetingContext?: boolean }) => {
       const opts = program.opts()
       if (opts.json || opts.jsonl || opts.fields)
         throw new ZoomError("validation_error", "MCP stdio controls its own output; omit --json, --jsonl and --fields")
@@ -661,6 +668,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
         signal: signal() as AbortSignal,
         maxResultBytes: program.opts().maxOutputBytes,
         ...(options.unifiedSearch ? { includeUnifiedSearch: true } : {}),
+        ...(options.meetingContext ? { includeMeetingContext: true } : {}),
       })
     })
   addIngestionSearchCommands(program, {
@@ -709,6 +717,25 @@ export const createProgram = (deps: ProgramDeps): Command => {
       if (!connection.unifiedSearch)
         throw new ZoomError("configuration_error", "unified search is unavailable in this store connector")
       return runUnifiedSearch(connection.unifiedSearch, request)
+    },
+  })
+  addMeetingContextCommands(program, {
+    signal,
+    output: (value) =>
+      buffer(render(value, program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text", deps, fields, true)),
+    context: async () => {
+      if (deps.meetingContext) return deps.meetingContext
+      const config = getConfig()
+      if (!config.accountProfile || !deps.connectStore)
+        throw new ZoomError("configuration_error", "select a stored local profile for meeting context")
+      connection = await deps.connectStore({
+        profile: config.accountProfile,
+        externalId: profileAccountKey(config.accountProfile),
+        intent: "read",
+      })
+      if (!connection.meetingContext)
+        throw new ZoomError("configuration_error", "meeting context is unavailable in this store connector")
+      return connection.meetingContext
     },
   })
   annotateMeetingCommands(program)
@@ -785,8 +812,19 @@ export const run = async (args: string[], deps: ProgramDeps): Promise<number> =>
     )
       return 0
     const typed = error instanceof CliError || error instanceof MeetingError
-    const code = typed ? error.code : error instanceof CommanderError ? "validation_error" : "generic_failure"
-    const message = typed ? error.message : "command failed; use --help for usage"
+    const unknownOutcome = error instanceof Error && "code" in error && error.code === "outcome_unknown"
+    const code = typed
+      ? error.code
+      : unknownOutcome
+        ? "outcome_unknown"
+        : error instanceof CommanderError
+          ? "validation_error"
+          : "generic_failure"
+    const message = typed
+      ? error.message
+      : unknownOutcome
+        ? "operation outcome is unknown; verify stored state before retrying"
+        : "command failed; use --help for usage"
     deps.diagnostic(`${JSON.stringify({ error: { code, message } })}\n`)
     return code === "generic_failure" ? GENERIC_FAILURE : exitCodeFor(code)
   }
