@@ -243,8 +243,24 @@ export class ZoomApiSource implements MeetingSource {
     const steps = edited?.next_steps ?? body.next_steps
     const content = string(body.summary_content)
     return {
+      source: "zoom-ai",
+      content: content ?? string(edited?.summary_details),
+      docUrl: string(body.summary_doc_url),
+      externalCreatedAt: time(body.summary_created_time),
+      externalUpdatedAt: time(body.summary_last_modified_time),
+      metadata: extras(body, [
+        "summary_content",
+        "summary_title",
+        "summary_overview",
+        "summary_details",
+        "next_steps",
+        "edited_summary",
+        "summary_doc_url",
+        "summary_created_time",
+        "summary_last_modified_time",
+      ]),
       title: string(body.summary_title),
-      overview: content ?? string(edited?.summary_overview) ?? string(body.summary_overview),
+      overview: string(edited?.summary_overview) ?? string(body.summary_overview),
       sections: content
         ? []
         : details.map((part) => ({ label: string(part.label) ?? "", text: string(part.summary) ?? "" })),

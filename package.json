@@ -35,7 +35,7 @@
     "test:coverage": "vitest run --coverage",
     "smoke:bun": "bun run scripts/smoke.ts",
     "prepublishOnly": "pnpm build",
-    "docs:check": "node node_modules/@wirecat/cli-core/dist/dev/bin.js docs-check --rules scripts/docs-rules.ts && cspell --no-progress --no-summary README.md && rumdl check --config node_modules/@wirecat/cli-core/config/rumdl.toml README.md CHANGELOG.md CLAUDE.md docs/dev/*.md"
+    "docs:check": "node node_modules/@wirecat/cli-core/dist/dev/bin.js docs-check --rules scripts/docs-rules.ts && cspell --no-progress --no-summary README.md && node node_modules/rumdl/bin/rumdl check --config node_modules/@wirecat/cli-core/config/rumdl.toml README.md CHANGELOG.md CLAUDE.md docs/dev/*.md"
   },
   "dependencies": {
     "@wirecat/cli-core": "0.18.1",

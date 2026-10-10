@@ -234,6 +234,10 @@ const apiFixture = (): typeof fetch => async (input, init) => {
   if (url.pathname.endsWith("/meeting_summary"))
     return response({
       summary_title: "Example summary",
+      summary_doc_url: "https://example.com/summary",
+      summary_created_time: "2026-10-10T15:30:00Z",
+      summary_last_modified_time: "2026-10-10T15:40:00Z",
+      example_hint: "invented",
       summary_overview: "Example overview",
       summary_details: [{ label: "Plan", summary: "Example section" }],
       next_steps: ["Example next step", 1],
@@ -260,6 +264,13 @@ describe("API source", () => {
     expect(result.meetings).toBe(2)
     expect(result.warnings).toEqual([])
     expect((await store.search("Example plan")).length).toBe(2)
+    const [saved] = await store.meetings()
+    expect((await store.meeting(saved?.id ?? 0))?.summaries[0]).toMatchObject({
+      source: "zoom-ai",
+      docUrl: "https://example.com/summary",
+      externalCreatedAt: Date.parse("2026-10-10T15:30:00Z"),
+      metadata: { example_hint: "invented" },
+    })
     expect(await source.chat()).toBeNull()
     expect(await source.files()).toBeNull()
     expect(encodeUuid("/example//uuid")).toBe(encodeURIComponent(encodeURIComponent("/example//uuid")))
@@ -323,7 +334,7 @@ describe("API source", () => {
         await new ZoomApiSource(tokens, async () => response({ summary_content: "Example full summary" })).summary(
           "example",
         )
-      )?.overview,
+      )?.content,
     ).toBe("Example full summary")
     expect(
       (
