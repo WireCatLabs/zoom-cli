@@ -1,4 +1,4 @@
-import { CliError, type KeyringStore } from "@wirecat/cli-core"
+import type { KeyringStore } from "@wirecat/cli-core"
 import { checkCancelled, object, ZoomError } from "./errors.js"
 
 export interface Tokens {
@@ -85,8 +85,7 @@ export class TokenManager {
         signal,
         redirect: "error",
       })
-    } catch (error) {
-      if (error instanceof CliError) throw error
+    } catch {
       throw new ZoomError("outcome_unknown", "Zoom token exchange did not finish; run zm login again before retrying")
     }
     if (!response.ok)
@@ -98,7 +97,10 @@ export class TokenManager {
     try {
       body = object(await response.json())
     } catch {
-      throw new ZoomError("invalid_response", "Zoom returned an invalid token response")
+      throw new ZoomError(
+        "outcome_unknown",
+        "Zoom returned an invalid token response; run zm login again before retrying",
+      )
     }
     const refreshToken = typeof body.refresh_token === "string" ? body.refresh_token : previous?.refreshToken
     if (
@@ -112,7 +114,10 @@ export class TokenManager {
       (body.scope !== undefined && typeof body.scope !== "string") ||
       (body.refresh_token !== undefined && typeof body.refresh_token !== "string")
     )
-      throw new ZoomError("invalid_response", "Zoom returned an invalid token response")
+      throw new ZoomError(
+        "outcome_unknown",
+        "Zoom returned an invalid token response; run zm login again before retrying",
+      )
     const tokens = {
       accessToken: body.access_token,
       refreshToken,

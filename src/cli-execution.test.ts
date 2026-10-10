@@ -463,3 +463,24 @@ it("starts MCP without touching configuration or the meeting store and preserves
   delete deps.serveMcp
   expect(await run(["serve", "--mcp"], deps)).toBe(3)
 })
+
+it("classifies dispatched token failures as uncertain while preflight cancellation never dispatches", async () => {
+  const { deps } = await setup()
+  for (const code of ["network_error", "timeout", "cancelled"] as const) {
+    const fetcher = vi.fn(async () => {
+      throw new CliError(code, "example private grant failure")
+    })
+    const tokens = new TokenManager({ ...deps.tokens.options, fetch: fetcher })
+    await expect(tokens.exchange({})).rejects.toMatchObject({
+      code: "outcome_unknown",
+      message: expect.stringContaining("login again"),
+    })
+    expect(fetcher).toHaveBeenCalledOnce()
+  }
+  const controller = new AbortController()
+  controller.abort(new CliError("cancelled", "example preflight cancellation"))
+  const fetcher = vi.fn(deps.tokens.options.fetch)
+  const tokens = new TokenManager({ ...deps.tokens.options, fetch: fetcher, signal: controller.signal })
+  await expect(tokens.exchange({})).rejects.toMatchObject({ code: "cancelled" })
+  expect(fetcher).not.toHaveBeenCalled()
+})
