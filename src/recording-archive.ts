@@ -56,12 +56,15 @@ interface LockOwner {
   nonce: string
 }
 const locksFolder = ".zoom-archive-locks"
-const lockOwner = async (path: string, name: string): Promise<LockOwner | null> => {
+const lockOwner = async (path: string, name: string, signal?: AbortSignal): Promise<LockOwner | null> => {
+  checkCancelled(signal)
   try {
     const file = await localFile(path)
     try {
       if ((await file.stat()).size > 4096) return null
-      const owner = JSON.parse(await file.readFile("utf8")) as LockOwner
+      const content = await file.readFile("utf8")
+      checkCancelled(signal)
+      const owner = JSON.parse(content) as LockOwner
       if (
         owner.version !== 1 ||
         !Number.isSafeInteger(owner.pid) ||
@@ -76,6 +79,7 @@ const lockOwner = async (path: string, name: string): Promise<LockOwner | null> 
       await file.close()
     }
   } catch {
+    checkCancelled(signal)
     return null
   }
 }
@@ -88,8 +92,13 @@ const lockStatus = (owner: LockOwner): ArchiveLockInfo["status"] => {
     return typeof error === "object" && error !== null && "code" in error && error.code === "ESRCH" ? "stale" : "active"
   }
 }
-export const inspectArchiveLocks = async (destination: string): Promise<ArchiveLockInfo[]> => {
+export const inspectArchiveLocks = async (
+  destination: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<ArchiveLockInfo[]> => {
+  checkCancelled(options.signal)
   const root = await realpath(destination)
+  checkCancelled(options.signal)
   const folder = join(root, locksFolder)
   let names: string[]
   try {
@@ -102,7 +111,7 @@ export const inspectArchiveLocks = async (destination: string): Promise<ArchiveL
   }
   return Promise.all(
     names.sort().map(async (name) => {
-      const owner = await lockOwner(join(folder, name), name)
+      const owner = await lockOwner(join(folder, name), name, options.signal)
       return {
         name,
         status: owner ? lockStatus(owner) : "unrecognized",
@@ -114,16 +123,18 @@ export const inspectArchiveLocks = async (destination: string): Promise<ArchiveL
 }
 export const recoverArchiveLocks = async (
   destination: string,
-  options: { apply?: boolean } = {},
+  options: { apply?: boolean; signal?: AbortSignal } = {},
 ): Promise<{ locks: ArchiveLockInfo[]; removed: string[] }> => {
+  checkCancelled(options.signal)
   const root = await realpath(destination)
-  const locks = await inspectArchiveLocks(root)
+  const locks = await inspectArchiveLocks(root, options)
   const removed: string[] = []
   if (options.apply)
     for (const lock of locks) {
+      checkCancelled(options.signal)
       if (lock.status !== "stale") continue
       const path = join(root, locksFolder, lock.name)
-      const owner = await lockOwner(path, lock.name)
+      const owner = await lockOwner(path, lock.name, options.signal)
       if (!owner || lockStatus(owner) !== "stale") continue
       // Unique PID/nonce paths are never reused, so a new writer cannot replace this stale owner.
       try {
@@ -175,11 +186,12 @@ const localFile = async (path: string) => {
   return open(path, constants.O_RDONLY | constants.O_NOFOLLOW)
 }
 const fingerprint = async (path: string, signal?: AbortSignal): Promise<{ size: number; sha256: string }> => {
+  checkCancelled(signal)
   const file = await localFile(path)
   try {
     const hash = createHash("sha256")
     let size = 0
-    for await (const chunk of file.createReadStream({ autoClose: false })) {
+    for await (const chunk of file.createReadStream({ autoClose: false, ...(signal ? { signal } : {}) })) {
       checkCancelled(signal)
       size += chunk.length
       hash.update(chunk)
@@ -194,7 +206,8 @@ const nullableText = (value: unknown) => value === null || typeof value === "str
 const nullableTime = (value: unknown) =>
   value === null ||
   (typeof value === "string" && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value)
-const readManifest = async (path: string): Promise<ArchiveManifest | null> => {
+const readManifest = async (path: string, signal?: AbortSignal): Promise<ArchiveManifest | null> => {
+  checkCancelled(signal)
   let file: FileHandle
   try {
     file = await localFile(path)
@@ -204,7 +217,9 @@ const readManifest = async (path: string): Promise<ArchiveManifest | null> => {
   }
   try {
     if ((await file.stat()).size > 1048576) throw new Error("manifest size")
-    const value = JSON.parse(await file.readFile("utf8")) as ArchiveManifest
+    const content = await file.readFile("utf8")
+    checkCancelled(signal)
+    const value = JSON.parse(content) as ArchiveManifest
     if (
       value.version !== 1 ||
       !string(value.meeting?.uuid) ||
@@ -259,6 +274,7 @@ const readManifest = async (path: string): Promise<ArchiveManifest | null> => {
       files,
     }
   } catch {
+    checkCancelled(signal)
     throw new ZoomError("validation_error", "archive manifest is invalid")
   } finally {
     await file.close()
@@ -394,7 +410,7 @@ export const archiveRecording = async (
     root = await realpath(options.destination)
     lock = await acquireArchiveLock(root)
     const manifestPath = join(root, manifestName(meeting.uuid))
-    const previous = await readManifest(manifestPath)
+    const previous = await readManifest(manifestPath, signal)
     const manifest: ArchiveManifest = previous ?? {
       version: 1,
       meeting: { id: meeting.id, uuid: meeting.uuid, title: meeting.title, startedAt: meeting.startedAt },
@@ -493,29 +509,38 @@ export const archiveRecording = async (
     }
   }
 }
-export const inspectArchive = async (destination: string): Promise<ArchiveManifest[]> => {
+export const inspectArchive = async (
+  destination: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<ArchiveManifest[]> => {
+  checkCancelled(options.signal)
   try {
     const root = await realpath(destination)
     const names = (await readdir(root)).filter((name) => /^\.zoom-archive-[a-f0-9]{64}\.json$/.test(name)).sort()
-    return (await Promise.all(names.map((name) => readManifest(join(root, name))))).filter(
+    return (await Promise.all(names.map((name) => readManifest(join(root, name), options.signal)))).filter(
       (value): value is ArchiveManifest => value !== null,
     )
   } catch (error) {
+    checkCancelled(options.signal)
     if (error instanceof ZoomError) throw error
     throw new ZoomError("configuration_error", "archive destination could not be read")
   }
 }
-export const verifyArchive = async (destination: string): Promise<ArchiveVerification[]> => {
-  const manifests = await inspectArchive(destination)
+export const verifyArchive = async (
+  destination: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<ArchiveVerification[]> => {
+  checkCancelled(options.signal)
+  const manifests = await inspectArchive(destination, options)
   return Promise.all(
     manifests.flatMap((manifest) =>
       manifest.files.map(async (file) => {
         let valid = false
         try {
-          const local = await fingerprint(join(destination, file.path))
+          const local = await fingerprint(join(destination, file.path), options.signal)
           valid = local.size === file.size && local.sha256 === file.sha256
         } catch {
-          /* Missing, changed or unsafe paths are reported as invalid. */
+          checkCancelled(options.signal)
         }
         return {
           manifestPath: join(destination, manifestName(manifest.meeting.uuid)),

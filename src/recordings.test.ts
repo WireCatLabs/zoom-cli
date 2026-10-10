@@ -470,3 +470,38 @@ it("previews and repairs only unique stale local locks without removing active, 
   expect((await source(scripted()).download("example", { destination: clean })).downloaded).toHaveLength(1)
   expect(await inspectArchiveLocks(clean)).toEqual([])
 })
+
+it("cancels local inspection, verification and recovery without masking it as corruption", async () => {
+  const destination = await temp()
+  await source(scripted()).download("example", { destination })
+  const abort = new AbortController()
+  abort.abort(new Error("Private example cancel"))
+  for (const inspect of [inspectArchive, verifyArchive, inspectArchiveLocks])
+    await expect(inspect(destination, { signal: abort.signal })).rejects.toThrowError(
+      expect.objectContaining({ code: "cancelled" }),
+    )
+  await expect(recoverArchiveLocks(destination, { apply: true, signal: abort.signal })).rejects.toThrowError(
+    expect.objectContaining({ code: "cancelled" }),
+  )
+  expect(await verifyArchive(destination)).toMatchObject([{ valid: true }])
+})
+
+it("interrupts streamed local verification without reporting a cancelled digest as invalid", async () => {
+  const destination = await temp()
+  const bytes = new Uint8Array(32 * 1024 * 1024)
+  const recordings = source(async (input) =>
+    String(input).includes("api.zoom.us")
+      ? response(meeting([file("example-large", { file_size: bytes.length })]))
+      : new Response(bytes),
+  )
+  await recordings.download("example", { destination })
+  const abort = new AbortController()
+  const verification = verifyArchive(destination, { signal: abort.signal })
+  const timer = setTimeout(() => abort.abort(), 2)
+  try {
+    await expect(verification).rejects.toThrowError(expect.objectContaining({ code: "cancelled" }))
+  } finally {
+    clearTimeout(timer)
+  }
+  expect(await verifyArchive(destination)).toMatchObject([{ valid: true }])
+})
