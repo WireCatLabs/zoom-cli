@@ -20,7 +20,8 @@ export const readConfig = (path: string): ZoomConfig => {
   try {
     const value = object(JSON.parse(text))
     if (
-      (value.clientId !== null && typeof value.clientId !== "string") ||
+      (value.clientId !== null &&
+        (typeof value.clientId !== "string" || !value.clientId.trim() || /\s/.test(value.clientId))) ||
       (value.source !== "api" && value.source !== "files") ||
       (value.filesFolder !== null && typeof value.filesFolder !== "string") ||
       typeof value.filesTimezone !== "string"
@@ -41,7 +42,8 @@ export const setConfig = (path: string, key: string, value: string): ZoomConfig 
   const config = readConfig(path)
   switch (key) {
     case "zoom.clientId":
-      if (!value.trim()) throw new ZoomError("validation_error", "client id must not be empty")
+      if (!value.trim() || /\s/.test(value))
+        throw new ZoomError("validation_error", "client id must not contain whitespace")
       config.clientId = value
       break
     case "source":
