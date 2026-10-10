@@ -217,3 +217,29 @@ it("distinguishes pre-dispatch cancellation from uncertain applied mutation resu
       .body?.duration,
   ).toBe(1440)
 })
+
+it("preserves uncertain writes when cancellation races a successful response or body", async () => {
+  for (const status of [201, 204]) {
+    const abort = new AbortController()
+    const meetings = source(async () => {
+      abort.abort()
+      return response(fixture, status)
+    })
+    const operation =
+      status === 201
+        ? meetings.create({ topic: "Example", type: 1 }, { apply: true, signal: abort.signal })
+        : meetings.cancel("123456", { apply: true, signal: abort.signal })
+    await expect(operation).rejects.toThrowError(expect.objectContaining({ code: "outcome_unknown" }))
+  }
+  const abort = new AbortController()
+  const reply = response(fixture, 201)
+  Object.defineProperty(reply, "json", {
+    value: async () => {
+      abort.abort()
+      return fixture
+    },
+  })
+  await expect(
+    source(async () => reply).create({ topic: "Example", type: 1 }, { apply: true, signal: abort.signal }),
+  ).rejects.toThrowError(expect.objectContaining({ code: "outcome_unknown" }))
+})

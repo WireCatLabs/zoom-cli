@@ -95,6 +95,11 @@ export class ZoomRemote {
         throw new ZoomError("outcome_unknown", "Zoom mutation did not finish; verify remote state before retrying")
       }
     }
+    if (method !== "GET" && signal.aborted)
+      throw new ZoomError(
+        "outcome_unknown",
+        "Zoom mutation was interrupted after dispatch; verify remote state before retrying",
+      )
     if (response.status === 204) return {}
     let value: unknown
     try {
@@ -109,6 +114,11 @@ export class ZoomRemote {
         )
       value = {}
     }
+    if (method !== "GET" && signal.aborted)
+      throw new ZoomError(
+        "outcome_unknown",
+        "Zoom mutation was interrupted after dispatch; verify remote state before retrying",
+      )
     const body = typeof value === "object" && value !== null && !Array.isArray(value) ? object(value) : {}
     if (body.code === 4711)
       throw new ZoomError(
