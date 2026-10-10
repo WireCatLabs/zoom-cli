@@ -16,9 +16,10 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [zm.ts](../../src/bin/zm.ts) | process, browser, stdin and system keyring wiring |
 | [recordings.ts](../../src/recordings.ts), [recording-archive.ts](../../src/recording-archive.ts) | asset discovery, streamed transfers, manifests and verified skipping |
 | [recording-sync.ts](../../src/recording-sync.ts) | serial calendar-month archive synchronization |
+| [archive-transcripts.ts](../../src/archive-transcripts.ts) | verified local WebVTT reads and bounded literal search |
 | [store-connection.ts](../../src/store-connection.ts) | lazy public shared-store/account adapter, without SQL |
 | [mcp-server.ts](../../src/mcp-server.ts) | official SDK transport and shared read-only meeting tools |
-| [streaming.ts](../../src/streaming.ts), [watch-commands.ts](../../src/watch-commands.ts) | bounded receipts, writable completion and serial folder ingestion |
+| [streaming.ts](../../src/streaming.ts), [watch-commands.ts](../../src/watch-commands.ts) | bounded receipts, writable completion and serial API or folder ingestion |
 
 The API uses the signed-in participant `id` when present, else email, else registrant id. Session
 `user_id` is retained inside sessions, never used as a stable person id. Guests without these keys
@@ -70,9 +71,18 @@ contain asset IDs, sizes and local digests, never signed URLs or tokens. Writes 
 and no-overwrite promotion; repeated downloads verify existing entries. Stale-lock recovery removes
 recognized dead-process markers only. Local reads and checksum verification run serially.
 
+Archive transcript reads open a regular no-follow file handle and use that handle for bounded reads,
+size and digest verification. Strict UTF-8 decoding precedes the shared WebVTT parser. Search uses
+normalized literal cue text and stops after proving an extra match beyond its limit; unread assets
+remain unchecked. These commands never open the store or OAuth credentials.
+
 Finite command output uses shared projection, rendering, buffering and caller-owned deadlines.
 Streaming commands bound each receipt and await write completion/drain. Folder watching closes the
 cycle's connection before its receipt; a completed late receipt has a separate one-second deadline.
 MCP tool schemas and reads come from cli-meetings. Initialization/discovery are connection-free;
 each call injects the selected account and closes its read connection before replying. SDK request
 cancellation prevents new reads while allowing an active read to settle before close.
+
+Watching snapshots the profile, source, file settings and OAuth client before its first cycle.
+API cycles use shared pull and overlap; an explicit initial bound remains until the cursor write
+succeeds, then later cycles follow the stored cursor. Each cycle owns and closes a fresh connection.
