@@ -320,8 +320,6 @@ export class ZoomApiSource implements MeetingSource {
         offset += chunk.byteLength
       }
       const content = new TextDecoder().decode(bytes)
-      if (!/^WEBVTT(?:[ \t]|\r?\n|$)/.test(content))
-        throw new ZoomError("invalid_response", "Zoom returned an invalid transcript")
       try {
         return parseVtt(content)
       } catch {

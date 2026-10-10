@@ -240,3 +240,12 @@ it("uses edited legacy detail text without restoring the original sections or ov
   expect(summary?.sections).toEqual([])
   expect(summary?.nextSteps).toEqual(["Edited example next step"])
 })
+
+it("preserves shared-parser compatibility with lone CR WebVTT line endings", async () => {
+  const source = new ZoomApiSource(tokens(), async (input) =>
+    String(input).includes("/transcript")
+      ? response({ download_url: "https://zoom.us/example-cr" })
+      : new Response(vtt.replaceAll("\n", "\r")),
+  )
+  expect(await source.transcript("example")).toHaveLength(1)
+})
