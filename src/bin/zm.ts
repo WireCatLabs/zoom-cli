@@ -5,6 +5,7 @@ import { createInterface } from "node:readline/promises"
 import { resolvePaths, systemKeyring } from "@wirecat/cli-core"
 import { readConfig } from "../config.js"
 import { run } from "../program.js"
+import { createStoreConnector } from "../store-connection.js"
 import { TokenManager } from "../tokens.js"
 
 const paths = resolvePaths({ appName: "zm", env: process.env })
@@ -22,6 +23,7 @@ try {
     configPath,
     tokens,
     fetch,
+    connectStore: createStoreConnector({ env: process.env }),
     data: (text) => process.stdout.write(text),
     diagnostic: (text) => process.stderr.write(text),
     openBrowser: (url, browser = "xdg-open") =>
