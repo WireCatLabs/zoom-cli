@@ -144,3 +144,28 @@ it("supports bounded opaque job identifiers without exceeding its owner marker r
   expect(await store.read(jobId, lease.token)).toBeNull()
   await lease.release()
 })
+
+it("allows only one simultaneous job lease and fails closed on incomplete lock markers", async () => {
+  const destination = await path()
+  const stores = [fileRecordingSyncCheckpointStore(destination), fileRecordingSyncCheckpointStore(destination)]
+  const results = await Promise.allSettled(stores.map((store) => store.acquire("AliceExample")))
+  const winners = results.filter(
+    (result): result is PromiseFulfilledResult<Awaited<ReturnType<(typeof stores)[number]["acquire"]>>> =>
+      result.status === "fulfilled",
+  )
+  const losers = results.filter((result): result is PromiseRejectedResult => result.status === "rejected")
+  expect(winners).toHaveLength(1)
+  expect(losers).toHaveLength(1)
+  expect(losers[0]?.reason).toMatchObject({ code: "configuration_error" })
+  const winner = winners[0]
+  if (!winner) throw new Error("missing synthetic winner")
+  await winner.value.release()
+  for (const content of [null, "{", "x".repeat(32 * 1024 + 1)]) {
+    const target = await path()
+    await mkdir(`${target}.lock`, { recursive: true })
+    if (content !== null) await writeFile(join(`${target}.lock`, "owner.json"), content)
+    await expect(fileRecordingSyncCheckpointStore(target).acquire("AliceExample")).rejects.toMatchObject({
+      code: "configuration_error",
+    })
+  }
+})

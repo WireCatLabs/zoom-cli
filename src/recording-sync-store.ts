@@ -76,10 +76,17 @@ export function fileRecordingSyncCheckpointStore(path: string): RecordingSyncChe
   const marker = join(lockPath, "owner.json")
   const recoveryPath = `${lockPath}.recovery`
   const owners = new Map<string, Owner>()
+  const readOwner = async (): Promise<Owner> => {
+    try {
+      return ownerOf(await boundedJson(marker, ownerByteLimit))
+    } catch {
+      return conflict("archive checkpoint lock is missing, incomplete or unrecognized")
+    }
+  }
   const own = async (jobId: string, token: string): Promise<void> => {
     const held = owners.get(token)
     if (!held || held.jobId !== jobId) return conflict("archive checkpoint lease is not owned")
-    const actual = ownerOf(await boundedJson(marker, ownerByteLimit))
+    const actual = await readOwner()
     if (actual.token !== token || actual.jobId !== jobId || actual.host !== held.host || actual.pid !== held.pid)
       return conflict("archive checkpoint lease changed")
   }
@@ -110,10 +117,10 @@ export function fileRecordingSyncCheckpointStore(path: string): RecordingSyncChe
           throw error
         }
         try {
-          const prior = ownerOf(await boundedJson(marker, ownerByteLimit))
+          const prior = await readOwner()
           if (prior.host !== hostname() || alive(prior.pid))
             return conflict("archive checkpoint job is already active or owned by another host")
-          const verified = ownerOf(await boundedJson(marker, ownerByteLimit))
+          const verified = await readOwner()
           if (verified.token !== prior.token) return conflict("archive checkpoint lock changed during stale recovery")
           await unlink(marker)
           await rmdir(lockPath)
