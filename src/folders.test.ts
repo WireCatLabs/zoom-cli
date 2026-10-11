@@ -72,4 +72,15 @@ describe("zmPaths", () => {
     expect(zmPaths(broken, (line) => warnings.push(line), mac(HOME)).config).toBe(fresh)
     expect(warnings).toEqual([expect.stringMatching(/run `zm login` again/)])
   })
+
+  it("warns and stays on the old folders while another process holds them", () => {
+    const { HOME, old } = macHome()
+    const warnings: string[] = []
+
+    const paths = zmPaths(memoryKeyring(), (line) => warnings.push(line), { ...mac(HOME), holders: () => ["pid 7"] })
+
+    expect(paths.config).toBe(old)
+    expect(existsSync(join(old, "config.json"))).toBe(true)
+    expect(warnings).toEqual([expect.stringMatching(/^zm: kept its files in ~\/Library for now — .*pid 7/)])
+  })
 })
