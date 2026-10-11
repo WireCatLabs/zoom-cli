@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, symlinkSync, unlinkSyn
 import { lstat, open } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join, resolve } from "node:path"
-import { pathToFileURL } from "node:url"
+import { fileURLToPath, pathToFileURL } from "node:url"
 
 const root = resolve(process.argv[2])
 const expectedVersion = process.argv[3]
@@ -100,7 +100,97 @@ invoke(["--help"])
 json("commands")
 assert.equal(existsSync(environment.ZM_CONFIG_DIR), false)
 assert.equal(existsSync(environment.MESSAGING_STORE), false)
+const missingProfileArchive = join(sandbox, "missing-profile-archive")
+invoke(
+  ["recordings", "download", "example-occurrence", "--destination", missingProfileArchive, "--resume", "--json"],
+  3,
+)
+invoke(
+  [
+    "recordings",
+    "sync",
+    "--from",
+    "2026-10-01",
+    "--to",
+    "2026-10-11",
+    "--destination",
+    missingProfileArchive,
+    "--resume",
+    "--jsonl",
+  ],
+  3,
+)
+assert.equal(existsSync(missingProfileArchive), false)
 json("config", "set", "account.profile", "invented-platform")
+json("config", "set", "zoom.clientId", "example-public-client")
+const scheduleArchive = join(sandbox, "scheduled-archive")
+const schedulePreview = json(
+  "recordings",
+  "schedule",
+  "create",
+  "--name",
+  "Alice Example backup",
+  "--destination",
+  scheduleArchive,
+  "--from",
+  "2026-10-01",
+  "--at",
+  "03:15",
+  "--timezone",
+  "Europe/Madrid",
+  "--lookback-days",
+  "7",
+  "--max-bytes",
+  "1024",
+  "--yes",
+  "--dry-run",
+  "--offline",
+)
+assert.equal(schedulePreview.applied, false)
+assert.equal(schedulePreview.timerState, "not_checked")
+assert.equal(schedulePreview.job.capture.profile, "invented-platform")
+assert.equal(schedulePreview.job.capture.clientId, "example-public-client")
+assert.deepEqual(json("recordings", "schedule", "list", "--offline").items, [])
+invoke(["recordings", "schedule", "show", schedulePreview.job.schedule.id, "--offline", "--json"], 6)
+invoke(["recordings", "schedule", "disable", schedulePreview.job.schedule.id, "--dry-run", "--offline", "--json"], 6)
+for (const [path, flags] of [
+  [
+    ["recordings", "download", "example-occurrence"],
+    ["--file-ids", " "],
+  ],
+  [
+    ["recordings", "sync", "--from", "2026-10-01", "--to", "2026-10-11", "--jsonl"],
+    ["--max-pages", "10001"],
+  ],
+  [
+    ["recordings", "sync", "--from", "2026-10-01", "--to", "2026-10-11", "--jsonl"],
+    ["--checkpoint", join(sandbox, "contradictory-checkpoint"), "--no-resume"],
+  ],
+])
+  invoke([...path, "--destination", scheduleArchive, ...flags], 2)
+assert.equal(existsSync(scheduleArchive), false)
+assert.equal(existsSync(join(environment.ZM_CONFIG_DIR, "recording-schedules")), false)
+assert.equal(existsSync(join(environment.XDG_CONFIG_HOME, "systemd", "user")), false)
+const resumeHelper = fileURLToPath(new URL("./installed-recording-resume.mjs", import.meta.url))
+const recordingResume = []
+for (const [phase, destination] of [
+  ["full", join(sandbox, "full-download")],
+  ["fail", join(sandbox, "resumed-download")],
+  ["resume", join(sandbox, "resumed-download")],
+]) {
+  const result = spawnSync(process.execPath, [...prefix, resumeHelper, root, destination, phase], {
+    cwd: root,
+    env: environment,
+    encoding: "utf8",
+    timeout: 15000,
+    maxBuffer: 4 * 1024 * 1024,
+  })
+  assert.equal(result.error, undefined)
+  assert.equal(result.status, 0, `installed recording ${phase}: ${result.stderr}`)
+  assert.equal(diagnostics(result.stderr), "")
+  assert.equal(existsSync(denied), false, "installed resume accessed external IO")
+  recordingResume.push(JSON.parse(result.stdout))
+}
 const folder = join(sandbox, "vtt")
 mkdirSync(folder)
 const vtt = join(folder, "2026-10-10_1530_example.vtt")
@@ -414,6 +504,8 @@ const proof = {
   semanticPreviewGenerationQuery: true,
   semanticOfflineBoundary: true,
   semanticReadonlyMcp: true,
+  scheduleOfflinePreview: true,
+  recordingResume,
   modelEndpoint: "isolated loopback fixture only",
   externalAccess: false,
 }
