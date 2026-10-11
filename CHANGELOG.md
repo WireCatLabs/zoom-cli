@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1 — 11.10.2026
+
+### Fixed
+
+- Package references, documentation and fixtures use the WireCat namespace throughout.
+
 ## 0.3.0 — 11.10.2026
 
 ### Changed — may break callers
