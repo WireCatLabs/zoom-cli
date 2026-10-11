@@ -371,3 +371,129 @@ it("bounds local manifest reads and verification hashes to one open handle", asy
     handles.tracking = false
   }
 })
+it("resumes verified archive acknowledgements with an explicit account and durable native checkpoint", async () => {
+  const destination = await mkdtemp(join(tmpdir(), "zm-test-sync-resume-"))
+  const asset = {
+    id: "AliceExample-file",
+    type: "chat",
+    format: "TXT",
+    size: 5,
+    status: "completed",
+    available: true,
+    startedAt: null,
+    endedAt: null,
+  }
+  const item = { ...meeting("AliceExample-occurrence"), assets: [asset] }
+  const calls: DownloadOptions[] = []
+  const source = {
+    list: async () => [item],
+    download: async (uuid: string, options: DownloadOptions): Promise<ArchiveReport> => {
+      calls.push(options)
+      return {
+        ...report(uuid),
+        downloaded: [
+          {
+            id: asset.id,
+            type: asset.type,
+            format: asset.format,
+            remoteSize: asset.size,
+            size: asset.size,
+            path: "AliceExample.txt",
+            sha256: "a".repeat(64),
+            startedAt: null,
+            endedAt: null,
+          },
+        ],
+      }
+    },
+  }
+  const opts = {
+    ...options,
+    from: "2026-01-01",
+    to: "2026-01-31",
+    destination,
+    resume: true,
+    account: "AliceExample",
+    now: () => 1000,
+  }
+  const first = await collect(syncRecordingArchive(source, opts))
+  expect(first).toMatchObject([{ availability: "unknown", checkpointRevision: 2, meeting: { uuid: item.uuid } }])
+  expect(await collect(syncRecordingArchive(source, opts))).toEqual([])
+  expect(calls).toEqual([{ destination, signal: undefined, resume: true, account: "AliceExample" }])
+  await expect(collect(syncRecordingArchive(source, { ...opts, account: "BobSample" }))).rejects.toMatchObject({
+    code: "conflict",
+  })
+  await expect(collect(syncRecordingArchive(source, { ...opts, maxBytes: 12 }))).rejects.toMatchObject({
+    code: "conflict",
+  })
+})
+it("validates checkpoint selection before remote discovery and snapshots options before asynchronous work", async () => {
+  let calls = 0
+  const source = {
+    list: async () => {
+      calls++
+      return []
+    },
+    download: async () => report(),
+  }
+  for (const change of [
+    { resume: true },
+    { checkpointPath: "example.json" },
+    { resume: true, account: "AliceExample", checkpointPath: " " },
+  ])
+    await expect(collect(syncRecordingArchive(source, { ...options, ...change }))).rejects.toMatchObject({
+      code: "validation_error",
+    })
+  expect(calls).toBe(0)
+  const destination = await mkdtemp(join(tmpdir(), "zm-test-sync-snapshot-"))
+  const opts = { ...options, to: "2026-01-31", destination }
+  const captured: string[] = []
+  const changed = {
+    list: async () => {
+      opts.destination = "changed-BobSample"
+      return [meeting()]
+    },
+    download: async (_id: string, values: DownloadOptions) => {
+      captured.push(values.destination)
+      return report()
+    },
+  }
+  await collect(syncRecordingArchive(changed, opts))
+  expect(captured).toEqual([destination])
+})
+it("uses the scoped one-page catalog adapter without materializing the entire provider range", async () => {
+  const requests: string[] = []
+  const source = new ZoomRecordings(
+    {
+      tokens: async () => ({
+        accessToken: "AliceExample-access",
+        refreshToken: "AliceExample-refresh",
+        expiresAt: 3600000,
+        scopes: ["cloud_recording:read:list_user_recordings"],
+      }),
+    },
+    async (input) => {
+      requests.push(String(input))
+      return new Response(
+        JSON.stringify({
+          meetings: [
+            { id: 123456, uuid: "opaque/AliceExample+?", topic: "Alice Example planning", recording_files: [] },
+          ],
+          next_page_token: "page-BobSample",
+        }),
+      )
+    },
+  )
+  const catalog = source.catalog("AliceExample")
+  const first = await catalog.list({ account: "AliceExample", from: "2026-01-01", to: "2026-01-31" })
+  expect(first).toMatchObject({ items: [{ externalId: "opaque/AliceExample+?" }], nextCursor: "page-BobSample" })
+  expect(requests).toHaveLength(1)
+  await expect(catalog.list({ account: "BobSample", from: "2026-01-01", to: "2026-01-31" })).rejects.toMatchObject({
+    code: "validation_error",
+  })
+  expect(requests).toHaveLength(1)
+  expect(() => source.catalog(" ")).toThrow()
+  await expect(source.listPage({ from: "2026-01-01", to: "2026-01-31", cursor: " " })).rejects.toMatchObject({
+    code: "validation_error",
+  })
+})

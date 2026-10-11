@@ -1,65 +1,110 @@
+import { createHash } from "node:crypto"
+import { join, resolve } from "node:path"
+import {
+  type RecordingCatalog,
+  type RecordingSyncCheckpointStore,
+  RecordingSyncError,
+  recordingWindows,
+  syncRecordingArchive as syncArchive,
+} from "@wirecat/cli-meetings"
 import { checkCancelled, ZoomError } from "./errors.js"
 import { validateDownloadOptions } from "./recording-archive.js"
+import { fileRecordingSyncCheckpointStore } from "./recording-sync-store.js"
 import type { ArchiveReport, DownloadOptions, RecordingMeeting, ZoomRecordings } from "./recordings.js"
 import { operationSignal } from "./remote-http.js"
 
 export interface ArchiveSyncOptions extends Omit<DownloadOptions, "fileIds"> {
   from: string
   to: string
+  checkpointPath?: string
+  checkpointStore?: RecordingSyncCheckpointStore
+  recheckFrom?: string
+  maxPages?: number
+  maxEntries?: number
+  now?: () => number
 }
 export interface ArchiveSyncReceipt {
   window: { from: string; to: string }
   meeting: Pick<RecordingMeeting, "id" | "uuid" | "title">
   archive: ArchiveReport
+  availability?: "unknown"
+  checkpointRevision?: number | null
 }
-const date = (value: string): Date => {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))
-    throw new ZoomError("validation_error", "archive dates must be valid YYYY-MM-DD dates")
-  const result = new Date(`${value}T00:00:00Z`)
-  if (!Number.isFinite(result.getTime()) || result.toISOString().slice(0, 10) !== value)
-    throw new ZoomError("validation_error", "archive dates must be valid YYYY-MM-DD dates")
-  return result
-}
-const label = (value: Date) => value.toISOString().slice(0, 10)
 export async function* syncRecordingArchive(
-  recordings: Pick<ZoomRecordings, "list" | "download">,
-  options: ArchiveSyncOptions,
+  recordings: Pick<ZoomRecordings, "list" | "download"> & Partial<Pick<ZoomRecordings, "catalog">>,
+  input: ArchiveSyncOptions,
 ): AsyncGenerator<ArchiveSyncReceipt, void, void> {
-  const from = date(options.from)
-  const to = date(options.to)
-  const anniversary = new Date(from)
-  const lastDay = new Date(from)
-  lastDay.setUTCFullYear(from.getUTCFullYear() + 10, from.getUTCMonth() + 1, 0)
-  anniversary.setUTCFullYear(
-    from.getUTCFullYear() + 10,
-    from.getUTCMonth(),
-    Math.min(from.getUTCDate(), lastDay.getUTCDate()),
-  )
-  if (to < from || to > anniversary)
-    throw new ZoomError("validation_error", "archive date range must be ordered and at most ten calendar years")
-  validateDownloadOptions(options)
-  const signal = operationSignal(options.signal)
-  const seen = new Set<string>()
-  let cursor = from
-  while (cursor <= to) {
+  const options = { ...input }
+  try {
+    recordingWindows(options.from, options.to)
+    const maxBytes = validateDownloadOptions(options)
+    const resume = options.resume === true
+    if (resume && (typeof options.account !== "string" || !options.account.trim()))
+      throw new ZoomError("validation_error", "resumable archive sync requires an explicit account")
+    if (!resume && (options.checkpointPath !== undefined || options.checkpointStore !== undefined))
+      throw new ZoomError("validation_error", "archive checkpoints require resume mode")
+    if (
+      options.checkpointPath !== undefined &&
+      (typeof options.checkpointPath !== "string" || !options.checkpointPath.trim())
+    )
+      throw new ZoomError("validation_error", "archive checkpoint path is required")
+    const account = options.account ?? "legacy-uncheckpointed"
+    const signal = operationSignal(options.signal)
     checkCancelled(signal)
-    const end = new Date(cursor)
-    end.setUTCMonth(end.getUTCMonth() + 1, 0)
-    const upper = new Date(Math.min(end.getTime(), to.getTime()))
-    const window = { from: label(cursor), to: label(upper) }
-    const meetings = await recordings.list({ ...window, signal })
-    for (const meeting of meetings) {
-      checkCancelled(signal)
-      if (seen.has(meeting.uuid)) continue
-      seen.add(meeting.uuid)
-      const archive = await recordings.download(meeting.uuid, {
-        destination: options.destination,
-        signal,
-        ...(options.maxBytes === undefined ? {} : { maxBytes: options.maxBytes }),
-      })
-      yield { window, meeting: { id: meeting.id, uuid: meeting.uuid, title: meeting.title }, archive }
+    const catalog: RecordingCatalog = recordings.catalog
+      ? recordings.catalog(account)
+      : {
+          provider: "zoom",
+          list: async (range) => ({
+            items: (await recordings.list(range)).map(({ uuid, ...item }) => ({ ...item, externalId: uuid })),
+            nextCursor: null,
+          }),
+        }
+    const configKey = createHash("sha256")
+      .update(JSON.stringify({ version: 1, destination: resolve(options.destination), maxBytes }))
+      .digest("hex")
+    const checkpointStore = resume
+      ? (options.checkpointStore ??
+        fileRecordingSyncCheckpointStore(
+          options.checkpointPath ?? join(options.destination, ".zoom-archive-sync.json"),
+        ))
+      : undefined
+    const receipts = syncArchive(catalog, {
+      scope: { provider: "zoom", account },
+      from: options.from,
+      to: options.to,
+      now: options.now ?? Date.now,
+      signal,
+      ...(options.recheckFrom === undefined ? {} : { recheckFrom: options.recheckFrom }),
+      ...(options.maxPages === undefined ? {} : { maxPages: options.maxPages }),
+      ...(options.maxEntries === undefined ? {} : { maxEntries: options.maxEntries }),
+      ...(checkpointStore === undefined
+        ? {}
+        : { checkpoint: { store: checkpointStore, jobId: "recording-archive", configKey } }),
+      archive: async (occurrence, activeSignal) => {
+        const { uuid, ...archive } = await recordings.download(occurrence.externalId, {
+          destination: options.destination,
+          signal: activeSignal,
+          ...(options.maxBytes === undefined ? {} : { maxBytes: options.maxBytes }),
+          ...(resume ? { resume: true, account } : {}),
+        })
+        return { ...archive, externalId: uuid }
+      },
+    })
+    for await (const receipt of receipts) {
+      const { externalId, ...archive } = receipt.archive
+      yield {
+        window: receipt.window,
+        meeting: { id: receipt.occurrence.id, uuid: receipt.occurrence.externalId, title: receipt.occurrence.title },
+        archive: { ...archive, uuid: externalId },
+        ...(resume ? { availability: receipt.availability, checkpointRevision: receipt.checkpointRevision } : {}),
+      }
     }
-    cursor = new Date(upper)
-    cursor.setUTCDate(cursor.getUTCDate() + 1)
+  } catch (error) {
+    if (error instanceof RecordingSyncError) {
+      if (error.code === "cancelled") checkCancelled(options.signal)
+      throw new ZoomError(error.code, error.message)
+    }
+    throw error
   }
 }
