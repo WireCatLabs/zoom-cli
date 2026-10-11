@@ -35,6 +35,7 @@ export async function* syncRecordingArchive(
   input: ArchiveSyncOptions,
 ): AsyncGenerator<ArchiveSyncReceipt, void, void> {
   const options = { ...input }
+  let signal: AbortSignal | undefined
   try {
     recordingWindows(options.from, options.to)
     const maxBytes = validateDownloadOptions(options)
@@ -49,7 +50,7 @@ export async function* syncRecordingArchive(
     )
       throw new ZoomError("validation_error", "archive checkpoint path is required")
     const account = options.account ?? "legacy-uncheckpointed"
-    const signal = operationSignal(options.signal)
+    signal = operationSignal(options.signal)
     checkCancelled(signal)
     const catalog: RecordingCatalog = recordings.catalog
       ? recordings.catalog(account)
@@ -102,7 +103,7 @@ export async function* syncRecordingArchive(
     }
   } catch (error) {
     if (error instanceof RecordingSyncError) {
-      if (error.code === "cancelled") checkCancelled(options.signal)
+      if (error.code === "cancelled") checkCancelled(signal)
       throw new ZoomError(error.code, error.message)
     }
     throw error

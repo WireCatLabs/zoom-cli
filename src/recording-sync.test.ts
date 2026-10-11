@@ -5,6 +5,7 @@ import { expect, it, vi } from "vitest"
 import { inspectArchive, verifyArchive } from "./recording-archive.js"
 import { type ArchiveSyncReceipt, syncRecordingArchive } from "./recording-sync.js"
 import { type ArchiveReport, type DownloadOptions, type RecordingMeeting, ZoomRecordings } from "./recordings.js"
+import * as remoteHttp from "./remote-http.js"
 
 const handles = vi.hoisted(() => ({ tracking: false, active: 0, maximum: 0 }))
 vi.mock("node:fs/promises", async (original) => {
@@ -496,4 +497,23 @@ it("uses the scoped one-page catalog adapter without materializing the entire pr
   await expect(source.listPage({ from: "2026-01-01", to: "2026-01-31", cursor: " " })).rejects.toMatchObject({
     code: "validation_error",
   })
+})
+
+it("preserves a derived operation timeout when the shared workflow observes cancellation", async () => {
+  const timeout = new AbortController()
+  const source = {
+    list: async () => {
+      timeout.abort(new DOMException("Example deadline", "TimeoutError"))
+      return [meeting()]
+    },
+    download: async () => {
+      throw new Error("unexpected synthetic download")
+    },
+  }
+  const derived = vi.spyOn(remoteHttp, "operationSignal").mockReturnValue(timeout.signal)
+  try {
+    await expect(collect(syncRecordingArchive(source, options))).rejects.toMatchObject({ code: "timeout" })
+  } finally {
+    derived.mockRestore()
+  }
 })
