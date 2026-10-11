@@ -10,8 +10,9 @@ Options:
   --interactive               permit browser approval in an interactive terminal
   --quiet                     suppress non-error diagnostics
   --fields <paths>            project result fields, such as id,title
-  --timeout <duration>        command deadline: reads 30s, login 5m, downloads
-                              1h; watch/MCP have no default
+  --timeout <duration>        command deadline: reads 30s, login 5m,
+                              downloads/transcription 1h; watch/MCP have no
+                              default
   --max-output-bytes <bytes>  bound rendered result bytes (default 4194304; zero
                               is unlimited)
   --offline                   refuse network requests
