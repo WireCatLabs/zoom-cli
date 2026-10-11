@@ -2,14 +2,14 @@ import { mkdtemp } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-core"
+import { parseMeetingReference } from "@wirecat/cli-messaging"
 import {
   createMeetingContext,
   dispatchMeetingMutation,
   type MeetingMediaDescriptor,
   transcribeMeeting,
-} from "@wirecat/cli-meetings"
-import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-meetings/testing"
-import { parseMeetingReference } from "@wirecat/cli-messaging"
+} from "@wirecat/cli-messaging/meetings"
+import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-messaging/meetings/testing"
 import { expect, it, vi } from "vitest"
 import { ZoomError } from "./errors.js"
 import type { LocalTranscriptionOptions } from "./local-transcription.js"

@@ -1,4 +1,4 @@
-import { memoryMeetingStore } from "@wirecat/cli-meetings/testing"
+import { memoryMeetingStore } from "@wirecat/cli-messaging/meetings/testing"
 import { expect, it, vi } from "vitest"
 import { createStoreConnector, type StoreConnectionOptions } from "./store-connection.js"
 

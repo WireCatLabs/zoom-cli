@@ -14,12 +14,9 @@ importers:
       '@wirecat/cli-core':
         specifier: 0.20.0
         version: 0.20.0(commander@15.0.0)(typescript@7.0.2)
-      '@wirecat/cli-meetings':
-        specifier: 0.4.2
-        version: 0.4.2(@wirecat/cli-core@0.20.0(commander@15.0.0)(typescript@7.0.2))
       '@wirecat/cli-messaging':
-        specifier: 0.241.0
-        version: 0.241.0(@wirecat/cli-core@0.20.0(commander@15.0.0)(typescript@7.0.2))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.5)
+        specifier: 0.244.0
+        version: 0.244.0(@wirecat/cli-core@0.20.0(commander@15.0.0)(typescript@7.0.2))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.5)
       commander:
         specifier: 15.0.0
         version: 15.0.0
@@ -986,20 +983,14 @@ packages:
       commander:
         optional: true
 
-  '@wirecat/cli-meetings@0.4.2':
-    resolution: {integrity: sha512-SKzZq44XowgPZwT7BaopfRyCCCFqfaLNEv0DVTMN7X0J9HWO495KlUCKMWGC6CHfRAFnEP2r1jRHAtI6eztJkw==}
-    engines: {node: '>=22.12.0'}
-    peerDependencies:
-      '@wirecat/cli-core': '>=0.18.1 <0.21.0'
-
   '@wirecat/cli-messaging-onnx@1.0.1':
     resolution: {integrity: sha512-e0ewPI3k417jvzoXy4I/4KW3PBnGWhRXy/YDshya0+d1D8QlajmswGpsh6UJlVr3DbAPuQLLc0qkqgGmh1+eNw==}
 
   '@wirecat/cli-messaging-sqlite@1.0.1':
     resolution: {integrity: sha512-hnB4eL6ER/++nTPrlSCAUzDJH7MN3V+Obx9B2xXMwBN1KrLkJHIrybQCikfNOnwnyrkultSkLulM7vd+qSG5Hg==}
 
-  '@wirecat/cli-messaging@0.241.0':
-    resolution: {integrity: sha512-vpj00NoxXYbkQGEFGvLa5VWWmKKDEUtD1+UW8CMfwv7aDN3gDrdt8TuvbnQJ0PWkwLU3VA4kVoelRiolG/qntw==}
+  '@wirecat/cli-messaging@0.244.0':
+    resolution: {integrity: sha512-syhnvafiaXKXounjNUKFu1oNauMLviNVQ+RV1NiMSEQI2GJaGx2/cmenac1D1Mrqsa59ZJo5CcfJAvNnV+00qw==}
     engines: {node: ^22.16.0 || >=24}
     hasBin: true
     peerDependencies:
@@ -2926,18 +2917,13 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@wirecat/cli-meetings@0.4.2(@wirecat/cli-core@0.20.0(commander@15.0.0)(typescript@7.0.2))':
-    dependencies:
-      '@wirecat/cli-core': 0.20.0(commander@15.0.0)(typescript@7.0.2)
-      commander: 15.0.0
-
   '@wirecat/cli-messaging-onnx@1.0.1':
     dependencies:
       onnxruntime-common: 1.30.0
 
   '@wirecat/cli-messaging-sqlite@1.0.1': {}
 
-  '@wirecat/cli-messaging@0.241.0(@wirecat/cli-core@0.20.0(commander@15.0.0)(typescript@7.0.2))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.5)':
+  '@wirecat/cli-messaging@0.244.0(@wirecat/cli-core@0.20.0(commander@15.0.0)(typescript@7.0.2))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.5)':
     dependencies:
       '@anthropic-ai/sdk': 0.131.0(zod@4.6.5)
       '@bomb.sh/tab': 0.0.22(commander@15.0.0)
@@ -2946,7 +2932,6 @@ snapshots:
       '@resvg/resvg-js': 2.6.2
       '@valibot/to-json-schema': 1.8.0(valibot@1.5.0(typescript@7.0.2))
       '@wirecat/cli-core': 0.20.0(commander@15.0.0)(typescript@7.0.2)
-      '@wirecat/cli-meetings': 0.4.2(@wirecat/cli-core@0.20.0(commander@15.0.0)(typescript@7.0.2))
       '@wirecat/cli-messaging-onnx': 1.0.1
       '@wirecat/cli-messaging-sqlite': 1.0.1
       '@xmldom/xmldom': 0.9.12

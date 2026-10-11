@@ -5,7 +5,7 @@ import type {
   MeetingTranscriptionReceipt,
   MeetingTranscriptionSource,
   MeetingTranscriptReceiptStore,
-} from "@wirecat/cli-meetings"
+} from "@wirecat/cli-messaging/meetings"
 import type {
   LocalSpeechRecognitionModel,
   LocalSpeechRecognizer,
@@ -202,7 +202,7 @@ export const createLocalTranscriptionCapabilities = (
         env: options.env,
         speech: options.speech,
       })
-      const { transcribeMeeting } = await import("@wirecat/cli-meetings")
+      const { transcribeMeeting } = await import("@wirecat/cli-messaging/meetings")
       return transcribeMeeting(
         source,
         {

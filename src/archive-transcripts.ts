@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
 import { realpath } from "node:fs/promises"
 import { join } from "node:path"
-import { parseVtt, type TranscriptLine } from "@wirecat/cli-meetings"
+import { parseVtt, type TranscriptLine } from "@wirecat/cli-messaging/meetings"
 import { checkCancelled, ZoomError } from "./errors.js"
 import { openOrdinaryFile } from "./ordinary-file.js"
 import { type ArchivedFile, type ArchiveManifest, inspectArchive } from "./recording-archive.js"

@@ -7,7 +7,7 @@ import {
   type MeetingTranscriptReceiptStore,
   type MeetingTranscriptStore,
   validateMeetingContextChange,
-} from "@wirecat/cli-meetings"
+} from "@wirecat/cli-messaging/meetings"
 import type { MessageStore, StoreOptions } from "@wirecat/cli-messaging/store"
 import { profileAccountKey } from "./config.js"
 import { ZoomError } from "./errors.js"

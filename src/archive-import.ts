@@ -1,6 +1,10 @@
 import { createHash } from "node:crypto"
 import { CliError } from "@wirecat/cli-core"
-import type { MeetingTranscriptReceiptStore, MeetingTranscriptStore, TranscriptAppend } from "@wirecat/cli-meetings"
+import type {
+  MeetingTranscriptReceiptStore,
+  MeetingTranscriptStore,
+  TranscriptAppend,
+} from "@wirecat/cli-messaging/meetings"
 import { type ArchiveTranscriptOptions, readArchiveTranscripts } from "./archive-transcripts.js"
 import { checkCancelled, ZoomError } from "./errors.js"
 

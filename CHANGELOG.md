@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Changed — may break callers
+
+- **Built on `@wirecat/cli-messaging` 0.244.0, which now contains the meetings code.** zm imports
+  `@wirecat/cli-messaging/meetings` and no longer depends on `@wirecat/cli-meetings`; commands and data are
+  unchanged. A script that imported `@wirecat/cli-meetings` from zm's install folder imports
+  `@wirecat/cli-messaging/meetings` instead.
+
 ### Added
 
 - **A front-page README** introduces `zm` as Zoom context for AI agents: quick start, scenarios and
