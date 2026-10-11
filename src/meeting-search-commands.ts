@@ -65,7 +65,7 @@ export const addMeetingHitSearchCommand = (
   annotate(
     meetings
       .command("search-page")
-      .description("bounded AND-prefix search with continuation inside transcripts")
+      .description("bounded keyword search with configured stemming and hit continuation")
       .argument("<query>")
       .option("--meeting-id <id>", "restrict to a meeting in the selected account", bytes)
       .option("--since <date>", "meeting start at or after an ISO date or timestamp", timestamp)

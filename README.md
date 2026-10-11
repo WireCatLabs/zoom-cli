@@ -323,12 +323,14 @@ zm meetings search-page "example plan" --limit 20 --after <nextCursor> --json
 
 Indexing previews by default; `--yes` applies one bounded batch and `--dry-run` overrides it.
 Repeat until the applied receipt reports `remaining: 0`. A search read never processes indexing
-work. Its coverage reports pending indexing and unknown index/archive completeness. Search uses
-normalized words joined with AND and matches their prefixes. `--meeting-id`, `--since` and `--until`
+work. Its coverage reports pending indexing and unknown index/archive completeness. All normalized
+query words must match, through literal prefixes or the stored stemming configuration. The default
+configuration adds English, Russian and Spanish word stems; a store can disable or customize it.
+This is keyword search, with no semantic model or query operators. `--meeting-id`, `--since` and `--until`
 narrow the selected account. The opaque cursor belongs to that account, query and filters; it can
 continue inside a large transcript. JSONL preserves the complete page, including `nextCursor`.
 
-`meetings search` keeps its existing literal transcript search. `search all` uses the shared search
+`meetings search` keeps its existing literal prefix transcript search. `search all` uses the shared search
 service and searches only meetings by default:
 
 ```sh

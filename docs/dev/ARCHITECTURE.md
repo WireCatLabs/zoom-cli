@@ -137,10 +137,11 @@ are checked in the same transaction. Only the selected identity moves; names nev
 Memo remains the shared notes, tags and memories interface over these same records. Zoom does not
 mount another set of those commands.
 
-Bounded word-prefix hit search uses the optional producer search capability and an opaque cursor
+Bounded keyword hit search uses the optional producer search capability and an opaque cursor
 that can continue within a transcript. Reads do not drain keyword indexing work. Explicit indexing
 previews by default and applies one bounded batch with `--yes`; coverage reports pending indexing
-and unknown index/archive completeness. Command receipts preserve committed local writes when
+and unknown index/archive completeness. The producer owns Unicode tokenization and configured
+stemming; Zoom does not duplicate either implementation. Command receipts preserve committed local writes when
 cancellation follows acknowledgement.
 
 Local transcription resolves an existing selected-account meeting before reading media or loading
