@@ -96,7 +96,8 @@ can leave context incomplete. `meetings task-proposal <reference> --kind questio
 is read-only: `applied: false` and `persistence: "proposal-only"` do not mean a task was created.
 
 `search all <query>` searches meetings by default. Broader `--only messages,mail,notes,meetings`
-is explicit; notes are store-global. Meetings use word prefixes; unsupported syntax or exact queries
+is explicit. Messages use the selected local account, mail includes stored email accounts, and
+notes are store-global. Meetings use word prefixes; unsupported syntax or exact queries
 are reported as skipped. Resume meetings-only results using the returned `meetings.nextCursor` as
 `--meeting-cursor '<json>'`, bound to account and query. JSONL retains the entire report, including
 coverage, skips and cursors. Existing `meetings search` remains literal transcript search.
