@@ -1,8 +1,9 @@
 # Roadmap
 
-The current tool downloads available Zoom meeting data and recordings, imports transcript files,
-searches stored evidence and supports explicit links to people and events. Use
-[search and evidence](search.md) to work with those sources now.
+See which meeting workflows you can use today and which need further development. The tool already
+retrieves available hosted data, imports transcripts, backs up recordings and searches cited passages.
+An agent can combine these sources with Memo's projects, notes and people now; the dedicated automatic
+workflows below are planned. Start with [search and evidence](search.md) for the available path.
 
 ## Planned work
 

@@ -1,10 +1,13 @@
 # Security
 
-What `zm` keeps on your disk, what it sends over the network, and what it never does.
+Choose what meeting data your agent can read and where processing takes place. Zoom authorization,
+local storage and AI processing have separate boundaries: granting app access does not itself send
+a transcript to an AI service. This guide explains those boundaries before you connect or archive data.
 
 ## Credentials
 
-- `zm` uses your own Zoom app with Public Client OAuth. The app has no client secret.
+- `zm` uses a configured Zoom app with Public Client OAuth. Zoom can show a client secret for
+  that app, but this tool never asks for or uses it. Configure only its Public Client ID.
 - Login uses PKCE and checks the returned state. The callback page at
   [wirecat.dev/zoom-callback](https://wirecat.dev/zoom-callback) is static and only passes the answer
   on to `zm`; the answer is useless without the verifier that stays on your machine.
@@ -37,3 +40,11 @@ What `zm` keeps on your disk, what it sends over the network, and what it never 
   embedding generation and lock recovery preview by default and need `--yes`; `--dry-run` wins where
   offered. Remote writes are never automatically retried.
 - Task proposals never create a task.
+
+An AI app can send the tool results it reads to its own provider. Choose that app and its data policy
+separately from Zoom authorization. A remote embedding endpoint receives text for generation and
+queries only when explicitly selected; local model execution stays on your computer. Stored files
+and database content remain sensitive meeting data even though their manifests omit tokens.
+
+To withdraw Zoom access, [revoke the app authorization](sessions.md#remove-access). To control what
+an AI app can request, choose the [CLI skill or read-only MCP connection](mcp.md).

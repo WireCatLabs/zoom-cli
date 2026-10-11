@@ -39,9 +39,10 @@ zm meetings evidence meeting:1/42/57/118 --json     # the exact passage
 
 ## Quick start
 
-You need Node 22.16+ (22.x) or 24+, a system keyring and **your own Zoom app** — Zoom lets a program
-read your meetings only through an app you register. [Creating it][docs/zoom-app.md]
-takes a few minutes and needs no client secret.
+You need Node 22.16+ (22.x) or 24+, a system keyring and **a configured user-managed Zoom app**. Reuse one you already created or one your team
+has made available to your user; otherwise [create your own][docs/zoom-app.md]. Use its Public
+Client ID, not its regular Client ID or secret. The [installation guide][docs/installation.md]
+walks through app settings, browser approval and callback completion.
 
 ```sh
 npm install -g @wirecat/zoom-cli
@@ -52,9 +53,9 @@ zm pull --lookback-days 7
 zm meetings list
 ```
 
-Turn on **Allow hosts to retain transcripts** in Zoom's settings first: Zoom returns transcripts only
-for meetings you hosted, and only when they were kept. For meetings you only attended, download the
-transcripts from Zoom and run `zm import <folder>`. Full guide:
+Check Zoom's transcript generation and retention settings first: the API reads available hosted
+meeting text, and permission does not create a transcript. For an attended meeting, obtain a VTT
+file from the host or download one if allowed, then run `zm import <folder>`. Full guide:
 [installation][docs/installation.md].
 
 More: [installation][docs/installation.md] · [your Zoom app][docs/zoom-app.md] ·

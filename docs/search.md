@@ -4,6 +4,26 @@ Find what was said in your stored meetings, read the exact passage with a refere
 what you discussed with a person, link meetings to events and people, and preview a follow-up task
 tied to its source.
 
+## Start with a question
+
+```text prompt
+Find discussions about Research Example in my stored meetings. Show the dates and the passages
+about the launch decision. Include references and tell me which transcripts or periods are missing.
+```
+
+The agent should identify the meeting, open the matching passage and distinguish a recorded
+participant from a person merely named in the text. Check the surrounding cues before accepting
+a decision or promise. An empty search result does not prove that a discussion never happened.
+
+For a quick local word search:
+
+```sh
+zm meetings search "example plan" --json
+```
+
+This searches the stored profile, not Zoom's live history. [Pull or import missing meetings](archive.md)
+first. For indexed matches with word forms and continuation inside long transcripts, use the next steps.
+
 ## Search stored meetings
 
 For bounded text search, first index queued meeting records explicitly, then page through hits:
@@ -104,4 +124,9 @@ Task proposals support question, request, mention and promise; `applied: false` 
 `persistence: "proposal-only"` mean no task was created. `zm` does not find commitments on its own:
 an agent reads transcripts and evidence, then proposes a task for the passage it chose.
 
-Searching by meaning instead of by words is covered in [topic search](topic-search.md).
+Before saving notes, tags or facts, ask your agent to show the existing project aliases and labels,
+then propose the links it intends to add. Review possible tag synonyms rather than creating another
+label for the same subject. Memo is installed separately and must use the same database path.
+
+Searching by meaning instead of by words is covered in [topic search](topic-search.md). For an upcoming
+call, combine these cited passages with [the Zoom schedule](remote-meetings.md).

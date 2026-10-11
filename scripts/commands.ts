@@ -12,7 +12,7 @@ const page = commandsPage({
     banner: "<!-- Generated from the command tree by scripts/commands.ts. Do not edit; run pnpm generate. -->",
     title: "Commands",
     intro:
-      "Command descriptions and options come from the installed program's command tree. Stored meeting ids differ from remote Zoom ids. Archive paths are explicit local directories.",
+      "Look up the exact command, arguments and options for reading meetings, archiving recordings or managing the Zoom schedule. Stored meeting IDs differ from remote Zoom IDs; archive destinations are explicit local directories. Start with installation or a task guide when connecting for the first time.",
     globalHeading: "Global options",
     globalIntro: "These options apply to every command.",
     mutates: "**Changes remote Zoom data.**",
