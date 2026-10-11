@@ -76,7 +76,8 @@ explain the Marketplace fields.
 ## Create it from the manifest
 
 The optional [starter manifest](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/zoom-app.json)
-contains the callback URLs and disabled in-client features. If Marketplace offers creation from
+is an app-creation template, not a credentials file. It contains callback URLs and disabled
+in-client features. If Marketplace offers creation from
 an app manifest, save that JSON file and import it when creating the General app.
 
 **The manifest does not include scopes or enable Public Client OAuth.** Complete steps 3–6 above
