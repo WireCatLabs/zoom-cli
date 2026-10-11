@@ -3,16 +3,17 @@ import { spawn } from "node:child_process"
 import { join } from "node:path"
 import { createInterface } from "node:readline/promises"
 import { fileURLToPath } from "node:url"
-import { CliError, resolvePaths, systemKeyring } from "@wirecat/cli-core"
+import { CliError, systemKeyring } from "@wirecat/cli-core"
 import { profileAccountKey, readConfig } from "../config.js"
 import { ZoomError } from "../errors.js"
+import { loginService, zmPaths } from "../folders.js"
 import { writeExportFile } from "../output-file.js"
 import { run } from "../program.js"
 import { createStoreConnector } from "../store-connection.js"
 import { writeStream } from "../streaming.js"
 import { TokenManager } from "../tokens.js"
 
-const paths = resolvePaths({ appName: "zm", env: process.env })
+const paths = zmPaths(systemKeyring, (line) => process.stderr.write(line))
 const configPath = join(paths.config, "config.json")
 const cancellation = new AbortController()
 let brokenPipe = false
@@ -37,7 +38,7 @@ try {
       return readConfig(configPath).clientId ?? ""
     },
     keyring: systemKeyring,
-    service: `zoom-cli:${paths.config}`,
+    service: loginService(paths.config),
     fetch,
   })
   process.exitCode = await run(process.argv.slice(2), {
