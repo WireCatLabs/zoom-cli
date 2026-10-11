@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.2 — 11.10.2026
+
+### Fixed
+
+- Explicit shared mail search finds email stored in dedicated mail tables alongside older imports,
+  without duplicate email locators. Mail reads include stored email accounts; message reads use
+  the selected local account.
+
 ## 0.3.1 — 11.10.2026
 
 ### Fixed
