@@ -46,7 +46,9 @@
     "generate": "pnpm build && node scripts/commands.ts",
     "generate:check": "pnpm build && node scripts/commands.ts --check",
     "test:matrix": "pnpm test --maxWorkers 2 && pnpm build && pnpm test:matrix:check",
-    "test:matrix:check": "node node_modules/@wirecat/cli-core/dist/dev/bin.js test-matrix --program scripts/command-program.ts --untested scripts/test-matrix-untested.ts --name zm --check"
+    "test:matrix:check": "node node_modules/@wirecat/cli-core/dist/dev/bin.js test-matrix --program scripts/command-program.ts --untested scripts/test-matrix-untested.ts --name zm --check",
+    "contracts:upgrade": "pnpm --dir contracts/previous install --ignore-workspace --frozen-lockfile --ignore-scripts && cli-contract contracts/upgrade.json",
+    "security:no-leak": "cli-testing security no-leak . contracts/no-leak.json"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",
@@ -62,7 +64,7 @@
     "@cspell/dict-ru_ru": "2.3.3",
     "@types/node": "^22.20.5",
     "@vitest/coverage-v8": "^5.0.3",
-    "@wirecat/cli-testing": "0.2.0",
+    "@wirecat/cli-testing": "0.3.0",
     "cspell": "10.3.6",
     "lefthook": "2.1.16",
     "markdownlint-cli2": "0.23.3",

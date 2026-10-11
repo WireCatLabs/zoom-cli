@@ -1,0 +1,145 @@
+{
+  "command": "node",
+  "args": ["../dist/bin/zm.js"],
+  "previous": {
+    "entry": "./previous/node_modules/@wirecat/previous-cli/dist/bin/zm.js",
+    "version": "0.2.1"
+  },
+  "fixtures": [
+    {
+      "path": "transcripts/2026-10-01_1000_synthetic.vtt",
+      "text": "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nSynthetic Example: wirecat-synthetic-transcript-canary\n"
+    }
+  ],
+  "canaries": ["wirecat-synthetic-transcript-canary"],
+  "cases": [
+    {
+      "id": "previous-profile",
+      "args": ["config", "set", "account.profile", "contract", "--json"],
+      "exit": 0,
+      "stream": "stdout",
+      "kind": "json",
+      "previous": true,
+      "json": {
+        "accountProfile": "contract"
+      }
+    },
+    {
+      "id": "previous-import",
+      "args": ["import", "{{root}}/transcripts", "--json"],
+      "exit": 0,
+      "stream": "stdout",
+      "kind": "json",
+      "previous": true
+    },
+    {
+      "id": "previous-list",
+      "args": ["meetings", "list", "--json"],
+      "exit": 0,
+      "stream": "stdout",
+      "kind": "json",
+      "previous": true,
+      "capture": {
+        "meeting": "/items/0/id"
+      }
+    },
+    {
+      "id": "candidate-config",
+      "args": ["config", "show", "--json"],
+      "exit": 0,
+      "stream": "stdout",
+      "kind": "json",
+      "json": {
+        "accountProfile": "contract",
+        "filesTimezone": "UTC"
+      }
+    },
+    {
+      "id": "candidate-list",
+      "args": ["meetings", "list", "--json"],
+      "exit": 0,
+      "stream": "stdout",
+      "kind": "json",
+      "json": {
+        "items": [
+          {
+            "id": "{{meeting}}"
+          }
+        ]
+      }
+    },
+    {
+      "id": "candidate-transcript",
+      "args": ["meetings", "transcript", "{{meeting}}", "--json"],
+      "exit": 0,
+      "stream": "stdout",
+      "kind": "json",
+      "allowSensitiveOutput": true,
+      "contains": "wirecat-synthetic-transcript-canary"
+    },
+    {
+      "id": "candidate-import-repeat",
+      "args": ["import", "{{root}}/transcripts", "--json"],
+      "exit": 0,
+      "stream": "stdout",
+      "kind": "json"
+    },
+    {
+      "id": "candidate-list-repeat",
+      "args": ["meetings", "list", "--json"],
+      "exit": 0,
+      "stream": "stdout",
+      "kind": "json",
+      "json": {
+        "items": [
+          {
+            "id": "{{meeting}}"
+          }
+        ]
+      }
+    },
+    {
+      "id": "candidate-export",
+      "args": ["meetings", "export", "{{meeting}}", "--format", "vtt", "--output", "{{root}}/exported.vtt", "--json"],
+      "exit": 0,
+      "stream": "stdout",
+      "kind": "json",
+      "files": [
+        {
+          "path": "exported.vtt",
+          "text": "WEBVTT\n\n1\n00:00:00.000 --> 00:00:01.000\nSynthetic Example: wirecat-synthetic-transcript-canary\n\n"
+        }
+      ]
+    },
+    {
+      "id": "export-no-overwrite",
+      "args": ["meetings", "export", "{{meeting}}", "--format", "vtt", "--output", "{{root}}/exported.vtt", "--json"],
+      "exit": 2,
+      "stream": "stderr",
+      "kind": "json",
+      "errorCode": "validation_error",
+      "files": [
+        {
+          "path": "exported.vtt",
+          "text": "WEBVTT\n\n1\n00:00:00.000 --> 00:00:01.000\nSynthetic Example: wirecat-synthetic-transcript-canary\n\n"
+        }
+      ]
+    },
+    {
+      "id": "search-retained",
+      "args": ["meetings", "search", "wirecat-synthetic-transcript-canary", "--json"],
+      "exit": 0,
+      "stream": "stdout",
+      "kind": "json",
+      "allowSensitiveOutput": true
+    },
+    {
+      "id": "missing-meeting",
+      "args": ["meetings", "show", "999999", "--json"],
+      "exit": 6,
+      "stream": "stderr",
+      "kind": "json",
+      "errorCode": "not_found"
+    }
+  ]
+}
