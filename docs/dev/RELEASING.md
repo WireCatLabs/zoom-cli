@@ -2,7 +2,8 @@
 
 Release from a clean main equal to origin/main after the implementation and release-preparation
 PRs have passed CI. Date the top changelog section with the package version and release day.
-`bin/release` dispatches the GitHub workflow; it never reads an npm token or publishes locally.
+`bin/release` takes the machine-wide release lock and dispatches the GitHub workflow; it never reads
+an npm token or publishes locally. Concurrent releases of another CLI wait for that lock.
 
 Full validation builds, tests, checks docs and packs once. Linux and Windows installed-package
 checks run against the resulting tarball before publication. A separate job publishes only the tarball

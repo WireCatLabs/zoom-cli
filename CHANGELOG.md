@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 — 11.10.2026
 
 ### Changed — may break callers
 
@@ -10,6 +10,9 @@
 
 ### Fixed
 
+- **Offline remote-model checks** refuse remote semantic requests before store or model work.
+- **MCP profile selection** stays fixed after its first tool read, including across config edits.
+- **Acknowledged embedding receipts** survive late cancellation within a bounded output grace period.
 - **Archive file replacement checks** verify the opened object and path before reading bytes,
   including on Windows where no-follow file-open flags are unavailable.
 

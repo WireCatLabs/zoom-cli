@@ -46,7 +46,7 @@ try {
     serveMcp: async (options) => {
       const { serveMeetingMcp } = await import("../mcp-server.js")
       let profileCaptured = false
-      let profile: string | undefined
+      let profile: string | null | undefined
       await serveMeetingMcp({
         ...options,
         connectStore: async () => {

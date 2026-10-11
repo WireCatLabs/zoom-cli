@@ -20,6 +20,7 @@ export const validateUnifiedSearch = (input: UnifiedSearchRequest, meetingsOnly 
     !Number.isSafeInteger(limit) ||
     limit < 1 ||
     limit > 1000 ||
+    typeof maxMeetings !== "number" ||
     !Number.isSafeInteger(maxMeetings) ||
     maxMeetings < 1 ||
     maxMeetings > 1000 ||
