@@ -34,7 +34,12 @@ const dependencies = {
   messaging: dependencyVersion("@wirecat/cli-messaging"),
   core: dependencyVersion("@wirecat/cli-core"),
 }
-assert.deepEqual(dependencies, { meetings: "0.4.1", messaging: "0.237.0", core: "0.19.4" })
+const declared = (name) => metadata.dependencies[name] ?? metadata.peerDependencies?.[name]
+assert.deepEqual(dependencies, {
+  meetings: declared("@wirecat/cli-meetings"),
+  messaging: declared("@wirecat/cli-messaging"),
+  core: declared("@wirecat/cli-core"),
+})
 const guard = join(root, "guard.cjs")
 const denied = join(root, "denied")
 const loaded = join(root, "loaded")
