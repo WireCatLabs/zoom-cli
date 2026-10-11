@@ -1,0 +1,202 @@
+# The local archive
+
+Keep your Zoom meetings on your own machine: pull hosted meetings through the API, import transcript
+files you downloaded, watch for new ones, and archive cloud recording files with verified checksums.
+
+## Where meetings are stored
+
+Login, cloud recording downloads and remote meeting commands work independently of the meeting
+database. Import, pull, folder watching and meeting reads use the published shared SQLite adapter.
+Store connections open lazily and close before successful results are emitted. Meeting data persists
+in the shared WireCat database; `MESSAGING_STORE` selects an explicit database path. The shared model,
+exports and ingestion loop come from `@wirecat/cli-meetings`.
+
+The shared store uses `wirecat.db`. Opening its default path deletes the legacy unencrypted
+`messages.db` and its `-wal` and `-shm` sidecars, without migrating them. The legacy files are kept
+when `MESSAGING_STORE` is set, an explicit store path is supplied, or another process holds the
+legacy database open. A later default-path open retries deletion after that process closes.
+
+Select a [local profile](sessions.md#select-a-local-profile) before importing or pulling.
+
+## Pull hosted meetings
+
+`zm pull` fetches occurrences from the configured source: meetings, participants, transcripts and AI
+summaries. Zoom returns transcripts only for meetings **you hosted**, and only when **Allow hosts to
+retain transcripts** is on in Zoom's web settings ([before your first pull](zoom-app.md#before-your-first-zm-pull)).
+
+Use `pull --lookback-days 7` to revisit the last seven days, or an older explicit
+`pull --since 2026-10-01` for earlier occurrences whose transcript appeared later. The cursor alone
+does not guarantee that late transcripts are revisited. Serialize pulls for the same account to avoid
+concurrent event creation. A failed occurrence leaves the cursor unchanged so the next pull can retry it.
+
+## Downloaded transcripts
+
+Meetings you only attended stay in your Zoom portal; download their transcripts there and import
+the folder with `zm import <folder>`. The files source reads ordinary `.vtt` files directly inside a
+folder. Names follow the existing exporter's `YYYY-MM-DD_HHMM_topic-slug.vtt` format. Occurrence ids
+derive from the timestamp and normalized topic; files carry no Zoom occurrence UUID. Participants
+remain unknown, and speaker names are kept without guessing an identity.
+
+File times default to UTC. Set `files.timezone` to the IANA zone used when the filenames were
+created, for example `Europe/Madrid`. Ambiguous or nonexistent daylight-saving times are refused.
+Conflicting contents for the same normalized filename key are an error; correct the conflicting
+files before retrying. File discovery fails explicitly on invalid names rather than silently
+importing a partial folder.
+
+## Watch for new meetings
+
+For repeated API ingestion, use `zm watch --source api --lookback-days 7 --jsonl`. A folder argument
+selects file watching; otherwise the configured source applies. File watching can use `files.folder`.
+API watching accepts `--since` and revisits zero through 31 days, and requires online access.
+`--since` sets the initial lower bound; after a successful cursor write, later cycles use the cursor
+with the selected overlap. Failed cycles retain the initial bound until a cursor write succeeds.
+The overlap also subtracts from the initial `--since` bound.
+`--interval` controls the delay between completed cycles. Profile, source and file settings are
+captured, along with the OAuth client, before watching begins; changing configuration requires
+restarting the watch. Cycles never overlap and close their store connection before emitting a
+receipt. Stop with Ctrl-C.
+
+To watch a transcript folder:
+
+```sh
+zm watch ./downloaded-transcripts --interval 10s --jsonl
+```
+
+Watching rescans the folder for each cycle, so corrected older files are revisited. It imports serially,
+closes the cycle's store connection before emitting its receipt and waits for output to drain before
+starting another cycle. Intervals range from one second to one day. This is a foreground process;
+stop it with Ctrl-C. Headless watching requires `--jsonl`; a stream cannot use `--json`.
+Select a local profile before watching, just as for a one-time import.
+
+Cancellation allows up to one second to flush a fully completed receipt if it arrives during
+store close. A blocked output pipe stops that flush; no later cycle starts.
+
+## Archive cloud recordings
+
+`zm` archives available cloud recording video, audio, transcripts and chat files. Find an occurrence
+and download its available files to an explicit destination:
+
+```sh
+zm recordings list --from 2026-10-01 --to 2026-10-10 --json
+zm recordings show example-occurrence --json
+zm recordings download example-occurrence --destination ./zoom-archive --json
+zm recordings archive verify ./zoom-archive --offline --json
+```
+
+For recording history across months, use:
+
+```sh
+zm recordings sync --from 2026-01-01 --to 2026-10-10 --destination ./zoom-archive --jsonl
+```
+
+Sync accepts explicit ordered dates spanning at most ten calendar years. It splits them into monthly
+requests, deduplicates occurrence UUIDs and downloads serially. Each JSONL receipt describes one
+completed occurrence; earlier receipts and completed files remain if a later request fails. Repeat the
+same range or an overlapping recent range to discover new assets. With a selected local profile,
+sync saves durable progress and retains pending recordings. Use `--recheck-from YYYY-MM-DD` to
+rediscover recent dates for late or changed assets, and `--checkpoint` to select its checkpoint file.
+`--max-pages` and `--max-entries` bound discovery. Headless sync requires `--jsonl`.
+
+Checkpoints acknowledge earlier successful archives; they do not check current disk integrity or
+prove that all provider recordings were available. Run `recordings archive verify` to check local
+files. Use `--no-resume` to rescan the full requested range without durable progress.
+
+Recording lists accept an ordered date range of at most 31 days. Downloads stream to disk rather
+than loading a video into memory. The default per-file limit is 20 GiB; change it with `--max-bytes`.
+Use `--file-ids` to select comma-separated asset ids. Only completed, downloadable assets are saved;
+the receipt reports unavailable assets separately. Zoom permissions, recording retention and account
+features determine what can be downloaded. Assets from a meeting you attended are not necessarily
+available through your cloud recording API.
+
+Each occurrence has a manifest containing metadata, file sizes and SHA-256 checksums. Signed
+download URLs and OAuth tokens are excluded. Repeating a download verifies existing manifest files
+and skips matching assets. Existing files are never overwritten; a mismatch requires a new destination.
+With a selected local profile, interrupted downloads retain verified partial bytes and resume only
+when a strong validator and the returned range agree. Changed representations restart safely.
+Explicit `--resume` requires a profile; `--no-resume` and downloads without a profile use ephemeral
+partials. Completed manifest entries remain available if a later transfer fails.
+
+## Locks and recovery
+
+Archive commands inspect and verify local data without logging in or opening a database. Concurrent
+writers to the same destination are refused. After a process crash, inspect `recordings archive locks`
+and preview `recordings archive recover`. Add `--yes` to remove recognized locks owned by a dead process
+on this machine; active, foreign and unrecognized locks are preserved. Recovery removes stale lock
+markers only. Download continuation can recover a completed promotion only when its owned journal,
+verified partial and final file all match; unrelated untracked files remain protected.
+
+## Daily backups
+
+To plan a daily backup, choose an absolute destination and timer timezone:
+
+```sh
+zm recordings schedule create --name daily --destination /home/AliceExample/zoom-archive --from 2026-01-01 --at 03:15 --timezone Europe/Madrid --json
+zm recordings schedule list --offline --json
+zm recordings schedule run <schedule-id> --jsonl
+zm recordings schedule disable <schedule-id> --yes --json
+```
+
+Creation previews by default. Add `--yes` to install a Linux systemd user timer; `--dry-run`
+overrides it. Automatic installation currently supports Linux only. The timer follows its IANA
+timezone, while recording discovery uses UTC dates and defaults to seven days of recent rechecks.
+Systemd user services must be available for the job to run; previews also work on other platforms.
+Jobs capture the local profile, public client ID, destination and runtime/config paths, without
+credentials. Running a saved job requires its captured profile and client to remain selected.
+Saved status describes the last acknowledged operation; list/show do not query live timer state.
+Disabling stops the timer and preserves job definitions and archived files.
+
+## Read and import archived transcripts
+
+Cloud archive assets use hashed filenames and retain their identity in manifests. Read or search
+archived transcripts directly:
+
+```sh
+zm recordings archive transcript ./zoom-archive --offline --json
+zm recordings archive search ./zoom-archive "example plan" --limit 100 --offline --json
+```
+
+Both commands verify each WebVTT file they read against manifest sizes and SHA-256 digests before
+returning parsed cues. Search stops after finding one match beyond its limit; later files remain
+unread. They need no login, configuration or database. Use `--uuid` or comma-separated
+`--file-ids` to select assets, and `--max-bytes` to change the default 8 MiB per-file read limit.
+Search matches literal cue text after Unicode normalization and lowercasing; speaker names are
+not searched. Its default limit is 100, with a maximum of 1000. `hasMore` means another matching cue
+exists; increase the limit or narrow the occurrence, file or query selection to read more.
+Results have no continuation cursor. Finite output remains bounded by `--max-output-bytes`, and a
+failed verification emits no successful result.
+
+Use a separate command to import these assets into the selected local profile:
+
+```sh
+zm recordings archive import ./zoom-archive --offline --jsonl
+```
+
+Import verifies every selected VTT asset before opening the store. The default limits are 8 MiB
+per file and 64 MiB in total; use `--max-bytes` and `--max-total-bytes` to change them. Select an
+occurrence with `--uuid`, or assets with comma-separated `--file-ids`. Each occurrence is appended
+atomically by its raw Zoom UUID, preserving other transcripts, summaries, participants and the
+pull cursor. Corrected content retains earlier revisions; identical asset hashes are idempotent.
+An occurrence with no known start time can receive transcripts only if it already exists. Receipts
+report acknowledged or unavailable occurrences. When the exact receipt capability is available,
+they also report meeting creation and inserted, replayed and superseded transcript counts from the
+same transaction. Older adapters keep the acknowledgement without guessed counts.
+Earlier acknowledged occurrences can remain committed if a later append fails.
+
+## Transcribe local audio
+
+Create an independent local transcript from an audio file for an existing stored meeting:
+
+```sh
+zm meetings transcribe 1 ./AliceExample.wav --model parakeet-v3 --json
+zm meetings transcribe 1 ./AliceExample.wav --model parakeet-v3 --yes --json
+```
+
+Preview verifies the input and describes the chosen model without loading it. `--yes` recognizes
+with an already installed local model and atomically appends the completed transcript; `--dry-run`
+overrides it. No model is automatically installed. Input currently accepts PCM16 WAV, mono or stereo,
+at 16 or 48 kHz; video files are not decoded. `--models-dir` selects an absolute installed model
+directory. Media, duration, segment count and transcript text have explicit bounds through
+`--max-bytes`, `--max-duration`, `--max-segments` and `--max-text-bytes`. Recognition uses fixed
+windows of up to 30 seconds, so timestamps describe those windows. Speakers remain unknown. Provider
+transcripts and historical revisions are preserved; the applied receipt gives transaction counts and
+provenance.
