@@ -4,6 +4,7 @@ import { mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises"
 import { hostname, tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import type { RecordingSyncCheckpoint } from "@wirecat/cli-meetings"
+import { recordingSyncCheckpointStoreContract } from "@wirecat/cli-meetings/testing"
 import { expect, it } from "vitest"
 import { fileRecordingSyncCheckpointStore } from "./recording-sync-store.js"
 
@@ -119,3 +120,12 @@ it("rejects invalid path/job inputs before creating state and serializes stale r
     code: "conflict",
   })
 })
+
+for (const contract of recordingSyncCheckpointStoreContract(async () => {
+  const destination = await path()
+  return {
+    store: fileRecordingSyncCheckpointStore(destination),
+    reopen: async () => fileRecordingSyncCheckpointStore(destination),
+  }
+}))
+  it(contract.name, contract.run)
