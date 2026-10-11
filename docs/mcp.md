@@ -17,7 +17,8 @@ transcripts, summaries, exports, text search and participant search. Tool discov
 database. Each read uses the selected local account and closes its connection before the response;
 a caller cannot override the account. File exports and remote mutations are not exposed as tools.
 
-MCP clients can launch `zm` with arguments `["serve", "--mcp"]`, for example:
+MCP clients can launch `zm` with arguments `["serve", "--mcp"]`. In the `mcpServers` format of
+[Claude Desktop's configuration](https://modelcontextprotocol.io/docs/develop/connect-local-servers):
 
 ```json
 {
@@ -27,8 +28,9 @@ MCP clients can launch `zm` with arguments `["serve", "--mcp"]`, for example:
 }
 ```
 
-A desktop app may not see your terminal's `PATH`; if the server does not start, use the full path
-from `which zm` as the command. If you set `ZM_CONFIG_DIR` or `MESSAGING_STORE`, pass the same values
+A desktop app may not see your terminal's `PATH`, and a stdio server inherits only part of the
+environment ([MCP debugging guide](https://modelcontextprotocol.io/docs/tools/debugging)). If the
+server does not start, use the full path from `which zm` as the command. If you set `ZM_CONFIG_DIR` or `MESSAGING_STORE`, pass the same values
 in the entry's `env`, or the server reads a different profile or database.
 
 Keep stdout for protocol messages; omit `--json`, `--jsonl` and `--fields`. `--max-output-bytes`

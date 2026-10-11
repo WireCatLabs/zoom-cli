@@ -55,7 +55,7 @@ transcripts from Zoom and run `zm import <folder>`. Full guide:
 
 ## What you can do
 
-**Prepare for a call.** *"Who is on my next call, and what did we talk about last time?"*
+**Prepare for a call.** *"I meet Bob Sample tomorrow. What did we talk about last time?"*
 `remote-meetings list` shows upcoming meetings; `meetings people`, `meetings search` and
 `meetings context person:<id>` bring back past meetings with the same people.
 
@@ -108,9 +108,9 @@ WebVTT files, archives cloud recordings, and creates, changes or cancels simple 
 ## Part of WireCat
 
 `zm` is part of [WireCat](https://wirecat.dev), an open-source, local-first context layer for AI
-agents. Meetings land in the same local store as your Telegram, MAX and memo data, so
-`zm search all "<query>" --only meetings,messages,notes` can search them together. Start with Zoom.
-Add more context when you need it. Your context. Any agent.
+agents. Meetings land in the same local store as your Telegram, MAX and memo data, and
+`zm search all "<query>" --only meetings,notes` searches them together with your memo notes.
+Start with Zoom. Add more context when you need it. Your context. Any agent.
 
 ## Documentation
 
