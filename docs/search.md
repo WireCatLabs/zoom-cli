@@ -1,12 +1,31 @@
 # Search and evidence
 
 Find what was said in your stored meetings, read the exact passage with a reference back to it, see
-what you discussed with a person, and preview a follow-up task tied to its source.
+what you discussed with a person, link meetings to events and people, and preview a follow-up task
+tied to its source.
 
 ## Search stored meetings
 
-`meetings search` keeps its existing literal transcript search over stored transcripts, chat and
-summaries; `--since`, `--until`, `--event-id` and `--series-id` narrow it. `meetings people <query>`
+For bounded text search, first index queued meeting records explicitly, then page through hits:
+
+```sh
+zm meetings search-index --limit 100 --max-read-bytes 4194304 --json
+zm meetings search-index --limit 100 --yes --json
+zm meetings search-page "example plan" --limit 20 --json
+zm meetings search-page "example plan" --limit 20 --after <nextCursor> --json
+```
+
+Indexing previews by default; `--yes` applies one bounded batch and `--dry-run` overrides it.
+Repeat until the applied receipt reports `remaining: 0`. A search read never processes indexing
+work. Its coverage reports pending indexing and unknown index/archive completeness. All normalized
+query words must match, through literal prefixes or the stored stemming configuration. The default
+configuration adds English, Russian and Spanish word stems; a store can disable or customize it.
+This is keyword search, with no semantic model or query operators. `--meeting-id`, `--since` and
+`--until` narrow the selected account. The opaque cursor belongs to that account, query and filters;
+it can continue inside a large transcript. JSONL preserves the complete page, including `nextCursor`.
+
+`meetings search` keeps its existing literal prefix transcript search over stored transcripts, chat
+and summaries; `--since`, `--until`, `--event-id` and `--series-id` narrow it. `meetings people <query>`
 finds participants by name or email. `search all` uses the shared search service and searches only
 meetings by default:
 
@@ -38,7 +57,45 @@ continuation and completeness fields rather than assuming a bounded response is 
 
 Person context uses stored identity links and account presence, without matching speaker names.
 A person linked to a meeting is not necessarily a speaker. Pending derived indexes or bounded scans
-can leave context incomplete.
+can leave context incomplete. Link a participant to a person explicitly with `meetings link-person`.
+
+## Link meetings to events and people
+
+Stored meeting references use `meeting:<accountId>/<meetingId>`. A retained transcript appends its
+revision id, and a cue appends its position. Event and person linking accept root references:
+
+```sh
+zm meetings link-event meeting:1/1 --event-id 1 --expected-event-id none --json
+zm meetings link-event meeting:1/1 --event-id 1 --expected-event-id none --yes --json
+zm meetings link-person meeting:1/1 --participant-id 1 --person 1 --expected-person none --yes --json
+```
+
+These local changes preview by default; `--yes` applies once and `--dry-run` overrides it. Expected
+link options reject a stale decision. Use `--event-id none` to unlink an event. Person linking moves
+only the selected participant's identity; it never guesses a person from a speaker name. Target
+people must have authorized account observations. Explicit `--target-accounts <ids>` adds account
+ids for that lookup. Profile labels group local data and do not authenticate a remote identity.
+
+## Notes, tags and memories with memo
+
+Use [memo](https://github.com/WireCatLabs/cli-memo) for the existing shared notes, tags and memories
+interface. Both tools use the same store; point `MESSAGING_STORE` at the same file if it is
+overridden. For a Zoom profile named `AliceExample`, its provider account key is
+`zm-profile:AliceExample`:
+
+```sh
+memo tags add planning --meeting 1 --provider zoom --account zm-profile:AliceExample --json
+memo tags remove planning --meeting 1 --provider zoom --account zm-profile:AliceExample --json
+memo notes add --text "Alice Example follow-up" --about meeting:1/1 --json
+memo notes list --about meeting:1/1 --json
+memo memories add "Alice Example will review" --kind fact --scope work --subject meeting:1/1 --evidence meeting:1/1/1/0 --json
+memo memories list --subject meeting:1/1 --scope work --json
+```
+
+Memo's add/remove commands write directly to the local store. Owner-authored memories are confirmed;
+agent-authored memories stay proposed until confirmed. Meeting revision and cue evidence remains
+addressable after corrections. The references and ids above are invented examples; use ids from
+your stored meetings and selected account.
 
 ## Task proposals
 

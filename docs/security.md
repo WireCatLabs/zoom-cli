@@ -32,6 +32,8 @@ What `zm` keeps on your disk, what it sends over the network, and what it never 
 
 - The MCP server is read-only, fixed to the selected local account, and exposes no file exports,
   remote mutations, embedding generation or task creation.
-- Remote meeting changes, archive job creation, embedding generation and lock recovery preview by
-  default and need `--yes`; `--dry-run` wins where offered. Remote writes are never automatically retried.
+- Local audio transcription uses an already installed model on your machine and downloads none.
+- Remote meeting changes, meeting links, search indexing, transcription, archive job creation,
+  embedding generation and lock recovery preview by default and need `--yes`; `--dry-run` wins where
+  offered. Remote writes are never automatically retried.
 - Task proposals never create a task.

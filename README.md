@@ -56,8 +56,9 @@ transcripts from Zoom and run `zm import <folder>`. Full guide:
 ## What you can do
 
 **Prepare for a call.** *"I meet Bob Sample tomorrow. What did we talk about last time?"*
-`remote-meetings list` shows upcoming meetings; `meetings people`, `meetings search` and
-`meetings context person:<id>` bring back past meetings with the same people.
+`remote-meetings list` shows upcoming meetings; `meetings people`, `meetings search-page` (word
+search that also matches English, Spanish and Russian word forms) and `meetings context person:<id>`
+bring back past meetings with the same people.
 
 **Follow up after it.** *"What did I promise in today's call?"* The agent reads
 `meetings transcript` and `meetings summary`, cites passages with `meetings evidence`, and
@@ -93,12 +94,15 @@ Your agent. Your meetings. Your rules.
 
 `zm` is at version 0.x; commands may still change. Today it reads hosted meetings, participants,
 transcripts and AI summaries (Pro plan or higher) through Zoom's official API, imports downloaded
-WebVTT files, archives cloud recordings, and creates, changes or cancels simple meetings.
+WebVTT files, archives cloud recordings, transcribes local audio with an installed speech model,
+links meetings to events and people, and creates, changes or cancels simple meetings.
 
 - **It does not find commitments on its own.** Your agent finds them in transcripts;
   `task-proposal` only previews a task and creates nothing.
-- **Person context is partial.** It relies on identity links already in the shared store, and `zm`
-  never guesses a person from a speaker name.
+- **People are linked by hand.** `zm` never guesses a person from a speaker name; person context
+  covers participants already linked to a person, for example with `meetings link-person`.
+- **Local transcription takes PCM16 WAV only** (16 or 48 kHz) and an already installed speech model;
+  video files are not decoded, and speakers stay unknown.
 - **Attended meetings need a manual download** from your Zoom portal, then `zm import`.
 - **A company-managed Zoom account** may need an admin to approve your app.
 - **Daily archive jobs install only on Linux.** Other platforms can preview them.

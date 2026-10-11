@@ -177,5 +177,26 @@ occurrence with `--uuid`, or assets with comma-separated `--file-ids`. Each occu
 atomically by its raw Zoom UUID, preserving other transcripts, summaries, participants and the
 pull cursor. Corrected content retains earlier revisions; identical asset hashes are idempotent.
 An occurrence with no known start time can receive transcripts only if it already exists. Receipts
-report acknowledged or unavailable occurrences; they do not distinguish creation from replay.
+report acknowledged or unavailable occurrences. When the exact receipt capability is available,
+they also report meeting creation and inserted, replayed and superseded transcript counts from the
+same transaction. Older adapters keep the acknowledgement without guessed counts.
 Earlier acknowledged occurrences can remain committed if a later append fails.
+
+## Transcribe local audio
+
+Create an independent local transcript from an audio file for an existing stored meeting:
+
+```sh
+zm meetings transcribe 1 ./AliceExample.wav --model parakeet-v3 --json
+zm meetings transcribe 1 ./AliceExample.wav --model parakeet-v3 --yes --json
+```
+
+Preview verifies the input and describes the chosen model without loading it. `--yes` recognizes
+with an already installed local model and atomically appends the completed transcript; `--dry-run`
+overrides it. No model is automatically installed. Input currently accepts PCM16 WAV, mono or stereo,
+at 16 or 48 kHz; video files are not decoded. `--models-dir` selects an absolute installed model
+directory. Media, duration, segment count and transcript text have explicit bounds through
+`--max-bytes`, `--max-duration`, `--max-segments` and `--max-text-bytes`. Recognition uses fixed
+windows of up to 30 seconds, so timestamps describe those windows. Speakers remain unknown. Provider
+transcripts and historical revisions are preserved; the applied receipt gives transaction counts and
+provenance.

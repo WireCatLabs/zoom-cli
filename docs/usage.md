@@ -21,6 +21,9 @@ agents. [Every command and option](commands.md) is generated from the program.
 | `meetings summary <meeting>` | read stored summaries |
 | `meetings export <meeting> --format markdown\|vtt` | export stored meeting content |
 | `meetings search <query>`, `meetings people <query>` | find stored text or participants |
+| `meetings search-page <query>`, `meetings search-index` | bounded hit continuation and explicit keyword indexing |
+| `meetings link-event <reference>`, `meetings link-person <reference>` | preview or apply owner-selected stored links |
+| `meetings transcribe <meeting> <file> --model <model>` | preview or locally recognize a WAV file into an independent transcript |
 | `meetings evidence <reference>`, `meetings context <person>` | read bounded evidence or identity-linked person context |
 | `meetings task-proposal <reference> --kind <kind>` | preview a task with meeting provenance |
 | `meetings semantic <query> --model <id>` | rank scanned stored vectors with an explicit query model |
