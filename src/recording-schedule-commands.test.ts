@@ -1,7 +1,7 @@
 import { mkdtemp } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { memoryKeyring } from "@wirecat/cli-core"
+import { memoryKeyring } from "@wirecat/cli-base"
 import { planRecordingArchiveSchedule } from "@wirecat/cli-messaging/meetings"
 import { Command } from "commander"
 import { expect, it, vi } from "vitest"

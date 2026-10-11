@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from "node:fs"
-import { COMMANDS_PAGE_LABELS, commandsPage, describeOptions, describeProgram } from "@wirecat/cli-core/commands"
+import { COMMANDS_PAGE_LABELS, commandsPage, describeOptions, describeProgram } from "@wirecat/cli-base/commands"
 import { createProgram } from "./command-program.ts"
 
 const program = createProgram()

@@ -1,5 +1,5 @@
 import { setTimeout } from "node:timers/promises"
-import { providerWaitMs, retryableStatus, statusToCode } from "@wirecat/cli-core/http"
+import { providerWaitMs, retryableStatus, statusToCode } from "@wirecat/cli-base/http"
 import { checkCancelled, object, ZoomError } from "./errors.js"
 import type { TokenManager } from "./tokens.js"
 

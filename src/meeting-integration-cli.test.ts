@@ -1,7 +1,7 @@
 import { mkdtemp } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { memoryKeyring } from "@wirecat/cli-core"
+import { memoryKeyring } from "@wirecat/cli-base"
 import { parseMeetingReference } from "@wirecat/cli-messaging"
 import {
   createMeetingContext,

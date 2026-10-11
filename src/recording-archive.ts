@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto"
 import { type FileHandle, link, lstat, mkdir, open, readdir, realpath, rename, rmdir, unlink } from "node:fs/promises"
 import { hostname } from "node:os"
 import { join } from "node:path"
-import { retryableStatus, statusToCode } from "@wirecat/cli-core/http"
+import { retryableStatus, statusToCode } from "@wirecat/cli-base/http"
 import {
   RecordingTransferError,
   type RecordingTransferSource,

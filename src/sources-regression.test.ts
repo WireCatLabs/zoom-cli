@@ -1,7 +1,7 @@
 import { mkdtemp, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { memoryKeyring } from "@wirecat/cli-core"
+import { memoryKeyring } from "@wirecat/cli-base"
 import { describe, expect, it } from "vitest"
 import { ZoomApiSource } from "./api.js"
 import { FilesSource, fileMeeting, readDownloadedFiles, validateDownloadedFiles } from "./files.js"

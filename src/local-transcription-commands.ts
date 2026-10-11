@@ -1,4 +1,4 @@
-import { annotate } from "@wirecat/cli-core/commands"
+import { annotate } from "@wirecat/cli-base/commands"
 import { speechModel } from "@wirecat/cli-messaging/speech"
 import type { Command } from "commander"
 import { ZoomError } from "./errors.js"

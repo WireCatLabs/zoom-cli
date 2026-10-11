@@ -1,6 +1,6 @@
 # Architecture
 
-`@wirecat/cli-core` supplies configuration paths, secure config writes and the keyring seam.
+`@wirecat/cli-base` supplies configuration paths, secure config writes and the keyring seam.
 `@wirecat/cli-messaging/meetings` supplies the domain model, source/store ports, ingestion, management,
 recording transfer, archive synchronization, schedule planning and commands.
 This package contains Zoom-specific login and sources; it contains no SQL.
@@ -59,7 +59,7 @@ The CLI reads its version from the packaged metadata. Config and source loading 
 and version remain available even with corrupt config, without opening a database or keyring.
 Installed-package acceptance tests exercise these boundaries through the actual npm bin.
 
-Command discovery uses cli-core's live Commander registry and completion helpers. Output uses the
+Command discovery uses cli-base's live Commander registry and completion helpers. Output uses the
 shared renderer and exit-code mapping. Discovery/completion avoid config and credentials; local
 doctor reads public config without opening the store or keyring. Session status inspects cached
 OAuth state; an explicitly requested remote check uses the user profile endpoint or an injected adapter.

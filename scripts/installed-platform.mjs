@@ -15,7 +15,7 @@ const metadata = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf
 assert.equal(metadata.version, expectedVersion)
 const require = createRequire(join(packageRoot, "package.json"))
 const producerRequire = createRequire(require.resolve("@wirecat/cli-messaging"))
-assert.equal(require.resolve("@wirecat/cli-core"), producerRequire.resolve("@wirecat/cli-core"))
+assert.equal(require.resolve("@wirecat/cli-base"), producerRequire.resolve("@wirecat/cli-base"))
 const dependencyVersion = (name) => {
   let directory = dirname(require.resolve(name))
   while (directory !== dirname(directory)) {
@@ -30,12 +30,12 @@ const dependencyVersion = (name) => {
 }
 const dependencies = {
   messaging: dependencyVersion("@wirecat/cli-messaging"),
-  core: dependencyVersion("@wirecat/cli-core"),
+  core: dependencyVersion("@wirecat/cli-base"),
 }
 const declared = (name) => metadata.dependencies[name] ?? metadata.peerDependencies?.[name]
 assert.deepEqual(dependencies, {
   messaging: declared("@wirecat/cli-messaging"),
-  core: declared("@wirecat/cli-core"),
+  core: declared("@wirecat/cli-base"),
 })
 const guard = join(root, "guard.cjs")
 const denied = join(root, "denied")

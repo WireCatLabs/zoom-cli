@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs"
-import { saveConfigFile } from "@wirecat/cli-core"
+import { saveConfigFile } from "@wirecat/cli-base"
 import { object, ZoomError } from "./errors.js"
 
 export interface ZoomConfig {

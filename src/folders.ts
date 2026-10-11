@@ -7,7 +7,7 @@ import {
   migrateLegacyMacPaths,
   type Paths,
   resolvePaths,
-} from "@wirecat/cli-core"
+} from "@wirecat/cli-base"
 import { readConfig } from "./config.js"
 
 /** The login lives in the keyring under the config folder's path, so it has to follow a moved folder. */

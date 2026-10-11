@@ -1,6 +1,6 @@
 {
   "name": "@wirecat/zoom-cli",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "Zoom cloud recording archives, persistent transcripts and meeting tools",
   "license": "Apache-2.0",
   "type": "module",
@@ -36,7 +36,7 @@
     "test:coverage": "vitest run --coverage",
     "smoke:bun": "bun run scripts/smoke.ts",
     "prepublishOnly": "pnpm build",
-    "docs:check": "node node_modules/@wirecat/cli-core/dist/dev/bin.js docs-check --rules scripts/docs-rules.ts && cspell --no-progress --no-summary README.md && node node_modules/rumdl/bin/rumdl check --config config/wirecat/rumdl.toml README.md CHANGELOG.md CLAUDE.md docs/*.md docs/dev/*.md",
+    "docs:check": "node node_modules/@wirecat/cli-base/dist/dev/bin.js docs-check --rules scripts/docs-rules.ts && cspell --no-progress --no-summary README.md && node node_modules/rumdl/bin/rumdl check --config config/wirecat/rumdl.toml README.md CHANGELOG.md CLAUDE.md docs/*.md docs/dev/*.md",
     "standards:check": "node config/wirecat/check.mjs",
     "docs:lint": "markdownlint-cli2",
     "docs:spell": "cspell lint --config cspell.json --no-progress README.md",
@@ -46,14 +46,14 @@
     "generate": "pnpm build && node scripts/commands.ts",
     "generate:check": "pnpm build && node scripts/commands.ts --check",
     "test:matrix": "pnpm test --maxWorkers 2 && pnpm build && pnpm test:matrix:check",
-    "test:matrix:check": "node node_modules/@wirecat/cli-core/dist/dev/bin.js test-matrix --program scripts/command-program.ts --untested scripts/test-matrix-untested.ts --name zm --check",
+    "test:matrix:check": "node node_modules/@wirecat/cli-base/dist/dev/bin.js test-matrix --program scripts/command-program.ts --untested scripts/test-matrix-untested.ts --name zm --check",
     "contracts:upgrade": "pnpm --dir contracts/previous install --frozen-lockfile --ignore-scripts && cli-contract contracts/upgrade.json",
     "security:no-leak": "cli-testing security no-leak . contracts/no-leak.json"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",
-    "@wirecat/cli-core": "0.20.0",
-    "@wirecat/cli-messaging": "0.248.0",
+    "@wirecat/cli-base": "0.21.0",
+    "@wirecat/cli-messaging": "0.253.0",
     "commander": "15.0.0"
   },
   "devDependencies": {
@@ -63,7 +63,7 @@
     "@cspell/dict-ru_ru": "2.3.3",
     "@types/node": "^22.20.5",
     "@vitest/coverage-v8": "^5.0.3",
-    "@wirecat/cli-testing": "0.3.0",
+    "@wirecat/cli-testing": "0.4.0",
     "cspell": "10.3.6",
     "lefthook": "2.1.16",
     "markdownlint-cli2": "0.23.3",

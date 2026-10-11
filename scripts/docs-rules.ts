@@ -2,7 +2,7 @@
 // Bash sandbox that includes the unreadable placeholders it lays over .claude/; git knows which files are real.
 import { execFileSync } from "node:child_process"
 import { join } from "node:path"
-import { type DocsRules, JOURNAL_IDS } from "@wirecat/cli-core/release"
+import { type DocsRules, JOURNAL_IDS } from "@wirecat/cli-base/release"
 
 export const CHANGELOG = {
   headings: ["Added", "Changed — may break callers", "Fixed", "Security", "Removed"],
