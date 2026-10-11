@@ -30,7 +30,7 @@ the features you want. The app has no secret: `zm` logs in through your browser 
 Then give the client ID to `zm`:
 
 ```sh
-zm config set zoom.clientId <client id>
+zm config set zoom.clientId <public-client-id>
 zm login
 ```
 
