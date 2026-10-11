@@ -47,7 +47,7 @@
     "generate:check": "pnpm build && node scripts/commands.ts --check",
     "test:matrix": "pnpm test --maxWorkers 2 && pnpm build && pnpm test:matrix:check",
     "test:matrix:check": "node node_modules/@wirecat/cli-core/dist/dev/bin.js test-matrix --program scripts/command-program.ts --untested scripts/test-matrix-untested.ts --name zm --check",
-    "contracts:upgrade": "pnpm --dir contracts/previous install --ignore-workspace --frozen-lockfile --ignore-scripts && cli-contract contracts/upgrade.json",
+    "contracts:upgrade": "pnpm --dir contracts/previous install --frozen-lockfile --ignore-scripts && cli-contract contracts/upgrade.json",
     "security:no-leak": "cli-testing security no-leak . contracts/no-leak.json"
   },
   "dependencies": {
