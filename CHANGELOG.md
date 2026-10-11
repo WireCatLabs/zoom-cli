@@ -7,7 +7,8 @@
 - **On macOS zm keeps its files where it does on Linux**: `~/.config/zm`, `~/.local/share/zm` and `~/.cache/zm`
   instead of `~/Library/…`. The first run moves the old folders there and copies the saved login to the keyring
   name of the new config folder, so no new `zm login` is needed. If the move cannot happen it prints one warning
-  and uses the old folders for that run. Linux and Windows are unchanged. Built on `@wirecat/cli-messaging` 0.240.0.
+  and uses the old folders for that run. Linux and Windows are unchanged. Built on `@wirecat/cli-messaging` 0.241.0 and
+  `@wirecat/cli-meetings` 0.4.2, which npm installs side by side with cli-core 0.20.0.
 
 ## 0.5.1 — 11.10.2026
 
