@@ -2,6 +2,7 @@
 import { spawn } from "node:child_process"
 import { join } from "node:path"
 import { createInterface } from "node:readline/promises"
+import { fileURLToPath } from "node:url"
 import { CliError, resolvePaths, systemKeyring } from "@wirecat/cli-core"
 import { profileAccountKey, readConfig } from "../config.js"
 import { ZoomError } from "../errors.js"
@@ -41,6 +42,7 @@ try {
   })
   process.exitCode = await run(process.argv.slice(2), {
     configPath,
+    recordingScheduleTarget: { runtime: process.execPath, cliPath: fileURLToPath(import.meta.url) },
     tokens,
     connectStore,
     serveMcp: async (options) => {
