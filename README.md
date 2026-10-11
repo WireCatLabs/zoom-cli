@@ -251,8 +251,9 @@ A person linked to a meeting is not necessarily a speaker. Pending derived index
 can leave context incomplete. Task proposals support question, request, mention and promise;
 `applied: false` and `persistence: "proposal-only"` mean no task was created.
 
-Broader search requires explicit `--only messages,mail,notes,meetings`. Selected message and mail
-reads use the local account; notes are global to the shared store. Meeting matching uses word
+Broader search requires explicit `--only messages,mail,notes,meetings`. Message reads use the
+selected local account; mail reads include stored email accounts; notes are global to the shared
+store. Meeting matching uses word
 prefixes; unsupported meeting syntax or exact queries are reported as skipped. A meetings-only
 continuation uses the returned `meetings.nextCursor` as `--meeting-cursor '<json>'`, bound to its
 account and query. JSONL emits one complete report, retaining skips, coverage and cursors.
