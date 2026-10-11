@@ -1,0 +1,75 @@
+name: Wiki
+
+# The wiki is a read-only mirror of docs/*.md; docs/ stays the source, so an edit made in the wiki
+# is overwritten by the next push to main.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/*.md"
+      - ".github/wiki/**"
+      - ".github/workflows/wiki.yml"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: wiki
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Wiki exists
+        id: wiki
+        run: |
+          # GitHub creates the wiki's git repository only when the first page is saved in the web UI.
+          if git ls-remote "https://github.com/${GITHUB_REPOSITORY}.wiki.git" >/dev/null 2>&1; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::No wiki yet. Create any first page at https://github.com/${GITHUB_REPOSITORY}/wiki, then run this workflow again."
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.wiki.outputs.ready == 'true'
+        with:
+          persist-credentials: false
+
+      - name: Stage pages
+        if: steps.wiki.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          mkdir .wiki-build
+          cp docs/*.md .wiki-build/
+          # docs/README.md indexes the folder for contributors; the wiki's start page is docs/index.md.
+          rm -f .wiki-build/README.md .wiki-build/index.md
+          {
+            cat .github/wiki/Home.md
+            echo
+            if [ -f docs/index.md ]; then
+              tail -n +2 docs/index.md
+            else
+              for page in .wiki-build/*.md; do
+                title=$(sed -n 's/^# //p;T;q' "$page")
+                echo "- [${title:-$(basename "$page" .md)}]($(basename "$page"))"
+              done
+            fi
+          } > .wiki-build/Home.md.tmp
+          mv .wiki-build/Home.md.tmp .wiki-build/Home.md
+          # Wiki pages are flat: point links into docs/ subfolders back at the repository.
+          base="https://github.com/${GITHUB_REPOSITORY}"
+          sed -i -E \
+            -e "s#\]\(index\.md#](Home.md#g" \
+            -e "s#\]\(dev/#](${base}/blob/main/docs/dev/#g" \
+            -e "s#\]\((design|images)/#](${base}/raw/main/docs/\1/#g" \
+            .wiki-build/*.md
+
+      - uses: Andrew-Chen-Wang/github-wiki-action@1bbb4280446f9630e8e21a18012cbacf3b0f992e # v5.0.6
+        if: steps.wiki.outputs.ready == 'true'
+        with:
+          path: .wiki-build/
+          strategy: init
