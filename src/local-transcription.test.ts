@@ -69,6 +69,18 @@ it("describes audio and pinned recognition provenance without opening a model", 
   expect(model.recognize).not.toHaveBeenCalled()
   expect(model.close).not.toHaveBeenCalled()
 })
+it("uses the published speech descriptor for preview and rejects absent explicitly selected models without installing them", async () => {
+  const input = await fixture()
+  const source = createWavTranscriptionSource(input.path, {
+    model: "parakeet-v3",
+    modelsDirectory: join(input.root, "empty-models"),
+    env: { HOME: input.root, XDG_CACHE_HOME: join(input.root, "cache") },
+  })
+  const media = await source.describe(context)
+  expect(media.recognition).toMatchObject({ engine: "sherpa-onnx", model: "parakeet-v3", timing: "fixed-windows" })
+  expect(media.recognition.version).toMatch(/^[a-f0-9]{64}$/)
+  await expect(collect(source.segments(media, context))).rejects.toMatchObject({ code: "not_found" })
+})
 it("reuses an installed recognizer over bounded coarse windows and closes it after full verification", async () => {
   const { source, speech, model, root } = await fixture()
   const media = await source.describe(context)
@@ -237,6 +249,59 @@ const fixtureForIntegration = async () => {
   )
   return { ...input, store, saved, append, capabilities }
 }
+it("persists local revisions through the published native receipt port and survives reopening without changing provider evidence", async () => {
+  const { openStore } = await import("@wirecat/cli-messaging/store")
+  const input = await fixture()
+  const path = join(input.root, "invented-meetings.db")
+  const env = { HOME: input.root, MESSAGING_STORE: path }
+  const store = await openStore({ path, env, now: () => 5000 })
+  let expected: Awaited<ReturnType<typeof store.meetings.meeting>>
+  let meetingId = 0
+  try {
+    const accountId = await store.saveAccount(
+      { provider: "example", account: "AliceExample" },
+      { name: "Alice Example" },
+    )
+    const seed = sampleMeeting()
+    seed.meeting.accountId = accountId
+    const saved = await store.meetings.saveMeeting(seed)
+    meetingId = saved.meeting.id
+    const capabilities = createLocalTranscriptionCapabilities(
+      {
+        accountId,
+        resolveMeeting: async () => ({ accountId, meetingId, externalId: saved.meeting.externalId }),
+        appendTranscriptsWithReceipt: (request) => store.meetings.appendTranscriptsWithReceipt(request),
+      },
+      { speech: input.load, now: () => 6000 },
+    )
+    const first = await capabilities.transcribe(String(meetingId), input.path, { model: "tiny-example", apply: true })
+    expect(first.append).toMatchObject({ created: false, insertedTranscripts: 1, replayedTranscripts: 0 })
+    expect(
+      (await capabilities.transcribe(String(meetingId), input.path, { model: "tiny-example", apply: true })).append,
+    ).toMatchObject({ insertedTranscripts: 0, replayedTranscripts: 1 })
+    const changed = Buffer.from(input.bytes)
+    changed.writeInt16LE(8, 44)
+    await writeFile(input.path, changed)
+    const corrected = await capabilities.transcribe(String(meetingId), input.path, {
+      model: "tiny-example",
+      apply: true,
+    })
+    expect(corrected.append).toMatchObject({ insertedTranscripts: 1, supersededTranscripts: 1 })
+    expected = await store.meetings.meeting(meetingId)
+    expect(expected?.transcripts.filter((entry) => entry.transcript.source === "api")).toEqual(saved.transcripts)
+    expect(expected?.participants).toEqual(saved.participants)
+    expect(expected?.transcripts.filter((entry) => entry.transcript.source.startsWith("local/"))).toHaveLength(2)
+    expect(expected?.summaries).toEqual(saved.summaries)
+  } finally {
+    await store.close()
+  }
+  const reopened = await openStore({ path, env })
+  try {
+    expect(await reopened.meetings.meeting(meetingId)).toEqual(expected)
+  } finally {
+    await reopened.close()
+  }
+})
 it("a recognition failure or changing media never reaches the append port", async () => {
   const input = await fixtureForIntegration()
   input.model.recognize.mockRejectedValueOnce(new Error("invented model failure"))

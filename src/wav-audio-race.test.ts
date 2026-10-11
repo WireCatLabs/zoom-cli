@@ -15,7 +15,7 @@ vi.mock("node:fs/promises", async (original) => {
       return new Proxy(handle, {
         get(target, key) {
           if (key === "read")
-            return async (...params: Parameters<typeof handle.read>) => {
+            return async (...params: [buffer: Buffer, offset: number, length: number, position: number]) => {
               const desired = race.mode
               if (desired === "truncate" || (params[2] === 65536 && params[3] === 0)) {
                 race.mode = ""
