@@ -3,7 +3,7 @@ import { createHash } from "node:crypto"
 import { appendFile, copyFile, mkdir, mkdtemp, rename, symlink, unlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { CliError } from "@wirecat/cli-core"
+import { CliError } from "@wirecat/cli-base"
 import { afterEach, expect, it, vi } from "vitest"
 import { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
 

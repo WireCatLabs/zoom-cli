@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { type FileHandle, link, open, unlink } from "node:fs/promises"
-import { CliError } from "@wirecat/cli-core"
+import { CliError } from "@wirecat/cli-base"
 import { checkCancelled, ZoomError } from "./errors.js"
 
 export const writeExportFile = async (

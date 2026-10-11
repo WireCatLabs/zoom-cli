@@ -1,4 +1,4 @@
-import { createDeadline, createOutputBuffer, type Deadline, type OutputBuffer, type SleepLike } from "@wirecat/cli-core"
+import { createDeadline, createOutputBuffer, type Deadline, type OutputBuffer, type SleepLike } from "@wirecat/cli-base"
 import type { Command } from "commander"
 import { ZoomError } from "./errors.js"
 

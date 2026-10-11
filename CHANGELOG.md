@@ -1,8 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.7.2 — 12.10.2026
 
 ### Fixed
+
+- **Built on the shared framework under its new name, `@wirecat/cli-base` 0.21.0**, with `@wirecat/cli-messaging`
+  0.253.0. The framework was renamed from `@wirecat/cli-core`; an install now holds one copy of it. Nothing
+  changes in the `zm` commands.
 
 - Complete app setup and existing-app reuse instructions, browser callback recovery and first-result checks; correct the starter manifest scope claims and clarify data and account boundaries across the guides.
 

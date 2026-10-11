@@ -1,5 +1,5 @@
 import type { Writable } from "node:stream"
-import { createOutputBuffer } from "@wirecat/cli-core"
+import { createOutputBuffer } from "@wirecat/cli-base"
 import { checkCancelled, ZoomError } from "./errors.js"
 
 /** Await kernel-facing stdout backpressure before advancing another ingestion/download cycle. */

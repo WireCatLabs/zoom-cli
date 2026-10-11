@@ -1,4 +1,4 @@
-import { statusToCode } from "@wirecat/cli-core/http"
+import { statusToCode } from "@wirecat/cli-base/http"
 import {
   type JsonValue,
   type MeetingSource,

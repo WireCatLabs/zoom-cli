@@ -1,4 +1,4 @@
-import { annotate } from "@wirecat/cli-core/commands"
+import { annotate } from "@wirecat/cli-base/commands"
 import type { Command } from "commander"
 import { ZoomError } from "./errors.js"
 import { bytes } from "./execution.js"

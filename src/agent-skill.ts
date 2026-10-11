@@ -1,5 +1,5 @@
-import { annotate } from "@wirecat/cli-core/commands"
-import { type SkillEnvironment, skillCommand } from "@wirecat/cli-core/skill"
+import { annotate } from "@wirecat/cli-base/commands"
+import { type SkillEnvironment, skillCommand } from "@wirecat/cli-base/skill"
 import type { Command } from "commander"
 import { VERSION } from "./version.js"
 

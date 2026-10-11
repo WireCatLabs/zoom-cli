@@ -1,4 +1,4 @@
-import type { KeyringStore } from "@wirecat/cli-core"
+import type { KeyringStore } from "@wirecat/cli-base"
 import { checkCancelled, object, ZoomError } from "./errors.js"
 
 export interface Tokens {

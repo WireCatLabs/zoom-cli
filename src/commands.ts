@@ -1,4 +1,4 @@
-import { projectFields } from "@wirecat/cli-core"
+import { projectFields } from "@wirecat/cli-base"
 import {
   annotate,
   type CommandInfo,
@@ -6,8 +6,8 @@ import {
   describeProgram,
   flatten,
   metaOf,
-} from "@wirecat/cli-core/commands"
-import { formatSuggestions, suggest } from "@wirecat/cli-core/completion"
+} from "@wirecat/cli-base/commands"
+import { formatSuggestions, suggest } from "@wirecat/cli-base/completion"
 import type { Command } from "commander"
 import { ZoomError } from "./errors.js"
 

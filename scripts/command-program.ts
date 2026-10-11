@@ -1,6 +1,6 @@
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { memoryKeyring } from "@wirecat/cli-core"
+import { memoryKeyring } from "@wirecat/cli-base"
 import { createProgram as zoomProgram } from "../dist/program.js"
 import { TokenManager } from "../dist/tokens.js"
 

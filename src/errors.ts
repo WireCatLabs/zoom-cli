@@ -1,4 +1,4 @@
-import { CliError, type ErrorCode } from "@wirecat/cli-core"
+import { CliError, type ErrorCode } from "@wirecat/cli-base"
 
 export class ZoomError extends CliError {
   constructor(code: ErrorCode, message: string) {

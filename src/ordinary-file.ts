@@ -1,4 +1,4 @@
-import { CliError } from "@wirecat/cli-core"
+import { CliError } from "@wirecat/cli-base"
 import { openOrdinaryFile as sharedOpen, syncDirectory as sharedSync } from "@wirecat/cli-messaging/files"
 import { ZoomError } from "./errors.js"
 

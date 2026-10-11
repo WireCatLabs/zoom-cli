@@ -10,7 +10,7 @@ import {
   projectFields,
   realSleep,
   type SleepLike,
-} from "@wirecat/cli-core"
+} from "@wirecat/cli-base"
 import {
   importFiles,
   listed,

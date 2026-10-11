@@ -1,4 +1,4 @@
-import { annotate } from "@wirecat/cli-core/commands"
+import { annotate } from "@wirecat/cli-base/commands"
 import { listed, recordingWindows } from "@wirecat/cli-messaging/meetings"
 import type { Command } from "commander"
 import type { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"

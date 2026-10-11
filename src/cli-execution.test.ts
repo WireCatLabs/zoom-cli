@@ -1,7 +1,7 @@
 import { access, mkdtemp, readFile, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { CliError, memoryKeyring } from "@wirecat/cli-core"
+import { CliError, memoryKeyring } from "@wirecat/cli-base"
 import { memoryMeetingStore } from "@wirecat/cli-messaging/meetings/testing"
 import { describe, expect, it, vi } from "vitest"
 import { setConfig } from "./config.js"

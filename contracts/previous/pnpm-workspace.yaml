@@ -1,5 +1,5 @@
 minimumReleaseAgeExclude:
-  - '@wirecat/cli-core@0.19.3'
+  - '@wirecat/cli-base@0.21.0'
   - '@wirecat/cli-meetings@0.2.1 || 0.2.4'
   - '@wirecat/cli-messaging@0.218.0'
   - '@wirecat/cli-tasks@0.2.1'

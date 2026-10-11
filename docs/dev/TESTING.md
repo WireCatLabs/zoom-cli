@@ -1,7 +1,7 @@
 # Testing
 
 Run lint, typecheck, coverage, docs checks, build and Bun smoke. Tests script the HTTP transport and
-use cli-core's memory keyring and the meetings module's memory store. OAuth tests use local loopback requests
+use cli-base's memory keyring and the meetings module's memory store. OAuth tests use local loopback requests
 with invented codes; they do not open a browser or connect to Zoom. Token refresh verifies that no
 client secret or authorization header is sent.
 
@@ -51,7 +51,7 @@ it never records arguments or option values. Tests run with two workers to avoid
 `pnpm test:matrix:check` consumes an existing full test run, including the coverage run in CI.
 Exceptions in `scripts/test-matrix-untested.ts` identify the independent check and its reason.
 The installed bin version exits before the action hook and is checked by package acceptance.
-The generated [command reference](../commands.md) uses cli-core's shared command-page generator;
+The generated [command reference](../commands.md) uses cli-base's shared command-page generator;
 `pnpm generate:check` detects drift from the executable command tree.
 
 ## Installed platforms

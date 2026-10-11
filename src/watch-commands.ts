@@ -1,4 +1,4 @@
-import { annotate } from "@wirecat/cli-core/commands"
+import { annotate } from "@wirecat/cli-base/commands"
 import { type RunReport, type WatchSleep, watchMeetingIngestion } from "@wirecat/cli-messaging/meetings"
 import { type Command, Option } from "commander"
 import { ZoomError } from "./errors.js"

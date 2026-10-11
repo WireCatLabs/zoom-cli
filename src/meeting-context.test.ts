@@ -2,7 +2,7 @@ import { mkdtemp } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { Writable } from "node:stream"
-import { memoryKeyring } from "@wirecat/cli-core"
+import { memoryKeyring } from "@wirecat/cli-base"
 import { expect, it, vi } from "vitest"
 import { setConfig } from "./config.js"
 import {
