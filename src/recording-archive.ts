@@ -3,13 +3,18 @@ import { type FileHandle, link, lstat, mkdir, open, readdir, realpath, rename, r
 import { hostname } from "node:os"
 import { join } from "node:path"
 import { retryableStatus, statusToCode } from "@wirecat/cli-core/http"
+import { RecordingTransferError, type RecordingTransferSource, transferRecording } from "@wirecat/cli-meetings"
 import { checkCancelled, string, ZoomError } from "./errors.js"
-import { openOrdinaryFile } from "./ordinary-file.js"
+import { openOrdinaryFile, syncDirectory } from "./ordinary-file.js"
+import { RecordingPartialStore } from "./recording-partial-store.js"
+import { readRecordingPromotion, writeRecordingPromotion } from "./recording-promotion-store.js"
 import type { RecordingAsset, RecordingMeeting } from "./recordings.js"
 import { operationSignal, type ZoomRemote } from "./remote-http.js"
 
 export interface DownloadOptions {
   destination: string
+  account?: string
+  resume?: boolean
   fileIds?: string[]
   signal?: AbortSignal
   maxBytes?: number
@@ -23,6 +28,18 @@ export const validateDownloadOptions = (options: DownloadOptions): number => {
     maxBytes <= 0
   )
     throw new ZoomError("validation_error", "archive destination and positive download limit are required")
+  if (options.resume !== undefined && typeof options.resume !== "boolean")
+    throw new ZoomError("validation_error", "recording resume must be a boolean")
+  if (
+    options.account !== undefined &&
+    (typeof options.account !== "string" ||
+      !options.account.trim() ||
+      /[\0\r\n]/.test(options.account) ||
+      options.account.length > 1000)
+  )
+    throw new ZoomError("validation_error", "recording account scope must be a nonempty identifier")
+  if (options.resume && !options.account)
+    throw new ZoomError("validation_error", "resuming recordings requires an explicit account scope")
   if (
     options.fileIds !== undefined &&
     (!Array.isArray(options.fileIds) ||
@@ -201,7 +218,11 @@ const filename = (uuid: string, asset: RecordingAsset) =>
 const missing = (error: unknown) =>
   typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT"
 const localFile = openOrdinaryFile
-const fingerprint = async (path: string, signal?: AbortSignal): Promise<{ size: number; sha256: string }> => {
+const fingerprint = async (
+  path: string,
+  signal?: AbortSignal,
+  maxBytes?: number,
+): Promise<{ size: number; sha256: string }> => {
   checkCancelled(signal)
   const file = await localFile(path)
   try {
@@ -211,6 +232,8 @@ const fingerprint = async (path: string, signal?: AbortSignal): Promise<{ size: 
     for await (const chunk of file.createReadStream({ autoClose: false, ...(signal ? { signal } : {}) })) {
       checkCancelled(signal)
       size += chunk.length
+      if (maxBytes !== undefined && size > maxBytes)
+        throw new ZoomError("validation_error", "recording exceeds its verified recovery size")
       hash.update(chunk)
     }
     return { size, sha256: hash.digest("hex") }
@@ -308,6 +331,7 @@ const writeManifest = async (root: string, manifest: ArchiveManifest) => {
       await file.close()
     }
     await rename(temp, join(root, manifestName(manifest.meeting.uuid)))
+    await syncDirectory(root)
   } finally {
     await unlink(temp).catch(() => undefined)
   }
@@ -334,79 +358,90 @@ class DownloadFailure extends ZoomError {
     super(statusToCode(response.status), `Recording download failed (HTTP ${response.status})`)
   }
 }
-const transfer = async (
+const transferSource = (
   remote: ZoomRemote,
   url: string,
   accessToken: string,
-  path: string,
-  maxBytes: number,
   format: string | null,
   signal: AbortSignal,
-) => {
-  let target = targetUrl(url)
-  let response: Response
-  for (let redirects = 0; ; redirects++) {
-    response = await remote.get(target, accessToken, signal, false)
-    if (![301, 302, 303, 307, 308].includes(response.status)) break
-    const location = response.headers.get("location")
-    await response.body?.cancel()
-    if (!location || redirects >= 5)
-      throw new ZoomError("invalid_response", "Zoom returned invalid recording redirects")
-    target = targetUrl(location, target)
-  }
-  if (!response.ok) {
-    await response.body?.cancel()
-    throw new DownloadFailure(response)
-  }
-  if (
-    !response.body ||
-    response.status === 206 ||
-    /\btext\/html\b/i.test(response.headers.get("content-type") ?? "") ||
-    (format?.toUpperCase() !== "JSON" && /\bapplication\/json\b/i.test(response.headers.get("content-type") ?? ""))
-  ) {
-    await response.body?.cancel()
-    throw new ZoomError("invalid_response", "Zoom returned an unexpected recording body")
-  }
-  const file = await open(path, "wx", 0o600)
-  const hash = createHash("sha256")
-  const reader = response.body.getReader()
-  const abortReader = () => {
-    void reader.cancel().catch(() => undefined)
-  }
-  signal.addEventListener("abort", abortReader, { once: true })
-  let size = 0
-  try {
-    for (;;) {
+): RecordingTransferSource => ({
+  open: async ({ offset, validator }) => {
+    let target = targetUrl(url)
+    let response: Response
+    for (let redirects = 0; ; redirects++) {
       checkCancelled(signal)
-      let chunk: Awaited<ReturnType<typeof reader.read>>
       try {
-        chunk = await reader.read()
+        response = await remote.fetcher(target, {
+          headers: {
+            authorization: `Bearer ${accessToken}`,
+            "accept-encoding": "identity",
+            ...(offset !== undefined ? { range: `bytes=${offset}-`, "if-range": validator ?? "" } : {}),
+          },
+          redirect: "manual",
+          signal,
+        })
       } catch {
+        checkCancelled(signal)
         throw new ZoomError("network_error", "Recording download could not be completed")
       }
-      checkCancelled(signal)
-      const { done, value } = chunk
-      if (done) break
-      size += value.byteLength
-      if (size > maxBytes)
-        throw new ZoomError("invalid_response", "recording exceeds the configured download size limit")
-      hash.update(value)
-      // FileHandle.write may perform a short write even for a buffered chunk.
-      let offset = 0
-      while (offset < value.length) offset += (await file.write(value, offset, value.length - offset)).bytesWritten
+      if (![301, 302, 303, 307, 308].includes(response.status)) break
+      const location = response.headers.get("location")
+      await response.body?.cancel()
+      if (!location || redirects >= 5)
+        throw new ZoomError("invalid_response", "Zoom returned invalid recording redirects")
+      target = targetUrl(location, target)
     }
-    const advertised = response.headers.get("content-length")
-    if (advertised !== null && (!/^\d+$/.test(advertised) || Number(advertised) !== size))
-      throw new ZoomError("invalid_response", "recording download size does not match its response")
-    await file.sync()
-    return { size, sha256: hash.digest("hex") }
-  } finally {
-    signal.removeEventListener("abort", abortReader)
-    await reader.cancel().catch(() => undefined)
-    reader.releaseLock()
-    await file.close()
-  }
-}
+    if (![200, 206, 416].includes(response.status)) {
+      await response.body?.cancel()
+      throw new DownloadFailure(response)
+    }
+    if (
+      response.status !== 416 &&
+      (!response.body ||
+        /\btext\/html\b/i.test(response.headers.get("content-type") ?? "") ||
+        (format?.toUpperCase() !== "JSON" &&
+          /\bapplication\/json\b/i.test(response.headers.get("content-type") ?? "")) ||
+        ![null, "identity"].includes(response.headers.get("content-encoding")))
+    ) {
+      await response.body?.cancel()
+      throw new ZoomError("invalid_response", "Zoom returned an unexpected recording body")
+    }
+    const reader = response.body?.getReader()
+    const abortReader = () => {
+      void reader?.cancel().catch(() => undefined)
+    }
+    signal.addEventListener("abort", abortReader, { once: true })
+    return {
+      status: response.status,
+      etag: response.headers.get("etag"),
+      contentRange: response.headers.get("content-range"),
+      contentLength: response.headers.get("content-length"),
+      body: {
+        async *[Symbol.asyncIterator]() {
+          if (!reader) return
+          for (;;) {
+            checkCancelled(signal)
+            let chunk: Awaited<ReturnType<typeof reader.read>>
+            try {
+              chunk = await reader.read()
+            } catch {
+              checkCancelled(signal)
+              throw new ZoomError("network_error", "Recording download could not be completed")
+            }
+            checkCancelled(signal)
+            if (chunk.done) return
+            yield chunk.value
+          }
+        },
+      },
+      close: async () => {
+        signal.removeEventListener("abort", abortReader)
+        await reader?.cancel().catch(() => undefined)
+        reader?.releaseLock()
+      },
+    }
+  },
+})
 export const archiveRecording = async (
   remote: ZoomRemote,
   meeting: RecordingMeeting,
@@ -455,33 +490,82 @@ export const archiveRecording = async (
         report.skipped.push(existing)
         continue
       }
+      const locator = {
+        provider: "zoom",
+        account: options.account ?? "default",
+        occurrenceId: meeting.uuid,
+        assetId: asset.id,
+      }
+      const persistent = options.resume ?? Boolean(options.account)
+      const storage = new RecordingPartialStore(root, locator, signal, persistent, maxBytes)
+      const promotionMeeting = {
+        id: meeting.id,
+        uuid: meeting.uuid,
+        title: meeting.title,
+        startedAt: meeting.startedAt,
+      }
+      const metadata = {
+        id: asset.id,
+        path,
+        remoteSize: asset.size,
+        type: asset.type,
+        format: asset.format,
+        startedAt: asset.startedAt,
+        endedAt: asset.endedAt,
+      }
+      let present = false
       try {
         await lstat(join(root, path))
-        throw new ZoomError("validation_error", "recording path already exists without a verified manifest")
+        present = true
       } catch (error) {
         if (!missing(error)) throw error
       }
-      const temp = join(root, `.zoom-download-${randomUUID()}.part`)
+      if (present) {
+        const intent = persistent ? await readRecordingPromotion(root, locator, promotionMeeting, metadata) : null
+        if (!intent || intent.file.size > maxBytes)
+          throw new ZoomError(
+            "validation_error",
+            "recording path already exists without a verified manifest or scoped recovery record",
+          )
+        const completed = await storage.load(locator)
+        if (
+          !completed ||
+          completed.offset !== intent.file.size ||
+          completed.sha256 !== intent.file.sha256 ||
+          completed.validator !== intent.validator ||
+          (completed.total !== null && completed.total !== intent.file.size)
+        )
+          throw new ZoomError("validation_error", "recording recovery checkpoint does not prove this completed asset")
+        const local = await fingerprint(join(root, path), signal, intent.file.size)
+        if (local.size !== intent.file.size || local.sha256 !== intent.file.sha256)
+          throw new ZoomError("validation_error", "recording recovery final checksum does not match")
+        manifest.files.push(intent.file)
+        await writeManifest(root, manifest)
+        await unlink(storage.path)
+        report.skipped.push(intent.file)
+        continue
+      }
+      const temp = storage.path
       const tokens = await remote.tokens.tokens()
-      let result: { size: number; sha256: string } | undefined
+      let entry: ArchivedFile | undefined
       for (let attempt = 0; ; attempt++) {
         try {
-          result = await transfer(
-            remote,
-            urls.get(asset.id) ?? "",
-            tokens.accessToken,
-            temp,
-            maxBytes,
-            asset.format,
-            signal,
+          const transferred = await transferRecording(
+            transferSource(remote, urls.get(asset.id) ?? "", tokens.accessToken, asset.format, signal),
+            storage,
+            { locator, maxBytes, expectedSize: asset.size, signal },
           )
-          if (asset.size !== null && result.size !== asset.size)
+          entry = { ...metadata, size: transferred.size, sha256: transferred.sha256 }
+          if (asset.size !== null && entry.size !== asset.size)
             throw new ZoomError("invalid_response", "recording download size does not match Zoom metadata")
+          checkCancelled(signal)
+          if (persistent && storage.completed)
+            await writeRecordingPromotion(root, locator, promotionMeeting, entry, storage.completed)
           checkCancelled(signal)
           await link(temp, join(root, path))
           break
         } catch (error) {
-          await unlink(temp).catch(() => undefined)
+          if (!persistent) await unlink(temp).catch(() => undefined)
           checkCancelled(signal)
           const retryable =
             error instanceof DownloadFailure
@@ -495,19 +579,10 @@ export const archiveRecording = async (
             throw error
         }
       }
-      await unlink(temp)
-      const entry: ArchivedFile = {
-        id: asset.id,
-        path,
-        ...result,
-        remoteSize: asset.size,
-        type: asset.type,
-        format: asset.format,
-        startedAt: asset.startedAt,
-        endedAt: asset.endedAt,
-      }
+      if (!entry) throw new ZoomError("invalid_response", "recording transfer did not produce a verified receipt")
       manifest.files.push(entry)
       await writeManifest(root, manifest)
+      await unlink(temp)
       report.downloaded.push(entry)
     }
     if (!previous) await writeManifest(root, manifest)
@@ -515,6 +590,7 @@ export const archiveRecording = async (
   } catch (error) {
     checkCancelled(signal)
     if (error instanceof ZoomError) throw error
+    if (error instanceof RecordingTransferError) throw new ZoomError(error.code, error.message)
     throw new ZoomError("provider_error", "archive operation could not be completed")
   } finally {
     if (root && !lock) await rmdir(join(root, locksFolder)).catch(() => undefined)

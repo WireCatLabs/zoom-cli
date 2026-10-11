@@ -185,7 +185,7 @@ describe("cloud recordings", () => {
             ? response(meeting())
             : new Response("Private example", { status, headers }),
         ).download("example", { destination }),
-      ).rejects.toThrow(/redirects|HTTP 403|body/)
+      ).rejects.toMatchObject({ code: status === 403 ? "permission_error" : "invalid_response" })
       expect(await readdir(destination)).toEqual([])
     }
   })
@@ -211,12 +211,12 @@ describe("cloud recordings", () => {
           "example",
           { destination },
         ),
-      ).rejects.toThrow(/body|size/)
+      ).rejects.toMatchObject({ code: "invalid_response" })
       expect(await readdir(destination)).toEqual([])
     }
-    await expect(source(scripted()).download("example", { destination: await temp(), maxBytes: 4 })).rejects.toThrow(
-      /size limit/,
-    )
+    await expect(
+      source(scripted()).download("example", { destination: await temp(), maxBytes: 4 }),
+    ).rejects.toMatchObject({ code: "validation_error" })
   })
   it("rejects cancellation and malicious or symlinked local manifests/files", async () => {
     const abort = new AbortController()
