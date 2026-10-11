@@ -1,5 +1,12 @@
 export { encodeUuid, ZoomApiSource } from "./api.js"
 export {
+  type ArchiveImportOptions,
+  type ArchiveImportPlan,
+  type ArchiveImportReceipt,
+  applyArchiveImport,
+  preflightArchiveImport,
+} from "./archive-import.js"
+export {
   type ArchiveTranscript,
   type ArchiveTranscriptMatch,
   type ArchiveTranscriptOptions,
@@ -20,6 +27,20 @@ export {
 } from "./files.js"
 export { type LoginOptions, login, REDIRECT } from "./login.js"
 export { createMeetingMcpServer, type MeetingMcpOptions, serveMeetingMcp } from "./mcp-server.js"
+export {
+  createMeetingContextCapabilities,
+  type EvidenceOptions,
+  type MeetingContextCapabilities,
+  type MeetingTaskKind,
+  type PersonContextOptions,
+} from "./meeting-context.js"
+export { createMeetingSemanticCapabilities } from "./meeting-semantic.js"
+export type {
+  MeetingEmbeddingOptions,
+  MeetingModelOptions,
+  MeetingSemanticCapabilities,
+  MeetingSemanticOptions,
+} from "./meeting-semantic-commands.js"
 export { createProgram, type ProgramDeps, run, type StoreConnection, type StoreConnectRequest } from "./program.js"
 export { type ArchiveSyncOptions, type ArchiveSyncReceipt, syncRecordingArchive } from "./recording-sync.js"
 export {
@@ -49,3 +70,5 @@ export {
 } from "./remote-meetings.js"
 export { createStoreConnector, type StoreConnectionOptions } from "./store-connection.js"
 export { TokenManager, type TokenOptions, type Tokens } from "./tokens.js"
+
+export { runUnifiedSearch, type UnifiedSearch, type UnifiedSearchRequest } from "./unified-search.js"

@@ -2,7 +2,7 @@
 name: zoom-cli
 description: Archive Zoom cloud recordings, read stored meeting transcripts and summaries, or manage a Zoom meeting through zm. Use for Zoom CLI workflows, not joining calls or operating the desktop video client.
 metadata:
-  version: "0.2.2"
+  version: "0.3.0"
 ---
 
 # Zoom CLI
@@ -34,6 +34,14 @@ and case-insensitive, with a maximum of 1000 matches. When `hasMore` is true, in
 narrow the occurrence, file or query selection;
 there is no continuation cursor. These reads do not import archive assets into the database.
 
+Use `recordings archive import <directory> --offline --jsonl` to append verified VTT assets to the
+selected local profile. It verifies the complete selection before opening the store; defaults are
+8 MiB per file and 64 MiB total (`--max-total-bytes`). Appends are atomic per raw occurrence UUID,
+retain corrected revisions and unrelated meeting data, and leave the pull cursor unchanged.
+Unknown start times require an existing occurrence. Receipts acknowledge appends or report
+unavailable occurrences; they do not imply creation or replay counts. Earlier acknowledgements
+remain meaningful if a later occurrence fails.
+
 `recordings archive locks` inspects writer locks. `recover` previews stale lock removal; `--yes`
 removes recognized dead-process locks on this machine. It does not repair incomplete manifests or
 adopt untracked files. Keep active and foreign locks intact.
@@ -53,8 +61,8 @@ Local profile labels group stored data and do not select a different OAuth accou
 
 `zm watch <folder> --jsonl` rescans legacy transcript files in the foreground; each cycle closes its
 connection before emitting a receipt. Stop with Ctrl-C. Fully completed late receipts have at most
-one second to flush; cancellation never starts another cycle. Hashed cloud archive VTT assets do
-not use legacy filenames and have no direct database-import command yet.
+one second to flush; cancellation never starts another cycle. Hashed cloud archive VTT assets use
+`recordings archive import`, separately from legacy folder import.
 
 Use `zm watch --source api --lookback-days 7 --jsonl` for repeated online pulls that revisit late
 transcripts. Without a folder or explicit source, watch uses the configured source; files can use
@@ -64,7 +72,49 @@ captured before the first cycle, so restart to change profiles or source setting
 The selected overlap also subtracts from the initial bound.
 
 `zm serve --mcp` provides seven read-only stored meeting tools. Discovery opens no database; reads
-use the selected account. MCP uses its own framing, so omit JSON/JSONL/field-selection flags.
+use the selected account. MCP uses its own framing, so omit JSON/JSONL/field-selection flags. `--meeting-context` adds three
+read-only context tools; `--unified-search` adds one meetings-only shared search tool;
+`--semantic --model <id>` adds one vector query tool. Remote model selection also requires
+`--base-url` and `--dims`. The server fixes the model at startup and the profile on its first read.
+Clients cannot select another model or account. Generation and task creation are not MCP tools.
+
+The producer deletes legacy unencrypted `messages.db` and its SQLite sidecars on default-path
+store open, without migration. Explicit paths and `MESSAGING_STORE` preserve them. A legacy
+database held open by another process is kept until a later default-path open can delete it.
+
+## Evidence, context and shared search
+
+Use `meetings evidence meeting:<account>/<meeting>[/<transcript>[/<cue-position>]]` for bounded
+stored evidence. Historical transcript references remain stable. Follow returned coverage and
+continuation fields; use `--after` for a cue reference or `--after-transcript-id` for revision scans,
+never both. Bound content with `--cues` and `--bytes`, and work with `--max-read-bytes` and
+`--max-transcript-pages`. Do not treat a bounded page as complete history.
+
+Use `meetings context person:<id>` for identity-linked context in the selected account. It does not
+match speakers by name or prove that a linked participant spoke. Pending indexes and scan limits
+can leave context incomplete. `meetings task-proposal <reference> --kind question|request|mention|promise`
+is read-only: `applied: false` and `persistence: "proposal-only"` do not mean a task was created.
+
+`search all <query>` searches meetings by default. Broader `--only messages,mail,notes,meetings`
+is explicit; notes are store-global. Meetings use word prefixes; unsupported syntax or exact queries
+are reported as skipped. Resume meetings-only results using the returned `meetings.nextCursor` as
+`--meeting-cursor '<json>'`, bound to account and query. JSONL retains the entire report, including
+coverage, skips and cursors. Existing `meetings search` remains literal transcript search.
+
+## Explicit vector work
+
+`meetings embeddings --model <installed-id>` previews existing chunk status without model loading
+or writes. Add `--yes` only for explicitly requested generation: it validates and opens the model
+before rebuilding and embedding one bounded batch. It never downloads local models. Remote
+models require explicit `--base-url` and `--dims`; OpenAI uses `OPENAI_API_KEY`. Remote inference
+is refused with `--offline`. Keep credentials out of endpoint URLs and output.
+
+`--after-transcript-id` resumes chunk rebuilding; `--after-hash` resumes missing vectors. Current
+revision hashes are rechecked before save. `meetings semantic <query> --model <id>` embeds only
+the query and reads existing vectors; it never generates stored vectors or rebuilds chunks. Ranking
+covers scanned candidates, not all history. `--after-chunk-id` continues candidate scanning rather
+than globally ranked pagination. Index and archive completeness remain unknown. Use returned
+candidate coverage and the explicit row/text byte bounds.
 
 ## Remote meeting changes
 

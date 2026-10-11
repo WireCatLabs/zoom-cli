@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Changed — may break callers
+
+- **Shared store security policy** deletes legacy unencrypted `messages.db` and its SQLite sidecars
+  on default-path store open, without migration. Explicit paths and `MESSAGING_STORE` preserve the
+  files; an active legacy lock defers deletion until a later default-path open.
+
 ### Fixed
 
 - **Archive file replacement checks** verify the opened object and path before reading bytes,
@@ -9,6 +15,18 @@
 
 ### Added
 
+- **Archive transcript import** verifies every selected VTT before opening the store, then appends
+  atomically by occurrence UUID. It retains corrections and unrelated meeting data, preserves the
+  pull cursor, and emits per-occurrence acknowledgements without inventing replay counts.
+- **Bounded evidence, person context and task proposals** use public producer services, selected
+  account ownership and durable revision/cue references. Proposals never create tasks.
+- **Shared resource search** defaults to meetings, with explicit broader resource selection,
+  bounded candidate scans and reports that preserve skips, coverage and continuation cursors.
+- **Explicit meeting vectors** preview generation by default; `--yes` rebuilds and embeds one
+  bounded current-revision batch. Installed local models or explicit remote endpoints are required.
+  Read-only semantic queries rank scanned existing candidates and expose their coverage limits.
+- **Optional read-only MCP tools** add context, meetings-only unified search and fixed-model
+  semantic queries. Embedding generation and task creation remain outside MCP.
 - **Generated command reference and measured test matrix** reuse cli-core's generators. Release
   and manual validation install the checked tarball on Linux and Windows with Node 22.16 and 24.
 
