@@ -1,0 +1,25 @@
+{
+  "title": "zm",
+  "pages": [
+    "---Start---",
+    "index",
+    "installation",
+    "zoom-app",
+    "---Guides---",
+    "usage",
+    "sessions",
+    "archive",
+    "search",
+    "topic-search",
+    "mcp",
+    "remote-meetings",
+    "---Reference---",
+    "commands",
+    "configuration",
+    "---When something goes wrong---",
+    "troubleshooting",
+    "security",
+    "---Project---",
+    "changelog"
+  ]
+}
