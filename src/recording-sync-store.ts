@@ -7,7 +7,7 @@ import {
   type RecordingSyncCheckpoint,
   type RecordingSyncCheckpointStore,
   type RecordingSyncLease,
-} from "@wirecat/cli-meetings"
+} from "@wirecat/cli-messaging/meetings"
 import { ZoomError } from "./errors.js"
 import { openOrdinaryFile } from "./ordinary-file.js"
 

@@ -5,7 +5,7 @@ import {
   planRecordingArchiveSchedule,
   type RecordingArchiveSchedule,
   recordingArchiveScheduleWindow,
-} from "@wirecat/cli-meetings"
+} from "@wirecat/cli-messaging/meetings"
 import { profileAccountKey } from "./config.js"
 import { checkCancelled, ZoomError } from "./errors.js"
 import { type ArchiveSyncReceipt, syncRecordingArchive } from "./recording-sync.js"

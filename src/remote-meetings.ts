@@ -4,7 +4,7 @@ import {
   type ManagedMeeting,
   type ManagedMeetingChange,
   validateMeetingChange,
-} from "@wirecat/cli-meetings"
+} from "@wirecat/cli-messaging/meetings"
 import { object, string, ZoomError } from "./errors.js"
 import { required } from "./recordings.js"
 import { operationSignal, type RemoteOptions, type RemoteRequest, ZoomRemote } from "./remote-http.js"

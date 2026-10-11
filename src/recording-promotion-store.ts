@@ -1,7 +1,11 @@
 import { createHash, randomUUID } from "node:crypto"
 import { open, rename, unlink } from "node:fs/promises"
 import { join } from "node:path"
-import { type RecordingAssetLocator, type RecordingPartial, strongRecordingValidator } from "@wirecat/cli-meetings"
+import {
+  type RecordingAssetLocator,
+  type RecordingPartial,
+  strongRecordingValidator,
+} from "@wirecat/cli-messaging/meetings"
 import { ZoomError } from "./errors.js"
 import { openOrdinaryFile, syncDirectory } from "./ordinary-file.js"
 import type { ArchivedFile, ArchiveManifest } from "./recording-archive.js"

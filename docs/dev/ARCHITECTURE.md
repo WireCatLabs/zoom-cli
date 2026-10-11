@@ -1,7 +1,7 @@
 # Architecture
 
 `@wirecat/cli-core` supplies configuration paths, secure config writes and the keyring seam.
-`@wirecat/cli-meetings` supplies the domain model, source/store ports, ingestion, management,
+`@wirecat/cli-messaging/meetings` supplies the domain model, source/store ports, ingestion, management,
 recording transfer, archive synchronization, schedule planning and commands.
 This package contains Zoom-specific login and sources; it contains no SQL.
 
@@ -96,10 +96,10 @@ configuration before credentials, then uses a fixed token manager and durable ar
 OS timers stay in this provider package; the shared SDK can accept another scheduler or provider.
 
 Remote management maps Zoom API bodies and numeric IDs into optional shared management ports.
-Portable validation and preview/single-dispatch rules come from cli-meetings; transport-specific
+Portable validation and preview/single-dispatch rules come from cli-messaging's meetings module; transport-specific
 uncertain outcomes remain the adapter's responsibility. Other providers need only the capabilities
 they support, with no Zoom dependency or duplicated orchestration. See the
-[provider guide](https://github.com/WireCatLabs/cli-meetings/blob/main/docs/dev/PROVIDERS.md).
+[provider guide](https://github.com/WireCatLabs/cli-messaging/blob/main/docs/dev/MEETING-PROVIDERS.md).
 
 Archive transcript reads open a regular no-follow file handle and use that handle for bounded reads,
 size and digest verification. Strict UTF-8 decoding precedes the shared WebVTT parser. Search uses
@@ -109,7 +109,7 @@ remain unchecked. These commands never open the store or OAuth credentials.
 Finite command output uses shared projection, rendering, buffering and caller-owned deadlines.
 Streaming commands bound each receipt and await write completion/drain. Folder watching closes the
 cycle's connection before its receipt; a completed late receipt has a separate one-second deadline.
-MCP tool schemas and reads come from cli-meetings. Initialization/discovery are connection-free;
+MCP tool schemas and reads come from `@wirecat/cli-messaging/meetings/mcp`. Initialization/discovery are connection-free;
 each call injects the selected account and closes its read connection before replying. SDK request
 cancellation prevents new reads while allowing an active read to settle before close.
 

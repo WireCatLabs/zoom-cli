@@ -20,8 +20,8 @@ import {
   type MeetingTranscriptReceiptStore,
   type MeetingTranscriptStore,
   pull,
-} from "@wirecat/cli-meetings"
-import { addMeetingCommands } from "@wirecat/cli-meetings/cli"
+} from "@wirecat/cli-messaging/meetings"
+import { addMeetingCommands } from "@wirecat/cli-messaging/meetings/cli"
 import { Command, CommanderError } from "commander"
 import { addZoomSkillCommands } from "./agent-skill.js"
 import { ZoomApiSource } from "./api.js"

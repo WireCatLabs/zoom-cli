@@ -1,7 +1,7 @@
 import { mkdtemp, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-meetings/testing"
+import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-messaging/meetings/testing"
 import { expect, it, vi } from "vitest"
 import {
   compactLocalTranscriptionReceipt,

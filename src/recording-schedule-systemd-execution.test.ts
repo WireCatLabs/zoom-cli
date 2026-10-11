@@ -1,7 +1,7 @@
 import { mkdtemp, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { planRecordingArchiveSchedule } from "@wirecat/cli-meetings"
+import { planRecordingArchiveSchedule } from "@wirecat/cli-messaging/meetings"
 import { expect, it, vi } from "vitest"
 import { parseRecordingScheduleJob } from "./recording-schedule.js"
 import { createSystemdRecordingArchiveScheduler } from "./recording-schedule-systemd.js"

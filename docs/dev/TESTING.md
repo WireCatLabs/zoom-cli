@@ -1,7 +1,7 @@
 # Testing
 
 Run lint, typecheck, coverage, docs checks, build and Bun smoke. Tests script the HTTP transport and
-use cli-core's memory keyring and cli-meetings' memory store. OAuth tests use local loopback requests
+use cli-core's memory keyring and the meetings module's memory store. OAuth tests use local loopback requests
 with invented codes; they do not open a browser or connect to Zoom. Token refresh verifies that no
 client secret or authorization header is sent.
 

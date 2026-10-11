@@ -1,7 +1,7 @@
 # zoom-cli — working rules
 
-This public package implements Zoom sources over `@wirecat/cli-meetings`. Keep provider-neutral
-logic in cli-meetings and database work in cli-messaging. Never include real meeting names, ids,
+This public package implements Zoom sources over `@wirecat/cli-messaging/meetings`. Keep provider-neutral
+logic and database work in cli-messaging. Never include real meeting names, ids,
 emails or transcript text in fixtures, docs or commits. Tests use invented people and an injected
 memory keyring, never the owner's account or store.
 

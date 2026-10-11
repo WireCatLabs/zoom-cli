@@ -9,7 +9,7 @@ Login, cloud recording downloads and remote meeting commands work independently 
 database. Import, pull, folder watching and meeting reads use the published shared SQLite adapter.
 Store connections open lazily and close before successful results are emitted. Meeting data persists
 in the shared WireCat database; `MESSAGING_STORE` selects an explicit database path. The shared model,
-exports and ingestion loop come from `@wirecat/cli-meetings`.
+exports and ingestion loop come from `@wirecat/cli-messaging/meetings`.
 
 The shared store uses `wirecat.db`. Opening its default path deletes the legacy unencrypted
 `messages.db` and its `-wal` and `-shm` sidecars, without migrating them. The legacy files are kept

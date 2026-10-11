@@ -3,7 +3,11 @@ import { type FileHandle, link, lstat, mkdir, open, readdir, realpath, rename, r
 import { hostname } from "node:os"
 import { join } from "node:path"
 import { retryableStatus, statusToCode } from "@wirecat/cli-core/http"
-import { RecordingTransferError, type RecordingTransferSource, transferRecording } from "@wirecat/cli-meetings"
+import {
+  RecordingTransferError,
+  type RecordingTransferSource,
+  transferRecording,
+} from "@wirecat/cli-messaging/meetings"
 import { checkCancelled, string, ZoomError } from "./errors.js"
 import { openOrdinaryFile, syncDirectory } from "./ordinary-file.js"
 import { RecordingPartialStore } from "./recording-partial-store.js"

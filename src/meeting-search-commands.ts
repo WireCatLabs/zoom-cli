@@ -1,5 +1,5 @@
 import { annotate } from "@wirecat/cli-core/commands"
-import type { MeetingSearchOptions, MeetingSearchPage } from "@wirecat/cli-meetings"
+import type { MeetingSearchOptions, MeetingSearchPage } from "@wirecat/cli-messaging/meetings"
 import type { Command } from "commander"
 import { ZoomError } from "./errors.js"
 import { bytes } from "./execution.js"
