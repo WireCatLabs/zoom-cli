@@ -21,6 +21,8 @@ jobs:
       pack: ${{ inputs.pack || github.event_name == 'workflow_dispatch' }}
       checks: |
         pnpm contracts:check
+        pnpm contracts:upgrade
+        pnpm security:no-leak
         pnpm docs:check
         pnpm generate:check
         pnpm test:matrix:check

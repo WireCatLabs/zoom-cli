@@ -29,8 +29,19 @@ tool schemas. Plans and snapshots live in `contracts/`; changes require explicit
 full validation; ordinary PR/local checks retain their existing budget. See the
 [shared guide](https://github.com/WireCatLabs/cli-testing/blob/main/docs/ci/CONTRACTS.md).
 
-The development dependency pins `@wirecat/cli-testing` 0.2.0 from npm, with its
+The development dependency pins `@wirecat/cli-testing` 0.3.0 from npm, with its
 package integrity recorded in the lockfile.
+
+### Stateful and upgrade checks
+
+`pnpm contracts:upgrade` runs the pinned previous published package and this build against the
+same fresh synthetic state. Baseline packages have a separate frozen lockfile under
+`contracts/previous/`; they install only in full validation and do not add old CLI bins to the
+normal developer executable path. Plans assert retained data, migration/import repeatability and
+file preservation. `pnpm security:no-leak` scans the reviewed contract fixtures and testing guide;
+process diagnostics and recorded run logs are checked within the contract runner as well.
+These commands run only in release, monthly and manual full validation. See the
+[upgrade guide](https://github.com/WireCatLabs/cli-testing/blob/main/docs/ci/UPGRADES.md).
 
 ## Command coverage
 
