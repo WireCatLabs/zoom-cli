@@ -319,7 +319,7 @@ try {
     ["meetings", "embeddings", ...modelOptions, "--yes"],
     ["serve", "--mcp", "--semantic", ...modelOptions],
   ])
-    invoke(["--offline", ...args], 2, remoteEnvironment)
+    invoke(["--offline", ...args], 3, remoteEnvironment)
   assert.equal(requests().length, 0, "offline semantic commands must fail before model HTTP")
   assert.deepEqual(remoteJson("meetings", "embeddings", ...modelOptions).status, preview.status)
   const generated = remoteJson("meetings", "embeddings", ...modelOptions, "--yes")
