@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto"
-import type { MeetingTranscriptStore, TranscriptAppend } from "@wirecat/cli-meetings"
+import { CliError } from "@wirecat/cli-core"
+import type { MeetingTranscriptReceiptStore, MeetingTranscriptStore, TranscriptAppend } from "@wirecat/cli-meetings"
 import { type ArchiveTranscriptOptions, readArchiveTranscripts } from "./archive-transcripts.js"
 import { checkCancelled, ZoomError } from "./errors.js"
 
@@ -16,6 +17,10 @@ export interface ArchiveImportReceipt {
   assetIds: string[]
   status: "acknowledged" | "unavailable"
   meetingId?: number
+  created?: boolean
+  insertedTranscripts?: number
+  replayedTranscripts?: number
+  supersededTranscripts?: number
   /** The append port does not distinguish a missing occurrence from a deleted one. */
   reason?: "missing_or_deleted"
 }
@@ -109,29 +114,35 @@ export const preflightArchiveImport = async (
 /** Atomic per occurrence, preserving an acknowledged receipt even when cancellation arrives during append. */
 export async function* applyArchiveImport(
   plan: ArchiveImportPlan,
-  store: MeetingTranscriptStore,
+  store: Partial<MeetingTranscriptStore & MeetingTranscriptReceiptStore>,
   options: { accountId: number; now?: number; signal?: AbortSignal },
 ): AsyncGenerator<ArchiveImportReceipt, void, void> {
   const prepared = plans.get(plan)
+  const { accountId, signal } = options
   const now = options.now ?? Date.now()
-  if (!prepared || !Number.isSafeInteger(options.accountId) || options.accountId < 1 || !Number.isSafeInteger(now))
+  const appendExact = store?.appendTranscriptsWithReceipt
+  const appendLegacy = store?.appendTranscripts
+  const useExact = typeof appendExact === "function"
+  if (!prepared || !Number.isSafeInteger(accountId) || accountId < 1 || !Number.isSafeInteger(now))
     throw new ZoomError("validation_error", "expected a verified archive plan, selected account and integer timestamp")
-  if (typeof store?.appendTranscripts !== "function")
+  if (typeof appendLegacy !== "function" && !useExact)
     throw new ZoomError("configuration_error", "the installed meeting store does not support transcript append")
   for (const group of prepared) {
-    checkCancelled(options.signal)
+    checkCancelled(signal)
     let receipt: ArchiveImportReceipt
     try {
-      const details = await store.appendTranscripts({
-        accountId: options.accountId,
+      const input: TranscriptAppend = {
+        accountId: accountId,
         externalId: group.uuid,
         create: group.create,
         transcripts: structuredClone(group.transcripts),
         now,
-      })
+      }
+      const exact = useExact ? await appendExact.call(store, input) : undefined
+      const details = useExact ? exact?.meeting : await appendLegacy?.call(store, input)
       if (
         !details?.meeting ||
-        details.meeting.accountId !== options.accountId ||
+        details.meeting.accountId !== accountId ||
         details.meeting.externalId !== group.uuid ||
         !Number.isSafeInteger(details.meeting.id) ||
         details.meeting.id < 1 ||
@@ -141,13 +152,37 @@ export async function* applyArchiveImport(
           "outcome_unknown",
           "archive append returned inconsistent ownership; verify stored state before retrying",
         )
+      if (
+        exact &&
+        (typeof exact.created !== "boolean" ||
+          exact.insertedTranscripts + exact.replayedTranscripts !== group.transcripts.length ||
+          [exact.insertedTranscripts, exact.replayedTranscripts, exact.supersededTranscripts].some(
+            (count) => !Number.isSafeInteger(count) || count < 0,
+          ))
+      )
+        throw new ZoomError(
+          "outcome_unknown",
+          "archive append returned invalid counts; verify stored state before retrying",
+        )
       receipt = {
         uuid: group.uuid,
         assetIds: [...group.assetIds],
         status: "acknowledged",
         meetingId: details.meeting.id,
+        ...(exact
+          ? {
+              created: exact.created,
+              insertedTranscripts: exact.insertedTranscripts,
+              replayedTranscripts: exact.replayedTranscripts,
+              supersededTranscripts: exact.supersededTranscripts,
+            }
+          : {}),
       }
     } catch (error) {
+      if (error instanceof CliError && (error.code === "timeout" || error.code === "cancelled")) {
+        checkCancelled(signal)
+        throw error
+      }
       if (error instanceof Error && "code" in error && error.code === "outcome_unknown")
         throw new ZoomError("outcome_unknown", "archive append outcome is unknown; verify stored state before retrying")
       if (error instanceof Error && "code" in error && error.code === "not_found")
@@ -158,7 +193,7 @@ export async function* applyArchiveImport(
           reason: "missing_or_deleted",
         }
       else {
-        checkCancelled(options.signal)
+        checkCancelled(signal)
         throw new ZoomError("provider_error", "archive transcript append failed; earlier occurrences may be committed")
       }
     }

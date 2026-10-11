@@ -34,6 +34,85 @@ beforeEach(() => {
 })
 
 describe("persistent account connector", () => {
+  it("captures selected profile and read intent before an asynchronous adapter opens", async () => {
+    const selected = { ...request }
+    const store = fixture()
+    const connect = createStoreConnector({
+      openStore: async () => {
+        selected.profile = "BobSample"
+        selected.externalId = "zm-profile:BobSample"
+        await Promise.resolve()
+        return store
+      },
+    })
+    const connection = await connect(selected)
+    expect(store.storedAccount).toHaveBeenCalledWith({ provider: "zoom", account: request.externalId })
+    expect(store.saveAccount).not.toHaveBeenCalled()
+    await connection.close()
+  })
+
+  it("binds bounded search/index and exact append ports to the connection's account", async () => {
+    const store = fixture()
+    const search = vi.fn(async () => ({
+      items: [],
+      hasMore: false,
+      nextCursor: null,
+      coverage: {
+        archiveCompleteness: "unknown" as const,
+        currentRevisions: true as const,
+        indexing: "ready" as const,
+        indexCompleteness: "unknown" as const,
+      },
+    }))
+    const index = vi.fn(async () => ({ indexed: 1, remaining: 2 }))
+    const exact = vi.fn(async () => {
+      throw new Error("unexpected invalid account append")
+    })
+    const meetings = Object.assign(store.meetings, {
+      searchHits: search,
+      indexSearch: index,
+      appendTranscriptsWithReceipt: exact,
+    })
+    const connection = await createStoreConnector({ openStore: async () => ({ ...store, meetings }) })({
+      ...request,
+      capability: "meeting-search",
+    })
+    const searchOptions = { accountId: 99, limit: 2, maxReadBytes: 1024 }
+    await connection.meetingSearch?.("example", searchOptions)
+    expect(search).toHaveBeenCalledWith(
+      "example",
+      expect.objectContaining({ accountId: 3, limit: 2, maxReadBytes: 1024 }),
+    )
+    expect(await connection.meetingSearchIndex?.({ limit: 1 })).toMatchObject({ applied: false, accountId: 3 })
+    expect(index).not.toHaveBeenCalled()
+    expect(await connection.meetingSearchIndex?.({ limit: 1, apply: true, dryRun: true })).toMatchObject({
+      applied: false,
+    })
+    expect(index).not.toHaveBeenCalled()
+    expect(await connection.meetingSearchIndex?.({ limit: 1, maxReadBytes: 1024, apply: true })).toMatchObject({
+      applied: true,
+      indexed: 1,
+      remaining: 2,
+    })
+    expect(index).toHaveBeenCalledWith(expect.objectContaining({ accountId: 3, limit: 1, maxReadBytes: 1024 }))
+    expect(() =>
+      connection.appendTranscriptsWithReceipt?.({ accountId: 99, externalId: "example", transcripts: [], now: 1000 }),
+    ).toThrowError(expect.objectContaining({ code: "validation_error" }))
+    expect(exact).not.toHaveBeenCalled()
+    expect(store.saveAccount).not.toHaveBeenCalled()
+    await connection.close()
+  })
+
+  it("closes unavailable optional search and context capabilities without registering accounts", async () => {
+    for (const capability of ["meeting-search", "meeting-search-index", "meeting-integration"] as const) {
+      const store = fixture()
+      await expect(
+        createStoreConnector({ openStore: async () => store })({ ...request, capability }),
+      ).rejects.toMatchObject({ code: "configuration_error" })
+      expect(store.close).toHaveBeenCalledTimes(1)
+      expect(store.saveAccount).not.toHaveBeenCalled()
+    }
+  })
   it("imports the store lazily and resolves existing read accounts without registration", async () => {
     const store = fixture()
     mocked.openStore.mockResolvedValue(store)

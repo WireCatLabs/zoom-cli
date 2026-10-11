@@ -23,6 +23,9 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [archive-import.ts](../../src/archive-import.ts) | fully verified plans and atomic per-occurrence transcript append |
 | [unified-search.ts](../../src/unified-search.ts) | validated public producer search with explicit resource scope |
 | [meeting-context.ts](../../src/meeting-context.ts) | account-fixed bounded evidence, identity context and read-only task proposals |
+| [meeting-integration-commands.ts](../../src/meeting-integration-commands.ts), [meeting-integration.ts](../../src/meeting-integration.ts) | explicit event/person linking through the shared context service |
+| [meeting-search-commands.ts](../../src/meeting-search-commands.ts) | bounded hit paging and explicit keyword index batches |
+| [local-transcription.ts](../../src/local-transcription.ts), [wav-audio.ts](../../src/wav-audio.ts) | native media verification and shared transcription/speech port adaptation |
 | [meeting-semantic.ts](../../src/meeting-semantic.ts) | explicit model selection and public vector/model service adaptation |
 | [store-connection.ts](../../src/store-connection.ts) | lazy public shared-store/account adapter, without SQL |
 | [mcp-server.ts](../../src/mcp-server.ts) | official SDK transport and shared read-only meeting tools |
@@ -118,12 +121,34 @@ Archive import verifies the entire selected VTT input before account lookup or r
 opaque plan binds detached rows to verified asset hashes. The public transcript append port performs
 one atomic occurrence update without loading and rewriting unrelated meeting parts. An unknown start
 can append only to an existing occurrence. Receipts acknowledge ownership-checked results; the port
-does not claim whether an append created a meeting or replayed existing data.
+returns exact creation and transcript insertion/replay/supersession counts when the optional receipt
+port is available. Counts and writes share the producer transaction. Legacy ports retain their
+acknowledgement without guessed counts, and an invalid exact acknowledgement never triggers a second
+legacy write.
 
 Context and vector adapters use published cli-messaging services and store capabilities; Zoom owns
 no SQL, embedding tables or model engine. Evidence uses bounded metadata/row reads. Person metadata
 is exposed only after account-presence checks. Speaker names never establish identity links.
 Task proposals carry stable meeting provenance and never call task persistence.
+
+Owner-selected event and participant identity links use the pure shared context workflow and the
+producer's account-bound atomic link ports. Preconditions, source ownership and target authorization
+are checked in the same transaction. Only the selected identity moves; names never establish links.
+Memo remains the shared notes, tags and memories interface over these same records. Zoom does not
+mount another set of those commands.
+
+Bounded keyword hit search uses the optional producer search capability and an opaque cursor
+that can continue within a transcript. Reads do not drain keyword indexing work. Explicit indexing
+previews by default and applies one bounded batch with `--yes`; coverage reports pending indexing
+and unknown index/archive completeness. The producer owns Unicode tokenization and configured
+stemming; Zoom does not duplicate either implementation. Command receipts preserve committed local writes when
+cancellation follows acknowledgement.
+
+Local transcription resolves an existing selected-account meeting before reading media or loading
+a model. The native host verifies ordinary WAV files, streams bounded PCM windows and checks the
+content hash again before append. The shared SDK owns preview/recognition/atomic append orchestration;
+the public producer speech factory owns installed-model access. Media decoding and filesystem safety
+remain host responsibilities. Recognition uses fixed windows without inferred speaker identities.
 
 Vector generation previews existing chunk metadata by default. Explicit generation opens and validates
 the model before rebuilding current-revision chunks; saving rechecks current hashes after inference.

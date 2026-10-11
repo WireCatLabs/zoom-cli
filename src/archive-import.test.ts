@@ -3,7 +3,8 @@ import { mkdtemp, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { Writable } from "node:stream"
-import { memoryKeyring } from "@wirecat/cli-core"
+import { CliError, memoryKeyring } from "@wirecat/cli-core"
+import type { MeetingTranscriptReceiptStore } from "@wirecat/cli-meetings"
 import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-meetings/testing"
 import { expect, it, vi } from "vitest"
 import { applyArchiveImport, preflightArchiveImport } from "./archive-import.js"
@@ -68,6 +69,121 @@ const collect = async <T>(values: AsyncIterable<T>): Promise<T[]> => {
   for await (const row of values) rows.push(row)
   return rows
 }
+
+it("forwards transaction counts from the exact append port without a legacy second write", async () => {
+  const { root, uuid } = await archiveFixture()
+  const details = await memoryMeetingStore().saveMeeting(sampleMeeting())
+  const exact = vi.fn<MeetingTranscriptReceiptStore["appendTranscriptsWithReceipt"]>().mockResolvedValue({
+    meeting: details,
+    created: false,
+    insertedTranscripts: 1,
+    replayedTranscripts: 0,
+    supersededTranscripts: 1,
+  })
+  const legacy = vi.fn(async () => {
+    throw new Error("unexpected legacy append")
+  })
+  const receipts = await collect(
+    applyArchiveImport(
+      await preflightArchiveImport(root),
+      {
+        appendTranscriptsWithReceipt: exact,
+        appendTranscripts: legacy,
+      },
+      { accountId: 1, now: 5000 },
+    ),
+  )
+  expect(receipts).toMatchObject([
+    {
+      uuid,
+      status: "acknowledged",
+      created: false,
+      insertedTranscripts: 1,
+      replayedTranscripts: 0,
+      supersededTranscripts: 1,
+    },
+  ])
+  expect(exact).toHaveBeenCalledTimes(1)
+  expect(legacy).not.toHaveBeenCalled()
+  exact.mockResolvedValueOnce(undefined as never)
+  await expect(
+    collect(
+      applyArchiveImport(
+        await preflightArchiveImport(root),
+        {
+          appendTranscriptsWithReceipt: exact,
+          appendTranscripts: legacy,
+        },
+        { accountId: 1, now: 6000 },
+      ),
+    ),
+  ).rejects.toMatchObject({ code: "outcome_unknown" })
+  expect(exact).toHaveBeenCalledTimes(2)
+  expect(legacy).not.toHaveBeenCalled()
+})
+
+it("rejects invalid exact counts and keeps account scope fixed across occurrence acknowledgements", async () => {
+  const { root } = await archiveFixture()
+  await archiveFixture({ root, uuid: "example-second-occurrence" })
+  const details = await memoryMeetingStore().saveMeeting(sampleMeeting())
+  const options = { accountId: 1, now: 5000 }
+  const accounts: number[] = []
+  const exact = vi.fn<MeetingTranscriptReceiptStore["appendTranscriptsWithReceipt"]>(async (input) => {
+    accounts.push(input.accountId)
+    options.accountId = 99
+    return {
+      meeting: { ...details, meeting: { ...details.meeting, externalId: input.externalId } },
+      created: false,
+      insertedTranscripts: 1,
+      replayedTranscripts: 0,
+      supersededTranscripts: 0,
+    }
+  })
+  const plan = await preflightArchiveImport(root)
+  expect(await collect(applyArchiveImport(plan, { appendTranscriptsWithReceipt: exact }, options))).toHaveLength(2)
+  expect(accounts).toEqual([1, 1])
+  exact.mockResolvedValueOnce({
+    meeting: details,
+    created: false,
+    insertedTranscripts: -1,
+    replayedTranscripts: 0,
+    supersededTranscripts: 0,
+  })
+  await expect(
+    collect(applyArchiveImport(plan, { appendTranscriptsWithReceipt: exact }, { accountId: 1, now: 6000 })),
+  ).rejects.toMatchObject({ code: "outcome_unknown" })
+})
+
+it("requires an exact input count acknowledgement and preserves typed timeout/cancellation errors", async () => {
+  const { root } = await archiveFixture()
+  const details = await memoryMeetingStore().saveMeeting(sampleMeeting())
+  const plan = await preflightArchiveImport(root)
+  const legacy = vi.fn(async () => details)
+  const exact = vi.fn<MeetingTranscriptReceiptStore["appendTranscriptsWithReceipt"]>().mockResolvedValue({
+    meeting: details,
+    created: false,
+    insertedTranscripts: 0,
+    replayedTranscripts: 0,
+    supersededTranscripts: 0,
+  })
+  await expect(
+    collect(
+      applyArchiveImport(
+        plan,
+        { appendTranscriptsWithReceipt: exact, appendTranscripts: legacy },
+        { accountId: 1, now: 5000 },
+      ),
+    ),
+  ).rejects.toMatchObject({ code: "outcome_unknown" })
+  expect(legacy).not.toHaveBeenCalled()
+  for (const code of ["timeout", "cancelled"] as const) {
+    const error = new CliError(code, "Example operation interrupted")
+    exact.mockRejectedValueOnce(error)
+    await expect(
+      collect(applyArchiveImport(plan, { appendTranscriptsWithReceipt: exact }, { accountId: 1, now: 5000 })),
+    ).rejects.toBe(error)
+  }
+})
 const cli = async () => {
   const root = await mkdtemp(join(tmpdir(), "zm-test-archive-cli-"))
   const output: string[] = []

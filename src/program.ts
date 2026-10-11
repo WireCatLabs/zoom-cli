@@ -17,6 +17,7 @@ import {
   MeetingError,
   type MeetingSource,
   type MeetingStore,
+  type MeetingTranscriptReceiptStore,
   type MeetingTranscriptStore,
   pull,
 } from "@wirecat/cli-meetings"
@@ -39,9 +40,19 @@ import { checkCancelled, ZoomError } from "./errors.js"
 import { bytes, duration, type ExecutionState, resetCliOptions, startExecution } from "./execution.js"
 import { FilesSource, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { addIngestionSearchCommands } from "./ingestion-search-commands.js"
+import type { LocalTranscriptionCapabilities } from "./local-transcription.js"
+import { addLocalTranscriptionCommands } from "./local-transcription-commands.js"
 import { login } from "./login.js"
 import type { MeetingContextCapabilities } from "./meeting-context.js"
 import { addMeetingContextCommands } from "./meeting-context-commands.js"
+import type { MeetingIntegrationCapabilities } from "./meeting-integration.js"
+import { addMeetingIntegrationCommands } from "./meeting-integration-commands.js"
+import {
+  addMeetingHitSearchCommand,
+  addMeetingSearchIndexCommand,
+  type MeetingHitSearch,
+  type MeetingSearchIndex,
+} from "./meeting-search-commands.js"
 import {
   addMeetingSemanticCommands,
   type MeetingModelOptions,
@@ -73,6 +84,11 @@ export interface StoreConnection {
   accountId: number
   close: () => Promise<void>
   appendTranscripts?: MeetingTranscriptStore["appendTranscripts"]
+  appendTranscriptsWithReceipt?: MeetingTranscriptReceiptStore["appendTranscriptsWithReceipt"]
+  meetingIntegration?: MeetingIntegrationCapabilities
+  meetingSearch?: MeetingHitSearch
+  meetingSearchIndex?: MeetingSearchIndex
+  meetingTranscription?: LocalTranscriptionCapabilities
   unifiedSearch?: UnifiedSearch
   meetingContext?: MeetingContextCapabilities
   meetingSemantic?: MeetingSemanticCapabilities
@@ -81,7 +97,7 @@ export interface StoreConnectRequest {
   profile: string
   externalId: string
   intent: "read" | "ingestion"
-  capability?: "transcript-append"
+  capability?: "transcript-append" | "meeting-integration" | "meeting-search" | "meeting-search-index"
 }
 export interface ProgramDeps {
   configPath: string
@@ -90,10 +106,14 @@ export interface ProgramDeps {
   store?: MeetingStore
   accountId?: number
   connectStore?: (request: StoreConnectRequest) => Promise<StoreConnection>
-  transcriptStore?: MeetingTranscriptStore
+  transcriptStore?: Partial<MeetingTranscriptStore & MeetingTranscriptReceiptStore>
   unifiedSearch?: UnifiedSearch
   meetingContext?: MeetingContextCapabilities
   meetingSemantic?: MeetingSemanticCapabilities
+  meetingIntegration?: MeetingIntegrationCapabilities
+  meetingSearch?: MeetingHitSearch
+  meetingSearchIndex?: MeetingSearchIndex
+  meetingTranscription?: LocalTranscriptionCapabilities
   source?: MeetingSource
   recordings?: RecordingsService
   recordingSchedule?: RecordingScheduleService
@@ -227,7 +247,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .option("--fields <paths>", "project result fields, such as id,title")
     .option(
       "--timeout <duration>",
-      "command deadline: reads 30s, login 5m, downloads 1h; watch/MCP have no default",
+      "command deadline: reads 30s, login 5m, downloads/transcription 1h; watch/MCP have no default",
       duration,
     )
     .option("--max-output-bytes <bytes>", "bound rendered result bytes (default 4194304; zero is unlimited)", bytes)
@@ -264,7 +284,18 @@ export const createProgram = (deps: ProgramDeps): Command => {
         "search",
       ].includes(family.name()) ||
       (family.name() === "meetings" &&
-        ["evidence", "context", "task-proposal", "semantic", "embeddings"].includes(action.name()))
+        [
+          "evidence",
+          "context",
+          "task-proposal",
+          "semantic",
+          "embeddings",
+          "link-event",
+          "link-person",
+          "search-page",
+          "search-index",
+          "transcribe",
+        ].includes(action.name()))
     )
       return
     const config = getConfig()
@@ -803,9 +834,12 @@ export const createProgram = (deps: ProgramDeps): Command => {
           capability: "transcript-append",
         })
         accountId = connection.accountId
-        if (!connection.appendTranscripts)
+        if (!connection.appendTranscripts && !connection.appendTranscriptsWithReceipt)
           throw new ZoomError("configuration_error", "the installed meeting store does not support transcript append")
-        store = { appendTranscripts: connection.appendTranscripts }
+        store = {
+          appendTranscripts: connection.appendTranscripts,
+          appendTranscriptsWithReceipt: connection.appendTranscriptsWithReceipt,
+        }
       }
       for await (const item of applyArchiveImport(plan, store, {
         accountId: accountId ?? 0,
@@ -827,6 +861,77 @@ export const createProgram = (deps: ProgramDeps): Command => {
       if (!connection.unifiedSearch)
         throw new ZoomError("configuration_error", "unified search is unavailable in this store connector")
       return runUnifiedSearch(connection.unifiedSearch, request)
+    },
+  })
+  const integrationConnection = async (
+    capability: "meeting-integration" | "meeting-search" | "meeting-search-index",
+  ) => {
+    const config = getConfig()
+    if (!config.accountProfile || !deps.connectStore)
+      throw new ZoomError("configuration_error", "select a stored local profile for meeting integration")
+    connection = await deps.connectStore({
+      profile: config.accountProfile,
+      externalId: profileAccountKey(config.accountProfile),
+      intent: "read",
+      capability,
+    })
+    return connection
+  }
+  const integrationOutput = (value: unknown) =>
+    buffer(render(value, program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text", deps, fields, true))
+  addMeetingIntegrationCommands(program, {
+    signal,
+    output: integrationOutput,
+    receipt,
+    integration: async () => {
+      if (deps.meetingIntegration) return deps.meetingIntegration
+      const connected = await integrationConnection("meeting-integration")
+      if (!connected.meetingIntegration)
+        throw new ZoomError("configuration_error", "meeting integration is unavailable in this store connector")
+      return connected.meetingIntegration
+    },
+  })
+  addLocalTranscriptionCommands(program, {
+    signal,
+    output: integrationOutput,
+    receipt,
+    capabilities: async () => {
+      if (deps.meetingTranscription) return deps.meetingTranscription
+      const config = getConfig()
+      if (!config.accountProfile || !deps.connectStore)
+        throw new ZoomError("configuration_error", "select a stored local profile for transcription")
+      connection = await deps.connectStore({
+        profile: config.accountProfile,
+        externalId: profileAccountKey(config.accountProfile),
+        intent: "read",
+        capability: "transcript-append",
+      })
+      if (!connection.meetingTranscription)
+        throw new ZoomError("configuration_error", "local transcription is unavailable in this store connector")
+      return connection.meetingTranscription
+    },
+  })
+  addMeetingHitSearchCommand(program, {
+    signal,
+    output: integrationOutput,
+    search: async () => {
+      if (deps.meetingSearch) return deps.meetingSearch
+      const connected = await integrationConnection("meeting-search")
+      if (!connected.meetingSearch)
+        throw new ZoomError("configuration_error", "bounded meeting search is unavailable in this store connector")
+      return connected.meetingSearch
+    },
+  })
+  addMeetingSearchIndexCommand(program, {
+    signal,
+    output: integrationOutput,
+    receipt,
+    index: async () => {
+      if (deps.meetingSearchIndex) return deps.meetingSearchIndex
+      const connected = await integrationConnection("meeting-search-index")
+      if (!connected.meetingSearchIndex)
+        throw new ZoomError("configuration_error", "bounded meeting indexing is unavailable in this store connector")
+      return connected.meetingSearchIndex
     },
   })
   addMeetingContextCommands(program, {

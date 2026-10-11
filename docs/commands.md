@@ -17,7 +17,7 @@ These options apply to every command.
 | `--interactive` | permit browser approval in an interactive terminal. |
 | `--quiet` | suppress non-error diagnostics. |
 | `--fields <paths>` | project result fields, such as id,title. |
-| `--timeout <duration>` | command deadline: reads 30s, login 5m, downloads 1h; watch/MCP have no default. |
+| `--timeout <duration>` | command deadline: reads 30s, login 5m, downloads/transcription 1h; watch/MCP have no default. |
 | `--max-output-bytes <bytes>` | bound rendered result bytes (default 4194304; zero is unlimited). |
 | `--offline` | refuse network requests. |
 
@@ -194,6 +194,114 @@ zm meetings people <query> [options]
 |---|---|
 | `--json` | one JSON value. |
 | `--jsonl` | one JSON object per item. |
+
+### `zm meetings link-event`
+
+preview or apply an owner-selected event link
+
+**Changes local data.**
+
+```sh
+zm meetings link-event <reference> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `reference` | required |  |
+
+| Option | What it does |
+|---|---|
+| `--event-id <id>` | stored event id, or none to unlink. |
+| `--expected-event-id <id>` | compare current event id, or none. |
+| `--yes` | apply this local change once. |
+| `--dry-run` | preview even when --yes is present. |
+
+### `zm meetings link-person`
+
+preview or apply an explicit participant identity link to a stored person
+
+**Changes local data.**
+
+```sh
+zm meetings link-person <reference> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `reference` | required |  |
+
+| Option | What it does |
+|---|---|
+| `--participant-id <id>` | participant id from this meeting. |
+| `--person <uid>` | explicit stored person UID. |
+| `--target-accounts <ids>` | explicit additional account ids authorized for target-person lookup. |
+| `--expected-person <uid>` | compare current person UID, or none. |
+| `--yes` | apply this local change once. |
+| `--dry-run` | preview even when --yes is present. |
+
+### `zm meetings transcribe`
+
+preview local PCM WAV transcription; --yes recognizes and appends an independent transcript
+
+**Changes local data.**
+
+```sh
+zm meetings transcribe <meeting> <file> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `meeting` | required | selected-account stored meeting id or meeting reference. |
+| `file` | required | local PCM16 WAV file (16 or 48 kHz, mono/stereo). |
+
+| Option | What it does |
+|---|---|
+| `--model <model>` | explicit installed speech model. |
+| `--models-dir <directory>` | shared installed speech-model directory. |
+| `--max-bytes <bytes>` | bounded media input bytes (default 1 GiB). |
+| `--max-duration <duration>` | bounded audio duration (default 4h). |
+| `--max-segments <count>` | recognized segment limit (default 10000). |
+| `--max-text-bytes <bytes>` | aggregate transcript text limit (default 4 MiB). |
+| `--yes` | recognize locally and append to the existing meeting. |
+| `--dry-run` | preview even when --yes is present. |
+
+### `zm meetings search-page`
+
+bounded keyword search with configured stemming and hit continuation
+
+```sh
+zm meetings search-page <query> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `query` | required |  |
+
+| Option | What it does |
+|---|---|
+| `--meeting-id <id>` | restrict to a meeting in the selected account. |
+| `--since <date>` | meeting start at or after an ISO date or timestamp. |
+| `--until <date>` | meeting start at or before an ISO date or timestamp. |
+| `--limit <count>` | hit limit from 1 through 1000 (default 100). |
+| `--after <cursor>` | opaque nextCursor from the same query and selected account. |
+| `--max-read-bytes <bytes>` | raw SQL read budget from 1 through 67108864 (default 4194304). |
+
+### `zm meetings search-index`
+
+preview or apply one bounded batch of queued meeting search indexing
+
+**Changes local data.**
+
+```sh
+zm meetings search-index [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--limit <count>` | queued record limit from 1 through 1000 (default 100). |
+| `--max-read-bytes <bytes>` | raw SQL read budget from 1 through 67108864 (default 4194304). |
+| `--yes` | apply this indexing batch once. |
+| `--dry-run` | preview even when --yes is present. |
 
 ### `zm meetings evidence`
 

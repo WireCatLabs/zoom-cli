@@ -25,6 +25,14 @@ export {
   readDownloadedFiles,
   validateDownloadedFiles,
 } from "./files.js"
+export {
+  createLocalTranscriptionCapabilities,
+  createWavTranscriptionSource,
+  type LocalSpeechPort,
+  type LocalTranscriptionCapabilities,
+  type LocalTranscriptionOptions,
+  type LocalTranscriptionTarget,
+} from "./local-transcription.js"
 export { type LoginOptions, login, REDIRECT } from "./login.js"
 export { createMeetingMcpServer, type MeetingMcpOptions, serveMeetingMcp } from "./mcp-server.js"
 export {
@@ -34,6 +42,8 @@ export {
   type MeetingTaskKind,
   type PersonContextOptions,
 } from "./meeting-context.js"
+export type { MeetingIntegrationCapabilities, MeetingLinkChange } from "./meeting-integration.js"
+export type { MeetingHitSearch, MeetingHitSearchOptions, MeetingSearchIndex } from "./meeting-search-commands.js"
 export { createMeetingSemanticCapabilities } from "./meeting-semantic.js"
 export type {
   MeetingEmbeddingOptions,
