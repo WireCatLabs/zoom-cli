@@ -45,6 +45,7 @@ const failure = (code: string, message: string) => {
 
 /** SDK protocol handling; shared meeting tools own all read behavior and validation. */
 const buildServer = (options: MeetingMcpOptions) => {
+  const semanticModel = options.semanticModel ? Object.freeze({ ...options.semanticModel }) : undefined
   const maxResultBytes = options.maxResultBytes ?? 4 * 1024 * 1024
   if (!Number.isSafeInteger(maxResultBytes) || maxResultBytes < 0)
     throw new ZoomError("validation_error", "maxResultBytes must be a nonnegative safe integer")
@@ -57,8 +58,8 @@ const buildServer = (options: MeetingMcpOptions) => {
     )
     return { ...tool, inputSchema: { ...tool.inputSchema, type: "object" as const, properties } } satisfies Tool
   })
-  if (options.semanticModel) {
-    validateMeetingModel(options.semanticModel)
+  if (semanticModel) {
+    validateMeetingModel(semanticModel)
     tools.push({
       name: "meeting_semantic_search",
       description:
@@ -70,7 +71,7 @@ const buildServer = (options: MeetingMcpOptions) => {
           query: { type: "string", minLength: 1 },
           limit: { type: "integer", minimum: 1, maximum: 1000 },
           max_chunks: { type: "integer", minimum: 1, maximum: 10000 },
-          after_chunk_id: { type: "integer", minimum: 1 },
+          after_chunk_id: { type: "integer", minimum: 1, maximum: Number.MAX_SAFE_INTEGER },
           max_rows: { type: "integer", minimum: 1, maximum: 100000 },
           max_text_bytes: { type: "integer", minimum: 1, maximum: 67108864 },
         },
@@ -120,7 +121,14 @@ const buildServer = (options: MeetingMcpOptions) => {
       annotations: hints,
       inputSchema: {
         type: "object",
-        properties: { reference: { type: "string", minLength: 1 }, ...limits },
+        properties: {
+          reference: { type: "string", minLength: 1 },
+          ...limits,
+          after: { type: "string", minLength: 1 },
+          after_transcript_id: { type: "integer", minimum: 1, maximum: Number.MAX_SAFE_INTEGER },
+          max_read_bytes: { type: "integer", minimum: 1, maximum: 67108864 },
+          max_transcript_pages: { type: "integer", minimum: 1, maximum: 1000 },
+        },
         required: ["reference"],
         additionalProperties: false,
       },
@@ -204,10 +212,10 @@ const buildServer = (options: MeetingMcpOptions) => {
           },
         }) as MeetingStore
         if (request.params.name === "meeting_semantic_search") {
-          if (!options.semanticModel || !connection.meetingSemantic)
+          if (!semanticModel || !connection.meetingSemantic)
             throw new ZoomError("configuration_error", "meeting semantic capability is unavailable")
           const request = {
-            ...options.semanticModel,
+            ...semanticModel,
             limit: args.limit as number | undefined,
             maxChunks: args.max_chunks as number | undefined,
             afterChunkId: args.after_chunk_id as number | undefined,
@@ -229,7 +237,15 @@ const buildServer = (options: MeetingMcpOptions) => {
           const context = connection.meetingContext
           let value: unknown
           if (request.params.name === "meeting_evidence") {
-            const options = { cues: args.cues as number | undefined, bytes: args.bytes as number | undefined, signal }
+            const options = {
+              cues: args.cues as number | undefined,
+              bytes: args.bytes as number | undefined,
+              after: args.after as string | undefined,
+              afterTranscriptId: args.after_transcript_id as number | undefined,
+              maxReadBytes: args.max_read_bytes as number | undefined,
+              maxTranscriptPages: args.max_transcript_pages as number | undefined,
+              signal,
+            }
             validateEvidenceOptions(options)
             if (!context?.evidence)
               throw new ZoomError("configuration_error", "meeting evidence capability is unavailable")

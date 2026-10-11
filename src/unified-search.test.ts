@@ -92,8 +92,30 @@ it("preserves nullable completeness and explicit cross-resource opt-in in CLI", 
   expect(await run(["search", "all", "example", "--json"], deps)).toBe(0)
   expect(JSON.parse(output.pop() ?? "{}")).toEqual(found())
   expect(search.mock.calls[0]?.[0]).toMatchObject({ only: ["meetings"] })
-  expect(await run(["search", "all", "example", "--only", "notes,meetings", "--json"], deps)).toBe(0)
-  expect(search.mock.calls[1]?.[0]).toMatchObject({ only: ["notes", "meetings"] })
+  expect(
+    await run(
+      [
+        "search",
+        "all",
+        "example",
+        "--only",
+        "notes,meetings",
+        "--limit",
+        "2",
+        "--max-meetings",
+        "3",
+        "--exact",
+        "--json",
+      ],
+      deps,
+    ),
+  ).toBe(0)
+  expect(search.mock.calls[1]?.[0]).toMatchObject({
+    only: ["notes", "meetings"],
+    limit: 2,
+    maxMeetings: 3,
+    exact: true,
+  })
   expect(
     await run(
       ["search", "all", "example", "--meeting-cursor", JSON.stringify(result.meetings.nextCursor), "--json"],

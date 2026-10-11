@@ -250,7 +250,7 @@ it("CLI preflights later corruption and aggregate bounds before opening or regis
 })
 
 it("CLI closes finite imports before output and streams acknowledged receipts with backpressure", async () => {
-  const { root } = await archiveFixture()
+  const { root, uuid } = await archiveFixture({ assets: 2 })
   const { deps, output } = await cli()
   setConfig(deps.configPath, "account.profile", "example")
   const store = memoryMeetingStore()
@@ -271,7 +271,30 @@ it("CLI closes finite imports before output and streams acknowledged receipts wi
     order.push("output")
     output.push(text)
   }
-  expect(await run(["recordings", "archive", "import", root, "--json"], deps)).toBe(0)
+  expect(
+    await run(
+      [
+        "recordings",
+        "archive",
+        "import",
+        root,
+        "--uuid",
+        uuid,
+        "--file-ids",
+        "example-asset-1",
+        "--max-bytes",
+        "1024",
+        "--max-total-bytes",
+        "1024",
+        "--json",
+      ],
+      deps,
+    ),
+  ).toBe(0)
+  const saved = await store.meetings()
+  const imported = await store.meeting(saved[0]?.id ?? 0)
+  expect(imported?.transcripts).toHaveLength(1)
+  expect(imported?.transcripts[0]?.transcript.source).toBe(`zoom-archive:vtt:${hash("example-asset-1")}`)
   expect(order[0]).toBe("close")
   expect(order.slice(1).every((step) => step === "output")).toBe(true)
   expect(JSON.parse(output.join("")).items[0].status).toBe("acknowledged")

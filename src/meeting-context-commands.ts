@@ -34,14 +34,27 @@ export const addMeetingContextCommands = (
         .command("evidence")
         .description("read bounded stored evidence from a selected-account meeting reference")
         .argument("<reference>"),
-    ).action(async (reference: string, options: EvidenceOptions) => {
-      validateEvidenceOptions(options)
-      const context = await deps.context()
-      if (!context.evidence) throw new ZoomError("configuration_error", "meeting evidence capability is unavailable")
-      deps.output(
-        await context.evidence(reference, { cues: options.cues, bytes: options.bytes, signal: deps.signal() }),
-      )
-    }),
+    )
+      .option("--after <reference>", "resume after a cue reference from the same source")
+      .option("--after-transcript-id <id>", "resume root-reference revision scan, including empty revisions", bytes)
+      .option("--max-read-bytes <count>", "SQL input byte budget per page (default 4 MiB)", bytes)
+      .option("--max-transcript-pages <count>", "transcript page work budget from 1 through 1000", bytes)
+      .action(async (reference: string, options: EvidenceOptions) => {
+        validateEvidenceOptions(options)
+        const context = await deps.context()
+        if (!context.evidence) throw new ZoomError("configuration_error", "meeting evidence capability is unavailable")
+        deps.output(
+          await context.evidence(reference, {
+            cues: options.cues,
+            bytes: options.bytes,
+            after: options.after,
+            afterTranscriptId: options.afterTranscriptId,
+            maxReadBytes: options.maxReadBytes,
+            maxTranscriptPages: options.maxTranscriptPages,
+            signal: deps.signal(),
+          }),
+        )
+      }),
     "zm meetings evidence meeting:3/15 --json",
   )
   label(

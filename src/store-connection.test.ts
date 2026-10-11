@@ -12,7 +12,13 @@ vi.mock("@wirecat/cli-messaging/store", () => {
 })
 const request = { profile: "example", externalId: "zm-profile:example", intent: "read" as const }
 const fixture = () => ({
-  meetings: memoryMeetingStore(),
+  meetings: Object.assign(memoryMeetingStore(), {
+    appendTranscripts: vi.fn(),
+    meetingMetadata: vi.fn(),
+    transcriptMetadata: vi.fn(),
+    transcripts: vi.fn(),
+    transcriptRows: vi.fn(),
+  }),
   saveAccount: vi.fn(async () => 3),
   storedAccount: vi.fn(async () => ({
     id: 3,

@@ -277,6 +277,9 @@ used with `--offline`.
 Generation uses current transcript revisions and rechecks their hashes before saving results.
 `--after-transcript-id` continues rebuilding chunks; `--after-hash` continues missing-vector work.
 These are separate cursors. Shared cached vectors remain available to other resources.
+A completed generation can emit its acknowledged receipt during a bounded cancellation grace period,
+then exit 130. Failed generation and cancelled queries emit no such receipt; a blocked output pipe
+can prevent delivery.
 
 Semantic search embeds only the query and reads existing vectors; it never rebuilds or generates
 stored vectors. Results rank scanned candidates for the selected account and model. Use

@@ -464,7 +464,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
   let watchSince: string | undefined
   const watchSleep = deps.sleep
   const receipt = async (value: unknown) => {
-    const text = render(value, program.opts().jsonl ? "jsonl" : "text", deps, fields)
+    const text = render(value, program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text", deps, fields)
     const operation = signal() as AbortSignal
     const grace = operation.aborted ? createDeadline({ timeoutMs: 1000 }) : undefined
     try {
@@ -693,6 +693,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
           validateMeetingModel({ model: options.model ?? "", baseUrl: options.baseUrl, dims: options.dims })
         else if (options.model !== undefined || options.baseUrl !== undefined || options.dims !== undefined)
           throw new ZoomError("validation_error", "MCP model options require --semantic")
+        if (options.semantic && options.baseUrl !== undefined && opts.offline)
+          throw new ZoomError("configuration_error", "remote embeddings require network access; remove --offline")
         await deps.serveMcp({
           signal: signal() as AbortSignal,
           maxResultBytes: program.opts().maxOutputBytes,
@@ -773,6 +775,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
   })
   addMeetingSemanticCommands(program, {
     signal,
+    offline: () => Boolean(program.opts().offline),
+    receipt,
     output: (value) =>
       buffer(render(value, program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text", deps, fields, true)),
     capabilities: async () => {

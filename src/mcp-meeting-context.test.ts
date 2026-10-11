@@ -6,15 +6,34 @@ import { createMeetingMcpServer } from "./mcp-server.js"
 import { createMeetingContextCapabilities } from "./meeting-context.js"
 
 it("discovers opt-in context without IO, rejects account overrides, and closes before returning owned evidence", async () => {
-  const read = vi.fn(async () => ({ items: [], coverage: { complete: false }, source: "meeting:3/15" }))
-  const proposal = vi.fn(async () => ({ applied: false, persistence: "proposal-only", source: "meeting:3/15" }))
-  const context = createMeetingContextCapabilities({}, { meeting: vi.fn() }, 3, async () => ({
-    parseMeetingReference: (text) => ({ accountId: Number(text.slice(8).split("/")[0]) }),
-    canonicalMeetingReference: (text) => text,
-    readMeetingEvidence: read,
-    personMeetingContext: read,
-    proposeMeetingTask: proposal,
-  }))
+  const read = vi.fn().mockResolvedValue({ items: [], coverage: { complete: false }, source: "meeting:3/15" })
+  const proposal = vi.fn().mockResolvedValue({ applied: false, persistence: "proposal-only", source: "meeting:3/15" })
+  const personStore = {
+    personByUid: vi.fn(async () => undefined),
+    personSeenInAccounts: vi.fn(async () => true),
+    involvements: {
+      rebuild: vi.fn(() => 0),
+      drain: vi.fn(() => ({ recomputed: 0, pending: 0 })),
+      pending: vi.fn(() => 0),
+      forPerson: vi.fn(() => []),
+    },
+  }
+  const context = createMeetingContextCapabilities(
+    personStore,
+    { meetingMetadata: vi.fn(), transcriptMetadata: vi.fn(), transcripts: vi.fn(), transcriptRows: vi.fn() },
+    3,
+    async () => ({
+      parseMeetingReference: (text) => ({
+        type: "meeting" as const,
+        accountId: Number(text.slice(8).split("/")[0]),
+        meetingId: 15,
+      }),
+      canonicalMeetingReference: (text) => text,
+      readMeetingEvidence: read,
+      personMeetingContext: read,
+      proposeMeetingTask: proposal,
+    }),
+  )
   const close = vi.fn(async () => {})
   const connect = vi.fn(async () => ({ store: memoryMeetingStore(), accountId: 3, meetingContext: context, close }))
   const server = createMeetingMcpServer({ connectStore: connect, includeMeetingContext: true })
@@ -47,7 +66,11 @@ it("discovers opt-in context without IO, rejects account overrides, and closes b
     expect(await client.callTool({ name: "person_meeting_context", arguments: { person: "person:7" } })).toMatchObject({
       structuredContent: { coverage: { complete: false } },
     })
-    expect(read).toHaveBeenLastCalledWith({}, "person:7", expect.objectContaining({ accountIds: [3] }))
+    expect(read).toHaveBeenLastCalledWith(
+      expect.objectContaining({ involvements: personStore.involvements }),
+      "person:7",
+      expect.objectContaining({ accountIds: [3] }),
+    )
     expect(
       await client.callTool({
         name: "meeting_task_proposal",
@@ -72,7 +95,9 @@ it("exposes semantic queries only with a server-selected model and never exposes
     meetingSemantic: { search, generate },
     close,
   }))
-  const server = createMeetingMcpServer({ connectStore: connect, semanticModel: { model: "installed-example" } })
+  const selectedModel = { model: "installed-example" }
+  const server = createMeetingMcpServer({ connectStore: connect, semanticModel: selectedModel })
+  selectedModel.model = "changed-example"
   const [left, right] = InMemoryTransport.createLinkedPair()
   await server.connect(right)
   const client = new Client({ name: "example-semantic-client", version: "1" })

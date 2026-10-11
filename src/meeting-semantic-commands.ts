@@ -51,8 +51,9 @@ export const validateMeetingModel = (options: MeetingModelOptions): void => {
     url.password ||
     url.search ||
     url.hash ||
+    !/^[\w./:-]{1,200}$/.test(options.model) ||
     options.dims === undefined ||
-    !bounded(options.dims, 65536)
+    !bounded(options.dims, 8192)
   )
     throw new ZoomError(
       "validation_error",
@@ -92,7 +93,9 @@ export const addMeetingSemanticCommands = (
   deps: {
     capabilities: () => Promise<MeetingSemanticCapabilities>
     signal: () => AbortSignal | undefined
+    offline: () => boolean
     output: (value: unknown) => void
+    receipt: (value: unknown) => Promise<void>
   },
 ): void => {
   const meetings = program.commands.find((command) => command.name() === "meetings")
@@ -100,7 +103,7 @@ export const addMeetingSemanticCommands = (
   const model = (command: Command) =>
     command
       .requiredOption("--model <id>", "explicit installed local model ID, or model served at --base-url")
-      .option("--base-url <url>", "explicit remote embeddings endpoint; API key comes from the environment")
+      .option("--base-url <url>", "explicit remote endpoint; OpenAI uses OPENAI_API_KEY")
       .option("--dims <count>", "remote embedding vector dimensions", bytes)
   const budget = (command: Command) =>
     command
@@ -120,13 +123,15 @@ export const addMeetingSemanticCommands = (
       .option("--after-chunk-id <id>", "candidate scan continuation; not globally ranked result pagination", bytes)
       .action(async (query: string, options: MeetingSemanticOptions) => {
         validateMeetingSemantic(query, options)
+        if (options.baseUrl !== undefined && deps.offline())
+          throw new ZoomError("configuration_error", "remote embeddings require network access; remove --offline")
         const api = await deps.capabilities()
         deps.output(await api.search(query, { ...options, signal: deps.signal() }))
       }),
     {
       origin: "handwritten",
       mutates: false,
-      examples: ['zm meetings semantic "example plan" --model installed-example --json'],
+      examples: ['zm meetings semantic "example plan" --model e5-small --json'],
     },
   )
   annotate(
@@ -142,9 +147,13 @@ export const addMeetingSemanticCommands = (
       .option("--yes", "apply chunk rebuild and embedding generation; preview otherwise")
       .action(async (options: MeetingEmbeddingOptions) => {
         validateMeetingEmbeddings(options)
+        if (options.baseUrl !== undefined && deps.offline())
+          throw new ZoomError("configuration_error", "remote embeddings require network access; remove --offline")
         const api = await deps.capabilities()
-        deps.output(await api.generate({ ...options, signal: deps.signal() }))
+        const result = await api.generate({ ...options, signal: deps.signal() })
+        if (options.yes) await deps.receipt(result)
+        else deps.output(result)
       }),
-    { origin: "handwritten", mutates: true, examples: ["zm meetings embeddings --model installed-example --json"] },
+    { origin: "handwritten", mutates: true, local: true, examples: ["zm meetings embeddings --model e5-small --json"] },
   )
 }

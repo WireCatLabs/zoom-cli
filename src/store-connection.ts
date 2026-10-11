@@ -4,10 +4,12 @@ import type { MessageStore, StoreOptions } from "@wirecat/cli-messaging/store"
 import { profileAccountKey } from "./config.js"
 import { ZoomError } from "./errors.js"
 import { createMeetingContextCapabilities } from "./meeting-context.js"
+import { createMeetingSemanticCapabilities } from "./meeting-semantic.js"
 import type { StoreConnection, StoreConnectRequest } from "./program.js"
 import { validateUnifiedSearch } from "./unified-search.js"
 
-type SharedMeetingStore = Pick<MessageStore, "meetings" | "saveAccount" | "storedAccount" | "close">
+type SharedMeetingStore = Pick<MessageStore, "meetings" | "saveAccount" | "storedAccount" | "close"> &
+  Partial<Pick<MessageStore, "meetingVectors" | "personByUid" | "personSeenInAccounts" | "involvements">>
 export interface StoreConnectionOptions extends StoreOptions {
   openStore?: (options: StoreOptions) => Promise<SharedMeetingStore>
 }
@@ -61,6 +63,13 @@ export const createStoreConnector =
           })
         },
         meetingContext: createMeetingContextCapabilities(connected, connected.meetings, accountId),
+        ...(connected.meetingVectors
+          ? {
+              meetingSemantic: createMeetingSemanticCapabilities(connected.meetingVectors, accountId, {
+                env: options.env,
+              }),
+            }
+          : {}),
       }
     } catch (error) {
       if (store) {

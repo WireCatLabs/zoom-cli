@@ -1,13 +1,17 @@
-import type { MeetingStore } from "@wirecat/cli-meetings"
+import type { MeetingReadStore, PersonMeetingReadStore, TaskKind } from "@wirecat/cli-messaging/services"
 import { checkCancelled, ZoomError } from "./errors.js"
 
-export type MeetingTaskKind = "question" | "request" | "mention" | "promise"
+export type MeetingTaskKind = TaskKind
 export interface EvidenceOptions {
   cues?: number
   bytes?: number
   signal?: AbortSignal
+  after?: string
+  afterTranscriptId?: number
+  maxReadBytes?: number
+  maxTranscriptPages?: number
 }
-export interface PersonContextOptions extends EvidenceOptions {
+export interface PersonContextOptions extends Pick<EvidenceOptions, "cues" | "bytes" | "signal"> {
   meetings?: number
   scanLimit?: number
   since?: number
@@ -18,30 +22,25 @@ export interface MeetingContextCapabilities {
   personContext?: (person: string, options?: PersonContextOptions) => Promise<unknown>
   taskProposal?: (reference: string, kind: MeetingTaskKind, signal?: AbortSignal) => Promise<unknown>
 }
-interface ProducerContextApi {
-  parseMeetingReference?: (text: string) => { accountId: number }
-  canonicalMeetingReference?: (text: string) => string
-  readMeetingEvidence?: (
-    store: Pick<MeetingStore, "meeting">,
-    accountId: number,
-    reference: string,
-    options: EvidenceOptions,
-  ) => Promise<unknown>
-  personMeetingContext?: (
-    store: unknown,
-    person: string,
-    options: PersonContextOptions & { accountIds: number[] },
-  ) => Promise<unknown>
-  proposeMeetingTask?: (
-    store: Pick<MeetingStore, "meeting">,
-    accountId: number,
-    reference: string,
-    kind: MeetingTaskKind,
-  ) => Promise<unknown>
-}
+type ProducerContextApi = Partial<
+  Pick<typeof import("@wirecat/cli-messaging"), "parseMeetingReference" | "canonicalMeetingReference"> &
+    Pick<
+      typeof import("@wirecat/cli-messaging/services"),
+      "readMeetingEvidence" | "personMeetingContext" | "proposeMeetingTask"
+    >
+>
+
 const integer = (value: number, min: number, max: number) => Number.isSafeInteger(value) && value >= min && value <= max
 export const validateEvidenceOptions = (options: EvidenceOptions = {}) => {
-  if (!integer(options.cues ?? 100, 1, 1000) || !integer(options.bytes ?? 65536, 2, 4194304))
+  if (
+    !integer(options.cues ?? 100, 1, 1000) ||
+    !integer(options.bytes ?? 65536, 2, 4194304) ||
+    !integer(options.maxReadBytes ?? 4194304, 1, 67108864) ||
+    !integer(options.maxTranscriptPages ?? 100, 1, 1000) ||
+    (options.afterTranscriptId !== undefined && !integer(options.afterTranscriptId, 1, Number.MAX_SAFE_INTEGER)) ||
+    (options.after !== undefined && options.afterTranscriptId !== undefined) ||
+    (options.after !== undefined && (typeof options.after !== "string" || !options.after.trim()))
+  )
     throw new ZoomError("validation_error", "meeting evidence requires 1–1000 cues and 2–4194304 bytes")
 }
 export const validatePersonContext = (person: string, options: PersonContextOptions = {}) => {
@@ -85,11 +84,11 @@ const loadProducer = async (): Promise<ProducerContextApi> => {
     import("@wirecat/cli-messaging"),
     import("@wirecat/cli-messaging/services"),
   ])
-  return { ...services, ...domain } as unknown as ProducerContextApi
+  return { ...services, ...domain }
 }
 export const createMeetingContextCapabilities = (
-  store: unknown,
-  meetings: Pick<MeetingStore, "meeting">,
+  store: Partial<Omit<PersonMeetingReadStore, "meetings">>,
+  meetings: MeetingReadStore,
   accountId: number,
   load: () => Promise<ProducerContextApi> = loadProducer,
 ): MeetingContextCapabilities => {
@@ -114,6 +113,10 @@ export const createMeetingContextCapabilities = (
         cues: options.cues,
         bytes: options.bytes,
         signal: options.signal,
+        after: options.after === undefined ? undefined : ownedReference(api, options.after),
+        afterTranscriptId: options.afterTranscriptId,
+        maxReadBytes: options.maxReadBytes,
+        maxTranscriptPages: options.maxTranscriptPages,
       })
       checkCancelled(options.signal)
       return result
@@ -123,8 +126,20 @@ export const createMeetingContextCapabilities = (
       checkCancelled(options.signal)
       const api = await load()
       checkCancelled(options.signal)
-      if (typeof api.personMeetingContext !== "function") throw missing()
-      const result = await api.personMeetingContext(store, person, {
+      if (
+        typeof api.personMeetingContext !== "function" ||
+        typeof store.personByUid !== "function" ||
+        typeof store.personSeenInAccounts !== "function" ||
+        !store.involvements
+      )
+        throw missing()
+      const personStore: PersonMeetingReadStore = {
+        personByUid: store.personByUid.bind(store),
+        personSeenInAccounts: store.personSeenInAccounts.bind(store),
+        involvements: store.involvements,
+        meetings,
+      }
+      const result = await api.personMeetingContext(personStore, person, {
         accountIds: [accountId],
         meetings: options.meetings,
         cues: options.cues,
