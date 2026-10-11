@@ -147,8 +147,9 @@ cancellation follows acknowledgement.
 Local transcription resolves an existing selected-account meeting before reading media or loading
 a model. The native host verifies ordinary WAV files, streams bounded PCM windows and checks the
 content hash again before append. The shared SDK owns preview/recognition/atomic append orchestration;
-the public producer speech factory owns installed-model access. Media decoding and filesystem safety
-remain host responsibilities. Recognition uses fixed windows without inferred speaker identities.
+the public producer speech factory owns installed-model access. Zoom reuses the producer’s
+`./speech/wav` decoder and `./files` identity and directory-sync helpers; provider-specific archive
+paths, journals and trust policy remain Zoom responsibilities. Recognition uses fixed windows without inferred speaker identities.
 
 Vector generation previews existing chunk metadata by default. Explicit generation opens and validates
 the model before rebuilding current-revision chunks; saving rechecks current hashes after inference.

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.1 — 11.10.2026
+
+### Fixed
+
+- Reuse shared native file-safety and bounded WAV helpers from `cli-messaging` instead of
+  maintaining provider-local copies. Archive verification and local transcription keep their
+  existing limits and preview behavior.
+
 ## 0.7.0 — 11.10.2026
 
 ### Changed — may break callers
