@@ -1,4 +1,4 @@
-import { mkdtemp } from "node:fs/promises"
+import { mkdtemp, readFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { expect, it, vi } from "vitest"
@@ -516,4 +516,74 @@ it("preserves a derived operation timeout when the shared workflow observes canc
   } finally {
     derived.mockRestore()
   }
+})
+
+it("does not checkpoint discovery completion when a provider corrupts its pagination token", async () => {
+  const destination = await mkdtemp(join(tmpdir(), "zm-test-sync-cursor-"))
+  const profile = {
+    tokens: async () => ({
+      accessToken: "AliceExample-access",
+      refreshToken: "AliceExample-refresh",
+      expiresAt: 3600000,
+      scopes: ["cloud_recording:read:list_user_recordings"],
+    }),
+  }
+  for (const token of [3, {}, [], false, " ", "x".repeat(4097)]) {
+    const source = new ZoomRecordings(
+      profile,
+      async () => new Response(JSON.stringify({ meetings: [], next_page_token: token })),
+    )
+    await expect(
+      collect(
+        syncRecordingArchive(source, {
+          ...options,
+          from: "2026-01-01",
+          to: "2026-01-31",
+          destination,
+          resume: true,
+          account: "AliceExample",
+        }),
+      ),
+    ).rejects.toMatchObject({ code: "invalid_response" })
+    const state = JSON.parse(await readFile(join(destination, ".zoom-archive-sync.json"), "utf8"))
+    expect(state.windows).toEqual([])
+    expect(state.pendingWindows).toEqual([{ from: "2026-01-01", to: "2026-01-31" }])
+  }
+})
+
+it("bounds large paged recording catalogs and rejects invalid file inventories", async () => {
+  const profile = {
+    tokens: async () => ({
+      accessToken: "AliceExample-access",
+      refreshToken: "AliceExample-refresh",
+      expiresAt: 3600000,
+      scopes: ["cloud_recording:read:list_user_recordings"],
+    }),
+  }
+  const invalid = new ZoomRecordings(
+    profile,
+    async () =>
+      new Response(
+        JSON.stringify({ meetings: [{ id: "AliceExample", uuid: "opaque/AliceExample", recording_files: {} }] }),
+      ),
+  )
+  await expect(invalid.list({ from: "2026-01-01", to: "2026-01-31" })).rejects.toMatchObject({
+    code: "invalid_response",
+  })
+  let pages = 0
+  const large = new ZoomRecordings(profile, async () => {
+    const page = ++pages
+    return new Response(
+      JSON.stringify({
+        meetings: Array.from({ length: 1000 }, (_, i) => ({
+          id: page * 1000 + i,
+          uuid: `AliceExample-${page}-${i}`,
+          recording_files: [],
+        })),
+        next_page_token: `page-${page}`,
+      }),
+    )
+  })
+  await expect(large.list({ from: "2026-01-01", to: "2026-01-31" })).rejects.toMatchObject({ code: "invalid_response" })
+  expect(pages).toBe(11)
 })

@@ -169,3 +169,23 @@ it("allows only one simultaneous job lease and fails closed on incomplete lock m
     })
   }
 })
+
+it("refuses oversized serialized checkpoint identifiers before replacing durable state", async () => {
+  const destination = await path()
+  const store = fileRecordingSyncCheckpointStore(destination)
+  const lease = await store.acquire("AliceExample")
+  const entries = Array.from({ length: 2200 }, (_, i) => ({
+    externalId: `${i}-${"x".repeat(4000)}`,
+    window: { from: "2026-01-01", to: "2026-01-31" },
+    assets: [],
+    acknowledged: [],
+  }))
+  try {
+    await expect(store.save("AliceExample", lease.token, null, { ...state(), entries })).rejects.toMatchObject({
+      code: "validation_error",
+    })
+    expect(await store.read("AliceExample", lease.token)).toBeNull()
+  } finally {
+    await lease.release()
+  }
+})

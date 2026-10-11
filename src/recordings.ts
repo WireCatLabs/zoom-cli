@@ -123,6 +123,13 @@ export class ZoomRecordings {
     if (!Array.isArray(body.meetings) || body.meetings.length > 1000)
       throw new ZoomError("invalid_response", "Zoom returned an invalid recording list")
     const items = body.meetings.map(meeting)
+    if (
+      body.next_page_token !== undefined &&
+      body.next_page_token !== null &&
+      body.next_page_token !== "" &&
+      (typeof body.next_page_token !== "string" || !body.next_page_token.trim())
+    )
+      throw new ZoomError("invalid_response", "Zoom returned an invalid recording pagination cursor")
     const nextCursor = string(body.next_page_token)
     if (nextCursor !== null && nextCursor.length > 4096)
       throw new ZoomError("invalid_response", "Zoom returned an oversized pagination cursor")

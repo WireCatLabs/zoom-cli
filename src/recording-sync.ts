@@ -40,8 +40,6 @@ export async function* syncRecordingArchive(
     recordingWindows(options.from, options.to)
     const maxBytes = validateDownloadOptions(options)
     const resume = options.resume === true
-    if (resume && (typeof options.account !== "string" || !options.account.trim()))
-      throw new ZoomError("validation_error", "resumable archive sync requires an explicit account")
     if (!resume && (options.checkpointPath !== undefined || options.checkpointStore !== undefined))
       throw new ZoomError("validation_error", "archive checkpoints require resume mode")
     if (
