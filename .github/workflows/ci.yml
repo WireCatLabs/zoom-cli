@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   ci:
-    uses: WireCatLabs/cli-core/.github/workflows/node-ci.yml@4c78a803c460317fd40a38be6d1fb53278087741
+    uses: WireCatLabs/cli-base/.github/workflows/node-ci.yml@4c78a803c460317fd40a38be6d1fb53278087741
     with:
       pack: ${{ inputs.pack || github.event_name == 'workflow_dispatch' }}
       checks: |
