@@ -2,6 +2,7 @@ import { mkdtemp, readFile, rename, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { expect, it, vi } from "vitest"
+import { ZoomError } from "./errors.js"
 import { openOrdinaryFile } from "./ordinary-file.js"
 
 const hooks = vi.hoisted(() => ({ path: "", opens: 0, replace: false }))
@@ -43,7 +44,12 @@ it("validates real handles when Windows path metadata omits the volume identity"
     expect(hooks.opens).toBe(2)
     hooks.opens = 0
     hooks.replace = true
-    await expect(openOrdinaryFile(hooks.path)).rejects.toMatchObject({ code: "validation_error" })
+    const failure = await openOrdinaryFile(hooks.path).then(
+      () => undefined,
+      (error: unknown) => error,
+    )
+    expect(failure).toBeInstanceOf(ZoomError)
+    expect(failure).toMatchObject({ code: "validation_error" })
     expect(await readFile(`${hooks.path}.original`, "utf8")).toBe("Alice Example: invented archive")
     await rename(hooks.path, `${hooks.path}.replacement`)
   } finally {
