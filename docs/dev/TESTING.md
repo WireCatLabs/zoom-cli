@@ -29,8 +29,19 @@ tool schemas. Plans and snapshots live in `contracts/`; changes require explicit
 full validation; ordinary PR/local checks retain their existing budget. See the
 [shared guide](https://github.com/WireCatLabs/cli-testing/blob/main/docs/ci/CONTRACTS.md).
 
-The development dependency pins `@wirecat/cli-testing` 0.2.0 from npm, with its
+The development dependency pins `@wirecat/cli-testing` 0.3.0 from npm, with its
 package integrity recorded in the lockfile.
+
+### Stateful and upgrade checks
+
+`pnpm contracts:upgrade` runs the pinned previous published package and this build against the
+same fresh synthetic state. Baseline packages have a separate frozen lockfile under
+`contracts/previous/`; they install only in full validation and do not add old CLI bins to the
+normal developer executable path. Plans assert retained data, migration/import repeatability and
+file preservation. `pnpm security:no-leak` scans the reviewed contract fixtures and testing guide;
+process diagnostics and recorded run logs are checked within the contract runner as well.
+These commands run only in release, monthly and manual full validation. See the
+[upgrade guide](https://github.com/WireCatLabs/cli-testing/blob/main/docs/ci/UPGRADES.md).
 
 ## Command coverage
 
@@ -48,9 +59,11 @@ The generated [command reference](../commands.md) uses cli-core's shared command
 Full manual validation and release validation pack once, then install that exact tarball on Linux
 and Windows with Node 22.16.0 and 24.19.0. `scripts/installed-platform.mjs` exercises native SQLite
 imports across processes, corrections, historical reads, no-overwrite export, local archive
-verification, symlink and replacement rejection, cancellation and default MCP reads. All paths,
+verification, transcript append replays and corrections, fixed MCP account scope, cancellation and semantic
+preview/generation/query checks against an invented loopback model. All paths,
 including Windows APPDATA and LOCALAPPDATA, point into retained temporary directories. Runtime
-guards reject network, browser spawning and keyring loading; registry access is limited to installation.
+guards reject external network, browser spawning and keyring loading; the semantic fixture allows only
+its exact isolated loopback embedding endpoint. Registry access is limited to installation.
 The jobs retain JSON proofs and check the validation tarball's SHA-256 before installation.
 
 Archive reads compare the opened file's identity with its path before reading bytes. This also

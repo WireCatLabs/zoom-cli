@@ -8,4 +8,4 @@ minimumReleaseAgeExclude:
   - '@wirecat/cli-messaging-onnx@1.0.0'
   - '@wirecat/cli-messaging-sqlite@1.0.0'
   - '@wirecat/cli-tasks@0.2.1 || 0.3.1'
-  - '@wirecat/cli-testing@0.2.0'
+  - '@wirecat/cli-testing@0.2.0 || 0.3.0'
