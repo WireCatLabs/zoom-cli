@@ -2,7 +2,8 @@
 
 Release from a clean main equal to origin/main after the implementation and release-preparation
 PRs have passed CI. Date the top changelog section with the package version and release day.
-`bin/release` dispatches the GitHub workflow; it never reads an npm token or publishes locally.
+`bin/release` takes the machine-wide release lock and dispatches the GitHub workflow; it never reads
+an npm token or publishes locally. Concurrent releases of another CLI wait for that lock.
 
 Full validation builds, tests, checks docs and packs once. Linux and Windows installed-package
 checks run against the resulting tarball before publication. A separate job publishes only the tarball
@@ -40,6 +41,9 @@ document, tag and an isolated installation after every real release.
 - Live login, import and pull results are recorded truthfully; captures contain counts/types only.
 - User documentation describes the delivered executable and its current limitations.
 
-The store rewrite uses a new `wirecat.db` and one initial migration. Keep the old `messages.db`
-untouched. The SQLite adapter belongs to the separate store refactor; do not substitute test memory
-storage for production persistence.
+The shared store uses `wirecat.db`. Producer versions from 0.222.0 delete the legacy unencrypted
+`messages.db` and its SQLite sidecars on default-path store open, without migrating them. Explicit
+paths and `MESSAGING_STORE` preserve those files; an active legacy lock defers deletion to a later
+open. Release notes must
+retain this security-related breaking change. The SQLite adapter belongs to cli-messaging; do not
+substitute test memory storage for production persistence.

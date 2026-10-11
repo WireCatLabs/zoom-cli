@@ -59,9 +59,11 @@ The generated [command reference](../commands.md) uses cli-core's shared command
 Full manual validation and release validation pack once, then install that exact tarball on Linux
 and Windows with Node 22.16.0 and 24.19.0. `scripts/installed-platform.mjs` exercises native SQLite
 imports across processes, corrections, historical reads, no-overwrite export, local archive
-verification, symlink and replacement rejection, cancellation and default MCP reads. All paths,
+verification, transcript append replays and corrections, fixed MCP account scope, cancellation and semantic
+preview/generation/query checks against an invented loopback model. All paths,
 including Windows APPDATA and LOCALAPPDATA, point into retained temporary directories. Runtime
-guards reject network, browser spawning and keyring loading; registry access is limited to installation.
+guards reject external network, browser spawning and keyring loading; the semantic fixture allows only
+its exact isolated loopback embedding endpoint. Registry access is limited to installation.
 The jobs retain JSON proofs and check the validation tarball's SHA-256 before installation.
 
 Archive reads compare the opened file's identity with its path before reading bytes. This also

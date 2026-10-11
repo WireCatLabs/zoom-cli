@@ -9,7 +9,15 @@ import {
   realSleep,
   type SleepLike,
 } from "@wirecat/cli-core"
-import { importFiles, listed, MeetingError, type MeetingSource, type MeetingStore, pull } from "@wirecat/cli-meetings"
+import {
+  importFiles,
+  listed,
+  MeetingError,
+  type MeetingSource,
+  type MeetingStore,
+  type MeetingTranscriptStore,
+  pull,
+} from "@wirecat/cli-meetings"
 import { addMeetingCommands } from "@wirecat/cli-meetings/cli"
 import { Command, CommanderError } from "commander"
 import { addZoomSkillCommands } from "./agent-skill.js"
@@ -21,13 +29,23 @@ import {
   type RecordingsService,
   type RemoteMeetingsService,
 } from "./archive-commands.js"
+import { applyArchiveImport, preflightArchiveImport } from "./archive-import.js"
 import { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
 import { addStandardCommands, annotateMeetingCommands } from "./commands.js"
 import { profileAccountKey, readConfig, setConfig, type ZoomConfig } from "./config.js"
 import { checkCancelled, ZoomError } from "./errors.js"
 import { bytes, duration, type ExecutionState, resetCliOptions, startExecution } from "./execution.js"
 import { FilesSource, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
+import { addIngestionSearchCommands } from "./ingestion-search-commands.js"
 import { login } from "./login.js"
+import type { MeetingContextCapabilities } from "./meeting-context.js"
+import { addMeetingContextCommands } from "./meeting-context-commands.js"
+import {
+  addMeetingSemanticCommands,
+  type MeetingModelOptions,
+  type MeetingSemanticCapabilities,
+  validateMeetingModel,
+} from "./meeting-semantic-commands.js"
 import {
   getZoomProfile,
   inspectArchive,
@@ -40,6 +58,7 @@ import type { RemoteOptions } from "./remote-http.js"
 import { ZoomRemoteMeetings } from "./remote-meetings.js"
 import { emitReceipt } from "./streaming.js"
 import type { TokenManager } from "./tokens.js"
+import { runUnifiedSearch, type UnifiedSearch } from "./unified-search.js"
 import { VERSION } from "./version.js"
 import { addWatchCommand } from "./watch-commands.js"
 
@@ -47,11 +66,16 @@ export interface StoreConnection {
   store: MeetingStore
   accountId: number
   close: () => Promise<void>
+  appendTranscripts?: MeetingTranscriptStore["appendTranscripts"]
+  unifiedSearch?: UnifiedSearch
+  meetingContext?: MeetingContextCapabilities
+  meetingSemantic?: MeetingSemanticCapabilities
 }
 export interface StoreConnectRequest {
   profile: string
   externalId: string
   intent: "read" | "ingestion"
+  capability?: "transcript-append"
 }
 export interface ProgramDeps {
   configPath: string
@@ -60,6 +84,10 @@ export interface ProgramDeps {
   store?: MeetingStore
   accountId?: number
   connectStore?: (request: StoreConnectRequest) => Promise<StoreConnection>
+  transcriptStore?: MeetingTranscriptStore
+  unifiedSearch?: UnifiedSearch
+  meetingContext?: MeetingContextCapabilities
+  meetingSemantic?: MeetingSemanticCapabilities
   source?: MeetingSource
   recordings?: RecordingsService
   remoteMeetings?: RemoteMeetingsService
@@ -78,7 +106,13 @@ export interface ProgramDeps {
   checkSession?: (options?: { signal?: AbortSignal }) => Promise<unknown>
   signal?: AbortSignal
   sleep?: SleepLike
-  serveMcp?: (options: { signal: AbortSignal; maxResultBytes?: number }) => Promise<void>
+  serveMcp?: (options: {
+    signal: AbortSignal
+    maxResultBytes?: number
+    includeUnifiedSearch?: boolean
+    includeMeetingContext?: boolean
+    semanticModel?: MeetingModelOptions
+  }) => Promise<void>
   streamData?: (text: string, signal: AbortSignal) => Promise<void>
 }
 const unavailable = async (): Promise<never> => {
@@ -104,6 +138,7 @@ const render = (
   format: "json" | "jsonl" | "text",
   deps: ProgramDeps,
   fields?: readonly string[],
+  preserveEnvelope = false,
 ): string => {
   if (fields) value = projectFields(value, fields)
   const chunks: string[] = []
@@ -113,6 +148,7 @@ const render = (
     streams: { data: (text) => chunks.push(`${text}\n`), diagnostic: deps.diagnostic },
   })
   if (
+    !preserveEnvelope &&
     format === "jsonl" &&
     typeof value === "object" &&
     value !== null &&
@@ -217,7 +253,10 @@ export const createProgram = (deps: ProgramDeps): Command => {
         "serve",
         "skill",
         "watch",
-      ].includes(family.name())
+        "search",
+      ].includes(family.name()) ||
+      (family.name() === "meetings" &&
+        ["evidence", "context", "task-proposal", "semantic", "embeddings"].includes(action.name()))
     )
       return
     const config = getConfig()
@@ -425,7 +464,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
   let watchSince: string | undefined
   const watchSleep = deps.sleep
   const receipt = async (value: unknown) => {
-    const text = render(value, program.opts().jsonl ? "jsonl" : "text", deps, fields)
+    const text = render(value, program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text", deps, fields)
     const operation = signal() as AbortSignal
     const grace = operation.aborted ? createDeadline({ timeoutMs: 1000 }) : undefined
     try {
@@ -628,13 +667,136 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .command("serve")
     .description("serve read-only meeting tools over MCP stdio")
     .requiredOption("--mcp", "use the MCP JSON-RPC protocol")
-    .action(async () => {
-      const opts = program.opts()
-      if (opts.json || opts.jsonl || opts.fields)
-        throw new ZoomError("validation_error", "MCP stdio controls its own output; omit --json, --jsonl and --fields")
-      if (!deps.serveMcp) throw new ZoomError("configuration_error", "the MCP server adapter is not available")
-      await deps.serveMcp({ signal: signal() as AbortSignal, maxResultBytes: program.opts().maxOutputBytes })
-    })
+    .option("--unified-search", "include selected-profile meetings-only unified search")
+    .option("--meeting-context", "include account-fixed evidence, person context and task proposals")
+    .option("--semantic", "include read-only meeting vector search with an explicit query model")
+    .option("--model <id>", "explicit installed query model, or remote model at --base-url")
+    .option("--base-url <url>", "explicit remote embedding endpoint for semantic queries")
+    .option("--dims <count>", "remote embedding dimensions", bytes)
+    .action(
+      async (options: {
+        unifiedSearch?: boolean
+        meetingContext?: boolean
+        semantic?: boolean
+        model?: string
+        baseUrl?: string
+        dims?: number
+      }) => {
+        const opts = program.opts()
+        if (opts.json || opts.jsonl || opts.fields)
+          throw new ZoomError(
+            "validation_error",
+            "MCP stdio controls its own output; omit --json, --jsonl and --fields",
+          )
+        if (!deps.serveMcp) throw new ZoomError("configuration_error", "the MCP server adapter is not available")
+        if (options.semantic)
+          validateMeetingModel({ model: options.model ?? "", baseUrl: options.baseUrl, dims: options.dims })
+        else if (options.model !== undefined || options.baseUrl !== undefined || options.dims !== undefined)
+          throw new ZoomError("validation_error", "MCP model options require --semantic")
+        if (options.semantic && options.baseUrl !== undefined && opts.offline)
+          throw new ZoomError("configuration_error", "remote embeddings require network access; remove --offline")
+        await deps.serveMcp({
+          signal: signal() as AbortSignal,
+          maxResultBytes: program.opts().maxOutputBytes,
+          ...(options.unifiedSearch ? { includeUnifiedSearch: true } : {}),
+          ...(options.meetingContext ? { includeMeetingContext: true } : {}),
+          ...(options.semantic
+            ? { semanticModel: { model: options.model ?? "", baseUrl: options.baseUrl, dims: options.dims } }
+            : {}),
+        })
+      },
+    )
+  addIngestionSearchCommands(program, {
+    signal,
+    output: (value) =>
+      buffer(render(value, program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text", deps, fields, true)),
+    outputItems,
+    receipt,
+    preflight: preflightArchiveImport,
+    apply: async function* (plan) {
+      if (plan.occurrences === 0) return
+      let store = deps.transcriptStore
+      let accountId = selectedAccountId
+      if (!store) {
+        const config = getConfig()
+        if (!config.accountProfile || !deps.connectStore)
+          throw new ZoomError("configuration_error", "select a local profile with an available transcript append store")
+        connection = await deps.connectStore({
+          profile: config.accountProfile,
+          externalId: profileAccountKey(config.accountProfile),
+          intent: "ingestion",
+          capability: "transcript-append",
+        })
+        accountId = connection.accountId
+        if (!connection.appendTranscripts)
+          throw new ZoomError("configuration_error", "the installed meeting store does not support transcript append")
+        store = { appendTranscripts: connection.appendTranscripts }
+      }
+      for await (const item of applyArchiveImport(plan, store, {
+        accountId: accountId ?? 0,
+        now: deps.now?.(),
+        signal: signal(),
+      }))
+        yield item
+    },
+    search: async (request) => {
+      if (deps.unifiedSearch) return runUnifiedSearch(deps.unifiedSearch, request)
+      const config = getConfig()
+      if (!config.accountProfile || !deps.connectStore)
+        throw new ZoomError("configuration_error", "select a stored local profile for unified search")
+      connection = await deps.connectStore({
+        profile: config.accountProfile,
+        externalId: profileAccountKey(config.accountProfile),
+        intent: "read",
+      })
+      if (!connection.unifiedSearch)
+        throw new ZoomError("configuration_error", "unified search is unavailable in this store connector")
+      return runUnifiedSearch(connection.unifiedSearch, request)
+    },
+  })
+  addMeetingContextCommands(program, {
+    signal,
+    output: (value) =>
+      buffer(render(value, program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text", deps, fields, true)),
+    context: async () => {
+      if (deps.meetingContext) return deps.meetingContext
+      const config = getConfig()
+      if (!config.accountProfile || !deps.connectStore)
+        throw new ZoomError("configuration_error", "select a stored local profile for meeting context")
+      connection = await deps.connectStore({
+        profile: config.accountProfile,
+        externalId: profileAccountKey(config.accountProfile),
+        intent: "read",
+      })
+      if (!connection.meetingContext)
+        throw new ZoomError("configuration_error", "meeting context is unavailable in this store connector")
+      return connection.meetingContext
+    },
+  })
+  addMeetingSemanticCommands(program, {
+    signal,
+    offline: () => Boolean(program.opts().offline),
+    receipt,
+    output: (value) =>
+      buffer(render(value, program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text", deps, fields, true)),
+    capabilities: async () => {
+      if (deps.meetingSemantic) return deps.meetingSemantic
+      const config = getConfig()
+      if (!config.accountProfile || !deps.connectStore)
+        throw new ZoomError("configuration_error", "select a stored local profile for meeting vectors")
+      connection = await deps.connectStore({
+        profile: config.accountProfile,
+        externalId: profileAccountKey(config.accountProfile),
+        intent: "read",
+      })
+      if (!connection.meetingSemantic)
+        throw new ZoomError(
+          "configuration_error",
+          "meeting vector capabilities are unavailable in this store connector",
+        )
+      return connection.meetingSemantic
+    },
+  })
   annotateMeetingCommands(program)
   const parseAsync = program.parseAsync.bind(program)
   program.parseAsync = async (...args) => {
@@ -709,8 +871,19 @@ export const run = async (args: string[], deps: ProgramDeps): Promise<number> =>
     )
       return 0
     const typed = error instanceof CliError || error instanceof MeetingError
-    const code = typed ? error.code : error instanceof CommanderError ? "validation_error" : "generic_failure"
-    const message = typed ? error.message : "command failed; use --help for usage"
+    const unknownOutcome = error instanceof Error && "code" in error && error.code === "outcome_unknown"
+    const code = typed
+      ? error.code
+      : unknownOutcome
+        ? "outcome_unknown"
+        : error instanceof CommanderError
+          ? "validation_error"
+          : "generic_failure"
+    const message = typed
+      ? error.message
+      : unknownOutcome
+        ? "operation outcome is unknown; verify stored state before retrying"
+        : "command failed; use --help for usage"
     deps.diagnostic(`${JSON.stringify({ error: { code, message } })}\n`)
     return code === "generic_failure" ? GENERIC_FAILURE : exitCodeFor(code)
   }

@@ -38,4 +38,5 @@ Commands:
                               remain under meetings
   skill                       the instructions an agent is given for this tool
   serve [options]             serve read-only meeting tools over MCP stdio
+  search                      opt-in shared store search; meetings by default
   help [command]              display help for command

@@ -8,7 +8,7 @@
   "fixtures": [
     {
       "path": "transcripts/2026-10-01_1000_synthetic.vtt",
-      "text": "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nSynthetic Example: wirecat-synthetic-transcript-canary\n"
+      "text": "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nAlice Example: wirecat-synthetic-transcript-canary\n"
     }
   ],
   "canaries": ["wirecat-synthetic-transcript-canary"],
@@ -107,7 +107,7 @@
       "files": [
         {
           "path": "exported.vtt",
-          "text": "WEBVTT\n\n1\n00:00:00.000 --> 00:00:01.000\nSynthetic Example: wirecat-synthetic-transcript-canary\n\n"
+          "text": "WEBVTT\n\n1\n00:00:00.000 --> 00:00:01.000\nAlice Example: wirecat-synthetic-transcript-canary\n\n"
         }
       ]
     },
@@ -121,7 +121,7 @@
       "files": [
         {
           "path": "exported.vtt",
-          "text": "WEBVTT\n\n1\n00:00:00.000 --> 00:00:01.000\nSynthetic Example: wirecat-synthetic-transcript-canary\n\n"
+          "text": "WEBVTT\n\n1\n00:00:00.000 --> 00:00:01.000\nAlice Example: wirecat-synthetic-transcript-canary\n\n"
         }
       ]
     },

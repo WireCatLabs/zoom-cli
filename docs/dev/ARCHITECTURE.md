@@ -17,6 +17,10 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [recordings.ts](../../src/recordings.ts), [recording-archive.ts](../../src/recording-archive.ts) | asset discovery, streamed transfers, manifests and verified skipping |
 | [recording-sync.ts](../../src/recording-sync.ts) | serial calendar-month archive synchronization |
 | [archive-transcripts.ts](../../src/archive-transcripts.ts) | verified local WebVTT reads and bounded literal search |
+| [archive-import.ts](../../src/archive-import.ts) | fully verified plans and atomic per-occurrence transcript append |
+| [unified-search.ts](../../src/unified-search.ts) | validated public producer search with explicit resource scope |
+| [meeting-context.ts](../../src/meeting-context.ts) | account-fixed bounded evidence, identity context and read-only task proposals |
+| [meeting-semantic.ts](../../src/meeting-semantic.ts) | explicit model selection and public vector/model service adaptation |
 | [store-connection.ts](../../src/store-connection.ts) | lazy public shared-store/account adapter, without SQL |
 | [mcp-server.ts](../../src/mcp-server.ts) | official SDK transport and shared read-only meeting tools |
 | [streaming.ts](../../src/streaming.ts), [watch-commands.ts](../../src/watch-commands.ts) | bounded receipts, writable completion and serial API or folder ingestion |
@@ -86,3 +90,25 @@ cancellation prevents new reads while allowing an active read to settle before c
 Watching snapshots the profile, source, file settings and OAuth client before its first cycle.
 API cycles use shared pull and overlap; an explicit initial bound remains until the cursor write
 succeeds, then later cycles follow the stored cursor. Each cycle owns and closes a fresh connection.
+
+Archive import verifies the entire selected VTT input before account lookup or registration. Its
+opaque plan binds detached rows to verified asset hashes. The public transcript append port performs
+one atomic occurrence update without loading and rewriting unrelated meeting parts. An unknown start
+can append only to an existing occurrence. Receipts acknowledge ownership-checked results; the port
+does not claim whether an append created a meeting or replayed existing data.
+
+Context and vector adapters use published cli-messaging services and store capabilities; Zoom owns
+no SQL, embedding tables or model engine. Evidence uses bounded metadata/row reads. Person metadata
+is exposed only after account-presence checks. Speaker names never establish identity links.
+Task proposals carry stable meeting provenance and never call task persistence.
+
+Vector generation previews existing chunk metadata by default. Explicit generation opens and validates
+the model before rebuilding current-revision chunks; saving rechecks current hashes after inference.
+The producer reuses shared chunk/hash/vector caches while protecting bindings owned by other resources.
+Queries embed only the input, then rank a bounded scan of existing vectors. Candidate scan completion
+does not establish index or archive completeness. Model selection is explicit; local loading never
+downloads a model, and remote inference is incompatible with offline execution.
+
+Optional MCP tools share these public adapters. The model options are frozen when the server is built;
+the executable captures its local profile on the first read. Discovery still avoids config, database,
+keyring and model access. Tool arguments cannot override model, account or broader resource scope.

@@ -195,6 +195,108 @@ zm meetings people <query> [options]
 | `--json` | one JSON value. |
 | `--jsonl` | one JSON object per item. |
 
+### `zm meetings evidence`
+
+read bounded stored evidence from a selected-account meeting reference
+
+```sh
+zm meetings evidence <reference> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `reference` | required |  |
+
+| Option | What it does |
+|---|---|
+| `--cues <count>` | cue limit from 1 through 1000. |
+| `--bytes <count>` | content byte limit from 2 through 4194304. |
+| `--after <reference>` | resume after a cue reference from the same source. |
+| `--after-transcript-id <id>` | resume root-reference revision scan, including empty revisions. |
+| `--max-read-bytes <count>` | SQL input byte budget per page (default 4 MiB). |
+| `--max-transcript-pages <count>` | transcript page work budget from 1 through 1000. |
+
+### `zm meetings context`
+
+identity-linked person context restricted to the selected account; completeness is explicit
+
+```sh
+zm meetings context <person> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `person` | required |  |
+
+| Option | What it does |
+|---|---|
+| `--cues <count>` | cue limit from 1 through 1000. |
+| `--bytes <count>` | content byte limit from 2 through 4194304. |
+| `--meetings <count>` | meeting limit from 1 through 100. |
+| `--scan-limit <count>` | identity-link candidate bound from 1 through 1000. |
+| `--since <iso>` | read identity links since this ISO instant. |
+
+### `zm meetings task-proposal`
+
+preview a provenance-linked task proposal without creating a task
+
+```sh
+zm meetings task-proposal <reference> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `reference` | required |  |
+
+| Option | What it does |
+|---|---|
+| `--kind <kind>` | question, request, mention or promise. |
+
+### `zm meetings semantic`
+
+search stored meeting vectors with an explicit query model; ranks only scanned candidates
+
+```sh
+zm meetings semantic <query> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `query` | required |  |
+
+| Option | What it does |
+|---|---|
+| `--model <id>` | explicit installed local model ID, or model served at --base-url. |
+| `--base-url <url>` | explicit remote endpoint; OpenAI uses OPENAI_API_KEY. |
+| `--dims <count>` | remote embedding vector dimensions. |
+| `--limit <count>` | bounded batch/result count from 1 through 1000. |
+| `--max-rows <count>` | transcript cue read limit from 1 through 100000. |
+| `--max-text-bytes <count>` | aggregate transcript text read byte limit (default 4 MiB). |
+| `--max-chunks <count>` | embedded candidate scan bound. |
+| `--after-chunk-id <id>` | candidate scan continuation; not globally ranked result pagination. |
+
+### `zm meetings embeddings`
+
+preview meeting vector generation; --yes explicitly rebuilds and embeds one bounded batch
+
+**Changes local data.**
+
+```sh
+zm meetings embeddings [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--model <id>` | explicit installed local model ID, or model served at --base-url. |
+| `--base-url <url>` | explicit remote endpoint; OpenAI uses OPENAI_API_KEY. |
+| `--dims <count>` | remote embedding vector dimensions. |
+| `--limit <count>` | bounded batch/result count from 1 through 1000. |
+| `--max-rows <count>` | transcript cue read limit from 1 through 100000. |
+| `--max-text-bytes <count>` | aggregate transcript text read byte limit (default 4 MiB). |
+| `--after-transcript-id <id>` | transcript chunk rebuild continuation. |
+| `--after-hash <hash>` | missing embedding batch continuation. |
+| `--yes` | apply chunk rebuild and embedding generation; preview otherwise. |
+
 ## `zm pull`
 
 fetch meeting records from the connected account
@@ -480,6 +582,27 @@ zm recordings archive recover <directory> [options]
 | `--yes` | remove recognized locks left by a dead local process. |
 | `--dry-run` | preview only, including when --yes is present. |
 
+#### `zm recordings archive import`
+
+verify all selected VTT before atomic per-occurrence transcript append
+
+**Changes local data.**
+
+```sh
+zm recordings archive import <directory> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `directory` | required |  |
+
+| Option | What it does |
+|---|---|
+| `--uuid <uuid>` | select an occurrence UUID. |
+| `--file-ids <ids>` | select comma-separated VTT asset ids. |
+| `--max-bytes <bytes>` | per-file VTT byte limit (default 8 MiB). |
+| `--max-total-bytes <bytes>` | aggregate VTT byte limit before any write (default 64 MiB). |
+
 ## `zm remote-meetings`
 
 upcoming Zoom meetings; stored meeting reads remain under meetings
@@ -619,6 +742,36 @@ zm serve [options]
 | Option | What it does |
 |---|---|
 | `--mcp` | use the MCP JSON-RPC protocol. |
+| `--unified-search` | include selected-profile meetings-only unified search. |
+| `--meeting-context` | include account-fixed evidence, person context and task proposals. |
+| `--semantic` | include read-only meeting vector search with an explicit query model. |
+| `--model <id>` | explicit installed query model, or remote model at --base-url. |
+| `--base-url <url>` | explicit remote embedding endpoint for semantic queries. |
+| `--dims <count>` | remote embedding dimensions. |
+
+## `zm search`
+
+opt-in shared store search; meetings by default
+
+### `zm search all`
+
+meeting word prefixes plus selected resources; notes are store-global; JSONL emits one complete report
+
+```sh
+zm search all <query> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `query` | required |  |
+
+| Option | What it does |
+|---|---|
+| `--only <resources>` | comma-separated meetings,messages,mail,notes (default meetings). |
+| `--limit <items>` | result bound 1 through 1000 (default 100). Default: `100`. |
+| `--max-meetings <count>` | candidate meeting scan bound 1 through 1000 (default 100). Default: `100`. |
+| `--meeting-cursor <json>` | source-only continuation from meetings.nextCursor. |
+| `--exact` | request exact matching; unsupported meeting queries are reported as skipped. |
 
 ## Exit codes
 

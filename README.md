@@ -47,6 +47,11 @@ is an error; tokens are never written to a config file.
 | `meetings summary <meeting>` | read stored summaries |
 | `meetings export <meeting> --format markdown\|vtt` | export stored meeting content |
 | `meetings search <query>`, `meetings people <query>` | find stored text or participants |
+| `meetings evidence <reference>`, `meetings context <person>` | read bounded evidence or identity-linked person context |
+| `meetings task-proposal <reference> --kind <kind>` | preview a task with meeting provenance |
+| `meetings semantic <query> --model <id>` | rank scanned stored vectors with an explicit query model |
+| `meetings embeddings --model <id>` | preview local vector generation; `--yes` applies one bounded batch |
+| `search all <query>` | search meetings by default, or explicitly selected shared resources |
 | `events list` | read stored events |
 | `watch [folder] --source api\|files --jsonl` | repeatedly ingest the configured source in the foreground |
 | `recordings list`, `recordings show <meeting>` | discover cloud recordings and asset metadata |
@@ -56,6 +61,7 @@ is an error; tokens are never written to a config file.
 | `recordings archive recover <directory>` | preview recovery of stale local locks |
 | `recordings archive transcript <directory>` | read verified archived WebVTT cues without a database |
 | `recordings archive search <directory> <query>` | search verified archived cue text without a database |
+| `recordings archive import <directory>` | verify archived VTT assets and append them to stored occurrences |
 | `remote-meetings list\|show\|invitation` | read upcoming Zoom meetings and invitations |
 | `remote-meetings create\|update\|cancel` | preview or apply a simple Zoom meeting change |
 | `serve --mcp` | serve read-only stored meeting tools over MCP stdio |
@@ -103,6 +109,11 @@ existing profile and never register an account; import transcripts or pull first
 meetings exist. `MESSAGING_STORE` overrides the shared database path for all these commands and MCP
 reads. Metadata, help, configuration and login commands do not open the database.
 
+The shared store uses `wirecat.db`. Opening its default path deletes the legacy unencrypted
+`messages.db` and its `-wal` and `-shm` sidecars, without migrating them. The legacy files are kept
+when `MESSAGING_STORE` is set, an explicit store path is supplied, or another process holds the
+legacy database open. A later default-path open retries deletion after that process closes.
+
 ## Recover from errors
 
 If the browser cannot start, select an installed browser with `--browser firefox`. In an interactive
@@ -125,8 +136,21 @@ exporter's `YYYY-MM-DD_HHMM_topic-slug.vtt` format. Occurrence ids derive from t
 normalized topic; files carry no Zoom occurrence UUID. Participants remain unknown, and speaker
 names are kept without guessing an identity.
 
-Cloud archive assets use hashed filenames and retain their identity in manifests. Folder import
-currently accepts legacy transcript filenames; a direct cloud archive-to-database import is planned.
+Cloud archive assets use hashed filenames and retain their identity in manifests. Use a separate
+command to import these assets into the selected local profile:
+
+```sh
+zm recordings archive import ./zoom-archive --offline --jsonl
+```
+
+Import verifies every selected VTT asset before opening the store. The default limits are 8 MiB
+per file and 64 MiB in total; use `--max-bytes` and `--max-total-bytes` to change them. Select an
+occurrence with `--uuid`, or assets with comma-separated `--file-ids`. Each occurrence is appended
+atomically by its raw Zoom UUID, preserving other transcripts, summaries, participants and the
+pull cursor. Corrected content retains earlier revisions; identical asset hashes are idempotent.
+An occurrence with no known start time can receive transcripts only if it already exists. Receipts
+report acknowledged or unavailable occurrences; they do not distinguish creation from replay.
+Earlier acknowledged occurrences can remain committed if a later append fails.
 
 Read or search archived transcripts directly:
 
@@ -202,6 +226,67 @@ and preview `recordings archive recover`. Add `--yes` to remove recognized locks
 on this machine; active, foreign and unrecognized locks are preserved. Recovery removes stale lock
 markers only. It does not repair an incomplete manifest or adopt an untracked file.
 
+## Search and read evidence
+
+`meetings search` keeps its existing literal transcript search. `search all` uses the shared search
+service and searches only meetings by default:
+
+```sh
+zm search all "example plan" --limit 100 --max-meetings 100 --json
+zm meetings evidence meeting:3/15/20/0 --cues 100 --bytes 65536 --json
+zm meetings context person:7 --meetings 10 --scan-limit 1000 --json
+zm meetings task-proposal meeting:3/15/20/0 --kind promise --json
+```
+
+Meeting references have the form `meeting:<account>/<meeting>[/<transcript>[/<cue-position>]]`.
+They are restricted to the selected local account. Transcript references retain historical revision
+identity. Evidence bounds both returned content and database reads; resume with its returned cue
+reference using `--after`, or its revision cursor using `--after-transcript-id`. These continuation
+options are mutually exclusive. `--max-read-bytes` defaults to 4 MiB per page and
+`--max-transcript-pages` bounds revision scanning, including empty revisions. Follow the returned
+continuation and completeness fields rather than assuming a bounded response is exhaustive.
+
+Person context uses stored identity links and account presence, without matching speaker names.
+A person linked to a meeting is not necessarily a speaker. Pending derived indexes or bounded scans
+can leave context incomplete. Task proposals support question, request, mention and promise;
+`applied: false` and `persistence: "proposal-only"` mean no task was created.
+
+Broader search requires explicit `--only messages,mail,notes,meetings`. Selected message and mail
+reads use the local account; notes are global to the shared store. Meeting matching uses word
+prefixes; unsupported meeting syntax or exact queries are reported as skipped. A meetings-only
+continuation uses the returned `meetings.nextCursor` as `--meeting-cursor '<json>'`, bound to its
+account and query. JSONL emits one complete report, retaining skips, coverage and cursors.
+
+## Explicit meeting vectors
+
+Choose an already installed local model, or explicitly select a remote endpoint and dimensions:
+
+```sh
+zm meetings embeddings --model e5-small --json
+zm meetings embeddings --model e5-small --yes --limit 100 --json
+zm meetings semantic "example plan" --model e5-small --max-chunks 1000 --json
+zm meetings semantic "example plan" --model example-model --base-url http://127.0.0.1:8080/v1 --dims 384 --json
+```
+
+The first embedding command previews existing chunk status without opening a model, downloading
+files or generating vectors. `--yes` validates and opens the selected model before rebuilding chunks
+and embedding one bounded batch. Local models must already be installed; this command never downloads
+them. Remote endpoints are explicit; OpenAI endpoints use `OPENAI_API_KEY`. Remote models cannot be
+used with `--offline`.
+
+Generation uses current transcript revisions and rechecks their hashes before saving results.
+`--after-transcript-id` continues rebuilding chunks; `--after-hash` continues missing-vector work.
+These are separate cursors. Shared cached vectors remain available to other resources.
+A completed generation can emit its acknowledged receipt during a bounded cancellation grace period,
+then exit 130. Failed generation and cancelled queries emit no such receipt; a blocked output pipe
+can prevent delivery.
+
+Semantic search embeds only the query and reads existing vectors; it never rebuilds or generates
+stored vectors. Results rank scanned candidates for the selected account and model. Use
+`--after-chunk-id` to continue candidate scanning, not to page through globally ranked results.
+The report states candidate scan coverage; index completeness and archive completeness are unknown.
+`--max-rows` and `--max-text-bytes` bound transcript reads for generation and search.
+
 ## Watch a transcript folder
 
 ```sh
@@ -223,6 +308,13 @@ store close. A blocked output pipe stops that flush; no later cycle starts.
 transcripts, summaries, exports, text search and participant search. Tool discovery does not open a
 database. Each read uses the selected local account and closes its connection before the response;
 a caller cannot override the account. File exports and remote mutations are not exposed as tools.
+
+Optional flags add tools without changing the defaults: `--meeting-context` adds evidence, person
+context and task proposals; `--unified-search` adds meetings-only shared search;
+`--semantic --model <id>` adds one read-only vector query tool. Remote semantic models additionally
+require `--base-url` and `--dims`. The server fixes the model at startup and the profile on its first
+read; restart it to change either. Clients cannot override either selection. Embedding generation
+and task creation are never MCP tools.
 
 MCP clients can launch `zm` with arguments `["serve", "--mcp"]`. Keep stdout for protocol messages;
 omit `--json`, `--jsonl` and `--fields`. `--max-output-bytes` bounds each tool result, with zero meaning

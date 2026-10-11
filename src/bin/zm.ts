@@ -45,10 +45,15 @@ try {
     connectStore,
     serveMcp: async (options) => {
       const { serveMeetingMcp } = await import("../mcp-server.js")
+      let profileCaptured = false
+      let profile: string | null | undefined
       await serveMeetingMcp({
         ...options,
         connectStore: async () => {
-          const profile = readConfig(configPath).accountProfile
+          if (!profileCaptured) {
+            profile = readConfig(configPath).accountProfile
+            profileCaptured = true
+          }
           if (!profile)
             throw new ZoomError(
               "configuration_error",

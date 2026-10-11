@@ -48,9 +48,12 @@ const fs=require('node:fs'),mod=require('node:module');
 fs.writeFileSync(process.env.ZM_PLATFORM_LOADED,'loaded');
 const deny=()=>{fs.appendFileSync(process.env.ZM_PLATFORM_DENIED,'denied\\n');throw Error('unexpected external IO')};
 const load=mod._load;mod._load=function(name,...args){if(name.startsWith('@napi-rs/keyring')||name==='keytar')return deny();return load.call(this,name,...args)};
-globalThis.fetch=deny;
+const fetch=globalThis.fetch;
+globalThis.fetch=(input,...args)=>{const url=new URL(typeof input==='string'||input instanceof URL?input:input.url);if(process.env.ZM_PLATFORM_MODEL_ORIGIN&&url.origin===process.env.ZM_PLATFORM_MODEL_ORIGIN&&url.pathname==='/v1/embeddings')return fetch(input,...args);return deny()};
 for(const name of ['node:http','node:https']){const api=require(name);api.request=api.get=deny}
-const net=require('node:net');net.connect=net.createConnection=net.Socket.prototype.connect=deny;
+const net=require('node:net'),connect=net.Socket.prototype.connect;
+net.Socket.prototype.connect=function(...args){const input=Array.isArray(args[0])?args[0][0]:args[0];if(process.env.ZM_PLATFORM_MODEL_ORIGIN&&typeof input==='object'&&input!==null&&input.host==='127.0.0.1'&&String(input.port)===new URL(process.env.ZM_PLATFORM_MODEL_ORIGIN).port)return connect.apply(this,args);return deny()};
+net.connect=net.createConnection=function(...args){return new net.Socket().connect(...args)};
 require('node:tls').connect=deny;
 const child=require('node:child_process');for(const key of ['spawn','spawnSync','exec','execSync','execFile','execFileSync'])child[key]=deny;
 const promises=require('node:fs/promises'),open=promises.open;
@@ -63,7 +66,7 @@ promises.open=async(...args)=>{
 mod.syncBuiltinESMExports();
 `,
 )
-const prefix = ["--no-addons", "--require", guard]
+const prefix = [...(process.versions.bun ? [] : ["--no-addons"]), "--require", guard]
 const entry = join(packageRoot, "dist", "bin", "zm.js")
 const diagnostics = (text) =>
   text.replace(
@@ -131,7 +134,7 @@ writeFileSync(
   join(archive, `.zoom-archive-${digest(uuid)}.json`),
   JSON.stringify({
     version: 1,
-    meeting: { id: "123456", uuid, title: "Example archive", startedAt: null },
+    meeting: { id: "123456", uuid, title: "Example archive", startedAt: "2026-10-10T16:30:00.000Z" },
     files: [
       {
         id: fileId,
@@ -183,6 +186,32 @@ invoke(["recordings", "archive", "transcript", archive, "--json"], 130, {
   ZM_PLATFORM_CANCEL_MARKER: cancelMarker,
 })
 assert.equal(existsSync(cancelMarker), true)
+// Actual installed append APIs: replay deduplication and correction history survive process boundaries.
+const imported = json("recordings", "archive", "import", archive).items[0]
+assert.equal(imported.status, "acknowledged")
+const archivedMeetingId = String(imported.meetingId)
+assert.equal(json("recordings", "archive", "import", archive).items[0].meetingId, imported.meetingId)
+assert.equal(json("meetings", "show", archivedMeetingId).transcripts.length, 1)
+const manifestPath = join(archive, `.zoom-archive-${digest(uuid)}.json`)
+const correctedArchive = original.replace("Original", "Revised archive")
+writeFileSync(asset, correctedArchive)
+const manifest = JSON.parse(readFileSync(manifestPath, "utf8"))
+manifest.files[0].size = Buffer.byteLength(correctedArchive)
+manifest.files[0].sha256 = digest(correctedArchive)
+writeFileSync(manifestPath, JSON.stringify(manifest))
+json("recordings", "archive", "import", archive)
+json("recordings", "archive", "import", archive)
+assert.equal(json("meetings", "show", archivedMeetingId).transcripts.length, 2)
+assert.equal(json("meetings", "search", "Original").items.length, 0)
+assert.equal(json("meetings", "search", "Revised archive").items.length, 1)
+assert.equal(json("meetings", "show", meetingId).transcripts.length, 2, "append preserves unrelated history")
+// Seed a distinct account, then restore the initial profile before the MCP process starts.
+json("config", "set", "account.profile", "invented-foreign-platform")
+writeFileSync(vtt, original.replace("Original invented plan", "Foreign invented boundary"))
+json("import", folder)
+const foreignMeetingId = String(json("meetings", "list").items[0].id)
+assert.notEqual(foreignMeetingId, meetingId)
+json("config", "set", "account.profile", "invented-platform")
 const { Client } = await import(pathToFileURL(require.resolve("@modelcontextprotocol/sdk/client/index.js")).href)
 const { StdioServerTransport } = await import(
   pathToFileURL(require.resolve("@modelcontextprotocol/sdk/server/stdio.js")).href
@@ -207,6 +236,17 @@ try {
   assert.equal((await client.listTools()).tools.length, 7)
   const result = await client.callTool({ name: "meetings_list", arguments: {} })
   assert.notEqual(result.isError, true)
+  const firstScope = result.structuredContent ?? JSON.parse(result.content[0].text)
+  assert.ok(firstScope.items.some((meeting) => String(meeting.id) === meetingId))
+  assert.equal(
+    firstScope.items.some((meeting) => String(meeting.id) === foreignMeetingId),
+    false,
+  )
+  json("config", "set", "account.profile", "invented-foreign-platform")
+  const secondResult = await client.callTool({ name: "meetings_list", arguments: {} })
+  assert.notEqual(secondResult.isError, true)
+  const secondScope = secondResult.structuredContent ?? JSON.parse(secondResult.content[0].text)
+  assert.deepEqual(secondScope, firstScope, "an initialized MCP account cannot change through config edits")
   child.stdin.end()
   assert.equal(await exited, 0, stderr)
   assert.equal(diagnostics(stderr), "")
@@ -217,6 +257,151 @@ try {
   await exited
 }
 assert.equal(existsSync(denied), false)
+json("config", "set", "account.profile", "invented-platform")
+// A separate fixture process answers synchronous CLI children. Only its exact loopback endpoint
+// is allowed by the runtime guard; no credentials, real model, Zoom or internet are involved.
+const modelServer = join(root, "model-server.cjs")
+const modelRequests = join(root, "model-requests.jsonl")
+writeFileSync(
+  modelServer,
+  `
+const http=require('node:http'),fs=require('node:fs');
+const server=http.createServer((request,response)=>{
+ if(request.method!=='POST'||request.url!=='/v1/embeddings'||request.headers.authorization){response.writeHead(400);response.end();return}
+ let body='';request.setEncoding('utf8');request.on('data',part=>body+=part);
+ request.on('end',()=>{const input=JSON.parse(body);fs.appendFileSync(process.env.ZM_PLATFORM_MODEL_REQUESTS,JSON.stringify(input)+'\\n');response.setHeader('content-type','application/json');response.end(JSON.stringify({data:input.input.map((text,index)=>({index,embedding:[1,0.5]}))}))});
+});server.listen(0,'127.0.0.1',()=>process.stdout.write(String(server.address().port)+'\\n'));
+`,
+)
+const modelChild = spawn(process.execPath, [modelServer], {
+  cwd: root,
+  env: { ...environment, ZM_PLATFORM_MODEL_REQUESTS: modelRequests },
+  stdio: ["ignore", "pipe", "pipe"],
+})
+const modelExited = new Promise((resolveExit, reject) => {
+  modelChild.once("error", reject)
+  modelChild.once("close", resolveExit)
+})
+let modelStderr = ""
+modelChild.stderr.on("data", (bytes) => {
+  modelStderr += bytes
+})
+const modelTimer = setTimeout(() => modelChild.kill(), 15000)
+try {
+  const port = await new Promise((resolvePort, reject) => {
+    let text = ""
+    modelChild.stdout.on("data", (bytes) => {
+      text += bytes
+      if (text.includes("\n")) resolvePort(text.trim())
+    })
+    modelChild.once("error", reject)
+    modelChild.once("close", () => reject(new Error(`fixture model exited: ${modelStderr}`)))
+  })
+  assert.match(port, /^[0-9]+$/)
+  clearTimeout(modelTimer)
+  const origin = `http://127.0.0.1:${port}`
+  const modelOptions = ["--model", "invented-platform-model", "--base-url", `${origin}/v1`, "--dims", "2"]
+  const remoteEnvironment = { ZM_PLATFORM_MODEL_ORIGIN: origin }
+  const remoteJson = (...args) => JSON.parse(invoke(["--json", ...args], 0, remoteEnvironment).stdout)
+  const requests = () =>
+    existsSync(modelRequests)
+      ? readFileSync(modelRequests, "utf8")
+          .trim()
+          .split("\n")
+          .map((line) => JSON.parse(line))
+      : []
+  const preview = remoteJson("meetings", "embeddings", ...modelOptions)
+  assert.equal(preview.applied, false)
+  assert.deepEqual(preview.status, { chunks: 0, embedded: 0 })
+  assert.equal(requests().length, 0, "preview must not open a model or call the embedding endpoint")
+  for (const args of [
+    ["meetings", "semantic", "invented", ...modelOptions],
+    ["meetings", "embeddings", ...modelOptions, "--yes"],
+    ["serve", "--mcp", "--semantic", ...modelOptions],
+  ])
+    invoke(["--offline", ...args], 3, remoteEnvironment)
+  assert.equal(requests().length, 0, "offline semantic commands must fail before model HTTP")
+  assert.deepEqual(remoteJson("meetings", "embeddings", ...modelOptions).status, preview.status)
+  const generated = remoteJson("meetings", "embeddings", ...modelOptions, "--yes")
+  assert.equal(generated.applied, true)
+  assert.ok(generated.saved > 0)
+  const generatedRequests = requests().length
+  assert.ok(generatedRequests > 0)
+  const status = remoteJson("meetings", "embeddings", ...modelOptions).status
+  assert.ok(status.chunks > 0)
+  assert.equal(status.embedded, status.chunks)
+  assert.equal(requests().length, generatedRequests, "preview remains model-free with populated chunks")
+  const query = "invented selected-profile semantic question"
+  const semantic = remoteJson("meetings", "semantic", query, ...modelOptions)
+  assert.ok(semantic.items.length > 0)
+  assert.ok(semantic.items.every((hit) => String(hit.meetingId) !== foreignMeetingId))
+  assert.ok(semantic.items.every((hit) => /^meeting:[1-9][0-9]*\/[1-9][0-9]*\/[1-9][0-9]*$/.test(hit.reference)))
+  assert.ok(semantic.items.every((hit) => hit.firstCueReference.startsWith(`${hit.reference}/`)))
+  assert.equal(semantic.coverage.scope, "current-indexed-vectors")
+  assert.equal(semantic.coverage.indexCompleteness, "unknown")
+  assert.equal(semantic.coverage.archiveCompleteness, "unknown")
+  assert.equal(requests().length, generatedRequests + 1)
+  assert.deepEqual(requests().at(-1).input, [query], "semantic read embeds only the explicit query")
+  assert.deepEqual(remoteJson("meetings", "embeddings", ...modelOptions).status, status)
+  const replay = remoteJson("meetings", "embeddings", ...modelOptions, "--yes")
+  assert.equal(replay.saved, 0)
+  assert.equal(requests().length, generatedRequests + 1, "cached generation must not call the model")
+  const semanticChild = spawn(process.execPath, [...prefix, entry, "serve", "--mcp", "--semantic", ...modelOptions], {
+    cwd: root,
+    env: { ...environment, ...remoteEnvironment },
+    stdio: ["pipe", "pipe", "pipe"],
+  })
+  let semanticStderr = ""
+  semanticChild.stderr.on("data", (bytes) => {
+    semanticStderr += bytes
+  })
+  const semanticExited = new Promise((resolveExit, reject) => {
+    semanticChild.once("error", reject)
+    semanticChild.once("close", resolveExit)
+  })
+  const semanticTimer = setTimeout(() => semanticChild.kill(), 15000)
+  const semanticClient = new Client({ name: "invented-semantic-proof", version: "1" })
+  try {
+    await semanticClient.connect(new StdioServerTransport(semanticChild.stdout, semanticChild.stdin))
+    const tools = (await semanticClient.listTools()).tools
+    assert.equal(tools.length, 8)
+    assert.equal(
+      tools.some((tool) => /generat|embedding/.test(tool.name)),
+      false,
+    )
+    assert.equal(requests().length, generatedRequests + 1, "semantic MCP discovery is model-free")
+    for (const override of [{ model: "forbidden-caller-model" }, { account_id: 99999 }]) {
+      const refused = await semanticClient.callTool({
+        name: "meeting_semantic_search",
+        arguments: { query, ...override },
+      })
+      assert.equal(refused.isError, true)
+    }
+    assert.equal(requests().length, generatedRequests + 1, "invalid MCP overrides never invoke the model")
+    const result = await semanticClient.callTool({ name: "meeting_semantic_search", arguments: { query } })
+    assert.notEqual(result.isError, true)
+    const report = result.structuredContent ?? JSON.parse(result.content[0].text)
+    assert.equal(report.accountId, semantic.accountId)
+    assert.deepEqual(report.model, semantic.model)
+    assert.ok(report.items.length > 0)
+    assert.equal(requests().length, generatedRequests + 2)
+    assert.deepEqual(requests().at(-1).input, [query])
+    semanticChild.stdin.end()
+    assert.equal(await semanticExited, 0, semanticStderr)
+    assert.equal(diagnostics(semanticStderr), "")
+  } finally {
+    clearTimeout(semanticTimer)
+    await semanticClient.close()
+    if (semanticChild.exitCode === null && semanticChild.signalCode === null) semanticChild.kill()
+    await semanticExited
+  }
+} finally {
+  clearTimeout(modelTimer)
+  if (modelChild.exitCode === null && modelChild.signalCode === null) modelChild.kill()
+  await modelExited
+}
+assert.equal(modelStderr, "")
+assert.equal(existsSync(denied), false)
 const proof = {
   platform: process.platform,
   node: process.version,
@@ -224,6 +409,12 @@ const proof = {
   meetingsCopies: 1,
   checks,
   mcp: true,
+  archiveAppend: true,
+  fixedMcpProfile: true,
+  semanticPreviewGenerationQuery: true,
+  semanticOfflineBoundary: true,
+  semanticReadonlyMcp: true,
+  modelEndpoint: "isolated loopback fixture only",
   externalAccess: false,
 }
 writeFileSync(join(root, "proof.json"), JSON.stringify(proof, null, 2))
