@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/WireCatLabs/zoom-cli/main/docs/images/social-preview.png" alt="Zoom meetings and transcripts for your AI agent" width="100%">
+</p>
+
 # zoom-cli
 
 **Zoom meetings and transcripts for your AI agent.** Know the context before the call. Remember the
