@@ -4,9 +4,9 @@
 
 ### Added
 
-- **A shorter README** introduces `zm` as Zoom context for AI agents, with a quick start and an
-  honest list of what is not ready. The detail moved into `docs/` pages for
-  installation, sessions, usage, the archive, search, topic search, MCP, remote meetings,
+- **A front-page README** introduces `zm` as Zoom context for AI agents: quick start, scenarios and
+  an honest list of what is not ready come first, then a reference by task with links to new `docs/`
+  pages for installation, sessions, usage, the archive, search, topic search, MCP, remote meetings,
   configuration, troubleshooting and security, listed in `docs/meta.json`.
 
 ## 0.6.0 — 11.10.2026

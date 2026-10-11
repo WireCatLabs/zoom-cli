@@ -7,8 +7,8 @@ commitments after it.
 Claude Code, Codex, Gemini CLI or any MCP client. Ask what you discussed with someone last time, or
 what you promised in yesterday's call, and get the answer with a reference to the exact passage.
 
-[Documentation](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/index.md) ·
-[Commands](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/commands.md) ·
+[Documentation][docs/index.md] ·
+[Commands][docs/commands.md] ·
 [WireCat](https://wirecat.dev)
 
 [![npm](https://img.shields.io/npm/v/@wirecat/zoom-cli)](https://www.npmjs.com/package/@wirecat/zoom-cli)
@@ -36,7 +36,7 @@ zm meetings evidence meeting:1/42/57/118 --json     # the exact passage
 ## Quick start
 
 You need Node 22.16+ (22.x) or 24+, a system keyring and **your own Zoom app** — Zoom lets a program
-read your meetings only through an app you register. [Creating it](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/zoom-app.md)
+read your meetings only through an app you register. [Creating it][docs/zoom-app.md]
 takes a few minutes and needs no client secret.
 
 ```sh
@@ -51,7 +51,10 @@ zm meetings list
 Turn on **Allow hosts to retain transcripts** in Zoom's settings first: Zoom returns transcripts only
 for meetings you hosted, and only when they were kept. For meetings you only attended, download the
 transcripts from Zoom and run `zm import <folder>`. Full guide:
-[installation](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/installation.md).
+[installation][docs/installation.md].
+
+More: [installation][docs/installation.md] · [your Zoom app][docs/zoom-app.md] ·
+[Zoom on wirecat.dev][wirecat/en/docs/zoom]
 
 ## What you can do
 
@@ -68,15 +71,20 @@ bring back past meetings with the same people.
 `recordings sync --from 2026-01-01 --to 2026-10-10 --destination ./zoom-archive --jsonl` downloads
 video, audio, transcripts and chat with SHA-256 manifests; `recordings schedule` runs it daily.
 
+More: [the local archive][docs/archive.md] · [search and evidence][docs/search.md] ·
+[Zoom on wirecat.dev][wirecat/en/docs/zoom]
+
 ## Built for AI agents
 
 - **Command line + skill.** `zm skill install` adds the packaged guide for Claude Code, Codex and
   Gemini CLI. Every command speaks `--json` or `--jsonl`, and `zm commands --json` describes them all.
 - **MCP.** `zm serve --mcp` is a read-only stdio server for Claude Desktop, Cursor and other MCP
   clients: meetings, transcripts, summaries, exports and search.
-  [Connecting a client](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/mcp.md).
+  [Connecting a client][docs/mcp.md].
 
 Your agent. Your meetings. Your rules.
+
+More: [MCP and skills][docs/mcp.md] · [connect your AI agent][wirecat/en/docs/agents]
 
 ## Why zm
 
@@ -89,6 +97,8 @@ Your agent. Your meetings. Your rules.
 - **Made for agents.** JSON output, bounded reads with explicit completeness, a skill and an MCP server.
 - **Safe by default.** Your own Zoom app, tokens only in the keyring, a read-only MCP server, and every
   change to Zoom previewed until you add `--yes`.
+
+More: [security][docs/security.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
 
 ## What works today, and what does not yet
 
@@ -107,7 +117,204 @@ links meetings to events and people, and creates, changes or cancels simple meet
 - **A company-managed Zoom account** may need an admin to approve your app.
 - **Daily archive jobs install only on Linux.** Other platforms can preview them.
 - **Zoom only, for now.** Google Meet and Microsoft Teams are
-  [on the roadmap](https://github.com/WireCatLabs/cli-meetings/blob/main/docs/dev/ROADMAP.md).
+  [on the roadmap][gh/cli-meetings/blob/main/docs/dev/roadmap.md].
+
+More: [what is planned][gh/cli-meetings/blob/main/docs/dev/roadmap.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
+
+## Commands by task
+
+| Task | Commands |
+|---|---|
+| Set up and log in | `config show`, `config set <key> <value>`, `login [--browser <program>]`, `session status [--check]`, `doctor` |
+| Bring meetings in | `pull [--since <date>] [--lookback-days <days>]`, `import <folder>`, `watch [folder] --source api\|files --jsonl` |
+| Read stored meetings | `meetings list`, `meetings show <meeting>`, `meetings transcript <meeting>`, `meetings summary <meeting>`, `meetings export <meeting> --format markdown\|vtt`, `events list` |
+| Search | `meetings search-page <query>`, `meetings search-index`, `meetings search <query>`, `meetings people <query>`, `search all <query>` |
+| Evidence and people | `meetings evidence <reference>`, `meetings context <person>`, `meetings link-person <reference>`, `meetings link-event <reference>`, `meetings task-proposal <reference> --kind <kind>` |
+| Search by meaning | `meetings embeddings --model <id>`, `meetings semantic <query> --model <id>` |
+| Local transcription | `meetings transcribe <meeting> <file> --model <model>` |
+| Cloud recordings | `recordings list`, `recordings show <meeting>`, `recordings download <meeting> --destination <directory>`, `recordings sync --from <date> --to <date> --destination <directory> --jsonl`, `recordings schedule create\|list\|show\|run\|disable` |
+| Local archive | `recordings archive inspect\|verify\|locks\|recover <directory>`, `recordings archive transcript\|search\|import <directory>` |
+| Zoom meetings | `remote-meetings list\|show\|invitation`, `remote-meetings create\|update\|cancel` |
+| Agents | `serve --mcp`, `skill show`, `skill install [--for claude\|agents\|all]`, `commands --json`, `complete -- <words...>` |
+
+Zoom meeting changes, links, search indexing, transcription, schedules, embeddings and lock recovery
+preview by default and run once with `--yes`; `--dry-run` always keeps the preview.
+
+More: [usage][docs/usage.md] · [every command and option][docs/commands.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
+
+## Your Zoom app and login
+
+`zm` reads your meetings through Zoom's official API, as you, so it uses **your own Zoom app** with
+Public Client OAuth. Create it once from the supplied manifest: it asks for read-only access to
+meetings, participants, transcripts and AI summaries. Recording archives and meeting management need
+extra scopes, which you add only if you want those features. The app has no client secret.
+
+`zm login` opens Zoom's consent page. Zoom redirects to the static page
+`https://wirecat.dev/zoom-callback`, which passes the answer to a listener on your machine; if it
+cannot, paste the `code=…&state=…` parameters it shows. Login checks the state and PKCE verifier and
+stores tokens only in the system keyring. Browser login needs an interactive terminal; piped or JSON
+login also needs `--interactive`. `zm session status` reads the cached state without refreshing it;
+`--check` asks Zoom.
+
+More: [your Zoom app][docs/zoom-app.md] · [login and sessions][docs/sessions.md] ·
+[Zoom on wirecat.dev][wirecat/en/docs/zoom]
+
+## Profiles and the local store
+
+`account.profile` is a label (1–64 letters, digits, dots, underscores or hyphens) that groups the
+meetings you store; use separate labels for data you want kept apart. Import and pull register the
+profile; read commands never do, so pull or import first.
+
+Meetings live in the shared WireCat database `wirecat.db`, next to data from other WireCat tools.
+`MESSAGING_STORE` selects another path. Opening the default path deletes the legacy unencrypted
+`messages.db` and its sidecars without migrating them, unless another path is set or another process
+holds it open. Metadata, help, configuration and login never open the database.
+
+More: [profiles][docs/sessions.md#select-a-local-profile] ·
+[where meetings are stored][docs/archive.md#where-meetings-are-stored] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
+
+## Pull, import and watch
+
+```sh
+zm pull --lookback-days 7                       # hosted meetings, revisiting late transcripts
+zm import ./downloaded-transcripts              # .vtt files from your Zoom portal
+zm watch --source api --lookback-days 7 --jsonl # keep pulling in the foreground
+```
+
+The cursor alone does not revisit transcripts that appear late; use `--lookback-days` or an older
+`--since`. A failed occurrence leaves the cursor unchanged for the next pull. Imported files follow
+the exporter's `YYYY-MM-DD_HHMM_topic-slug.vtt` names; set `files.timezone` to the zone they were
+written in (UTC by default). Participants of imported files stay unknown, and speaker names are
+never turned into identities.
+
+More: [the local archive][docs/archive.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
+
+## Archive cloud recordings
+
+```sh
+zm recordings sync --from 2026-01-01 --to 2026-10-10 --destination ./zoom-archive --jsonl
+zm recordings archive verify ./zoom-archive --offline --json
+zm recordings archive search ./zoom-archive "example plan" --offline --json
+```
+
+Sync covers up to ten years in monthly requests and downloads serially, streaming to disk. Each
+occurrence gets a manifest with sizes and SHA-256 checksums, never signed URLs or tokens. Existing
+files are never overwritten; repeated runs skip verified files. With a profile, interrupted downloads
+resume safely. `recordings archive transcript|search` read verified WebVTT offline without a
+database; `recordings archive import` appends them to your stored meetings. `recordings schedule
+create --yes` installs a daily systemd user timer (Linux only).
+
+What you can download depends on Zoom permissions, retention and your plan. Recordings of meetings
+you only attended are not necessarily available through your API.
+
+More: [archive cloud recordings][docs/archive.md#archive-cloud-recordings] ·
+[daily backups][docs/archive.md#daily-backups] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
+
+## Search and evidence
+
+```sh
+zm meetings search-index --limit 100 --yes --json         # index queued meetings, one batch
+zm meetings search-page "example plan" --limit 20 --json  # word search with continuation
+zm meetings evidence meeting:3/15/20/0 --cues 100 --json  # the exact passage
+zm meetings context person:7 --meetings 10 --json         # meetings linked to a person
+```
+
+`search-page` matches every word by prefix or by stored English, Spanish and Russian word forms, and
+pages with an opaque `--after` cursor. References have the form
+`meeting:<account>/<meeting>[/<transcript>[/<cue-position>]]`, stay inside the selected account and
+keep pointing at the same revision after a correction. Every bounded read reports whether it is
+complete. `search all --only meetings,notes` adds store-wide notes. `meetings embeddings` and
+`meetings semantic` search by meaning with a model you name; nothing is downloaded for you.
+
+More: [search and evidence][docs/search.md] · [topic search][docs/topic-search.md] ·
+[Zoom on wirecat.dev][wirecat/en/docs/zoom]
+
+## Local transcription
+
+No Zoom transcript? `zm meetings transcribe 1 ./call.wav --model <model> --yes` recognizes a PCM16 WAV
+file (mono or stereo, 16 or 48 kHz) with an already installed local speech model and appends it as a
+separate transcript. The preview checks the file without loading the model. Timestamps cover windows
+of up to 30 seconds and speakers stay unknown.
+
+More: [transcribe local audio][docs/archive.md#transcribe-local-audio] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
+
+## MCP and agent setup
+
+`zm skill install` writes the packaged guide to `~/.claude/skills/zoom-cli/` (Claude Code) and
+`~/.agents/skills/zoom-cli/` (Codex, Gemini CLI); `--for` picks one. MCP clients start the server
+with `["serve", "--mcp"]`:
+
+```json
+{ "mcpServers": { "zoom": { "command": "zm", "args": ["serve", "--mcp"] } } }
+```
+
+The server has seven read-only tools: meeting list and show, transcripts, summaries, exports, text
+search and participant search. `--meeting-context`, `--unified-search` and `--semantic --model <id>`
+add evidence, shared search and meaning search. It reads only the selected profile, and never exposes
+file exports, Zoom changes, embedding generation or task creation. A desktop app may need the full
+path from `which zm`, and the same `ZM_CONFIG_DIR` or `MESSAGING_STORE` in the entry's `env`.
+
+More: [MCP and skills][docs/mcp.md] · [MCP and skills on wirecat.dev][wirecat/en/docs/mcp] ·
+[connect your AI agent][wirecat/en/docs/agents]
+
+## Manage Zoom meetings
+
+```sh
+zm remote-meetings create --topic "Example planning" --start-time 2026-10-20T10:00:00Z --duration-minutes 30 --json
+zm remote-meetings cancel 123456789 --dry-run --json
+```
+
+Creation, updates and cancellation preview until you add `--yes`, and are never retried
+automatically. An uncertain outcome exits with code 14: check Zoom before repeating. Remote ids are
+Zoom's numeric ids; stored `meetings` commands use local ids.
+
+More: [managing Zoom meetings][docs/remote-meetings.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
+
+## Output, limits and deadlines
+
+`--json` prints one value and `--jsonl` one item per line; piped output defaults to JSON and errors
+go to stderr. `--fields id,title` trims results, `--offline` refuses the network, and output is
+capped at 4 MiB unless `--max-output-bytes` says otherwise. Default deadlines are 30 seconds for
+reads, five minutes for login and one hour for downloads, sync and verification; `--timeout 5m`
+changes them. Watching and MCP serving run until stopped.
+
+More: [usage][docs/usage.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
+
+## Configuration
+
+| Setting | Meaning |
+|---|---|
+| `zoom.clientId` | your Zoom app's Public Client ID |
+| `account.profile` | the local profile label |
+| `source` | `api` or `files` for `pull` and `watch` |
+| `files.folder`, `files.timezone` | the transcript folder and the zone of its filenames |
+| `ZM_CONFIG_DIR` | another configuration directory (also changes the keyring entry) |
+| `MESSAGING_STORE` | another shared database path |
+| `OPENAI_API_KEY` | only for an OpenAI embedding endpoint you select |
+
+More: [configuration][docs/configuration.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
+
+## Security model
+
+- Your own Zoom app with PKCE; no client secret exists.
+- Tokens only in the system keyring, never in a config file; a missing keyring is an error.
+- Network: Zoom's API, plus an embedding endpoint only when you name one. `--offline` refuses both.
+- Manifests and saved jobs never hold signed URLs, tokens or credentials; diagnostics omit raw
+  provider error text.
+- The MCP server is read-only and fixed to the selected profile; changes to Zoom preview until `--yes`.
+
+More: [security][docs/security.md] · [security on wirecat.dev][wirecat/en/docs/security]
+
+## Troubleshooting
+
+- **"Invalid redirect" from Zoom:** the manifest import left the redirect URL or Public Client OAuth
+  unset; fill them in by hand.
+- **No transcripts:** turn on **Allow hosts to retain transcripts**; attended meetings need `zm import`.
+- **Missing-scope error:** add the named scope in your app, then `zm login` again.
+- **Browser does not start:** `zm login --browser firefox`, or paste the callback parameters.
+- **Lock left after a crash:** `zm recordings archive locks`, then `recover` with `--yes`.
+
+More: [troubleshooting][docs/troubleshooting.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
 
 ## Part of WireCat
 
@@ -116,38 +323,78 @@ agents. Meetings land in the same local store as your Telegram, MAX and memo dat
 `zm search all "<query>" --only meetings,notes` searches them together with your memo notes.
 Start with Zoom. Add more context when you need it. Your context. Any agent.
 
-## Documentation
+More: [wirecat.dev](https://wirecat.dev) · [connect your AI agent][wirecat/en/docs/agents]
+
+## Technical docs
 
 | Page | What it covers |
 |---|---|
-| [Installation](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/installation.md) | requirements, first run, where files go |
-| [Your Zoom app](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/zoom-app.md) | creating the app, scopes, company accounts |
-| [Sessions](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/sessions.md) | login, keyring, local profiles |
-| [Usage](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/usage.md) | every command group, output, deadlines |
-| [The local archive](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/archive.md) | pull, import, watch, recording backups |
-| [Search and evidence](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/search.md) | search, evidence, person context, task proposals |
-| [Topic search](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/topic-search.md) | search by meaning with a model you choose |
-| [MCP and skills](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/mcp.md) | connecting agents and MCP clients |
-| [Managing Zoom meetings](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/remote-meetings.md) | upcoming meetings, create, update, cancel |
-| [Commands](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/commands.md) · [Configuration](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/configuration.md) | every command, option and setting |
-| [Troubleshooting](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/troubleshooting.md) | by symptom |
+| [Overview][docs/index.md] | what `zm` is and the one-minute start |
+| [Installation][docs/installation.md] | requirements, first run, where files go, completion |
+| [Your Zoom app][docs/zoom-app.md] | creating the app, scopes, company accounts |
+| [Login, sessions and profiles][docs/sessions.md] | OAuth login, keyring, local profiles |
+| [Usage][docs/usage.md] | every command group, output, deadlines |
+| [The local archive][docs/archive.md] | pull, import, watch, recordings, backups, transcription |
+| [Search and evidence][docs/search.md] | word search, evidence, people, links, memo |
+| [Topic search][docs/topic-search.md] | search by meaning with a model you choose |
+| [MCP and skills][docs/mcp.md] | the skill, the MCP server, optional tools |
+| [Managing Zoom meetings][docs/remote-meetings.md] | upcoming meetings, create, update, cancel |
+| [Commands][docs/commands.md] | every command, option and exit code (generated) |
+| [Configuration][docs/configuration.md] | settings and environment variables |
+| [Troubleshooting][docs/troubleshooting.md] | by symptom |
+| [Security][docs/security.md] | what reaches the disk and the network |
+| [Architecture][docs/dev/architecture.md] · [Testing][docs/dev/testing.md] · [Releasing][docs/dev/releasing.md] | for contributors |
 
-## Security
+The WireCat portal at [wirecat.dev/en/docs/zoom][wirecat/en/docs/zoom] is being prepared; until then these pages
+are the reference.
 
-- Login uses PKCE with your own app; there is no client secret.
-- Tokens live only in the system keyring, never in a config file.
-- Recording manifests never hold signed download URLs or tokens.
-- The MCP server is read-only and fixed to your selected local account.
+## Development
 
-More in [security](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/security.md).
+Node 22.16 or newer within 22.x, or Node 24 or newer:
 
-## Contributing
+```sh
+pnpm install
+pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm docs:check
+pnpm build && pnpm smoke:bun
+```
 
-[Development setup](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/dev/DEVELOPMENT.md),
-[architecture](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/dev/ARCHITECTURE.md) and
-[testing](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/dev/TESTING.md). Fixtures use
-invented people and meetings only.
+Fixtures use invented people and meetings. Tests use an injected keyring, scripted HTTP responses,
+temporary config folders and the memory meeting store. `pnpm generate:check` checks the generated
+command reference; `pnpm test:matrix` measures command and option coverage.
+
+More: [development setup][docs/dev/development.md] · [test matrix][docs/dev/test-matrix.md]
 
 ## Licence
 
-[Apache License 2.0](https://github.com/WireCatLabs/zoom-cli/blob/main/LICENSE).
+[Apache License 2.0][license].
+
+[docs/archive.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/archive.md
+[docs/archive.md#archive-cloud-recordings]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/archive.md#archive-cloud-recordings
+[docs/archive.md#daily-backups]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/archive.md#daily-backups
+[docs/archive.md#transcribe-local-audio]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/archive.md#transcribe-local-audio
+[docs/archive.md#where-meetings-are-stored]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/archive.md#where-meetings-are-stored
+[docs/commands.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/commands.md
+[docs/configuration.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/configuration.md
+[docs/dev/architecture.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/dev/ARCHITECTURE.md
+[docs/dev/development.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/dev/DEVELOPMENT.md
+[docs/dev/releasing.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/dev/RELEASING.md
+[docs/dev/test-matrix.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/dev/test-matrix.md
+[docs/dev/testing.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/dev/TESTING.md
+[docs/index.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/index.md
+[docs/installation.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/installation.md
+[docs/mcp.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/mcp.md
+[docs/remote-meetings.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/remote-meetings.md
+[docs/search.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/search.md
+[docs/security.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/security.md
+[docs/sessions.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/sessions.md
+[docs/sessions.md#select-a-local-profile]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/sessions.md#select-a-local-profile
+[docs/topic-search.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/topic-search.md
+[docs/troubleshooting.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/troubleshooting.md
+[docs/usage.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/usage.md
+[docs/zoom-app.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/zoom-app.md
+[gh/cli-meetings/blob/main/docs/dev/roadmap.md]: https://github.com/WireCatLabs/cli-meetings/blob/main/docs/dev/ROADMAP.md
+[license]: https://github.com/WireCatLabs/zoom-cli/blob/main/LICENSE
+[wirecat/en/docs/agents]: https://wirecat.dev/en/docs/agents
+[wirecat/en/docs/mcp]: https://wirecat.dev/en/docs/mcp
+[wirecat/en/docs/security]: https://wirecat.dev/en/docs/security
+[wirecat/en/docs/zoom]: https://wirecat.dev/en/docs/zoom
