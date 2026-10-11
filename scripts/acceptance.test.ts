@@ -137,7 +137,9 @@ require('node:module').syncBuiltinESMExports();
   executable = join(install, "node_modules", ".bin", "zm")
 }, 120000)
 
-describe("installed package", () => {
+// These process-boundary checks share one retained, invented installation and database.
+describe("installed package", { concurrent: false, shuffle: false }, () => {
+  let importedMeetingId: string
   it("ships usable bin and exports with the package version", () => {
     const pkg = JSON.parse(readFileSync(join(install, "node_modules/@wirecat/zoom-cli/package.json"), "utf8"))
     expect(pkg.version).toBe(VERSION)
@@ -249,7 +251,7 @@ describe("installed package", () => {
     expect(JSON.parse(store.stderr).error.code).toBe("configuration_error")
   })
 
-  it("persists imports across processes and searches only the current correction", () => {
+  it("persists imports across processes and replays without duplicating the occurrence", () => {
     const files = join(install, "transcripts")
     mkdirSync(files)
     const transcript = join(files, "2026-10-10_1530_example.vtt")
@@ -265,17 +267,32 @@ describe("installed package", () => {
     const meetings = JSON.parse(listed.stdout).items
     expect(meetings).toHaveLength(1)
     const id = String(meetings[0].id)
+    importedMeetingId = id
     expect(JSON.parse(invoke("--json", "meetings", "show", id).stdout).transcripts).toHaveLength(1)
+  })
 
+  it("retains the original revision when importing corrected transcript bytes", () => {
+    const files = join(install, "transcripts")
+    const transcript = join(files, "2026-10-10_1530_example.vtt")
+    const original = readFileSync(transcript, "utf8")
     writeFileSync(transcript, original.replace("Original", "Corrected"))
     const corrected = invoke("--json", "import", files)
     expect(corrected.status, corrected.stderr).toBe(0)
+    const id = importedMeetingId
     expect(JSON.parse(invoke("--json", "meetings", "show", id).stdout).transcripts).toHaveLength(2)
+  })
+
+  it("searches the current correction while exposing retained history explicitly", () => {
+    const id = importedMeetingId
     expect(JSON.parse(invoke("--json", "meetings", "search", "Corrected").stdout).items).toHaveLength(1)
     expect(JSON.parse(invoke("--json", "meetings", "search", "Original").stdout).items).toHaveLength(0)
     expect(JSON.parse(invoke("--json", "events", "list").stdout).items).toHaveLength(1)
     expect(JSON.parse(invoke("--json", "meetings", "transcript", id, "--history").stdout).items).toHaveLength(2)
     expect(JSON.parse(invoke("--json", "meetings", "summary", id).stdout).items).toHaveLength(0)
+  })
+
+  it("exports the current revision without overwriting an existing destination", () => {
+    const id = importedMeetingId
     const exported = invoke("--json", "meetings", "export", id, "--format", "vtt")
     expect(exported.status, exported.stderr).toBe(0)
     const content = JSON.parse(exported.stdout).content
@@ -289,7 +306,9 @@ describe("installed package", () => {
     expect(overwrite.status).toBe(2)
     expect(overwrite.stdout).toBe("")
     expect(readFileSync(destination, "utf8")).toBe(content)
+  })
 
+  it("rejects an absent profile without registering a new account", () => {
     const selected = invoke("config", "set", "account.profile", "absent-example")
     expect(selected.status, selected.stderr).toBe(0)
     const absent = invoke("--json", "meetings", "list")

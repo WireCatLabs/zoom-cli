@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**125 ✅ · 1 ⛔ · 0 ❌** — 37 commands, 89 options.
+**176 ✅ · 1 ⛔ · 0 ❌** — 44 commands, 133 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -48,6 +48,40 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings people` |  | ✅ |  |
 | `meetings people` | `--json` | ✅ |  |
 | `meetings people` | `--jsonl` | ✅ |  |
+| `meetings evidence` |  | ✅ |  |
+| `meetings evidence` | `--cues` | ✅ |  |
+| `meetings evidence` | `--bytes` | ✅ |  |
+| `meetings evidence` | `--after` | ✅ |  |
+| `meetings evidence` | `--after-transcript-id` | ✅ |  |
+| `meetings evidence` | `--max-read-bytes` | ✅ |  |
+| `meetings evidence` | `--max-transcript-pages` | ✅ |  |
+| `meetings context` |  | ✅ |  |
+| `meetings context` | `--cues` | ✅ |  |
+| `meetings context` | `--bytes` | ✅ |  |
+| `meetings context` | `--meetings` | ✅ |  |
+| `meetings context` | `--scan-limit` | ✅ |  |
+| `meetings context` | `--since` | ✅ |  |
+| `meetings task-proposal` |  | ✅ |  |
+| `meetings task-proposal` | `--kind` | ✅ |  |
+| `meetings semantic` |  | ✅ |  |
+| `meetings semantic` | `--model` | ✅ |  |
+| `meetings semantic` | `--base-url` | ✅ |  |
+| `meetings semantic` | `--dims` | ✅ |  |
+| `meetings semantic` | `--limit` | ✅ |  |
+| `meetings semantic` | `--max-rows` | ✅ |  |
+| `meetings semantic` | `--max-text-bytes` | ✅ |  |
+| `meetings semantic` | `--max-chunks` | ✅ |  |
+| `meetings semantic` | `--after-chunk-id` | ✅ |  |
+| `meetings embeddings` |  | ✅ |  |
+| `meetings embeddings` | `--model` | ✅ |  |
+| `meetings embeddings` | `--base-url` | ✅ |  |
+| `meetings embeddings` | `--dims` | ✅ |  |
+| `meetings embeddings` | `--limit` | ✅ |  |
+| `meetings embeddings` | `--max-rows` | ✅ |  |
+| `meetings embeddings` | `--max-text-bytes` | ✅ |  |
+| `meetings embeddings` | `--after-transcript-id` | ✅ |  |
+| `meetings embeddings` | `--after-hash` | ✅ |  |
+| `meetings embeddings` | `--yes` | ✅ |  |
 | `pull` |  | ✅ |  |
 | `pull` | `--json` | ✅ |  |
 | `pull` | `--jsonl` | ✅ |  |
@@ -97,6 +131,11 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `recordings archive recover` |  | ✅ |  |
 | `recordings archive recover` | `--yes` | ✅ |  |
 | `recordings archive recover` | `--dry-run` | ✅ |  |
+| `recordings archive import` |  | ✅ |  |
+| `recordings archive import` | `--uuid` | ✅ |  |
+| `recordings archive import` | `--file-ids` | ✅ |  |
+| `recordings archive import` | `--max-bytes` | ✅ |  |
+| `recordings archive import` | `--max-total-bytes` | ✅ |  |
 | `remote-meetings list` |  | ✅ |  |
 | `remote-meetings show` |  | ✅ |  |
 | `remote-meetings invitation` |  | ✅ |  |
@@ -127,6 +166,18 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `skill install` | `--for` | ✅ |  |
 | `serve` |  | ✅ |  |
 | `serve` | `--mcp` | ✅ |  |
+| `serve` | `--unified-search` | ✅ |  |
+| `serve` | `--meeting-context` | ✅ |  |
+| `serve` | `--semantic` | ✅ |  |
+| `serve` | `--model` | ✅ |  |
+| `serve` | `--base-url` | ✅ |  |
+| `serve` | `--dims` | ✅ |  |
+| `search all` |  | ✅ |  |
+| `search all` | `--only` | ✅ |  |
+| `search all` | `--limit` | ✅ |  |
+| `search all` | `--max-meetings` | ✅ |  |
+| `search all` | `--meeting-cursor` | ✅ |  |
+| `search all` | `--exact` | ✅ |  |
 | *global* | `--version` | ⛔ | Installed-package acceptance checks the actual bin version; Commander exits before preAction tracing. |
 | *global* | `--json` | ✅ |  |
 | *global* | `--jsonl` | ✅ |  |

@@ -297,6 +297,9 @@ it("CLI forwards complete context envelopes and proposal-only previews with no a
   deps.serveMcp = serve
   expect(await run(["serve", "--mcp", "--meeting-context"], deps)).toBe(0)
   expect(serve).toHaveBeenCalledWith(expect.objectContaining({ includeMeetingContext: true }))
+  serve.mockClear()
+  expect(await run(["serve", "--mcp", "--unified-search"], deps)).toBe(0)
+  expect(serve).toHaveBeenCalledWith(expect.objectContaining({ includeUnifiedSearch: true }))
 })
 
 it("CLI validates before connection, uses one read connection, closes before stdout, and detects missing capabilities", async () => {
