@@ -43,7 +43,7 @@ MCP clients can launch `zm` with arguments `["serve", "--mcp"]`. In the `mcpServ
 
 A desktop app may not see your terminal's `PATH`, and a stdio server inherits only part of the
 environment ([MCP debugging guide](https://modelcontextprotocol.io/docs/tools/debugging)). If the
-server does not start, use the full path from `which zm` as the command. If you set `ZM_CONFIG_DIR` or `MESSAGING_STORE`, pass the same values
+server does not start, use the full path from `command -v zm` on Linux/macOS or `where.exe zm` on Windows as the command. If you set `ZM_CONFIG_DIR` or `MESSAGING_STORE`, pass the same values
 in the entry's `env`, or the server reads a different profile or database.
 
 Keep stdout for protocol messages; omit `--json`, `--jsonl` and `--fields`. `--max-output-bytes`
@@ -62,7 +62,7 @@ passage supporting its main decision. Tell me if the data is incomplete.
 
 Check the selected meeting against `zm meetings list --json` in your terminal. If discovery works
 but no data appears, verify the same profile and store path, then pull or import data. If the app
-cannot launch the command, use `where zm` on Windows or `command -v zm` on Linux/macOS to find it,
+cannot launch the command, use `where.exe zm` on Windows or `command -v zm` on Linux/macOS to find it,
 and put that executable's full path in the entry. A remote web chat cannot run this local command
 unless it has a supported connection to your machine.
 
