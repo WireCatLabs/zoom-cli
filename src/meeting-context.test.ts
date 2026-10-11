@@ -550,3 +550,44 @@ it("bounds cancelled embedding receipt backpressure and emits no receipt for rej
   expect(await run(["meetings", "embeddings", "--model", "installed-example", "--yes", "--jsonl"], failed.deps)).toBe(1)
   expect(failed.output).toEqual([])
 })
+
+it("opens only the selected semantic read connection and closes it before finite query output", async () => {
+  const { deps, output } = await setup()
+  const search = vi.fn(async () => ({ items: [], coverage: { archiveCompleteness: "unknown" } }))
+  const close = vi.fn(async () => {
+    expect(output).toEqual([])
+  })
+  const connection = { store: {} as never, accountId: 3, meetingSemantic: { search, generate: vi.fn() }, close }
+  const connect = vi.fn<NonNullable<ProgramDeps["connectStore"]>>(async () => connection)
+  deps.connectStore = connect
+  const args = ["meetings", "semantic", "example", "--model", "installed-example", "--json"]
+  expect(await run(args, deps)).toBe(3)
+  expect(connect).not.toHaveBeenCalled()
+  setConfig(deps.configPath, "account.profile", "example")
+  expect(await run(args, deps)).toBe(0)
+  expect(connect).toHaveBeenCalledWith({ profile: "example", externalId: "zm-profile:example", intent: "read" })
+  expect(search).toHaveBeenCalledOnce()
+  expect(close).toHaveBeenCalledOnce()
+  expect(JSON.parse(output.pop() ?? "{}").coverage.archiveCompleteness).toBe("unknown")
+  connect.mockResolvedValue({ ...connection, meetingSemantic: undefined })
+  expect(await run(args, deps)).toBe(3)
+  expect(close).toHaveBeenCalledTimes(2)
+  expect(search).toHaveBeenCalledOnce()
+  expect(output).toEqual([])
+})
+
+it("rejects unsafe remote configuration and invalid generation cursors before opening a store", async () => {
+  const { deps } = await setup()
+  const connect = vi.fn()
+  deps.connectStore = connect
+  for (const flags of [
+    ["--model", " "],
+    ["--model", "installed-example", "--dims", "2"],
+    ["--model", "served-example", "--base-url", "invalid-url", "--dims", "2"],
+    ["--model", "served-example", "--base-url", "https://example.invalid/v1?token=invented", "--dims", "2"],
+    ["--model", "installed-example", "--after-hash", "invalid-hash"],
+    ["--model", "installed-example", "--after-transcript-id", "0"],
+  ])
+    expect(await run(["meetings", "embeddings", ...flags, "--yes"], deps)).toBe(2)
+  expect(connect).not.toHaveBeenCalled()
+})
