@@ -1,11 +1,17 @@
 import { memoryMeetingStore } from "@wirecat/cli-meetings/testing"
 import { expect, it, vi } from "vitest"
-import { createStoreConnector } from "./store-connection.js"
+import { createStoreConnector, type StoreConnectionOptions } from "./store-connection.js"
 
 const mocked = vi.hoisted(() => ({ search: vi.fn() }))
 vi.mock("@wirecat/cli-messaging/services", () => ({ searchAllIncludingMeetings: mocked.search }))
 const setup = () => ({
-  meetings: memoryMeetingStore(),
+  meetings: Object.assign(memoryMeetingStore(), {
+    appendTranscripts: vi.fn(),
+    meetingMetadata: vi.fn(),
+    transcriptMetadata: vi.fn(),
+    transcripts: vi.fn(),
+    transcriptRows: vi.fn(),
+  }),
   saveAccount: vi.fn(async () => 3),
   storedAccount: vi.fn(async () => ({
     id: 3,
@@ -25,7 +31,9 @@ const request = {
 it("checks native append capability before account registration and closes on failure", async () => {
   const original = setup()
   const store = { ...original, meetings: { ...original.meetings, appendTranscripts: undefined } }
-  await expect(createStoreConnector({ openStore: async () => store })(request)).rejects.toMatchObject({
+  // Deliberately simulate an older runtime adapter lacking the required append capability.
+  const incompatible = store as unknown as Awaited<ReturnType<NonNullable<StoreConnectionOptions["openStore"]>>>
+  await expect(createStoreConnector({ openStore: async () => incompatible })(request)).rejects.toMatchObject({
     code: "configuration_error",
     message: expect.stringContaining("transcript append"),
   })

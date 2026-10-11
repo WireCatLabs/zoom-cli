@@ -352,7 +352,7 @@ it("requires an explicit semantic model, preserves scan coverage, and previews g
   for (const [baseUrl, dims] of [
     ["https://example-user@example.invalid/v1", "2"],
     ["https://example.invalid/v1", "8193"],
-  ])
+  ] as const)
     expect(
       await run(
         ["meetings", "semantic", "example", "--model", "served-example", "--base-url", baseUrl, "--dims", dims],
