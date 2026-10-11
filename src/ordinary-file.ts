@@ -49,3 +49,15 @@ export const openOrdinaryFile = async (path: string): Promise<FileHandle> => {
     throw error
   }
 }
+
+export const syncDirectory = async (path: string): Promise<void> => {
+  if (process.platform === "win32") return
+  const directory = await open(path, constants.O_RDONLY | (constants.O_DIRECTORY ?? 0) | (constants.O_NOFOLLOW ?? 0))
+  try {
+    if (!(await directory.stat()).isDirectory())
+      throw new ZoomError("validation_error", "archive publication directory must be ordinary")
+    await directory.sync()
+  } finally {
+    await directory.close()
+  }
+}

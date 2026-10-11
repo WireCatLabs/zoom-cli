@@ -57,6 +57,7 @@ is an error; tokens are never written to a config file.
 | `recordings list`, `recordings show <meeting>` | discover cloud recordings and asset metadata |
 | `recordings download <meeting> --destination <directory>` | archive available recording files |
 | `recordings sync --from <date> --to <date> --destination <directory> --jsonl` | archive recording history across calendar months |
+| `recordings schedule create\|list\|show\|run\|disable` | plan and manage local daily archive jobs |
 | `recordings archive inspect\|verify\|locks <directory>` | inspect local manifests, checksums or locks |
 | `recordings archive recover <directory>` | preview recovery of stale local locks |
 | `recordings archive transcript <directory>` | read verified archived WebVTT cues without a database |
@@ -204,8 +205,14 @@ zm recordings sync --from 2026-01-01 --to 2026-10-10 --destination ./zoom-archiv
 Sync accepts explicit ordered dates spanning at most ten calendar years. It splits them into monthly
 requests, deduplicates occurrence UUIDs and downloads serially. Each JSONL receipt describes one
 completed occurrence; earlier receipts and completed files remain if a later request fails. Repeat the
-same range or an overlapping recent range to discover new assets and skip verified files. Sync has no
-durable date cursor; the requested range determines what is revisited. Headless sync requires `--jsonl`.
+same range or an overlapping recent range to discover new assets. With a selected local profile,
+sync saves durable progress and retains pending recordings. Use `--recheck-from YYYY-MM-DD` to
+rediscover recent dates for late or changed assets, and `--checkpoint` to select its checkpoint file.
+`--max-pages` and `--max-entries` bound discovery. Headless sync requires `--jsonl`.
+
+Checkpoints acknowledge earlier successful archives; they do not check current disk integrity or
+prove that all provider recordings were available. Run `recordings archive verify` to check local
+files. Use `--no-resume` to rescan the full requested range without durable progress.
 
 Recording lists accept an ordered date range of at most 31 days. Downloads stream to disk rather
 than loading a video into memory. The default per-file limit is 20 GiB; change it with `--max-bytes`.
@@ -217,14 +224,35 @@ available through your cloud recording API.
 Each occurrence has a manifest containing metadata, file sizes and SHA-256 checksums. Signed
 download URLs and OAuth tokens are excluded. Repeating a download verifies existing manifest files
 and skips matching assets. Existing files are never overwritten; a mismatch requires a new destination.
-Interrupted downloads restart a file rather than using HTTP byte-range resume. Completed manifest
-entries remain available if a later transfer fails.
+With a selected local profile, interrupted downloads retain verified partial bytes and resume only
+when a strong validator and the returned range agree. Changed representations restart safely.
+Explicit `--resume` requires a profile; `--no-resume` and downloads without a profile use ephemeral
+partials. Completed manifest entries remain available if a later transfer fails.
 
 Archive commands inspect and verify local data without logging in or opening a database. Concurrent
 writers to the same destination are refused. After a process crash, inspect `recordings archive locks`
 and preview `recordings archive recover`. Add `--yes` to remove recognized locks owned by a dead process
 on this machine; active, foreign and unrecognized locks are preserved. Recovery removes stale lock
-markers only. It does not repair an incomplete manifest or adopt an untracked file.
+markers only. Download continuation can recover a completed promotion only when its owned journal,
+verified partial and final file all match; unrelated untracked files remain protected.
+
+To plan a daily backup, choose an absolute destination and timer timezone:
+
+```sh
+zm recordings schedule create --name daily --destination /home/AliceExample/zoom-archive --from 2026-01-01 --at 03:15 --timezone Europe/Madrid --json
+zm recordings schedule list --offline --json
+zm recordings schedule run <schedule-id> --jsonl
+zm recordings schedule disable <schedule-id> --yes --json
+```
+
+Creation previews by default. Add `--yes` to install a Linux systemd user timer; `--dry-run`
+overrides it. Automatic installation currently supports Linux only. The timer follows its IANA
+timezone, while recording discovery uses UTC dates and defaults to seven days of recent rechecks.
+Systemd user services must be available for the job to run; previews also work on other platforms.
+Jobs capture the local profile, public client ID, destination and runtime/config paths, without
+credentials. Running a saved job requires its captured profile and client to remain selected.
+Saved status describes the last acknowledged operation; list/show do not query live timer state.
+Disabling stops the timer and preserves job definitions and archived files.
 
 ## Search and read evidence
 

@@ -452,6 +452,12 @@ zm recordings sync [options]
 | `--to <date>` | last YYYY-MM-DD date (at most ten years). |
 | `--destination <directory>` | explicit archive directory. |
 | `--max-bytes <bytes>` | maximum bytes per recording file. |
+| `--resume` | resume verified partial downloads and archive progress; requires a local profile. |
+| `--no-resume` | disable persistent resume state for this invocation. |
+| `--checkpoint <file>` | explicit durable checkpoint file; implies resume. |
+| `--recheck-from <date>` | revisit completed windows from this YYYY-MM-DD date for late recordings. |
+| `--max-pages <pages>` | catalog page limit from 1 through 10000 (default 1000). |
+| `--max-entries <entries>` | occurrence limit from 1 through 10000 (default 10000). |
 
 ### `zm recordings show`
 
@@ -484,6 +490,8 @@ zm recordings download <meeting> [options]
 | `--destination <directory>` | explicit archive directory. |
 | `--file-ids <ids>` | comma-separated recording file ids. |
 | `--max-bytes <bytes>` | per-file download byte limit (default 20 GiB). |
+| `--resume` | resume verified partial downloads and archive progress; requires a local profile. |
+| `--no-resume` | disable persistent resume state for this invocation. |
 
 ### `zm recordings archive`
 
@@ -602,6 +610,85 @@ zm recordings archive import <directory> [options]
 | `--file-ids <ids>` | select comma-separated VTT asset ids. |
 | `--max-bytes <bytes>` | per-file VTT byte limit (default 8 MiB). |
 | `--max-total-bytes <bytes>` | aggregate VTT byte limit before any write (default 64 MiB). |
+
+### `zm recordings schedule`
+
+local archive jobs and Linux user systemd timers
+
+#### `zm recordings schedule create`
+
+preview a captured daily archive job; --yes installs its user timer
+
+**Changes local data.**
+
+```sh
+zm recordings schedule create [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--name <name>` | local job name. |
+| `--destination <directory>` | absolute archive directory. |
+| `--from <date>` | first YYYY-MM-DD archive date. |
+| `--at <time>` | daily HH:mm time. |
+| `--timezone <zone>` | IANA timezone for the timer. |
+| `--lookback-days <days>` | revisit the latest zero through 31 UTC days (default seven). |
+| `--max-bytes <bytes>` | maximum bytes per recording file (default 20 GiB). |
+| `--yes` | install and enable the captured timer. |
+| `--dry-run` | preview even when --yes is present. |
+
+#### `zm recordings schedule list`
+
+list saved local jobs; live timer state is not checked
+
+```sh
+zm recordings schedule list
+```
+
+#### `zm recordings schedule show`
+
+show one saved local job and its captured settings
+
+```sh
+zm recordings schedule show <id>
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `id` | required | schedule id. |
+
+#### `zm recordings schedule run`
+
+run the captured job once with durable archive progress
+
+**Changes local data.**
+
+```sh
+zm recordings schedule run <id>
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `id` | required | schedule id. |
+
+#### `zm recordings schedule disable`
+
+preview disabling a saved timer; --yes disables it without deleting files
+
+**Changes local data.**
+
+```sh
+zm recordings schedule disable <id> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `id` | required | schedule id. |
+
+| Option | What it does |
+|---|---|
+| `--yes` | disable and stop the timer. |
+| `--dry-run` | preview even when --yes is present. |
 
 ## `zm remote-meetings`
 

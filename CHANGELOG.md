@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.4.0 — 11.10.2026
+
+### Added
+
+- **Profile-bound recording resume** retains independently verified partial bytes and resumes only
+  with matching strong validators and response ranges. Owned promotion journals recover the gap
+  between final publication and manifest commitment without adopting unrelated files.
+- **Durable archive progress** saves lease-protected checkpoints, retains unavailable assets for
+  retry and supports recent discovery rechecks plus bounded pages/entries. Prior acknowledgements
+  do not certify current disk integrity or complete provider availability.
+- **Daily archive jobs** preview captured profile/client/destination/runtime settings and install
+  Linux systemd user timers only with explicit `--yes`. Jobs use durable sync and recent rechecks;
+  changed profile/client configuration fails before credentials. Other platforms support planning
+  and manual runs. Disabling preserves job definitions and archived files.
+- **Provider-neutral SDK reuse** moves management validation, transfer rules, catalog sync and
+  schedule planning into cli-meetings 0.3.0. Public Zoom adapters expose optional shared capabilities;
+  authentication, URL trust and native storage remain in this package.
+
+### Changed — may break callers
+
+- Configured local profiles enable persistent resume by default. Explicit `--resume` requires a
+  profile; `--no-resume` and legacy unscoped calls retain ephemeral transfer behavior.
+
 ## 0.3.2 — 11.10.2026
 
 ### Fixed

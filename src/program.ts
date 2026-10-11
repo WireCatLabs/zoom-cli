@@ -1,3 +1,5 @@
+import { homedir } from "node:os"
+import { dirname, join } from "node:path"
 import {
   CliError,
   createDeadline,
@@ -46,6 +48,10 @@ import {
   type MeetingSemanticCapabilities,
   validateMeetingModel,
 } from "./meeting-semantic-commands.js"
+import { createRecordingScheduleService, type RecordingScheduleService } from "./recording-schedule.js"
+import { addRecordingScheduleCommands } from "./recording-schedule-commands.js"
+import { fileRecordingScheduleStore } from "./recording-schedule-store.js"
+import { createSystemdRecordingArchiveScheduler } from "./recording-schedule-systemd.js"
 import {
   getZoomProfile,
   inspectArchive,
@@ -57,7 +63,7 @@ import {
 import type { RemoteOptions } from "./remote-http.js"
 import { ZoomRemoteMeetings } from "./remote-meetings.js"
 import { emitReceipt } from "./streaming.js"
-import type { TokenManager } from "./tokens.js"
+import { TokenManager } from "./tokens.js"
 import { runUnifiedSearch, type UnifiedSearch } from "./unified-search.js"
 import { VERSION } from "./version.js"
 import { addWatchCommand } from "./watch-commands.js"
@@ -90,6 +96,8 @@ export interface ProgramDeps {
   meetingSemantic?: MeetingSemanticCapabilities
   source?: MeetingSource
   recordings?: RecordingsService
+  recordingSchedule?: RecordingScheduleService
+  recordingScheduleTarget?: { runtime: string; cliPath: string }
   remoteMeetings?: RemoteMeetingsService
   archive?: ArchiveService
   archiveTranscripts?: ArchiveTranscriptService
@@ -638,6 +646,10 @@ export const createProgram = (deps: ProgramDeps): Command => {
     receipt,
     outputIsTTY: deps.outputIsTTY,
     api,
+    account: () => {
+      const profile = getConfig().accountProfile
+      return profile ? profileAccountKey(profile) : undefined
+    },
     signal,
     now: deps.now ?? Date.now,
     recordings: () => deps.recordings ?? new ZoomRecordings(tokens(), fetchWithSignal(deps.fetch), remoteOptions),
@@ -649,6 +661,69 @@ export const createProgram = (deps: ProgramDeps): Command => {
       locks: inspectArchiveLocks,
       recover: recoverArchiveLocks,
     },
+  })
+  let recordingSchedule = deps.recordingSchedule
+  addRecordingScheduleCommands(program, {
+    service: () => {
+      if (!recordingSchedule) {
+        const env = deps.env ?? process.env
+        const configDir = dirname(deps.configPath)
+        recordingSchedule = createRecordingScheduleService({
+          store: fileRecordingScheduleStore(join(configDir, "recording-schedules")),
+          backend: createSystemdRecordingArchiveScheduler({
+            unitDirectory: join(env.XDG_CONFIG_HOME ?? join(env.HOME ?? homedir(), ".config"), "systemd", "user"),
+          }),
+          recordings: (job) => {
+            const selected = readConfig(deps.configPath)
+            if (
+              dirname(deps.configPath) !== job.capture.configDir ||
+              selected.accountProfile !== job.capture.profile ||
+              selected.clientId !== job.capture.clientId
+            )
+              throw new ZoomError(
+                "configuration_error",
+                "archive schedule requires its saved profile and Zoom client id; select those settings before running",
+              )
+            return new ZoomRecordings(
+              new TokenManager({
+                clientId: job.capture.clientId,
+                keyring: deps.tokens.options.keyring,
+                service: `zoom-cli:${job.capture.configDir}`,
+                fetch: fetchWithSignal(deps.tokens.options.fetch),
+                now: deps.now,
+                signal: signal(),
+              }),
+              fetchWithSignal(deps.fetch),
+              remoteOptions,
+            )
+          },
+          now: deps.now,
+        })
+      }
+      return recordingSchedule
+    },
+    capture: () => {
+      const selected = getConfig()
+      if (!selected.accountProfile || !selected.clientId)
+        throw new ZoomError(
+          "configuration_error",
+          "archive schedules require a configured local profile and Zoom client id",
+        )
+      if (!deps.recordingScheduleTarget)
+        throw new ZoomError("configuration_error", "archive scheduler requires an explicit runtime and CLI path")
+      return {
+        profile: selected.accountProfile,
+        clientId: selected.clientId,
+        configDir: dirname(deps.configPath),
+        runtime: deps.recordingScheduleTarget.runtime,
+        cliPath: deps.recordingScheduleTarget.cliPath,
+      }
+    },
+    offline: () => Boolean(program.opts().offline),
+    signal,
+    output,
+    receipt,
+    outputIsTTY: deps.outputIsTTY,
   })
   addZoomSkillCommands(program, () => {
     const renderer = createRenderer({

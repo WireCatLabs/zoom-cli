@@ -1,6 +1,6 @@
-import { expect, it } from "vitest"
+import { expect, it, vi } from "vitest"
 import { getZoomProfile } from "./recordings.js"
-import { type MeetingChange, ZoomRemoteMeetings } from "./remote-meetings.js"
+import { createZoomMeetingManagement, type MeetingChange, ZoomRemoteMeetings } from "./remote-meetings.js"
 
 const scopes = [
   "meeting:read:list_meetings",
@@ -242,4 +242,80 @@ it("preserves uncertain writes when cancellation races a successful response or 
   await expect(
     source(async () => reply).create({ topic: "Example", type: 1 }, { apply: true, signal: abort.signal }),
   ).rejects.toThrowError(expect.objectContaining({ code: "outcome_unknown" }))
+})
+
+it("adapts Zoom management to provider-neutral SDK capabilities with preview and one write", async () => {
+  const requests: { method: string | undefined; body: unknown; url: string }[] = []
+  const remote = source(async (input, init) => {
+    const url = String(input)
+    requests.push({ method: init?.method, body: init?.body ? JSON.parse(String(init.body)) : null, url })
+    if (url.includes("/invitation")) return response({ invitation: "Alice Example invitation" })
+    if (url.includes("/users/me/meetings") && (init?.method ?? "GET") === "GET")
+      return response({ meetings: [fixture] })
+    return init?.method === "PATCH" || init?.method === "DELETE" ? response(null, 204) : response(fixture)
+  })
+  const sdk = createZoomMeetingManagement(remote, "Alice Example profile")
+  expect(sdk.scope).toEqual({ provider: "zoom", account: "Alice Example profile" })
+  expect(await sdk.create({ title: "Example", kind: "instant" })).toMatchObject({ applied: false })
+  expect(await sdk.update("123456", { agenda: "Bob Sample agenda" })).toMatchObject({ applied: false })
+  expect(await sdk.cancel("123456", { apply: true, dryRun: true })).toMatchObject({ applied: false })
+  expect(requests).toEqual([])
+  expect(await sdk.list()).toMatchObject([{ id: "123456", kind: "scheduled", startTime: fixture.start_time }])
+  expect(await sdk.get("123456")).toMatchObject({ title: fixture.topic, kind: "scheduled" })
+  expect(await sdk.invitation("123456")).toEqual({ id: "123456", invitation: "Alice Example invitation" })
+  expect(
+    await sdk.create(
+      {
+        title: "Example",
+        kind: "scheduled",
+        startTime: "2026-10-11T12:00:00+02:00",
+        durationMinutes: 30,
+        timezone: "Europe/Madrid",
+        agenda: "",
+      },
+      { apply: true },
+    ),
+  ).toMatchObject({ applied: true, meeting: { id: "123456" } })
+  expect(await sdk.update("123456", { title: "Edited", kind: "instant" }, { apply: true })).toMatchObject({
+    applied: true,
+  })
+  expect(await sdk.cancel("123456", { apply: true, occurrenceId: "example occurrence" })).toMatchObject({
+    applied: true,
+  })
+  expect(requests.filter((request) => request.method === "POST")).toHaveLength(1)
+  expect(requests.find((request) => request.method === "POST")?.body).toEqual({
+    topic: "Example",
+    type: 2,
+    start_time: "2026-10-11T10:00:00.000Z",
+    duration: 30,
+    timezone: "Europe/Madrid",
+    agenda: "",
+  })
+  expect(requests.filter((request) => request.method === "PATCH")).toHaveLength(1)
+  expect(requests.filter((request) => request.method === "DELETE")).toHaveLength(1)
+})
+
+it("keeps unknown Zoom kinds explicit and rejects unacknowledged adapter writes", async () => {
+  for (const [type, kind] of [
+    [1, "instant"],
+    [8, null],
+  ] as const) {
+    const sdk = createZoomMeetingManagement(
+      source(async () => response({ ...fixture, type })),
+      "Alice Example profile",
+    )
+    expect(await sdk.get("123456")).toMatchObject({ kind })
+  }
+  const remote = source(async () => {
+    throw new Error("unexpected request")
+  })
+  const write = vi
+    .spyOn(remote, "create")
+    .mockResolvedValue({ action: "create", applied: true, request: { method: "POST", path: "/users/me/meetings" } })
+  const sdk = createZoomMeetingManagement(remote, "Alice Example profile")
+  await expect(sdk.create({ title: "Example", kind: "instant" }, { apply: true })).rejects.toMatchObject({
+    code: "outcome_unknown",
+  })
+  expect(write).toHaveBeenCalledTimes(1)
+  expect(() => createZoomMeetingManagement(remote, " ")).toThrow(/identifiers/)
 })

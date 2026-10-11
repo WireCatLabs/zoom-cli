@@ -1,7 +1,8 @@
 # Architecture
 
 `@wirecat/cli-core` supplies configuration paths, secure config writes and the keyring seam.
-`@wirecat/cli-meetings` supplies the domain model, source/store ports, ingestion and commands.
+`@wirecat/cli-meetings` supplies the domain model, source/store ports, ingestion, management,
+recording transfer, archive synchronization, schedule planning and commands.
 This package contains Zoom-specific login and sources; it contains no SQL.
 
 | Module | Responsibility |
@@ -15,7 +16,9 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [commands.ts](../../src/commands.ts) | shared command metadata, completion and local diagnostics |
 | [zm.ts](../../src/bin/zm.ts) | process, browser, stdin and system keyring wiring |
 | [recordings.ts](../../src/recordings.ts), [recording-archive.ts](../../src/recording-archive.ts) | asset discovery, streamed transfers, manifests and verified skipping |
-| [recording-sync.ts](../../src/recording-sync.ts) | serial calendar-month archive synchronization |
+| [recording-sync.ts](../../src/recording-sync.ts), [recording-sync-store.ts](../../src/recording-sync-store.ts) | shared catalog/checkpoint orchestration and native durable progress |
+| [recording-partial-store.ts](../../src/recording-partial-store.ts), [recording-promotion-store.ts](../../src/recording-promotion-store.ts) | verified partial bytes and owned final-promotion recovery |
+| [recording-schedule.ts](../../src/recording-schedule.ts), [recording-schedule-store.ts](../../src/recording-schedule-store.ts), [recording-schedule-systemd.ts](../../src/recording-schedule-systemd.ts) | captured local jobs, native metadata and Linux user timers |
 | [archive-transcripts.ts](../../src/archive-transcripts.ts) | verified local WebVTT reads and bounded literal search |
 | [archive-import.ts](../../src/archive-import.ts) | fully verified plans and atomic per-occurrence transcript append |
 | [unified-search.ts](../../src/unified-search.ts) | validated public producer search with explicit resource scope |
@@ -74,6 +77,26 @@ Cloud archives keep transfer metadata rather than creating a second meeting data
 contain asset IDs, sizes and local digests, never signed URLs or tokens. Writes use temporary files
 and no-overwrite promotion; repeated downloads verify existing entries. Stale-lock recovery removes
 recognized dead-process markers only. Local reads and checksum verification run serially.
+
+The shared SDK owns transfer range/validator rules, bounded catalog synchronization and checkpoint
+acknowledgements. Zoom owns trusted authenticated requests, native files and cross-process locks.
+Configured profiles enable durable partials; unscoped legacy downloads remain ephemeral. Prefix
+hashes and file identity are verified before append. A retained owned promotion journal allows safe
+recovery between final publication and manifest commitment. Untracked foreign files are preserved.
+Checkpoints record prior successful callbacks, not current file integrity or provider completeness.
+
+Daily jobs use shared pure schedule plans and UTC discovery windows. The host stores captured public
+profile/client/config/runtime metadata and generates Linux systemd user units. Planning performs no
+writes or subprocess calls; explicit installation verifies timer activation before acknowledging it.
+Saved status is historical, and reads do not query systemd. Each run checks the selected public
+configuration before credentials, then uses a fixed token manager and durable archive checkpoint.
+OS timers stay in this provider package; the shared SDK can accept another scheduler or provider.
+
+Remote management maps Zoom API bodies and numeric IDs into optional shared management ports.
+Portable validation and preview/single-dispatch rules come from cli-meetings; transport-specific
+uncertain outcomes remain the adapter's responsibility. Other providers need only the capabilities
+they support, with no Zoom dependency or duplicated orchestration. See the
+[provider guide](https://github.com/WireCatLabs/cli-meetings/blob/main/docs/dev/PROVIDERS.md).
 
 Archive transcript reads open a regular no-follow file handle and use that handle for bounded reads,
 size and digest verification. Strict UTF-8 decoding precedes the shared WebVTT parser. Search uses

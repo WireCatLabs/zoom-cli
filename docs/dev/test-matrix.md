@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**176 ✅ · 1 ⛔ · 0 ❌** — 44 commands, 133 options.
+**200 ✅ · 1 ⛔ · 0 ❌** — 49 commands, 152 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -111,11 +111,19 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `recordings sync` | `--to` | ✅ |  |
 | `recordings sync` | `--destination` | ✅ |  |
 | `recordings sync` | `--max-bytes` | ✅ |  |
+| `recordings sync` | `--resume` | ✅ |  |
+| `recordings sync` | `--no-resume` | ✅ |  |
+| `recordings sync` | `--checkpoint` | ✅ |  |
+| `recordings sync` | `--recheck-from` | ✅ |  |
+| `recordings sync` | `--max-pages` | ✅ |  |
+| `recordings sync` | `--max-entries` | ✅ |  |
 | `recordings show` |  | ✅ |  |
 | `recordings download` |  | ✅ |  |
 | `recordings download` | `--destination` | ✅ |  |
 | `recordings download` | `--file-ids` | ✅ |  |
 | `recordings download` | `--max-bytes` | ✅ |  |
+| `recordings download` | `--resume` | ✅ |  |
+| `recordings download` | `--no-resume` | ✅ |  |
 | `recordings archive transcript` |  | ✅ |  |
 | `recordings archive transcript` | `--uuid` | ✅ |  |
 | `recordings archive transcript` | `--file-ids` | ✅ |  |
@@ -136,6 +144,22 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `recordings archive import` | `--file-ids` | ✅ |  |
 | `recordings archive import` | `--max-bytes` | ✅ |  |
 | `recordings archive import` | `--max-total-bytes` | ✅ |  |
+| `recordings schedule create` |  | ✅ |  |
+| `recordings schedule create` | `--name` | ✅ |  |
+| `recordings schedule create` | `--destination` | ✅ |  |
+| `recordings schedule create` | `--from` | ✅ |  |
+| `recordings schedule create` | `--at` | ✅ |  |
+| `recordings schedule create` | `--timezone` | ✅ |  |
+| `recordings schedule create` | `--lookback-days` | ✅ |  |
+| `recordings schedule create` | `--max-bytes` | ✅ |  |
+| `recordings schedule create` | `--yes` | ✅ |  |
+| `recordings schedule create` | `--dry-run` | ✅ |  |
+| `recordings schedule list` |  | ✅ |  |
+| `recordings schedule show` |  | ✅ |  |
+| `recordings schedule run` |  | ✅ |  |
+| `recordings schedule disable` |  | ✅ |  |
+| `recordings schedule disable` | `--yes` | ✅ |  |
+| `recordings schedule disable` | `--dry-run` | ✅ |  |
 | `remote-meetings list` |  | ✅ |  |
 | `remote-meetings show` |  | ✅ |  |
 | `remote-meetings invitation` |  | ✅ |  |
