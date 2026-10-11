@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Meeting notes and facts examples now use Memo’s supported commands, including account-scoped
+  note creation. The public roadmap separates available workflows from planned meeting intake
+  and preparation. Zoom app setup uses one replaceable client-ID placeholder.
+
 ## 0.7.1 — 11.10.2026
 
 ### Fixed

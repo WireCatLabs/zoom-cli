@@ -86,14 +86,15 @@ overridden. For a Zoom profile named `AliceExample`, its provider account key is
 ```sh
 memo tags add planning --meeting 1 --provider zoom --account zm-profile:AliceExample --json
 memo tags remove planning --meeting 1 --provider zoom --account zm-profile:AliceExample --json
-memo notes add --text "Alice Example follow-up" --about meeting:1/1 --json
+memo notes add --text "Alice Example follow-up" --meeting 1 --provider zoom --account zm-profile:AliceExample --json
 memo notes list --about meeting:1/1 --json
-memo memories add "Alice Example will review" --kind fact --scope work --subject meeting:1/1 --evidence meeting:1/1/1/0 --json
-memo memories list --subject meeting:1/1 --scope work --json
+memo facts add "Alice Example will review" --type promise --scope work --subject meeting:1/1 --evidence meeting:1/1/1/0 --json
+memo facts list --subject meeting:1/1 --json
 ```
 
-Memo's add/remove commands write directly to the local store. Owner-authored memories are confirmed;
-agent-authored memories stay proposed until confirmed. Meeting revision and cue evidence remains
+Memo's add/remove commands write directly to the local store. Owner-authored facts are accepted;
+agent-authored facts submitted through Memo MCP stay proposed until reviewed. Memories keep summaries,
+digests and preferences separately. Meeting revision and cue evidence remains
 addressable after corrections. The references and ids above are invented examples; use ids from
 your stored meetings and selected account.
 
