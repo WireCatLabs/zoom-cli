@@ -3,7 +3,11 @@ import { listed } from "@wirecat/cli-meetings"
 import type { Command } from "commander"
 import { ZoomError } from "./errors.js"
 import { bytes } from "./execution.js"
-import type { RecordingScheduleCapture, RecordingScheduleService } from "./recording-schedule.js"
+import type {
+  RecordingScheduleCapture,
+  RecordingScheduleReceipt,
+  RecordingScheduleService,
+} from "./recording-schedule.js"
 
 export const addRecordingScheduleCommands = (
   program: Command,
@@ -17,6 +21,10 @@ export const addRecordingScheduleCommands = (
     outputIsTTY?: boolean
   },
 ): void => {
+  const deliver = async (value: RecordingScheduleReceipt) => {
+    if (value.applied) await deps.receipt(value)
+    else deps.output(value)
+  }
   const recordings = program.commands.find((command) => command.name() === "recordings")
   if (!recordings) throw new ZoomError("configuration_error", "recording command group is unavailable")
   const schedule = recordings.command("schedule").description("local archive jobs and Linux user systemd timers")
@@ -52,7 +60,7 @@ export const addRecordingScheduleCommands = (
             throw new ZoomError("configuration_error", "archive schedule installation requires online mode")
           const capture = deps.capture()
           const service = deps.service()
-          deps.output(
+          await deliver(
             await service.create(
               {
                 name: options.name,
@@ -64,7 +72,7 @@ export const addRecordingScheduleCommands = (
                 maxBytes: options.maxBytes,
               },
               capture,
-              { apply: options.yes, dryRun: options.dryRun, offline: deps.offline(), signal: deps.signal() },
+              { apply: options.yes, dryRun: options.dryRun, offline, signal: deps.signal() },
             ),
           )
         },
@@ -114,7 +122,7 @@ export const addRecordingScheduleCommands = (
       .option("--yes", "disable and stop the timer")
       .option("--dry-run", "preview even when --yes is present")
       .action(async (id: string, options: { yes?: boolean; dryRun?: boolean }) => {
-        deps.output(
+        await deliver(
           await deps.service().disable(id, { apply: options.yes, dryRun: options.dryRun, signal: deps.signal() }),
         )
       }),

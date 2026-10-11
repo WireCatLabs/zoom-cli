@@ -61,6 +61,7 @@ const unitPlan = (value: RecordingScheduleJob): RecordingScheduleUnits => {
     "--jsonl",
     "--timeout",
     "6h",
+    "--no-input",
   ]
   const timeZone = new Intl.DateTimeFormat("en", { timeZone: job.schedule.timeZone }).resolvedOptions().timeZone
   return {

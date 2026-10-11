@@ -5,6 +5,7 @@ import { memoryKeyring } from "@wirecat/cli-core"
 import { planRecordingArchiveSchedule } from "@wirecat/cli-meetings"
 import { Command } from "commander"
 import { expect, it, vi } from "vitest"
+import { setConfig } from "./config.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
 import type { RecordingScheduleJob, RecordingScheduleService } from "./recording-schedule.js"
 import { addRecordingScheduleCommands } from "./recording-schedule-commands.js"
@@ -197,3 +198,64 @@ it("offline installation and manual run fail before an injected service can disp
   ).toBe(3)
   expect(fixture.service.create).not.toHaveBeenCalled()
 })
+
+it.each(["create", "disable"] as const)(
+  "preserves the confirmed %s acknowledgement after caller cancellation without duplicate dispatch",
+  async (action) => {
+    const fixture = await setup()
+    const controller = new AbortController()
+    fixture.deps.signal = controller.signal
+    fixture.deps.recordingScheduleTarget = {
+      runtime: fixture.job.capture.runtime,
+      cliPath: fixture.job.capture.cliPath,
+    }
+    setConfig(fixture.deps.configPath, "zoom.clientId", "example-client")
+    setConfig(fixture.deps.configPath, "account.profile", "AliceExample")
+    const committed = {
+      applied: true,
+      backend: "invented-local",
+      job: { ...fixture.job, state: action === "create" ? ("enabled" as const) : ("disabled" as const) },
+      timerState: action === "create" ? ("verified_enabled" as const) : ("verified_disabled" as const),
+    }
+    vi.mocked(fixture.service[action]).mockImplementationOnce(async () => {
+      controller.abort()
+      return committed
+    })
+    const streamData = vi.fn(async (text: string, signal?: AbortSignal) => {
+      expect(signal?.aborted).toBe(false)
+      fixture.output.push(text)
+    })
+    fixture.deps.streamData = streamData
+    const args =
+      action === "create"
+        ? [
+            "recordings",
+            "schedule",
+            "create",
+            "--name",
+            "daily",
+            "--destination",
+            fixture.job.schedule.destination,
+            "--from",
+            "2026-10-01",
+            "--at",
+            "03:15",
+            "--timezone",
+            "UTC",
+            "--yes",
+            "--json",
+            "--no-input",
+          ]
+        : ["recordings", "schedule", "disable", fixture.job.schedule.id, "--yes", "--json", "--no-input"]
+    expect(await run(args, fixture.deps)).toBe(130)
+    expect(fixture.service[action]).toHaveBeenCalledTimes(1)
+    expect(streamData).toHaveBeenCalledTimes(1)
+    expect(JSON.parse(fixture.output.join(""))).toMatchObject({
+      applied: true,
+      timerState: committed.timerState,
+      job: { state: committed.job.state },
+    })
+    expect(fixture.fail).not.toHaveBeenCalled()
+    expect(fixture.tokenAccess).not.toHaveBeenCalled()
+  },
+)

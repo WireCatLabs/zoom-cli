@@ -240,7 +240,7 @@ it("renders escaped systemd argv without shell evaluation and verifies install/d
   })
   const units = backend.plan(saved)
   expect(await readdir(root)).toEqual(["example-cli.js"])
-  expect(units.service).toContain('"--timeout" "6h"')
+  expect(units.service).toContain('"--timeout" "6h" "--no-input"')
   expect(units.timer).toContain("OnCalendar=*-*-* 03:15:00 UTC")
   await backend.install(saved, {})
   expect(execute.mock.calls.map(([, args]) => args[1])).toEqual(["daemon-reload", "enable", "is-enabled", "is-active"])
