@@ -419,7 +419,7 @@ it("resumes verified archive acknowledgements with an explicit account and durab
   const first = await collect(syncRecordingArchive(source, opts))
   expect(first).toMatchObject([{ availability: "unknown", checkpointRevision: 2, meeting: { uuid: item.uuid } }])
   expect(await collect(syncRecordingArchive(source, opts))).toEqual([])
-  expect(calls).toEqual([{ destination, signal: undefined, resume: true, account: "AliceExample" }])
+  expect(calls).toEqual([{ destination, signal: expect.any(AbortSignal), resume: true, account: "AliceExample" }])
   await expect(collect(syncRecordingArchive(source, { ...opts, account: "BobSample" }))).rejects.toMatchObject({
     code: "configuration_error",
   })
