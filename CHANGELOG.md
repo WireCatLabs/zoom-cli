@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.5.0 — 11.10.2026
+
+### Added
+
+- **Explicit meeting links** preview or apply event and participant/person associations in the
+  shared store. Writes check live account ownership and optional prior values, keep manual identity
+  audit and involvement records current, and support deliberate target-account selection.
+- **Bounded word search and indexing** page hits inside a large meeting and match literal prefixes
+  or configured English/Spanish/Russian word forms. Explicit indexing processes small local batches;
+  read coverage reports pending work and unknown completeness.
+- **Local WAV transcription** previews media without recognition and uses an already installed
+  shared speech model only with explicit `--yes`. PCM16 mono/stereo WAV at 16 or 48 kHz is processed
+  in bounded windows, with coarse timestamps and separate media/model provenance. Provider
+  transcripts remain intact; reruns retain local history. No model download or large dependency is added.
+- **Exact archive import receipts** report transactional created, inserted, replayed and superseded
+  counts on the current shared store. Committed receipts survive late cancellation; malformed
+  acknowledgements preserve uncertain outcomes and never trigger a second write.
+- **Memo integration guidance** uses the existing meeting notes, tags and memory commands and shared
+  records, without adding duplicate Zoom knowledge commands.
+
 ## 0.4.0 — 11.10.2026
 
 ### Added
