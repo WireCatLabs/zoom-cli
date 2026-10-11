@@ -38,7 +38,8 @@ and check that npm's global executable directory is on PATH, the list of folders
 | You only have transcript files | Skip browser login and use [Import without a Zoom app](#import-without-a-zoom-app) |
 
 A Zoom app is a permission registration in the Marketplace, separate from your Zoom account and
-from the Zoom meeting application. `zm` requires an explicit client ID; installing it does not
+from the Zoom meeting application. There is no credentials file to download: configure its
+Public Client ID, then authorize your account in the browser. `zm` requires an explicit client ID; installing it does not
 select an app for you. A development app can be restricted to its developer's account. A client
 ID alone does not grant access to somebody else's Zoom data.
 
@@ -153,7 +154,7 @@ npm uninstall -g @wirecat/zoom-cli
 
 Uninstalling the package does not erase the shared meeting database or recording folders. Revoke
 app access in Zoom's Marketplace if you also want to withdraw its account authorization. There is
-no `zm logout` command; see [sessions](sessions.md#remove-access) for the available controls.
+no logout command; see [sessions](sessions.md#remove-access) for the available controls.
 
 ## Shell completion
 

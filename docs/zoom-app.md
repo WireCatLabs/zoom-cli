@@ -3,7 +3,8 @@
 A Zoom app tells Zoom which permissions a program can request. Connect an existing app to `zm`,
 or create a user-managed app for your own account. By the end you will have the Public Client ID,
 redirect settings and scopes needed for browser login. This registration does not install a bot
-inside meetings or make recordings for you.
+inside meetings or make recordings for you. You do not download a credentials file or create a
+separate OAuth client outside the app: enable Public Client OAuth inside it and copy the displayed ID.
 
 ## Use an app you already created
 
