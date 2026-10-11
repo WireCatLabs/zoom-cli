@@ -421,10 +421,10 @@ it("resumes verified archive acknowledgements with an explicit account and durab
   expect(await collect(syncRecordingArchive(source, opts))).toEqual([])
   expect(calls).toEqual([{ destination, signal: undefined, resume: true, account: "AliceExample" }])
   await expect(collect(syncRecordingArchive(source, { ...opts, account: "BobSample" }))).rejects.toMatchObject({
-    code: "conflict",
+    code: "configuration_error",
   })
   await expect(collect(syncRecordingArchive(source, { ...opts, maxBytes: 12 }))).rejects.toMatchObject({
-    code: "conflict",
+    code: "configuration_error",
   })
 })
 it("validates checkpoint selection before remote discovery and snapshots options before asynchronous work", async () => {

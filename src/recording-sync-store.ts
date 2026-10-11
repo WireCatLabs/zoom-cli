@@ -14,7 +14,7 @@ import { openOrdinaryFile } from "./ordinary-file.js"
 const maxBytes = 8 * 1024 ** 2
 const code = (error: unknown): string | undefined => (error as NodeJS.ErrnoException)?.code
 const conflict = (message: string): never => {
-  throw new ZoomError("conflict", message)
+  throw new ZoomError("configuration_error", message)
 }
 const boundedJson = async (path: string, limit: number): Promise<unknown> => {
   const file = await openOrdinaryFile(path)

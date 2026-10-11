@@ -35,19 +35,23 @@ it("persists versioned checkpoint bytes across process-style reopen with lease a
   await store.save("AliceExample", lease.token, null, state())
   expect(JSON.parse(await readFile(destination, "utf8"))).toEqual(state())
   await expect(fileRecordingSyncCheckpointStore(destination).acquire("AliceExample")).rejects.toMatchObject({
-    code: "conflict",
+    code: "configuration_error",
   })
-  await expect(store.read("BobSample", lease.token)).rejects.toMatchObject({ code: "conflict" })
-  await expect(store.read("AliceExample", "foreign")).rejects.toMatchObject({ code: "conflict" })
-  await expect(store.save("AliceExample", lease.token, null, state(2))).rejects.toMatchObject({ code: "conflict" })
-  await expect(store.save("AliceExample", lease.token, 1, state(1))).rejects.toMatchObject({ code: "conflict" })
+  await expect(store.read("BobSample", lease.token)).rejects.toMatchObject({ code: "configuration_error" })
+  await expect(store.read("AliceExample", "foreign")).rejects.toMatchObject({ code: "configuration_error" })
+  await expect(store.save("AliceExample", lease.token, null, state(2))).rejects.toMatchObject({
+    code: "configuration_error",
+  })
+  await expect(store.save("AliceExample", lease.token, 1, state(1))).rejects.toMatchObject({
+    code: "configuration_error",
+  })
   await store.save("AliceExample", lease.token, 1, state(2))
   await lease.release()
   const reopened = fileRecordingSyncCheckpointStore(destination)
   const second = await reopened.acquire("AliceExample")
   expect(await reopened.read("AliceExample", second.token)).toEqual(state(2))
   await second.release()
-  await expect(second.release()).rejects.toMatchObject({ code: "conflict" })
+  await expect(second.release()).rejects.toMatchObject({ code: "configuration_error" })
 })
 it("recovers only a recognized local dead-process lease and refuses foreign, malformed or replaced owners", async () => {
   const child = spawn(process.execPath, ["-e", "process.exit(0)"], { stdio: "ignore" })
@@ -68,13 +72,15 @@ it("recovers only a recognized local dead-process lease and refuses foreign, mal
     await mkdir(`${target}.lock`, { recursive: true })
     await writeFile(join(`${target}.lock`, "owner.json"), JSON.stringify(owner))
     await expect(fileRecordingSyncCheckpointStore(target).acquire("AliceExample")).rejects.toMatchObject({
-      code: "conflict",
+      code: "configuration_error",
     })
   }
   const acquired = await store.acquire("AliceExample")
   await writeFile(join(`${destination}.lock`, "owner.json"), JSON.stringify(lockOwner(process.pid)))
-  await expect(store.save("AliceExample", acquired.token, null, state())).rejects.toMatchObject({ code: "conflict" })
-  await expect(acquired.release()).rejects.toMatchObject({ code: "conflict" })
+  await expect(store.save("AliceExample", acquired.token, null, state())).rejects.toMatchObject({
+    code: "configuration_error",
+  })
+  await expect(acquired.release()).rejects.toMatchObject({ code: "configuration_error" })
 })
 it("bounds ordinary checkpoint and owner reads and never overwrites malformed or symlink state", async () => {
   for (const content of ["{", "x".repeat(8 * 1024 ** 2 + 1), JSON.stringify({ version: 2 })]) {
@@ -112,12 +118,12 @@ it("rejects invalid path/job inputs before creating state and serializes stale r
   await mkdir(`${destination}.lock`, { recursive: true })
   await mkdir(`${destination}.lock.recovery`)
   await writeFile(join(`${destination}.lock`, "owner.json"), JSON.stringify(lockOwner(process.pid)))
-  await expect(store.acquire("AliceExample")).rejects.toMatchObject({ code: "conflict" })
+  await expect(store.acquire("AliceExample")).rejects.toMatchObject({ code: "configuration_error" })
   const ordinary = await path()
   await mkdir(dirname(ordinary), { recursive: true })
   await writeFile(`${ordinary}.lock`, "invented marker")
   await expect(fileRecordingSyncCheckpointStore(ordinary).acquire("AliceExample")).rejects.toMatchObject({
-    code: "conflict",
+    code: "configuration_error",
   })
 })
 
