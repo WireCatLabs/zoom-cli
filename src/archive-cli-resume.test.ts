@@ -250,7 +250,7 @@ it("refuses saved backup jobs after profile or client changes before keyring or 
     {},
   )
   const keyring = vi.spyOn(deps.tokens.options.keyring, "get")
-  const network = vi.fn(async () => {
+  const network = vi.fn(async (): Promise<Response> => {
     throw new Error("unexpected network")
   })
   deps.fetch = network
@@ -268,6 +268,24 @@ it("refuses saved backup jobs after profile or client changes before keyring or 
   expect(network).not.toHaveBeenCalled()
   expect(output).toEqual([])
   await expect(access(schedule.destination)).rejects.toMatchObject({ code: "ENOENT" })
+  setConfig(deps.configPath, "account.profile", "AliceExample")
+  setConfig(deps.configPath, "zoom.clientId", "example-client")
+  deps.tokens.options.keyring.set(
+    `zoom-cli:${directory}`,
+    "example-client",
+    JSON.stringify({
+      accessToken: "example-scheduled-access",
+      refreshToken: "example-scheduled-refresh",
+      expiresAt: Date.parse("2026-10-12T00:00:00Z"),
+      scopes: ["cloud_recording:read:list_user_recordings"],
+    }),
+  )
+  network.mockImplementation(async () => new Response(JSON.stringify({ meetings: [], next_page_token: "" })))
+  expect(await run(["recordings", "schedule", "run", schedule.id, "--jsonl"], deps)).toBe(0)
+  expect(keyring).toHaveBeenCalledWith(`zoom-cli:${directory}`, "example-client")
+  expect(network).toHaveBeenCalledTimes(1)
+  const saved = JSON.parse(await readFile(join(schedule.destination, ".zoom-archive-sync.json"), "utf8"))
+  expect(saved.scope).toEqual({ provider: "zoom", account: profileAccountKey("AliceExample") })
 })
 
 it("previews native schedules offline without persisting jobs, units or opening credentials", async () => {
