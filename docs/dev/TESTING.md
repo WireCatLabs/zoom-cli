@@ -66,6 +66,14 @@ guards reject external network, browser spawning and keyring loading; the semant
 its exact isolated loopback embedding endpoint. Registry access is limited to installation.
 The jobs retain JSON proofs and check the validation tarball's SHA-256 before installation.
 
+`scripts/installed-meeting-integration.mjs` adds fresh invented meetings, guests and events through
+the installed public store. It checks link previews and compare-and-save, manual identity audit and
+immediate account presence, explicit keyword indexing, configured word forms, hit continuation and
+foreign-account cursor rejection. A one-second silent WAV previews without opening a model; applying
+against an explicitly empty model directory reports the missing model without downloading anything.
+Archive import assertions use exact creation, insertion, replay and supersession receipts. The helper
+inspects audit rows only in its fresh fixture; product code uses the shared public services.
+
 Archive reads compare the opened file's identity with its path before reading bytes. This also
 checks replacement races on Windows, where libuv does not support `O_NOFOLLOW`:
 [libuv file-system flags](https://docs.libuv.org/en/v1.x/fs.html).

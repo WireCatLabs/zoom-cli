@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**200 ✅ · 1 ⛔ · 0 ❌** — 49 commands, 152 options.
+**233 ✅ · 1 ⛔ · 0 ❌** — 54 commands, 180 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -48,6 +48,39 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings people` |  | ✅ |  |
 | `meetings people` | `--json` | ✅ |  |
 | `meetings people` | `--jsonl` | ✅ |  |
+| `meetings link-event` |  | ✅ |  |
+| `meetings link-event` | `--event-id` | ✅ |  |
+| `meetings link-event` | `--expected-event-id` | ✅ |  |
+| `meetings link-event` | `--yes` | ✅ |  |
+| `meetings link-event` | `--dry-run` | ✅ |  |
+| `meetings link-person` |  | ✅ |  |
+| `meetings link-person` | `--participant-id` | ✅ |  |
+| `meetings link-person` | `--person` | ✅ |  |
+| `meetings link-person` | `--target-accounts` | ✅ |  |
+| `meetings link-person` | `--expected-person` | ✅ |  |
+| `meetings link-person` | `--yes` | ✅ |  |
+| `meetings link-person` | `--dry-run` | ✅ |  |
+| `meetings transcribe` |  | ✅ |  |
+| `meetings transcribe` | `--model` | ✅ |  |
+| `meetings transcribe` | `--models-dir` | ✅ |  |
+| `meetings transcribe` | `--max-bytes` | ✅ |  |
+| `meetings transcribe` | `--max-duration` | ✅ |  |
+| `meetings transcribe` | `--max-segments` | ✅ |  |
+| `meetings transcribe` | `--max-text-bytes` | ✅ |  |
+| `meetings transcribe` | `--yes` | ✅ |  |
+| `meetings transcribe` | `--dry-run` | ✅ |  |
+| `meetings search-page` |  | ✅ |  |
+| `meetings search-page` | `--meeting-id` | ✅ |  |
+| `meetings search-page` | `--since` | ✅ |  |
+| `meetings search-page` | `--until` | ✅ |  |
+| `meetings search-page` | `--limit` | ✅ |  |
+| `meetings search-page` | `--after` | ✅ |  |
+| `meetings search-page` | `--max-read-bytes` | ✅ |  |
+| `meetings search-index` |  | ✅ |  |
+| `meetings search-index` | `--limit` | ✅ |  |
+| `meetings search-index` | `--max-read-bytes` | ✅ |  |
+| `meetings search-index` | `--yes` | ✅ |  |
+| `meetings search-index` | `--dry-run` | ✅ |  |
 | `meetings evidence` |  | ✅ |  |
 | `meetings evidence` | `--cues` | ✅ |  |
 | `meetings evidence` | `--bytes` | ✅ |  |

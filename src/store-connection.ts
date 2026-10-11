@@ -19,8 +19,12 @@ import { createMeetingSemanticCapabilities } from "./meeting-semantic.js"
 import type { StoreConnection, StoreConnectRequest } from "./program.js"
 import { validateUnifiedSearch } from "./unified-search.js"
 
+type OptionalMeetingPorts = MeetingTranscriptReceiptStore &
+  MeetingSearchStore &
+  MeetingSearchIndexStore &
+  MeetingContextStore
 type SharedMeetingStore = Pick<MessageStore, "saveAccount" | "storedAccount" | "close"> & {
-  meetings: MessageStore["meetings"] &
+  meetings: Omit<MessageStore["meetings"], keyof OptionalMeetingPorts> &
     Partial<MeetingTranscriptReceiptStore & MeetingSearchStore & MeetingSearchIndexStore & MeetingContextStore>
 } & Partial<
     Pick<
@@ -28,6 +32,13 @@ type SharedMeetingStore = Pick<MessageStore, "saveAccount" | "storedAccount" | "
       "meetingVectors" | "personByUid" | "personSeenInAccounts" | "involvements" | "notes" | "knowledge" | "memories"
     >
   >
+const contextServiceMeetings = (meetings: SharedMeetingStore["meetings"]): meetings is MessageStore["meetings"] =>
+  typeof meetings.appendTranscriptsWithReceipt === "function" &&
+  typeof meetings.searchHits === "function" &&
+  typeof meetings.indexSearch === "function" &&
+  typeof meetings.linkMeetingEvent === "function" &&
+  typeof meetings.linkParticipantPerson === "function" &&
+  typeof meetings.participantPerson === "function"
 export interface StoreConnectionOptions extends StoreOptions {
   openStore?: (options: StoreOptions) => Promise<SharedMeetingStore>
 }
@@ -77,7 +88,8 @@ export const createStoreConnector =
       const notes = connected.notes
       const knowledge = connected.knowledge
       const memories = connected.memories
-      if (input.capability === "meeting-integration" && (!notes || !knowledge || !memories))
+      const contextMeetings = contextServiceMeetings(connected.meetings) ? connected.meetings : undefined
+      if (input.capability === "meeting-integration" && (!notes || !knowledge || !memories || !contextMeetings))
         throw new ZoomError("configuration_error", "the installed store does not support meeting knowledge integration")
       if (input.capability === "meeting-search" && typeof connected.meetings.searchHits !== "function")
         throw new ZoomError("configuration_error", "the installed meeting store does not support bounded hit search")
@@ -179,7 +191,7 @@ export const createStoreConnector =
               },
             }
           : {}),
-        ...(notes && knowledge && memories
+        ...(notes && knowledge && memories && contextMeetings
           ? {
               meetingIntegration: {
                 change: async (reference, input, options = {}) => {
@@ -205,7 +217,7 @@ export const createStoreConnector =
                   const service = await api.createMeetingContextService(
                     {
                       storedAccount: connected.storedAccount.bind(connected),
-                      meetings: connected.meetings,
+                      meetings: contextMeetings,
                       notes,
                       knowledge,
                       memories,

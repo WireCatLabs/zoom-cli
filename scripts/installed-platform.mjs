@@ -4,7 +4,7 @@ import { createHash } from "node:crypto"
 import { existsSync, mkdirSync, readFileSync, renameSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs"
 import { lstat, open } from "node:fs/promises"
 import { createRequire } from "node:module"
-import { join, resolve } from "node:path"
+import { dirname, join, resolve } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 
 const root = resolve(process.argv[2])
@@ -16,6 +16,25 @@ assert.equal(metadata.version, expectedVersion)
 const require = createRequire(join(packageRoot, "package.json"))
 const producerRequire = createRequire(require.resolve("@wirecat/cli-messaging"))
 assert.equal(require.resolve("@wirecat/cli-meetings"), producerRequire.resolve("@wirecat/cli-meetings"))
+assert.equal(require.resolve("@wirecat/cli-core"), producerRequire.resolve("@wirecat/cli-core"))
+const dependencyVersion = (name) => {
+  let directory = dirname(require.resolve(name))
+  while (directory !== dirname(directory)) {
+    const file = join(directory, "package.json")
+    if (existsSync(file)) {
+      const item = JSON.parse(readFileSync(file, "utf8"))
+      if (item.name === name) return item.version
+    }
+    directory = dirname(directory)
+  }
+  throw new Error(`installed dependency metadata missing: ${name}`)
+}
+const dependencies = {
+  meetings: dependencyVersion("@wirecat/cli-meetings"),
+  messaging: dependencyVersion("@wirecat/cli-messaging"),
+  core: dependencyVersion("@wirecat/cli-core"),
+}
+assert.deepEqual(dependencies, { meetings: "0.4.1", messaging: "0.234.0", core: "0.19.4" })
 const guard = join(root, "guard.cjs")
 const denied = join(root, "denied")
 const loaded = join(root, "loaded")
@@ -279,8 +298,17 @@ assert.equal(existsSync(cancelMarker), true)
 // Actual installed append APIs: replay deduplication and correction history survive process boundaries.
 const imported = json("recordings", "archive", "import", archive).items[0]
 assert.equal(imported.status, "acknowledged")
+assert.equal(imported.created, true)
+assert.equal(imported.insertedTranscripts, 1)
+assert.equal(imported.replayedTranscripts, 0)
+assert.equal(imported.supersededTranscripts, 0)
 const archivedMeetingId = String(imported.meetingId)
-assert.equal(json("recordings", "archive", "import", archive).items[0].meetingId, imported.meetingId)
+const importedReplay = json("recordings", "archive", "import", archive).items[0]
+assert.equal(importedReplay.meetingId, imported.meetingId)
+assert.equal(importedReplay.created, false)
+assert.equal(importedReplay.insertedTranscripts, 0)
+assert.equal(importedReplay.replayedTranscripts, 1)
+assert.equal(importedReplay.supersededTranscripts, 0)
 assert.equal(json("meetings", "show", archivedMeetingId).transcripts.length, 1)
 const manifestPath = join(archive, `.zoom-archive-${digest(uuid)}.json`)
 const correctedArchive = original.replace("Original", "Revised archive")
@@ -289,7 +317,11 @@ const manifest = JSON.parse(readFileSync(manifestPath, "utf8"))
 manifest.files[0].size = Buffer.byteLength(correctedArchive)
 manifest.files[0].sha256 = digest(correctedArchive)
 writeFileSync(manifestPath, JSON.stringify(manifest))
-json("recordings", "archive", "import", archive)
+const correctedReceipt = json("recordings", "archive", "import", archive).items[0]
+assert.equal(correctedReceipt.created, false)
+assert.equal(correctedReceipt.insertedTranscripts, 1)
+assert.equal(correctedReceipt.replayedTranscripts, 0)
+assert.equal(correctedReceipt.supersededTranscripts, 1)
 json("recordings", "archive", "import", archive)
 assert.equal(json("meetings", "show", archivedMeetingId).transcripts.length, 2)
 assert.equal(json("meetings", "search", "Original").items.length, 0)
@@ -302,6 +334,16 @@ json("import", folder)
 const foreignMeetingId = String(json("meetings", "list").items[0].id)
 assert.notEqual(foreignMeetingId, meetingId)
 json("config", "set", "account.profile", "invented-platform")
+const { installedMeetingIntegration } = await import("./installed-meeting-integration.mjs")
+const meetingIntegration = await installedMeetingIntegration({
+  root,
+  sandbox,
+  environment,
+  prefix,
+  json,
+  invoke,
+  diagnostics,
+})
 const { Client } = await import(pathToFileURL(require.resolve("@modelcontextprotocol/sdk/client/index.js")).href)
 const { StdioServerTransport } = await import(
   pathToFileURL(require.resolve("@modelcontextprotocol/sdk/server/stdio.js")).href
@@ -497,6 +539,8 @@ const proof = {
   node: process.version,
   packageVersion: expectedVersion,
   meetingsCopies: 1,
+  coreCopies: 1,
+  dependencies,
   checks,
   mcp: true,
   archiveAppend: true,
@@ -506,6 +550,7 @@ const proof = {
   semanticReadonlyMcp: true,
   scheduleOfflinePreview: true,
   recordingResume,
+  meetingIntegration,
   modelEndpoint: "isolated loopback fixture only",
   externalAccess: false,
 }
