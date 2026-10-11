@@ -3,9 +3,9 @@ allowBuilds:
   lefthook: true
 minimumReleaseAgeExclude:
   - '@wirecat/cli-core@0.18.1 || 0.19.2 || 0.19.3 || 0.19.4'
-  - '@wirecat/cli-meetings@0.2.0 || 0.2.1 || 0.2.3 || 0.2.4 || 0.2.5 || 0.2.6 || 0.2.7'
-  - '@wirecat/cli-messaging@0.218.0 || 0.219.0 || 0.224.1 || 0.225.0'
-  - '@wirecat/cli-messaging-onnx@1.0.0'
-  - '@wirecat/cli-messaging-sqlite@1.0.0'
+  - '@wirecat/cli-meetings@0.2.0 || 0.2.1 || 0.2.3 || 0.2.4 || 0.2.5 || 0.2.6 || 0.2.7 || 0.3.0'
+  - '@wirecat/cli-messaging@0.218.0 || 0.219.0 || 0.224.1 || 0.225.0 || 0.230.0'
+  - '@wirecat/cli-messaging-onnx@1.0.0 || 1.0.1'
+  - '@wirecat/cli-messaging-sqlite@1.0.0 || 1.0.1'
   - '@wirecat/cli-tasks@0.2.1 || 0.3.1'
   - '@wirecat/cli-testing@0.2.0 || 0.3.0'
