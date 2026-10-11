@@ -12,6 +12,7 @@ import { ZoomError } from "./errors.js"
 import { openOrdinaryFile } from "./ordinary-file.js"
 
 const maxBytes = 8 * 1024 ** 2
+const ownerByteLimit = 32 * 1024
 const code = (error: unknown): string | undefined => (error as NodeJS.ErrnoException)?.code
 const conflict = (message: string): never => {
   throw new ZoomError("configuration_error", message)
@@ -78,7 +79,7 @@ export function fileRecordingSyncCheckpointStore(path: string): RecordingSyncChe
   const own = async (jobId: string, token: string): Promise<void> => {
     const held = owners.get(token)
     if (!held || held.jobId !== jobId) return conflict("archive checkpoint lease is not owned")
-    const actual = ownerOf(await boundedJson(marker, 4096))
+    const actual = ownerOf(await boundedJson(marker, ownerByteLimit))
     if (actual.token !== token || actual.jobId !== jobId || actual.host !== held.host || actual.pid !== held.pid)
       return conflict("archive checkpoint lease changed")
   }
@@ -109,10 +110,10 @@ export function fileRecordingSyncCheckpointStore(path: string): RecordingSyncChe
           throw error
         }
         try {
-          const prior = ownerOf(await boundedJson(marker, 4096))
+          const prior = ownerOf(await boundedJson(marker, ownerByteLimit))
           if (prior.host !== hostname() || alive(prior.pid))
             return conflict("archive checkpoint job is already active or owned by another host")
-          const verified = ownerOf(await boundedJson(marker, 4096))
+          const verified = ownerOf(await boundedJson(marker, ownerByteLimit))
           if (verified.token !== prior.token) return conflict("archive checkpoint lock changed during stale recovery")
           await unlink(marker)
           await rmdir(lockPath)

@@ -135,3 +135,12 @@ for (const contract of recordingSyncCheckpointStoreContract(async () => {
   }
 }))
   it(contract.name, contract.run)
+
+it("supports bounded opaque job identifiers without exceeding its owner marker read budget", async () => {
+  const destination = await path()
+  const store = fileRecordingSyncCheckpointStore(destination)
+  const jobId = "é".repeat(4096)
+  const lease = await store.acquire(jobId)
+  expect(await store.read(jobId, lease.token)).toBeNull()
+  await lease.release()
+})
