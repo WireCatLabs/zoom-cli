@@ -21,6 +21,9 @@ export const commandDeadline = (action: Command): number | undefined => {
   if (
     action.name() === "download" ||
     action.name() === "sync" ||
+    (action.name() === "run" &&
+      action.parent?.name() === "schedule" &&
+      action.parent.parent?.name() === "recordings") ||
     (action.name() === "verify" && action.parent?.name() === "archive")
   )
     return 3600000

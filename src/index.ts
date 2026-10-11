@@ -42,6 +42,22 @@ export type {
   MeetingSemanticOptions,
 } from "./meeting-semantic-commands.js"
 export { createProgram, type ProgramDeps, run, type StoreConnection, type StoreConnectRequest } from "./program.js"
+export {
+  createRecordingScheduleService,
+  parseRecordingScheduleJob,
+  type RecordingScheduleBackend,
+  type RecordingScheduleCapture,
+  type RecordingScheduleCreateInput,
+  type RecordingScheduleJob,
+  type RecordingScheduleReceipt,
+  type RecordingScheduleService,
+  type RecordingScheduleStore,
+  type RecordingScheduleUnits,
+  snapshotRecordingScheduleCapture,
+  validateRecordingScheduleId,
+} from "./recording-schedule.js"
+export { fileRecordingScheduleStore } from "./recording-schedule-store.js"
+export { createSystemdRecordingArchiveScheduler, type RecordingScheduleExecutor } from "./recording-schedule-systemd.js"
 export { type ArchiveSyncOptions, type ArchiveSyncReceipt, syncRecordingArchive } from "./recording-sync.js"
 export {
   type ArchivedFile,
@@ -62,6 +78,7 @@ export {
   ZoomRecordings,
 } from "./recordings.js"
 export {
+  createZoomMeetingManagement,
   type MeetingChange,
   type MeetingMutation,
   type MutationOptions,

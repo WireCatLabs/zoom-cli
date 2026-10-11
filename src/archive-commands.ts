@@ -1,15 +1,17 @@
 import { annotate } from "@wirecat/cli-core/commands"
-import { listed } from "@wirecat/cli-meetings"
+import { listed, recordingWindows } from "@wirecat/cli-meetings"
 import type { Command } from "commander"
 import type { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
 import { ZoomError } from "./errors.js"
 import { bytes } from "./execution.js"
 import type { inspectArchive, inspectArchiveLocks, recoverArchiveLocks, verifyArchive } from "./recording-archive.js"
+import { validateDownloadOptions } from "./recording-archive.js"
 import { syncRecordingArchive } from "./recording-sync.js"
 import type { ZoomRecordings } from "./recordings.js"
 import type { MeetingChange, MutationOptions, ZoomRemoteMeetings } from "./remote-meetings.js"
 
-export type RecordingsService = Pick<ZoomRecordings, "list" | "show" | "download">
+export type RecordingsService = Pick<ZoomRecordings, "list" | "show" | "download"> &
+  Partial<Pick<ZoomRecordings, "catalog">>
 export type RemoteMeetingsService = Pick<
   ZoomRemoteMeetings,
   "list" | "show" | "invitation" | "create" | "update" | "cancel"
@@ -31,6 +33,7 @@ export interface ArchiveCommandsDeps {
   transcripts: ArchiveTranscriptService
   signal: () => AbortSignal | undefined
   api: () => void
+  account?: () => string | undefined
   output: (value: unknown) => void
   outputItems: (values: AsyncIterable<unknown>) => Promise<void>
   receipt: (value: unknown) => Promise<void>
@@ -49,6 +52,29 @@ const positive = (text: string): number => {
   if (value === 0) throw new ZoomError("validation_error", "expected a positive number")
   return value
 }
+const discoveryLimit = (text: string): number => {
+  const value = positive(text)
+  if (value > 10000) throw new ZoomError("validation_error", "archive discovery limit must be between 1 and 10000")
+  return value
+}
+const archiveScope = (deps: ArchiveCommandsDeps, options: { resume?: boolean; checkpoint?: string }) => {
+  const account = deps.account?.()
+  const resume = options.resume ?? (options.checkpoint !== undefined || account !== undefined)
+  if (resume && !account)
+    throw new ZoomError(
+      "configuration_error",
+      "resumable archives require a local profile; run zm config set account.profile <label>",
+    )
+  if (options.checkpoint !== undefined && !resume)
+    throw new ZoomError("validation_error", "archive checkpoints require resume mode; remove --no-resume")
+  if (options.checkpoint !== undefined && !options.checkpoint.trim())
+    throw new ZoomError("validation_error", "archive checkpoint path must be nonempty")
+  return { ...(account === undefined ? {} : { account }), resume }
+}
+const resumable = (command: Command): Command =>
+  command
+    .option("--resume", "resume verified partial downloads and archive progress; requires a local profile")
+    .option("--no-resume", "disable persistent resume state for this invocation")
 const change = (options: MeetingChange): MeetingChange =>
   Object.fromEntries(
     ["topic", "startTime", "durationMinutes", "timezone", "agenda", "type"]
@@ -89,21 +115,56 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
     "zm recordings list --from 2026-10-01 --to 2026-10-10 --json",
   )
   label(
-    recordings
-      .command("sync")
-      .description("serial monthly recording archive synchronization with completed JSONL receipts")
-      .requiredOption("--from <date>", "first YYYY-MM-DD date")
-      .requiredOption("--to <date>", "last YYYY-MM-DD date (at most ten years)")
-      .requiredOption("--destination <directory>", "explicit archive directory")
-      .option("--max-bytes <bytes>", "maximum bytes per recording file", positive)
-      .action(async (options: { from: string; to: string; destination: string; maxBytes?: number }) => {
-        if (!program.opts().jsonl && !deps.outputIsTTY)
-          throw new ZoomError("validation_error", "headless recording sync requires --jsonl")
-        if (program.opts().json) throw new ZoomError("validation_error", "recording sync streams receipts; use --jsonl")
-        deps.api()
-        for await (const receipt of syncRecordingArchive(deps.recordings(), { ...options, signal: deps.signal() }))
-          await deps.receipt(receipt)
-      }),
+    resumable(
+      recordings
+        .command("sync")
+        .description("serial monthly recording archive synchronization with completed JSONL receipts")
+        .requiredOption("--from <date>", "first YYYY-MM-DD date")
+        .requiredOption("--to <date>", "last YYYY-MM-DD date (at most ten years)")
+        .requiredOption("--destination <directory>", "explicit archive directory")
+        .option("--max-bytes <bytes>", "maximum bytes per recording file", positive),
+    )
+      .option("--checkpoint <file>", "explicit durable checkpoint file; implies resume")
+      .option("--recheck-from <date>", "revisit completed windows from this YYYY-MM-DD date for late recordings")
+      .option("--max-pages <pages>", "catalog page limit from 1 through 10000 (default 1000)", discoveryLimit)
+      .option("--max-entries <entries>", "occurrence limit from 1 through 10000 (default 10000)", discoveryLimit)
+      .action(
+        async (options: {
+          from: string
+          to: string
+          destination: string
+          maxBytes?: number
+          resume?: boolean
+          checkpoint?: string
+          recheckFrom?: string
+          maxPages?: number
+          maxEntries?: number
+        }) => {
+          if (!program.opts().jsonl && !deps.outputIsTTY)
+            throw new ZoomError("validation_error", "headless recording sync requires --jsonl")
+          if (program.opts().json)
+            throw new ZoomError("validation_error", "recording sync streams receipts; use --jsonl")
+          const scope = archiveScope(deps, options)
+          recordingWindows(options.from, options.to)
+          if (options.recheckFrom !== undefined) recordingWindows(options.recheckFrom, options.recheckFrom)
+          validateDownloadOptions({ ...options, ...scope })
+          deps.api()
+          for await (const receipt of syncRecordingArchive(deps.recordings(), {
+            from: options.from,
+            to: options.to,
+            destination: options.destination,
+            ...scope,
+            maxBytes: options.maxBytes,
+            checkpointPath: options.checkpoint,
+            recheckFrom: options.recheckFrom,
+            maxPages: options.maxPages,
+            maxEntries: options.maxEntries,
+            now: deps.now,
+            signal: deps.signal(),
+          }))
+            await deps.receipt(receipt)
+        },
+      ),
     "zm recordings sync --from 2026-01-01 --to 2026-10-10 --destination ./archive --jsonl",
     "local",
   )
@@ -119,24 +180,28 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
     "zm recordings show example-occurrence --json",
   )
   label(
-    recordings
-      .command("download")
-      .description("stream recording assets into a verified local archive")
-      .argument("<meeting>", "meeting id or occurrence UUID")
-      .requiredOption("--destination <directory>", "explicit archive directory")
-      .option("--file-ids <ids>", "comma-separated recording file ids")
-      .option("--max-bytes <bytes>", "per-file download byte limit (default 20 GiB)", positive)
-      .action(async (id: string, options: { destination: string; fileIds?: string; maxBytes?: number }) => {
+    resumable(
+      recordings
+        .command("download")
+        .description("stream recording assets into a verified local archive")
+        .argument("<meeting>", "meeting id or occurrence UUID")
+        .requiredOption("--destination <directory>", "explicit archive directory")
+        .option("--file-ids <ids>", "comma-separated recording file ids")
+        .option("--max-bytes <bytes>", "per-file download byte limit (default 20 GiB)", positive),
+    ).action(
+      async (id: string, options: { destination: string; fileIds?: string; maxBytes?: number; resume?: boolean }) => {
+        const request = {
+          destination: options.destination,
+          fileIds: options.fileIds?.split(",").map((one) => one.trim()),
+          maxBytes: options.maxBytes,
+          ...archiveScope(deps, options),
+          signal: deps.signal(),
+        }
+        validateDownloadOptions(request)
         deps.api()
-        deps.output(
-          await deps.recordings().download(id, {
-            destination: options.destination,
-            fileIds: options.fileIds?.split(",").map((one) => one.trim()),
-            maxBytes: options.maxBytes,
-            signal: deps.signal(),
-          }),
-        )
-      }),
+        deps.output(await deps.recordings().download(id, request))
+      },
+    ),
     "zm recordings download example-occurrence --destination ./zoom-archive --json",
     "local",
   )

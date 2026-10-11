@@ -1,3 +1,10 @@
+import {
+  createMeetingManagement,
+  dispatchMeetingMutation,
+  type ManagedMeeting,
+  type ManagedMeetingChange,
+  validateMeetingChange,
+} from "@wirecat/cli-meetings"
 import { object, string, ZoomError } from "./errors.js"
 import { required } from "./recordings.js"
 import { operationSignal, type RemoteOptions, type RemoteRequest, ZoomRemote } from "./remote-http.js"
@@ -63,52 +70,24 @@ const changeBody = (change: MeetingChange, create: boolean): Record<string, unkn
     )
   )
     throw new ZoomError("validation_error", "unsupported meeting change field")
-  const body: Record<string, unknown> = {}
-  if (change.topic !== undefined) {
-    if (!string(change.topic)) throw new ZoomError("validation_error", "meeting topic must be nonempty")
-    body.topic = change.topic
-  }
-  if (create && !string(change.topic)) throw new ZoomError("validation_error", "meeting topic is required")
-  if (change.startTime !== undefined) {
-    if (
-      typeof change.startTime !== "string" ||
-      !/T.+(?:Z|[+-]\d{2}:\d{2})$/i.test(change.startTime) ||
-      !Number.isFinite(Date.parse(change.startTime))
-    )
-      throw new ZoomError("validation_error", "meeting start must be an ISO timestamp with a timezone")
-    const date = change.startTime.slice(0, 10)
-    const dateInstant = Date.parse(`${date}T00:00:00Z`)
-    if (!Number.isFinite(dateInstant) || new Date(dateInstant).toISOString().slice(0, 10) !== date)
-      throw new ZoomError("validation_error", "meeting start contains an invalid calendar date")
-    body.start_time = new Date(change.startTime).toISOString()
-  }
-  if (change.durationMinutes !== undefined) {
-    if (!Number.isSafeInteger(change.durationMinutes) || change.durationMinutes <= 0 || change.durationMinutes > 1440)
-      throw new ZoomError("validation_error", "meeting duration must be an integer from 1 to 1440 minutes")
-    body.duration = change.durationMinutes
-  }
-  if (change.timezone !== undefined) {
-    try {
-      new Intl.DateTimeFormat("en", { timeZone: change.timezone }).format()
-    } catch {
-      throw new ZoomError("validation_error", "meeting timezone must be a valid IANA timezone")
-    }
-    body.timezone = change.timezone
-  }
-  if (change.agenda !== undefined) {
-    if (typeof change.agenda !== "string") throw new ZoomError("validation_error", "meeting agenda must be text")
-    body.agenda = change.agenda
-  }
   if (change.type !== undefined && change.type !== 1 && change.type !== 2)
     throw new ZoomError("validation_error", "only instant or scheduled meeting types are supported")
-  if (create) {
-    body.type = change.type ?? 2
-    if (body.type === 2 && body.start_time === undefined)
-      throw new ZoomError("validation_error", "scheduled meeting start is required")
-  } else {
-    if (change.type !== undefined) body.type = change.type
-    if (Object.keys(body).length === 0)
-      throw new ZoomError("validation_error", "at least one meeting change is required")
+  const neutral: ManagedMeetingChange = {
+    ...(change.topic !== undefined ? { title: change.topic } : {}),
+    ...(change.type !== undefined ? { kind: change.type === 1 ? "instant" : "scheduled" } : {}),
+    ...(change.startTime !== undefined ? { startTime: change.startTime } : {}),
+    ...(change.durationMinutes !== undefined ? { durationMinutes: change.durationMinutes } : {}),
+    ...(change.timezone !== undefined ? { timezone: change.timezone } : {}),
+    ...(change.agenda !== undefined ? { agenda: change.agenda } : {}),
+  }
+  const validated = validateMeetingChange(neutral, create)
+  const body: Record<string, unknown> = {
+    ...(validated.title !== undefined ? { topic: validated.title } : {}),
+    ...(validated.kind !== undefined ? { type: validated.kind === "instant" ? 1 : 2 } : {}),
+    ...(validated.startTime !== undefined ? { start_time: validated.startTime } : {}),
+    ...(validated.durationMinutes !== undefined ? { duration: validated.durationMinutes } : {}),
+    ...(validated.timezone !== undefined ? { timezone: validated.timezone } : {}),
+    ...(validated.agenda !== undefined ? { agenda: validated.agenda } : {}),
   }
   return body
 }
@@ -151,24 +130,27 @@ export class ZoomRemoteMeetings {
     options: MutationOptions,
   ): Promise<MeetingMutation> {
     const result: MeetingMutation = { action, applied: false, request }
-    if (!options.apply || options.dryRun) return result
-    const init: RemoteRequest = {
-      method: request.method,
-      ...(request.body ? { body: request.body } : {}),
-      ...(options.signal ? { signal: options.signal } : {}),
-    }
-    const body = await this.remote.request(request.path, scope, init)
-    result.applied = true
-    if (action === "create") {
-      try {
-        result.meeting = normalized(body)
-      } catch {
-        throw new ZoomError(
-          "outcome_unknown",
-          "Zoom mutation returned incomplete meeting details; verify remote state before retrying",
-        )
+    const outcome = await dispatchMeetingMutation(options, async (signal) => {
+      const init: RemoteRequest = {
+        method: request.method,
+        ...(request.body ? { body: request.body } : {}),
+        ...(signal ? { signal } : {}),
       }
-    }
+      const body = await this.remote.request(request.path, scope, init)
+      if (action === "create") {
+        try {
+          return normalized(body)
+        } catch {
+          throw new ZoomError(
+            "outcome_unknown",
+            "Zoom mutation returned incomplete meeting details; verify remote state before retrying",
+          )
+        }
+      }
+      return undefined
+    })
+    result.applied = outcome.applied
+    if (outcome.value) result.meeting = outcome.value
     return result
   }
   create(change: MeetingChange, options: MutationOptions = {}): Promise<MeetingMutation> {
@@ -195,3 +177,45 @@ export class ZoomRemoteMeetings {
     return this.mutate("cancel", { method: "DELETE", path: `${path}${query}` }, "meeting:delete:meeting", options)
   }
 }
+
+const managedMeeting = (meeting: RemoteMeeting): ManagedMeeting => ({
+  id: meeting.id,
+  title: meeting.title,
+  kind: meeting.type === 1 ? "instant" : meeting.type === 2 ? "scheduled" : null,
+  startTime: meeting.startedAt,
+  durationMinutes: meeting.durationMinutes,
+  timezone: meeting.timezone,
+  agenda: meeting.agenda,
+  joinUrl: meeting.joinUrl,
+})
+
+const zoomChange = (change: Readonly<ManagedMeetingChange>): MeetingChange => ({
+  ...(change.title !== undefined ? { topic: change.title } : {}),
+  ...(change.kind !== undefined ? { type: change.kind === "instant" ? 1 : 2 } : {}),
+  ...(change.startTime !== undefined ? { startTime: change.startTime } : {}),
+  ...(change.durationMinutes !== undefined ? { durationMinutes: change.durationMinutes } : {}),
+  ...(change.timezone !== undefined ? { timezone: change.timezone } : {}),
+  ...(change.agenda !== undefined ? { agenda: change.agenda } : {}),
+})
+
+/** The remote client must already be bound to the selected account's token manager. */
+export const createZoomMeetingManagement = (remote: ZoomRemoteMeetings, account: string) =>
+  createMeetingManagement(
+    { provider: "zoom", account },
+    {
+      list: async ({ signal }) => (await remote.list({ signal })).map(managedMeeting),
+      get: async (id, { signal }) => managedMeeting(await remote.show(id, { signal })),
+      invitation: (id, { signal }) => remote.invitation(id, { signal }),
+      create: async (change, { signal }) => {
+        const receipt = await remote.create(zoomChange(change), { apply: true, signal })
+        if (!receipt.meeting) throw new ZoomError("outcome_unknown", "Zoom did not acknowledge the created meeting")
+        return managedMeeting(receipt.meeting)
+      },
+      update: async (id, change, { signal }) => {
+        await remote.update(id, zoomChange(change), { apply: true, signal })
+      },
+      cancel: async (id, { signal, occurrenceId }) => {
+        await remote.cancel(id, { apply: true, signal, occurrenceId })
+      },
+    },
+  )
