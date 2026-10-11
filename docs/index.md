@@ -5,6 +5,8 @@ original passage and prepare for a follow-up. It keeps available meeting informa
 gives your AI agent a way to read it. Your account's permissions and saved transcripts determine
 which Zoom data is available.
 
+<a id="one-minute-to-the-first-result" />
+
 ## Choose your starting point
 
 - **Read your hosted Zoom meetings:** [install and connect](installation.md). Reuse an existing
@@ -13,6 +15,8 @@ which Zoom data is available.
   without app creation or browser login.
 - **Meetings are already stored:** [search a passage](search.md), then connect your agent through
   [a skill or MCP](mcp.md).
+
+<a id="where-to-go-next" />
 
 ## What you can do
 

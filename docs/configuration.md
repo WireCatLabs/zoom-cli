@@ -23,6 +23,21 @@ using its API. `ZOOM_CLIENT_ID` is not a runtime setting for the installed `zm` 
 
 A malformed config still allows `--help` and `--version`; config commands report the error.
 
+## Find the configuration file
+
+`zm config set` creates and updates `config.json` for you. It contains public settings, not Zoom
+access tokens; you do not download this file from Marketplace. `zm doctor --json` reports its
+actual path without checking the saved OAuth session.
+
+| Platform | Default public configuration |
+|---|---|
+| Linux and macOS | `~/.config/zm/config.json`, or the `zm` directory under `XDG_CONFIG_HOME` |
+| Windows | `%APPDATA%\zm\Config\config.json` |
+| Explicit override | `config.json` inside `ZM_CONFIG_DIR` |
+
+Older macOS layouts are migrated when possible; doctor shows the path actually in use. Keep
+public app settings separate from keyring tokens and the shared meeting database.
+
 ## Environment variables
 
 | Variable | Effect |

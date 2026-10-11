@@ -134,7 +134,8 @@ Tell me whether the transcript or participant information is missing.
 
 ## Where files go
 
-Configuration uses your platform's application directory. `ZM_CONFIG_DIR` selects another directory
+The tool creates its public `config.json` when you set configuration; this is not a downloaded
+credentials file. `zm doctor --json` shows its location. Configuration uses your platform's application directory. `ZM_CONFIG_DIR` selects another directory
 and also changes the keyring service used for login. Meetings use the shared local `wirecat.db`;
 `MESSAGING_STORE` selects another database. Recording downloads go only to the destination you
 name. See [configuration](configuration.md) for these settings.

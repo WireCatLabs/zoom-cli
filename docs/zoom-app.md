@@ -76,14 +76,17 @@ explain the Marketplace fields.
 ## Create it from the manifest
 
 The optional [starter manifest](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/zoom-app.json)
-contains the callback URLs and disabled in-client features. If Marketplace offers creation from
+is an app-creation template, not a credentials file. It contains callback URLs and disabled
+in-client features. If Marketplace offers creation from
 an app manifest, save that JSON file and import it when creating the General app.
 
 **The manifest does not include scopes or enable Public Client OAuth.** Complete steps 3–6 above
 manually after import. Do not assume that a successful import made the app ready for `zm login`.
 Manual creation is the complete path when the import option is unavailable.
 
-## What the manifest asks for
+<a id="what-the-manifest-asks-for" />
+
+## Permissions for hosted meetings
 
 These are the permissions to add manually for hosted-meeting ingestion. A scope is one named
 permission; a granted scope authorizes an API call, not the existence of the requested data.
