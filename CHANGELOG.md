@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Complete app setup and existing-app reuse instructions, browser callback recovery and first-result checks; correct the starter manifest scope claims and clarify data and account boundaries across the guides.
+
 - Meeting notes and facts examples now use Memo’s supported commands, including account-scoped
   note creation. The public roadmap separates available workflows from planned meeting intake
   and preparation. Zoom app setup uses one replaceable client-ID placeholder.

@@ -1,53 +1,108 @@
 # Troubleshooting
 
-What you see, and what to do about it.
+Recover when login stalls, data is missing or an archive operation fails. Start with the symptom
+below, make the smallest relevant correction and repeat the stated check. Preserve completed
+recording files and inspect an uncertain remote change before retrying it.
 
 ## Login
 
-- **The browser does not start.** Select an installed browser with `--browser firefox`. In an
-  interactive terminal, you can also paste the callback parameters. Without paste input, a launch
-  failure exits promptly.
-- **Zoom says "Invalid redirect".** The manifest import can leave the redirect URL, the allow list or
-  Public Client OAuth unset; see steps 5 and 6 of [the app guide](zoom-app.md#create-it-from-the-manifest).
-- **The callback page shows `code=…&state=…`.** The browser could not reach the listener on your
-  machine; paste those parameters into `zm login`.
-- **Login does not open a browser in CI or a pipe.** Browser login requires an input terminal; piped
-  or JSON login also requires `--interactive`.
-- **A missing-scope error.** The error names the required scope. Add it in your Zoom app, then log in
-  again.
-- **Your company manages your Zoom account.** An admin may have to approve the app. Until then,
-  `zm import` still works with downloaded transcript files.
+### I approved in the browser, but the terminal is still waiting
+
+The browser approved the app, but its callback has not reached the waiting process. Leave that
+terminal open. On the WireCat callback page, copy `code=…&state=…` or the full callback URL, paste
+it into **the same running `zm login` terminal**, and press Enter. The command must report
+`loggedIn: true` and return to the prompt. If it timed out, start a new login and use its new callback.
+A callback from an earlier attempt cannot finish a later one.
+
+A browser on another device or a remote terminal can prevent automatic local forwarding.
+[Sessions](sessions.md#finish-the-browser-callback) explains completion and its five-minute deadline.
+
+### Zoom says "Invalid redirect"
+
+Open the app's selected Development or Production environment. Check **OAuth Redirect URL** and
+**OAuth Allow Lists** both contain `https://wirecat.dev/zoom-callback`, and enable **Use Public
+Client OAuth**. Copy its **Public Client ID**, configure it and run login again. The regular Client
+ID is a different value. The manifest is a starter and does not enable public-client mode or scopes.
+Use [the full app checklist](zoom-app.md#create-your-own-app), then verify terminal completion.
+
+### The browser does not start
+
+Try an installed browser explicitly:
+
+```sh
+zm login --browser firefox
+```
+
+In an interactive terminal, open the authorization URL printed by that running login yourself,
+then paste its callback if necessary. Do not reuse an old URL. Without paste input, browser launch
+failure exits promptly. Piped/JSON login needs `--interactive`; `--no-input` refuses it.
+
+### The app is unavailable or needs administrator approval
+
+Check that the Zoom user can install this app. A development app is not automatically available
+outside its developer account. Ask the app owner or company administrator to approve the appropriate
+access; creating a second app does not bypass company policy. [Existing-app reuse](zoom-app.md#use-an-app-you-already-created)
+shows the settings to check. Authorized VTT files can still be imported without API login.
+
+### Login reports a keyring error
+
+The system password store must be installed, running and accessible to this user. Log in from the
+same operating-system account/session where the keyring is available; a headless environment may
+lack it. The tool does not fall back to a plaintext token file. After repairing keyring access,
+run login again and check `zm session status --json`.
+
+### A required scope is missing
+
+The error names the exact permission. The app owner adds it in **Scopes** and saves; then the user
+runs `zm login` again. Check the granted scopes with `zm session status --json` and retry the failed
+read. Tokens already issued do not gain newly configured scopes. Archive, remote meeting details,
+remote verification and meeting changes have [separate permissions](zoom-app.md#add-archive-or-management-access).
 
 ## Configuration
 
-A malformed config still allows `--help` and `--version`; config commands report the error.
+Use `zm config show` to confirm the public client, source and profile. A malformed configuration
+still allows `--help` and `--version`; configuration commands report its error. Changing the profile
+label does not change the logged-in Zoom user. If the terminal and MCP app see different data,
+check their `ZM_CONFIG_DIR` and `MESSAGING_STORE` values.
 
 ## Zoom replies
 
-A network failure reports a provider error; malformed provider replies report an invalid response.
-Diagnostic messages exclude raw provider error text.
+A network failure reports a provider error; an invalid response is reported separately. Check
+connectivity and whether you used `--offline` for a command that needs Zoom. Diagnostics exclude raw
+provider error text. Keep the command, error code and scope name when reporting a problem; exclude
+OAuth callback values, tokens and private transcript text.
 
 ## Missing meetings or transcripts
 
-- **No transcripts at all.** Turn on **Allow hosts to retain transcripts** in Zoom's web settings.
-- **Meetings you attended are missing.** Zoom returns transcripts only for meetings you hosted. Download
-  the transcripts from your Zoom portal and run `zm import <folder>`.
-- **A transcript appeared later than its meeting.** Use `pull --lookback-days 7` to revisit the last
-  seven days, or an older explicit `pull --since 2026-10-01` for earlier occurrences. The cursor alone
-  does not guarantee that late transcripts are revisited.
-- **A pull failed partway.** A failed occurrence leaves the cursor unchanged so the next pull can retry
-  it. Serialize pulls for the same account to avoid concurrent event creation.
-- **A read command finds no profile.** Read commands never register an account; import transcripts or
-  pull first.
+| Symptom | Check and repair | Success check |
+|---|---|---|
+| No stored profile or empty list | Choose a profile and import or pull; reads do not register accounts | `zm meetings list --json` shows the selected profile's meetings |
+| No hosted meetings in the recent window | Confirm the logged-in Zoom user, API source and date range; try an older explicit `--since` | Compare returned dates with expected hosted occurrences |
+| Meeting exists but transcript is empty | Check Zoom's transcript generation/retention and host permissions; expired or never-saved text cannot be recreated by pull | Open the transcript after Zoom makes it available and you pull again |
+| An attended meeting is missing | Ask the host for a VTT file or download it if allowed, then import | Check imported date/title and text |
+| Transcript appeared after the first pull | Revisit with `zm pull --lookback-days 7`, or an older explicit `--since` | Open the newly stored transcript |
+| Pull failed partway | Repair the reported error and retry; failed occurrences do not advance the cursor | Inspect the completion receipt and meeting list |
+| Import rejects a filename or time | Use `YYYY-MM-DD_HHMM_topic.vtt` and the filename's timezone; resolve conflicting or ambiguous times | Import succeeds with the intended date/title |
+| Search gives no matches | Check transcript availability, selected profile and indexing coverage before changing the query | Open a known passage and confirm its indexed/searchable state |
+
+Serialize pulls for the same account. See [transcript settings](zoom-app.md#before-your-first-zm-pull),
+[file import](archive.md#downloaded-transcripts) and [search coverage](search.md#search-stored-meetings).
 
 ## Archives
 
-- **A writer lock remains after a crash.** Inspect `recordings archive locks`, preview
-  `recordings archive recover`, and add `--yes` to remove recognized locks owned by a dead process
-  ([locks and recovery](archive.md#locks-and-recovery)).
-- **A download reports a mismatch.** Existing files are never overwritten; use a new destination.
+- **No downloadable cloud files:** check recording dates, host account, recording availability and
+  the recording scopes. A transcript and a cloud recording are different sources.
+- **A lock remains after a crash:** inspect `recordings archive locks`, preview
+  `recordings archive recover`, then add `--yes` only for recognized dead-process locks.
+  Active and foreign locks are preserved. See [locks and recovery](archive.md#locks-and-recovery).
+- **A checksum mismatch:** preserve the existing files and use a new destination. Downloads never
+  overwrite conflicting content. Run archive verification afterwards.
+- **A download stopped:** repeat it with the same selected profile/destination to use supported
+  verified resume. A checkpoint is progress history, not an integrity check; verify finished files.
 
 ## Remote meeting changes
 
-If a write was dispatched and its result is uncertain, the CLI exits with code 14. Inspect Zoom
-before repeating it; remote writes are never automatically retried.
+Exit code 14 means a write was dispatched and its result is uncertain. Read the remote meeting or
+inspect Zoom before repeating the change; the CLI never automatically retries remote writes.
+After resolving the symptom, repeat the smallest relevant read to confirm recovery, then return to
+[your meeting task](usage.md).

@@ -1,7 +1,44 @@
 # Usage
 
-What each command group does, and how output, deadlines and cancellation behave for scripts and
-agents. [Every command and option](commands.md) is generated from the program.
+Read a stored meeting, open its transcript and export the parts you need. This guide helps you
+choose the right command and recognize whether it reads local data, contacts Zoom or changes
+something. [Install and connect](installation.md) first if no meetings have been imported or pulled.
+
+## Read your first meeting
+
+```sh
+zm meetings list --json
+zm meetings show <meeting-id> --json
+zm meetings transcript <meeting-id> --json
+zm meetings summary <meeting-id> --json
+```
+
+Replace `<meeting-id>` with an ID from the list. Check the date and title before relying on its text.
+A missing summary or transcript means that part was not supplied, not that nothing was discussed.
+Stored reads use your selected local profile and do not fetch newer Zoom data. Use
+[the archive guide](archive.md) to retrieve missing periods or import files.
+
+To save a portable copy of the available content:
+
+```sh
+zm meetings export <meeting-id> --format markdown --json
+```
+
+Read the returned export before saving it to a file. MCP can return exports as text but does not
+write files. [Search and evidence](search.md) keeps exact passage references when you need citations.
+
+## Choose local or remote data
+
+| Need | Command family | Where it works |
+|---|---|---|
+| Read saved transcripts and evidence | `meetings`, `events`, `search` | Local shared database |
+| Retrieve hosted meeting data | `pull`, API `watch` | Zoom to local database |
+| Import transcript files | `import`, folder `watch` | Local files to database |
+| Back up available recording assets | `recordings` | Zoom to the destination you name |
+| Read the Zoom schedule or change a meeting | `remote-meetings` | Zoom account |
+
+A successful local read does not prove Zoom still has the same content. A successful cloud download
+does not import that transcript into the meeting database until you request archive import.
 
 ## Commands
 

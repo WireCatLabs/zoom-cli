@@ -1,7 +1,22 @@
 # The local archive
 
-Keep your Zoom meetings on your own machine: pull hosted meetings through the API, import transcript
-files you downloaded, watch for new ones, and archive cloud recording files with verified checksums.
+Keep meeting text searchable and back up recording files before Zoom's retention removes them.
+Choose whether to retrieve hosted meeting information, import a transcript you already have or
+archive cloud audio and video. Text stored in the meeting database and media files in an archive
+folder are separate copies; a recording backup is not automatically searchable in the database.
+
+## Choose what to keep
+
+| Source you have | Use | Check afterwards |
+|---|---|---|
+| Hosted meetings available to your app | `zm pull --lookback-days 7` | List meetings, open one transcript and inspect missing parts |
+| Downloaded VTT transcript files | `zm import ./downloaded-transcripts` | Compare the imported date/title with the original |
+| Cloud recording assets | Recording list, download or sync | Verify the destination manifest and checksums |
+| Archived VTT files to add to search | Archive import | Check its receipt, then search the stored text |
+
+For the API paths, connect the app with the [permissions for that task](zoom-app.md#add-archive-or-management-access).
+File import and local archive inspection do not need browser login. Start with one meeting before
+setting up repeated retrieval or a daily backup.
 
 ## Where meetings are stored
 
@@ -20,9 +35,18 @@ Select a [local profile](sessions.md#select-a-local-profile) before importing or
 
 ## Pull hosted meetings
 
-`zm pull` fetches occurrences from the configured source: meetings, participants, transcripts and AI
-summaries. Zoom returns transcripts only for meetings **you hosted**, and only when **Allow hosts to
-retain transcripts** is on in Zoom's web settings ([before your first pull](zoom-app.md#before-your-first-zm-pull)).
+With the API source selected, pull a recent period and inspect the result:
+
+```sh
+zm config set source api
+zm pull --lookback-days 7
+zm meetings list --json
+zm meetings transcript <meeting-id> --json
+```
+
+Use an ID from the list. `zm pull` retrieves hosted occurrences with available participants,
+transcripts and AI summaries. It does not create missing transcripts. Check Zoom's
+[generation and retention settings](zoom-app.md#before-your-first-zm-pull) if the text is absent.
 
 Use `pull --lookback-days 7` to revisit the last seven days, or an older explicit
 `pull --since 2026-10-01` for earlier occurrences whose transcript appeared later. The cursor alone
@@ -31,11 +55,23 @@ concurrent event creation. A failed occurrence leaves the cursor unchanged so th
 
 ## Downloaded transcripts
 
-Meetings you only attended stay in your Zoom portal; download their transcripts there and import
-the folder with `zm import <folder>`. The files source reads ordinary `.vtt` files directly inside a
-folder. Names follow the existing exporter's `YYYY-MM-DD_HHMM_topic-slug.vtt` format. Occurrence ids
-derive from the timestamp and normalized topic; files carry no Zoom occurrence UUID. Participants
-remain unknown, and speaker names are kept without guessing an identity.
+For a meeting you only attended, obtain a VTT file from the host or download it if your Zoom
+permissions allow. Attendance does not guarantee transcript access. Put the file directly in your
+chosen folder and rename it with the meeting date/time/title, for example
+`2026-10-01_1000_example-planning.vtt`. Renaming does not change its transcript contents.
+
+```sh
+zm config set account.profile personal
+zm config set files.timezone Europe/Madrid
+zm import ./downloaded-transcripts
+zm meetings list --json
+```
+
+The files source reads ordinary `.vtt` files directly inside a folder, without recursion.
+Names use `YYYY-MM-DD_HHMM_topic-slug.vtt`. Occurrence IDs derive from timestamp and normalized
+topic; these files carry no Zoom occurrence UUID. Participants remain unknown: speaker names are
+preserved as text, without guessing a person's identity. Check the imported date, title and transcript
+before attaching project or person records.
 
 File times default to UTC. Set `files.timezone` to the IANA zone used when the filenames were
 created, for example `Europe/Madrid`. Ambiguous or nonexistent daylight-saving times are refused.
@@ -78,10 +114,16 @@ and download its available files to an explicit destination:
 
 ```sh
 zm recordings list --from 2026-10-01 --to 2026-10-10 --json
-zm recordings show example-occurrence --json
-zm recordings download example-occurrence --destination ./zoom-archive --json
+zm recordings show <zoom-occurrence-uuid> --json
+zm recordings download <zoom-occurrence-uuid> --destination ./zoom-archive --json
 zm recordings archive verify ./zoom-archive --offline --json
 ```
+
+Replace `<zoom-occurrence-uuid>` with an occurrence UUID returned by the recording list, not a
+local meeting ID or the numeric Zoom meeting number. The download receipt identifies saved and
+unavailable assets. Verification checks the local files against their manifest; it does not prove
+Zoom had every expected recording. If there are no recordings, check the date range, host account,
+cloud recording availability and scopes before widening the backup.
 
 For recording history across months, use:
 
@@ -200,3 +242,8 @@ directory. Media, duration, segment count and transcript text have explicit boun
 windows of up to 30 seconds, so timestamps describe those windows. Speakers remain unknown. Provider
 transcripts and historical revisions are preserved; the applied receipt gives transaction counts and
 provenance.
+
+Recognition needs an installed supported speech model; this guide does not assume one is present.
+Convert unsupported audio/video to the stated WAV format with a tool you already use before
+transcribing. After an applied receipt, open `meetings transcript` and check the words and timestamp
+windows before treating the new text as evidence. Continue with [search and citations](search.md).
