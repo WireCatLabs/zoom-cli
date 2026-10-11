@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1 — 11.10.2026
+
+### Fixed
+
+- **Shared facts compatibility** pins the published producer 0.237.0, supplies its required facts
+  port to meeting context services, and retains scoped event/person links after the facts migration.
+  The update includes the producer's meeting-account purge and attachment-piece fixes.
+
 ## 0.5.0 — 11.10.2026
 
 ### Added

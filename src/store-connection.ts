@@ -29,7 +29,14 @@ type SharedMeetingStore = Pick<MessageStore, "saveAccount" | "storedAccount" | "
 } & Partial<
     Pick<
       MessageStore,
-      "meetingVectors" | "personByUid" | "personSeenInAccounts" | "involvements" | "notes" | "knowledge" | "memories"
+      | "meetingVectors"
+      | "personByUid"
+      | "personSeenInAccounts"
+      | "involvements"
+      | "notes"
+      | "knowledge"
+      | "memories"
+      | "facts"
     >
   >
 const contextServiceMeetings = (meetings: SharedMeetingStore["meetings"]): meetings is MessageStore["meetings"] =>
@@ -88,8 +95,12 @@ export const createStoreConnector =
       const notes = connected.notes
       const knowledge = connected.knowledge
       const memories = connected.memories
+      const facts = connected.facts
       const contextMeetings = contextServiceMeetings(connected.meetings) ? connected.meetings : undefined
-      if (input.capability === "meeting-integration" && (!notes || !knowledge || !memories || !contextMeetings))
+      if (
+        input.capability === "meeting-integration" &&
+        (!notes || !knowledge || !memories || !facts || !contextMeetings)
+      )
         throw new ZoomError("configuration_error", "the installed store does not support meeting knowledge integration")
       if (input.capability === "meeting-search" && typeof connected.meetings.searchHits !== "function")
         throw new ZoomError("configuration_error", "the installed meeting store does not support bounded hit search")
@@ -191,7 +202,7 @@ export const createStoreConnector =
               },
             }
           : {}),
-        ...(notes && knowledge && memories && contextMeetings
+        ...(notes && knowledge && memories && facts && contextMeetings
           ? {
               meetingIntegration: {
                 change: async (reference, input, options = {}) => {
@@ -221,6 +232,7 @@ export const createStoreConnector =
                       notes,
                       knowledge,
                       memories,
+                      facts,
                     },
                     key,
                   )
