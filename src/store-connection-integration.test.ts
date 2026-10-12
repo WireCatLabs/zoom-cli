@@ -253,3 +253,41 @@ it("preserves legacy replay and rejects a metadata adapter that returns another 
     await connection.close()
   }
 })
+
+it("searches confirmed project aliases and participant identities through the published shared service", async () => {
+  const value = await fixture()
+  const store = await openStore({ path: value.path, env: value.env, now: () => 3000 })
+  try {
+    const key = { provider: "zoom", account: request.externalId }
+    const project = await store.knowledge.addProject({ name: "Research Example", key: "RES", scope: "work" })
+    await store.knowledge.addVocabularyAlias({ kind: "project", id: project.id }, "исследование")
+    await store.knowledge.linkMeetingProject(key, String(value.meeting.meeting.id), project.id)
+    await store.knowledge.addTags(key, { type: "meeting", id: String(value.meeting.meeting.id) }, ["planning"])
+    await store.meetings.indexSearch({ accountId: value.accountId })
+  } finally {
+    await store.close()
+  }
+  const connection = await createStoreConnector({ path: value.path, env: value.env })(request)
+  try {
+    const result = await connection.meetingSearch?.("example", {
+      project: "исследование",
+      tag: "planning",
+      participantIdentityId: value.meeting.participants[0]?.identityId,
+      since: 1000,
+      until: 1000,
+    })
+    expect(result?.items.length).toBeGreaterThan(0)
+    expect(result?.items.every((hit) => hit.meetingId === value.meeting.meeting.id)).toBe(true)
+    expect(result).toMatchObject({
+      selection: [
+        { kind: "project", name: "Research Example", by: "explicit-link" },
+        { kind: "tag", name: "planning" },
+      ],
+    })
+    await expect(connection.meetingSearch?.("example", { project: "Research Exampl" })).rejects.toMatchObject({
+      code: "not_found",
+    })
+  } finally {
+    await connection.close()
+  }
+})

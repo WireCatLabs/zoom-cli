@@ -24,7 +24,7 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [unified-search.ts](../../src/unified-search.ts) | validated public producer search with explicit resource scope |
 | [meeting-context.ts](../../src/meeting-context.ts) | account-fixed bounded evidence, identity context and read-only task proposals |
 | [meeting-integration-commands.ts](../../src/meeting-integration-commands.ts), [meeting-integration.ts](../../src/meeting-integration.ts) | explicit event/person linking through the shared context service |
-| [meeting-search-commands.ts](../../src/meeting-search-commands.ts) | bounded hit paging and explicit keyword index batches |
+| [meeting-search-commands.ts](../../src/meeting-search-commands.ts) | shared bounded hit command registration and explicit keyword index batches |
 | [local-transcription.ts](../../src/local-transcription.ts), [wav-audio.ts](../../src/wav-audio.ts) | native media verification and shared transcription/speech port adaptation |
 | [meeting-semantic.ts](../../src/meeting-semantic.ts) | explicit model selection and public vector/model service adaptation |
 | [store-connection.ts](../../src/store-connection.ts) | lazy public shared-store/account adapter, without SQL |

@@ -5,7 +5,12 @@ import { CallToolRequestSchema, ListToolsRequestSchema, type Tool } from "@model
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv"
 import { CliError } from "@wirecat/cli-base"
 import type { MeetingStore } from "@wirecat/cli-messaging/meetings"
-import { callMeetingTool, meetingTools } from "@wirecat/cli-messaging/meetings/mcp"
+import {
+  callMeetingHitSearchTool,
+  callMeetingTool,
+  meetingHitSearchTool,
+  meetingTools,
+} from "@wirecat/cli-messaging/meetings/mcp"
 import type { MeetingSearchCursor } from "@wirecat/cli-messaging/services"
 import { ZoomError } from "./errors.js"
 import {
@@ -58,6 +63,7 @@ const buildServer = (options: MeetingMcpOptions) => {
     )
     return { ...tool, inputSchema: { ...tool.inputSchema, type: "object" as const, properties } } satisfies Tool
   })
+  tools.push(meetingHitSearchTool)
   if (semanticModel) {
     validateMeetingModel(semanticModel)
     tools.push({
@@ -211,7 +217,11 @@ const buildServer = (options: MeetingMcpOptions) => {
               : value
           },
         }) as MeetingStore
-        if (request.params.name === "meeting_semantic_search") {
+        if (request.params.name === "meeting_search_page") {
+          if (!connection.meetingSearch)
+            throw new ZoomError("configuration_error", "bounded meeting search is unavailable")
+          result = await callMeetingHitSearchTool(connection.meetingSearch, args, signal)
+        } else if (request.params.name === "meeting_semantic_search") {
           if (!semanticModel || !connection.meetingSemantic)
             throw new ZoomError("configuration_error", "meeting semantic capability is unavailable")
           const request = {
@@ -305,6 +315,7 @@ const buildServer = (options: MeetingMcpOptions) => {
       result =
         [
           "search_all",
+          "meeting_search_page",
           "meeting_evidence",
           "person_meeting_context",
           "meeting_task_proposal",

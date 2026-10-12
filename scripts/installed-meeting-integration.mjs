@@ -41,6 +41,13 @@ const fixture = async (root, phase, input) => {
         text: `Alice Example runs organiza обсуждает needle ${position}`,
       }))
       const saved = await store.meetings.saveMeeting(meeting)
+      const project = await store.knowledge.addProject({ name: "Research Example", key: "RES", scope: "work" })
+      await store.knowledge.addVocabularyAlias({ kind: "project", id: project.id }, "research-alias")
+      await store.knowledge.linkMeetingProject(key, String(saved.meeting.id), project.id)
+      await store.knowledge.addTags(key, { type: "meeting", id: String(saved.meeting.id) }, ["planning"])
+      const topic = await store.knowledge.createTag("budget", { kind: "topic" })
+      await store.knowledge.addVocabularyAlias({ kind: "topic", id: String(topic.id) }, "costs")
+      await store.knowledge.setMainTopic(key, { type: "meeting", id: String(saved.meeting.id) }, "budget")
       await store.savePeople(foreignKey, [{ id: "BobSample-installed-target", name: "Bob Sample" }])
       const target = await store.personOf({ provider: "zoom", id: "BobSample-installed-target" })
       assert.ok(target)
@@ -231,6 +238,20 @@ export const installedMeetingIntegration = async ({
   }
   const query = "running organizar обсуждать needle"
   const hits = []
+  const contextFilters = [
+    "--identity-id",
+    String(target.identityId),
+    "--person-id",
+    target.personUid,
+    "--project",
+    "research-alias",
+    "--tag",
+    "planning",
+    "--since",
+    "1970-01-01T00:00:01Z",
+    "--until",
+    "1970-01-01T00:00:01Z",
+  ]
   let cursor
   let firstCursor
   do {
@@ -242,6 +263,7 @@ export const installedMeetingIntegration = async ({
       String(target.meetingId),
       "--limit",
       "2",
+      ...contextFilters,
       ...(cursor ? ["--after", cursor] : []),
     )
     assert.deepEqual(page.coverage, {
@@ -256,6 +278,9 @@ export const installedMeetingIntegration = async ({
     firstCursor ??= cursor
   } while (cursor)
   assert.equal(hits.length, 9)
+  const topicHits = json("meetings", "search-page", "needle", "--topic", "costs", "--project", "RES")
+  assert.equal(topicHits.items.length, 9)
+  assert.equal(topicHits.selection[1].name, "budget")
   assert.equal(new Set(hits.map((hit) => hit.id)).size, 9)
   assert.ok(firstCursor)
   invoke(
@@ -268,6 +293,7 @@ export const installedMeetingIntegration = async ({
       String(target.meetingId),
       "--limit",
       "2",
+      ...contextFilters,
       "--after",
       firstCursor,
     ],
@@ -284,6 +310,7 @@ export const installedMeetingIntegration = async ({
       String(target.meetingId),
       "--limit",
       "2",
+      ...contextFilters,
       "--after",
       firstCursor,
     ],

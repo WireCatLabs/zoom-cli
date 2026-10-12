@@ -134,3 +134,7 @@ Cached `session status` does not contact Zoom; `--check` explicitly verifies rem
 Use `--timeout <milliseconds>` for a positive whole-command deadline and cancellation for foreground
 jobs. `--offline` refuses network access. Recording videos stream to disk; ordinary result output is
 bounded by `--max-output-bytes`, separate from the download's per-file `--max-bytes` limit.
+
+## Bounded context-filtered search
+
+Use `meetings search-page <query>` with `--since`/`--until` and optionally `--identity-id`, `--person-id`, `--project`, `--tag` or `--topic`. Identity IDs come from observed participant results; person IDs follow explicit identity links. Filters select meetings, never attribute cue speech. Project names, keys and aliases resolve existing vocabulary and require confirmed membership; labels require explicit meeting taggings. Do not silently infer membership from matching words or merge similar participant names. Missing or ambiguous names fail. Inspect pending indexing and unknown archive coverage even for empty pages. `meeting_search_page` exposes the same selected-account MCP read.

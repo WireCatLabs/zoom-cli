@@ -1,5 +1,7 @@
 import { defineConfig } from "vitest/config"
 export default defineConfig({
+  // Oxc does not resolve package exports in tsconfig extends; TypeScript checks the project configs separately.
+  tsconfig: "./node_modules/@wirecat/cli-base/config/tsconfig.base.json",
   test: {
     // Filesystem fault injection must also reach the shared native helpers.
     server: { deps: { inline: [/cli-messaging\/dist\/files\//, /cli-messaging\/dist\/speech\/wav\.js/] } },

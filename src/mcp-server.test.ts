@@ -2,7 +2,7 @@ import { PassThrough } from "node:stream"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
-import { callMeetingTool, meetingTools } from "@wirecat/cli-messaging/meetings/mcp"
+import { callMeetingTool, meetingHitSearchTool, meetingTools } from "@wirecat/cli-messaging/meetings/mcp"
 import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-messaging/meetings/testing"
 import { describe, expect, it, vi } from "vitest"
 import { createMeetingMcpServer, type MeetingMcpOptions, serveMeetingMcp } from "./mcp-server.js"
@@ -28,13 +28,13 @@ const fixture = async () => {
 }
 
 describe("read-only SDK meeting server", () => {
-  it("initializes and lists the seven shared tools without opening a store", async () => {
+  it("initializes and lists the shared read tools without opening a store", async () => {
     const fixtureData = await fixture()
     const { client, server } = await connected({ connectStore: fixtureData.connectStore, version: "example" })
     try {
       expect(client.getServerVersion()).toEqual({ name: "zoom-meetings", version: "example" })
       const { tools } = await client.listTools()
-      expect(tools.map((tool) => tool.name)).toEqual(meetingTools.map((tool) => tool.name))
+      expect(tools.map((tool) => tool.name)).toEqual([...meetingTools, meetingHitSearchTool].map((tool) => tool.name))
       for (const tool of tools) {
         expect(tool.annotations?.readOnlyHint).toBe(true)
         expect(tool.inputSchema.properties).not.toHaveProperty("account_id")

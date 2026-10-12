@@ -83,6 +83,9 @@ describe("persistent account connector", () => {
       "example",
       expect.objectContaining({ accountId: 3, limit: 2, maxReadBytes: 1024 }),
     )
+    await expect(connection.meetingSearch?.("example", { project: "RES" })).rejects.toMatchObject({
+      code: "configuration_error",
+    })
     expect(await connection.meetingSearchIndex?.({ limit: 1 })).toMatchObject({ applied: false, accountId: 3 })
     expect(index).not.toHaveBeenCalled()
     expect(await connection.meetingSearchIndex?.({ limit: 1, apply: true, dryRun: true })).toMatchObject({
