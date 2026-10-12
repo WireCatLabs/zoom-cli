@@ -367,7 +367,7 @@ const timer = setTimeout(() => child.kill(), 15000)
 const client = new Client({ name: "invented-platform-proof", version: "1" })
 try {
   await client.connect(new StdioServerTransport(child.stdout, child.stdin))
-  assert.equal((await client.listTools()).tools.length, 7)
+  assert.equal((await client.listTools()).tools.length, 8)
   const result = await client.callTool({ name: "meetings_list", arguments: {} })
   assert.notEqual(result.isError, true)
   const firstScope = result.structuredContent ?? JSON.parse(result.content[0].text)
@@ -498,7 +498,7 @@ try {
   try {
     await semanticClient.connect(new StdioServerTransport(semanticChild.stdout, semanticChild.stdin))
     const tools = (await semanticClient.listTools()).tools
-    assert.equal(tools.length, 8)
+    assert.equal(tools.length, 9)
     assert.equal(
       tools.some((tool) => /generat|embedding/.test(tool.name)),
       false,

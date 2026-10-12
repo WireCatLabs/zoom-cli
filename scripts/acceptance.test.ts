@@ -205,7 +205,8 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
     try {
       await client.connect(new StdioServerTransport(child.stdout, child.stdin))
       const listed = await client.listTools()
-      expect(listed.tools).toHaveLength(7)
+      expect(listed.tools).toHaveLength(8)
+      expect(listed.tools.map((tool) => tool.name)).toContain("meeting_search_page")
       expect(listed.tools.every((tool) => tool.annotations?.readOnlyHint === true)).toBe(true)
       expect(existsSync(isolated)).toBe(false)
       expect(existsSync(join(install, "mcp-unused.db"))).toBe(false)

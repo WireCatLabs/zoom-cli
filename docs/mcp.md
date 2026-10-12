@@ -25,8 +25,8 @@ the default is both. Installation is explicit and does not run when a command st
 
 ## The MCP server
 
-`zm serve --mcp` uses MCP's stdio protocol and serves seven read-only tools: meeting list/show,
-transcripts, summaries, exports, text search and participant search. Tool discovery does not open a
+`zm serve --mcp` uses MCP's stdio protocol and serves eight read-only tools: meeting list/show,
+transcripts, summaries, exports, text search, participant search and bounded context-filtered search. Tool discovery does not open a
 database. Each read uses the selected local account and closes its connection before the response;
 a caller cannot override the account. File exports and remote mutations are not exposed as tools.
 

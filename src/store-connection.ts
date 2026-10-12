@@ -188,17 +188,21 @@ export const createStoreConnector =
         ...(typeof searchHits === "function"
           ? {
               meetingSearch: async (query, options) => {
-                const { meetingId, since, until, limit, after, maxReadBytes, signal } = options
-                return searchHits.call(connected.meetings, query, {
-                  accountId,
-                  meetingId,
-                  since,
-                  until,
-                  limit,
-                  after,
-                  maxReadBytes,
-                  signal,
-                })
+                validateMeetingHitSearch(query, options)
+                if (!knowledge && [options.project, options.tag, options.topic].some((value) => value !== undefined))
+                  throw new ZoomError(
+                    "configuration_error",
+                    "the installed store does not support canonical meeting search selectors",
+                  )
+                if (knowledge) {
+                  const { searchMeetingHits } = await import("@wirecat/cli-messaging/services")
+                  return searchMeetingHits(
+                    { meetings: connected.meetings as MessageStore["meetings"], knowledge },
+                    query,
+                    { ...options, accountId },
+                  )
+                }
+                return searchHits.call(connected.meetings, query, { ...options, accountId })
               },
             }
           : {}),

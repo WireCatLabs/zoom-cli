@@ -193,6 +193,14 @@ it("keeps bounded search cursors and coverage in JSONL and forwards typed date/b
         "meetings",
         "search-page",
         "example plan",
+        "--identity-id",
+        "12",
+        "--person-id",
+        "34",
+        "--project",
+        "RES",
+        "--tag",
+        "planning",
         "--meeting-id",
         "1",
         "--since",
@@ -219,6 +227,10 @@ it("keeps bounded search cursors and coverage in JSONL and forwards typed date/b
     "example plan",
     expect.objectContaining({
       meetingId: 1,
+      participantIdentityId: 12,
+      personId: 34,
+      project: "RES",
+      tag: "planning",
       since: Date.parse("2026-10-01T00:00:00Z"),
       until: Date.parse("2026-10-11T10:00:00Z"),
       limit: 2,
@@ -226,6 +238,8 @@ it("keeps bounded search cursors and coverage in JSONL and forwards typed date/b
       maxReadBytes: 1024,
     }),
   )
+  expect(await run(["meetings", "search-page", "example", "--topic", "costs", "--json"], deps)).toBe(0)
+  expect(search).toHaveBeenLastCalledWith("example", expect.objectContaining({ topic: "costs" }))
   expect(connect).not.toHaveBeenCalled()
 })
 

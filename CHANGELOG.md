@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `meetings search-page` combines dates with `--identity-id`, `--person-id`, `--project`, `--tag` or `--topic`. Project names, keys and explicit aliases resolve through the shared vocabulary; projects require confirmed membership and labels require explicit meeting tags. Participant filters select meetings rather than attributing speech.
+- Read-only MCP `meeting_search_page` offers the same bounded search in the server-selected account.
+
+### Fixed
+
+- Meeting search no longer duplicates common command registration and validation in Zoom: cli-messaging owns these plus canonical selection and MCP handling for reuse by other providers.
+- Vitest resolves the published cli-base compiler config directly for Oxc; TypeScript continues to check the full project configuration.
+
 ## 0.7.2 — 12.10.2026
 
 ### Fixed

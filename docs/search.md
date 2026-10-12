@@ -44,6 +44,37 @@ This is keyword search, with no semantic model or query operators. `--meeting-id
 `--until` narrow the selected account. The opaque cursor belongs to that account, query and filters;
 it can continue inside a large transcript. JSONL preserves the complete page, including `nextCursor`.
 
+## Narrow by people and work
+
+Combine a participant identity or explicitly linked person with a project and date range:
+
+```sh
+zm meetings people "Alice Example" --json
+zm meetings search-page "launch" --identity-id 12 --project RES --since 2026-09-12 --until 2026-10-12 --json
+zm meetings search-page "budget" --person-id 7 --topic costs --since 2026-09-12 --json
+zm meetings search-page "launch" --tag planning --limit 20 --json
+```
+
+The IDs and labels above are fictional: replace them with records in your local store. Use the
+`identityId` from participant results for `--identity-id`; `--person-id` takes the numeric ID of
+an explicitly linked person. Several participants with the same display name may be different
+identities. Inspect them before linking; these filters select meetings and do not identify who
+spoke an anonymous transcript cue.
+
+`--project` accepts an existing canonical project name, key or explicit alias. Only confirmed
+meeting membership counts; an agent's proposed membership or a matching transcript word does
+not establish membership. `--tag` and `--topic` accept canonical names or explicit aliases of
+labels already attached to a meeting; choose one label filter. Missing or ambiguous vocabulary
+names fail instead of silently broadening the search. The result's `selection` lists resolved
+name filters. Date-only bounds use midnight UTC; use a timestamp with an explicit offset when
+you need the start or end of a local day. Existing continuation and coverage rules still apply.
+
+If a meeting has not been linked to a project or labelled yet, start with word search and inspect
+the evidence before organising it with [Memo's shared records](https://wirecat.dev/en/docs/memo/usage).
+The read-only MCP tool `meeting_search_page` provides the same filters in the server-selected
+account, using `identity_id`, `person_id`, `project`, `tag`, `topic`, `since` and `until`;
+its dates are epoch milliseconds.
+
 `meetings search` keeps its existing literal prefix transcript search over stored transcripts, chat
 and summaries; `--since`, `--until`, `--event-id` and `--series-id` narrow it. `meetings people <query>`
 finds participants by name or email. `search all` uses the shared search service and searches only

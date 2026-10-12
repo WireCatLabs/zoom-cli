@@ -267,7 +267,7 @@ zm meetings transcribe <meeting> <file> [options]
 
 ### `zm meetings search-page`
 
-bounded keyword search with configured stemming and hit continuation
+bounded keyword search with configured stemming, explicit context filters and hit continuation
 
 ```sh
 zm meetings search-page <query> [options]
@@ -280,10 +280,15 @@ zm meetings search-page <query> [options]
 | Option | What it does |
 |---|---|
 | `--meeting-id <id>` | restrict to a meeting in the selected account. |
+| `--identity-id <id>` | meetings with this observed participant identity; does not attribute speech. |
+| `--person-id <id>` | meetings with a participant explicitly linked to this person. |
+| `--project <name>` | confirmed membership in a canonical project, key or explicit alias. |
+| `--tag <name>` | an explicit meeting tag, by canonical name or alias. |
+| `--topic <name>` | an explicit meeting topic, by canonical name or alias. |
 | `--since <date>` | meeting start at or after an ISO date or timestamp. |
 | `--until <date>` | meeting start at or before an ISO date or timestamp. |
 | `--limit <count>` | hit limit from 1 through 1000 (default 100). |
-| `--after <cursor>` | opaque nextCursor from the same query and selected account. |
+| `--after <cursor>` | opaque nextCursor from the same query, filters and selected account. |
 | `--max-read-bytes <bytes>` | raw SQL read budget from 1 through 67108864 (default 4194304). |
 
 ### `zm meetings search-index`
