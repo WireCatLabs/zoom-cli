@@ -79,7 +79,7 @@
     },
     {
       "id": "candidate-import-repeat",
-      "args": ["import", "{{root}}/transcripts", "--json"],
+      "args": ["meetings", "import", "{{root}}/transcripts", "--json"],
       "exit": 0,
       "stream": "stdout",
       "kind": "json"
@@ -127,7 +127,7 @@
     },
     {
       "id": "search-retained",
-      "args": ["meetings", "search", "wirecat-synthetic-transcript-canary", "--json"],
+      "args": ["search", "meetings", "wirecat-synthetic-transcript-canary", "--json"],
       "exit": 0,
       "stream": "stdout",
       "kind": "json",
