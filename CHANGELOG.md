@@ -6,6 +6,7 @@
 
 - **`zm commands --json` prints the shared commands document**: `cli`, `version`, `contract`, `description`,
   `globalOptions` (was `options`), `commands` and `exitCodes`; a command path adds `scope` and `inheritedOptions`.
+- `zm commands` without `--json` lists one row per command: usage, description and whether it writes.
 
 ## 0.7.3 — 12.10.2026
 

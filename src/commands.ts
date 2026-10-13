@@ -32,6 +32,16 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
         const all = describeProgram(program)
         const scoped = path.length ? scopeOf(all, path) : undefined
         const commands = scoped ? [scoped.command] : all
+        if (!program.opts().json && !program.opts().jsonl) {
+          deps.discovery(
+            flatten(commands).map(({ usage, summary, description, mutates }) => ({
+              command: usage,
+              description: summary ?? description,
+              writes: mutates ? "yes" : "",
+            })),
+          )
+          return
+        }
         const fields = deps.fields()
         deps.discovery({
           cli: "zm",

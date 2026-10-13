@@ -76,6 +76,15 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(scoped?.problems).toBeUndefined()
     expect(scoped?.document?.scope).toEqual(["meetings", "show"])
   })
+  it("lists one row per command without --json", async () => {
+    const { deps, stdout } = await setup()
+    expect(await run(["commands", "config"], deps)).toBe(0)
+    expect(JSON.parse(stdout[0] ?? "[]")).toEqual([
+      { command: "zm config", description: "local Zoom configuration", writes: "" },
+      { command: "zm config show", description: "show local configuration", writes: "" },
+      { command: "zm config set <key> <value>", description: "set a configuration value", writes: "yes" },
+    ])
+  })
   it("reports local health and explicitly unknown authentication without keyring/DB access", async () => {
     const { deps, stdout } = await setup()
     setConfig(deps.configPath, "zoom.clientId", "example-client")
