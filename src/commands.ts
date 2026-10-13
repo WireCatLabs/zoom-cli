@@ -1,4 +1,4 @@
-import { projectFields } from "@wirecat/cli-base"
+import { EXIT_CODES, GENERIC_FAILURE, projectFields } from "@wirecat/cli-base"
 import {
   annotate,
   type CommandInfo,
@@ -10,6 +10,9 @@ import {
 import { formatSuggestions, suggest } from "@wirecat/cli-base/completion"
 import type { Command } from "commander"
 import { ZoomError } from "./errors.js"
+import { VERSION } from "./version.js"
+
+const CONTRACT = 0
 
 export interface StandardCommandsDeps {
   output: (value: unknown) => void
@@ -27,13 +30,18 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
       .argument("[path...]", "resource or command path")
       .action((path: string[]) => {
         const all = describeProgram(program)
-        const scoped = path.length ? flatten(all).filter((item) => item.path.join(" ") === path.join(" ")) : all
-        if (path.length && !scoped.length)
-          throw new ZoomError("validation_error", "unknown command path; use zm commands --json")
+        const scoped = path.length ? scopeOf(all, path) : undefined
+        const commands = scoped ? [scoped.command] : all
         const fields = deps.fields()
         deps.discovery({
-          commands: fields ? projectDiscovery(scoped, fields) : scoped,
-          options: describeOptions(program),
+          cli: "zm",
+          version: VERSION,
+          contract: CONTRACT,
+          description: program.description(),
+          globalOptions: describeOptions(program),
+          ...(scoped ? { scope: scoped.command.path, inheritedOptions: scoped.inheritedOptions } : {}),
+          commands: fields ? projectDiscovery(commands, fields) : commands,
+          exitCodes: { ok: 0, generic_failure: GENERIC_FAILURE, ...EXIT_CODES },
         })
       }),
     { mutates: false, examples: ["zm commands --json"] },
@@ -107,6 +115,19 @@ const exampleFor = (path: string): string => {
     import: "./downloaded-transcripts",
   }
   return `zm ${path}${argumentsByPath[path] ? ` ${argumentsByPath[path]}` : ""} --json`
+}
+
+const scopeOf = (all: readonly CommandInfo[], path: readonly string[]) => {
+  const inheritedOptions: { path: readonly string[]; options: CommandInfo["options"] }[] = []
+  let available = all
+  let command: CommandInfo | undefined
+  for (const word of path) {
+    if (command?.options.length) inheritedOptions.push({ path: command.path, options: command.options })
+    command = available.find((item) => item.name === word)
+    if (!command) throw new ZoomError("validation_error", "unknown command path; use zm commands --json")
+    available = command.commands
+  }
+  return { command: command as CommandInfo, inheritedOptions }
 }
 
 const projectDiscovery = (commands: readonly CommandInfo[], fields: readonly string[]): unknown[] =>

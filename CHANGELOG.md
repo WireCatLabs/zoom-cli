@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changed — may break callers
+
+- **`zm commands --json` prints the shared commands document**: `cli`, `version`, `contract`, `description`,
+  `globalOptions` (was `options`), `commands` and `exitCodes`; a command path adds `scope` and `inheritedOptions`.
+
 ## 0.7.3 — 12.10.2026
 
 ### Added
