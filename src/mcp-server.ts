@@ -3,12 +3,12 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js"
 import { CallToolRequestSchema, ListToolsRequestSchema, type Tool } from "@modelcontextprotocol/sdk/types.js"
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv"
-import { CliError } from "@wirecat/cli-base"
+import { type ErrorCode, errorObjectOf, isCliError, mcpErrorResult } from "@wirecat/cli-base"
 import type { MeetingStore } from "@wirecat/cli-messaging/meetings"
 import {
-  callMeetingHitSearchTool,
+  callMeetingSearchTool,
   callMeetingTool,
-  meetingHitSearchTool,
+  meetingSearchTool,
   meetingTools,
 } from "@wirecat/cli-messaging/meetings/mcp"
 import type { MeetingSearchCursor } from "@wirecat/cli-messaging/services"
@@ -35,18 +35,12 @@ export interface MeetingMcpOptions {
   /** Opt-in selected-profile meetings only; store-global notes are never exposed here. */
   includeUnifiedSearch?: boolean
   includeMeetingContext?: boolean
-  /** Explicit server-selected query model; tool callers cannot select models or generate vectors. */
+  /** Server-selected model for search_meetings by_meaning; tool callers cannot select models or generate vectors. */
   semanticModel?: MeetingModelOptions
 }
 
-const failure = (code: string, message: string) => {
-  const result = { error: { code, message } }
-  return {
-    content: [{ type: "text" as const, text: JSON.stringify(result) }],
-    structuredContent: result,
-    isError: true,
-  }
-}
+const failure = (code: ErrorCode, message: string) => mcpErrorResult(errorObjectOf(new ZoomError(code, message)))
+const crashed = () => mcpErrorResult(errorObjectOf(undefined))
 
 /** SDK protocol handling; shared meeting tools own all read behavior and validation. */
 const buildServer = (options: MeetingMcpOptions) => {
@@ -63,29 +57,24 @@ const buildServer = (options: MeetingMcpOptions) => {
     )
     return { ...tool, inputSchema: { ...tool.inputSchema, type: "object" as const, properties } } satisfies Tool
   })
-  tools.push(meetingHitSearchTool)
+  const meaningArguments = {
+    by_meaning: { type: "boolean" },
+    max_chunks: { type: "integer", minimum: 1, maximum: 10000 },
+    max_rows: { type: "integer", minimum: 1, maximum: 100000 },
+    max_text_bytes: { type: "integer", minimum: 1, maximum: 67108864 },
+  }
   if (semanticModel) {
     validateMeetingModel(semanticModel)
     tools.push({
-      name: "meeting_semantic_search",
-      description:
-        "Selected-account stored vector search; ranks scanned candidates only, using the server's explicit query model",
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
+      ...meetingSearchTool,
+      description: `${meetingSearchTool.description}; by_meaning ranks stored vectors with the server's model and builds none`,
+      annotations: { ...meetingSearchTool.annotations, openWorldHint: semanticModel.baseUrl !== undefined },
       inputSchema: {
-        type: "object",
-        properties: {
-          query: { type: "string", minLength: 1 },
-          limit: { type: "integer", minimum: 1, maximum: 1000 },
-          max_chunks: { type: "integer", minimum: 1, maximum: 10000 },
-          after_chunk_id: { type: "integer", minimum: 1, maximum: Number.MAX_SAFE_INTEGER },
-          max_rows: { type: "integer", minimum: 1, maximum: 100000 },
-          max_text_bytes: { type: "integer", minimum: 1, maximum: 67108864 },
-        },
-        required: ["query"],
-        additionalProperties: false,
+        ...meetingSearchTool.inputSchema,
+        properties: { ...meetingSearchTool.inputSchema.properties, ...meaningArguments },
       },
     })
-  }
+  } else tools.push(meetingSearchTool)
   if (options.includeUnifiedSearch)
     tools.push({
       name: "search_all",
@@ -198,7 +187,7 @@ const buildServer = (options: MeetingMcpOptions) => {
     } catch {
       return failure("configuration_error", "could not open the selected meeting account")
     }
-    let result: Awaited<ReturnType<typeof callMeetingTool>> = failure("generic_failure", "Meeting read failed")
+    let result: Awaited<ReturnType<typeof callMeetingTool>> = crashed()
     try {
       if (cancelled()) result = failure("cancelled", "meeting read was cancelled")
       else if (!Number.isSafeInteger(connection.accountId) || connection.accountId < 1)
@@ -217,18 +206,22 @@ const buildServer = (options: MeetingMcpOptions) => {
               : value
           },
         }) as MeetingStore
-        if (request.params.name === "meeting_search_page") {
-          if (!connection.meetingSearch)
-            throw new ZoomError("configuration_error", "bounded meeting search is unavailable")
-          result = await callMeetingHitSearchTool(connection.meetingSearch, args, signal)
-        } else if (request.params.name === "meeting_semantic_search") {
+        if (request.params.name === "search_meetings" && args.by_meaning === true) {
           if (!semanticModel || !connection.meetingSemantic)
-            throw new ZoomError("configuration_error", "meeting semantic capability is unavailable")
+            throw new ZoomError("configuration_error", "meeting search by meaning is unavailable")
+          const wordsOnly = Object.keys(args).filter(
+            (key) => !["query", "limit", "cursor", ...Object.keys(meaningArguments)].includes(key),
+          )
+          if (wordsOnly.length)
+            throw new ZoomError("validation_error", `${wordsOnly.join(", ")} do not apply to a search by meaning`)
+          const cursor = args.cursor as string | undefined
+          if (cursor !== undefined && !/^[1-9]\d{0,15}$/.test(cursor))
+            throw new ZoomError("validation_error", "cursor by meaning takes the previous page's nextCursor")
           const request = {
             ...semanticModel,
             limit: args.limit as number | undefined,
             maxChunks: args.max_chunks as number | undefined,
-            afterChunkId: args.after_chunk_id as number | undefined,
+            afterChunkId: cursor === undefined ? undefined : Number(cursor),
             maxRows: args.max_rows as number | undefined,
             maxTextBytes: args.max_text_bytes as number | undefined,
             signal,
@@ -236,11 +229,16 @@ const buildServer = (options: MeetingMcpOptions) => {
           validateMeetingSemantic(args.query as string, request)
           const value = await connection.meetingSemantic.search(args.query as string, request)
           if (typeof value !== "object" || value === null || Array.isArray(value))
-            throw new ZoomError("invalid_response", "meeting semantic returned an invalid report")
-          result = {
-            content: [{ type: "text", text: JSON.stringify(value) }],
-            structuredContent: value as Record<string, unknown>,
-          }
+            throw new ZoomError("invalid_response", "meeting search by meaning returned an invalid report")
+          const next = (value as { nextChunkId?: number }).nextChunkId
+          const found = { ...value, nextCursor: next === undefined ? null : String(next) }
+          result = { content: [{ type: "text", text: JSON.stringify(found) }], structuredContent: found }
+        } else if (request.params.name === "search_meetings") {
+          if (!connection.meetingSearch) throw new ZoomError("configuration_error", "meeting search is unavailable")
+          const words = Object.fromEntries(
+            Object.entries(args).filter(([key]) => !(key === "by_meaning" && args.by_meaning === false)),
+          )
+          result = await callMeetingSearchTool(connection.meetingSearch, words, signal)
         } else if (
           ["meeting_evidence", "person_meeting_context", "meeting_task_proposal"].includes(request.params.name)
         ) {
@@ -315,19 +313,18 @@ const buildServer = (options: MeetingMcpOptions) => {
       result =
         [
           "search_all",
-          "meeting_search_page",
+          "search_meetings",
           "meeting_evidence",
           "person_meeting_context",
           "meeting_task_proposal",
-          "meeting_semantic_search",
-        ].includes(request.params.name) && error instanceof CliError
+        ].includes(request.params.name) && isCliError(error)
           ? failure(error.code, "selected-account meeting operation failed")
-          : failure("generic_failure", "Meeting read failed")
+          : crashed()
     } finally {
       try {
         await connection.close()
       } catch {
-        result = failure("generic_failure", "could not close the meeting read connection")
+        result = crashed()
       }
     }
     if (cancelled()) return failure("cancelled", "meeting read was cancelled")

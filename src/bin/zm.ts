@@ -3,7 +3,8 @@ import { spawn } from "node:child_process"
 import { join } from "node:path"
 import { createInterface } from "node:readline/promises"
 import { fileURLToPath } from "node:url"
-import { CliError, systemKeyring } from "@wirecat/cli-base"
+import { CliError, errorObjectOf, exitCodeOfError, isCliError, systemKeyring } from "@wirecat/cli-base"
+import { migrateFolders } from "@wirecat/cli-messaging/background"
 import { profileAccountKey, readConfig } from "../config.js"
 import { ZoomError } from "../errors.js"
 import { loginService, zmPaths } from "../folders.js"
@@ -32,6 +33,7 @@ process.once("SIGINT", cancel)
 process.once("SIGTERM", cancel)
 process.stdout.on("error", onPipeError)
 try {
+  migrateFolders({ command: "zm", appName: "zm", envPrefix: "ZM" })
   const connectStore = createStoreConnector({ env: process.env })
   const tokens = new TokenManager({
     get clientId() {
@@ -97,11 +99,17 @@ try {
         }
       : undefined,
   })
-} catch {
-  process.stderr.write(
-    `${JSON.stringify({ error: { code: "configuration_error", message: "could not load zm configuration" } })}\n`,
-  )
-  process.exitCode = 3
+} catch (error) {
+  if (isCliError(error)) {
+    const object = errorObjectOf(error)
+    process.stderr.write(`${JSON.stringify(object)}\n`)
+    process.exitCode = exitCodeOfError(object)
+  } else {
+    process.stderr.write(
+      `${JSON.stringify({ error: { code: "configuration_error", message: "could not load zm configuration" } })}\n`,
+    )
+    process.exitCode = 3
+  }
 } finally {
   process.removeListener("SIGINT", cancel)
   process.removeListener("SIGTERM", cancel)

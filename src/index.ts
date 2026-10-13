@@ -43,7 +43,7 @@ export {
   type PersonContextOptions,
 } from "./meeting-context.js"
 export type { MeetingIntegrationCapabilities, MeetingLinkChange } from "./meeting-integration.js"
-export type { MeetingHitSearch, MeetingHitSearchOptions, MeetingSearchIndex } from "./meeting-search-commands.js"
+export type { MeetingHitSearch, MeetingHitSearchOptions } from "./meeting-search-commands.js"
 export { createMeetingSemanticCapabilities } from "./meeting-semantic.js"
 export type {
   MeetingEmbeddingOptions,

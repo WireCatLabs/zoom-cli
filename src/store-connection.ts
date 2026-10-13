@@ -1,6 +1,5 @@
 import { CliError } from "@wirecat/cli-base"
 import {
-  dispatchMeetingMutation,
   type MeetingContextStore,
   type MeetingSearchIndexStore,
   type MeetingSearchStore,
@@ -65,9 +64,7 @@ export const createStoreConnector =
       input.externalId !== profileAccountKey(input.profile) ||
       (input.intent !== "read" && input.intent !== "ingestion") ||
       (input.capability !== undefined &&
-        !["transcript-append", "meeting-integration", "meeting-search", "meeting-search-index"].includes(
-          input.capability,
-        ))
+        !["transcript-append", "meeting-integration", "meeting-search"].includes(input.capability))
     )
       throw new ZoomError("validation_error", "expected a selected Zoom profile and read or ingestion intent")
     let store: SharedMeetingStore | undefined
@@ -102,13 +99,11 @@ export const createStoreConnector =
         (!notes || !knowledge || !memories || !facts || !contextMeetings)
       )
         throw new ZoomError("configuration_error", "the installed store does not support meeting knowledge integration")
-      if (input.capability === "meeting-search" && typeof connected.meetings.searchHits !== "function")
-        throw new ZoomError("configuration_error", "the installed meeting store does not support bounded hit search")
-      if (input.capability === "meeting-search-index" && typeof connected.meetings.indexSearch !== "function")
-        throw new ZoomError(
-          "configuration_error",
-          "the installed meeting store does not support bounded search indexing",
-        )
+      if (
+        input.capability === "meeting-search" &&
+        (typeof connected.meetings.searchHits !== "function" || typeof connected.meetings.indexSearch !== "function")
+      )
+        throw new ZoomError("configuration_error", "the installed meeting store does not support meeting search")
       return {
         store: connected.meetings,
         accountId,
@@ -165,44 +160,16 @@ export const createStoreConnector =
               ),
             }
           : {}),
-        ...(typeof indexSearch === "function"
-          ? {
-              meetingSearchIndex: async (input) => {
-                validateMeetingHitSearch("index", input)
-                const limit = input.limit ?? 100
-                const maxReadBytes = input.maxReadBytes ?? 4194304
-                const signal = input.signal
-                const outcome = await dispatchMeetingMutation(
-                  { apply: input.apply, dryRun: input.dryRun, signal },
-                  () => indexSearch.call(connected.meetings, { accountId, limit, maxReadBytes, signal }),
-                )
-                return {
-                  applied: outcome.applied,
-                  accountId,
-                  request: { limit, maxReadBytes },
-                  ...(outcome.value ?? {}),
-                }
-              },
-            }
-          : {}),
-        ...(typeof searchHits === "function"
+        ...(typeof searchHits === "function" && typeof indexSearch === "function"
           ? {
               meetingSearch: async (query, options) => {
                 validateMeetingHitSearch(query, options)
-                if (!knowledge && [options.project, options.tag, options.topic].some((value) => value !== undefined))
-                  throw new ZoomError(
-                    "configuration_error",
-                    "the installed store does not support canonical meeting search selectors",
-                  )
-                if (knowledge) {
-                  const { searchMeetingHits } = await import("@wirecat/cli-messaging/services")
-                  return searchMeetingHits(
-                    { meetings: connected.meetings as MessageStore["meetings"], knowledge },
-                    query,
-                    { ...options, accountId },
-                  )
-                }
-                return searchHits.call(connected.meetings, query, { ...options, accountId })
+                const { searchMeetingHits } = await import("@wirecat/cli-messaging/services")
+                return searchMeetingHits(
+                  { meetings: connected.meetings as MessageStore["meetings"], knowledge },
+                  query,
+                  { ...options, accountId },
+                )
               },
             }
           : {}),

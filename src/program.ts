@@ -4,9 +4,10 @@ import {
   CliError,
   createDeadline,
   createRenderer,
-  exitCodeFor,
+  errorObjectOf,
+  exitCodeOfError,
   fieldsOf,
-  GENERIC_FAILURE,
+  isCliError,
   projectFields,
   realSleep,
   type SleepLike,
@@ -47,14 +48,9 @@ import type { MeetingContextCapabilities } from "./meeting-context.js"
 import { addMeetingContextCommands } from "./meeting-context-commands.js"
 import type { MeetingIntegrationCapabilities } from "./meeting-integration.js"
 import { addMeetingIntegrationCommands } from "./meeting-integration-commands.js"
+import { addMeetingSearchCommands, type MeetingHitSearch } from "./meeting-search-commands.js"
 import {
-  addMeetingHitSearchCommand,
-  addMeetingSearchIndexCommand,
-  type MeetingHitSearch,
-  type MeetingSearchIndex,
-} from "./meeting-search-commands.js"
-import {
-  addMeetingSemanticCommands,
+  addMeetingEmbeddingCommand,
   type MeetingModelOptions,
   type MeetingSemanticCapabilities,
   validateMeetingModel,
@@ -87,7 +83,6 @@ export interface StoreConnection {
   appendTranscriptsWithReceipt?: MeetingTranscriptReceiptStore["appendTranscriptsWithReceipt"]
   meetingIntegration?: MeetingIntegrationCapabilities
   meetingSearch?: MeetingHitSearch
-  meetingSearchIndex?: MeetingSearchIndex
   meetingTranscription?: LocalTranscriptionCapabilities
   unifiedSearch?: UnifiedSearch
   meetingContext?: MeetingContextCapabilities
@@ -97,7 +92,7 @@ export interface StoreConnectRequest {
   profile: string
   externalId: string
   intent: "read" | "ingestion"
-  capability?: "transcript-append" | "meeting-integration" | "meeting-search" | "meeting-search-index"
+  capability?: "transcript-append" | "meeting-integration" | "meeting-search"
 }
 export interface ProgramDeps {
   configPath: string
@@ -112,7 +107,6 @@ export interface ProgramDeps {
   meetingSemantic?: MeetingSemanticCapabilities
   meetingIntegration?: MeetingIntegrationCapabilities
   meetingSearch?: MeetingHitSearch
-  meetingSearchIndex?: MeetingSearchIndex
   meetingTranscription?: LocalTranscriptionCapabilities
   source?: MeetingSource
   recordings?: RecordingsService
@@ -283,23 +277,13 @@ export const createProgram = (deps: ProgramDeps): Command => {
         "search",
       ].includes(family.name()) ||
       (family.name() === "meetings" &&
-        [
-          "evidence",
-          "context",
-          "task-proposal",
-          "semantic",
-          "embeddings",
-          "update",
-          "link",
-          "search-page",
-          "search-index",
-          "transcribe",
-        ].includes(action.name()))
+        ["evidence", "context", "task-proposal", "embeddings", "update", "link", "transcribe"].includes(action.name()))
     )
       return
     const config = getConfig()
-    if (opts.offline && action.name() === "pull" && config.source === "api" && !deps.source)
-      throw new ZoomError("configuration_error", "API pull requires network access; remove --offline")
+    const ingestion = family.name() === "meetings" && ["sync", "import"].includes(action.name())
+    if (opts.offline && ingestion && action.name() !== "import" && config.source === "api" && !deps.source)
+      throw new ZoomError("configuration_error", "API sync requires network access; remove --offline")
     if (!selectedStore) {
       if (!deps.connectStore) return unavailable()
       if (!config.accountProfile)
@@ -308,7 +292,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
         connection = await deps.connectStore({
           profile: config.accountProfile,
           externalId: profileAccountKey(config.accountProfile),
-          intent: ["pull", "import"].includes(action.name()) ? "ingestion" : "read",
+          intent: ingestion ? "ingestion" : "read",
         })
       } catch (error) {
         if (error instanceof ZoomError || error instanceof MeetingError) throw error
@@ -399,7 +383,6 @@ export const createProgram = (deps: ProgramDeps): Command => {
     get store() {
       return guardedStore(selectedStore ?? unavailableStore)
     },
-    rootIngestion: true,
     get accountId() {
       return requireAccount()
     },
@@ -578,7 +561,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
               intent: "ingestion",
             })
           } catch (error) {
-            if (error instanceof CliError || error instanceof MeetingError) throw error
+            if (isCliError(error)) throw error
             throw new ZoomError("configuration_error", "could not open the shared meeting store")
           }
         }
@@ -864,9 +847,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
       return runUnifiedSearch(connection.unifiedSearch, request)
     },
   })
-  const integrationConnection = async (
-    capability: "meeting-integration" | "meeting-search" | "meeting-search-index",
-  ) => {
+  const integrationConnection = async (capability: "meeting-integration" | "meeting-search") => {
     const config = getConfig()
     if (!config.accountProfile || !deps.connectStore)
       throw new ZoomError("configuration_error", "select a stored local profile for meeting integration")
@@ -912,29 +893,6 @@ export const createProgram = (deps: ProgramDeps): Command => {
       return connection.meetingTranscription
     },
   })
-  addMeetingHitSearchCommand(program, {
-    signal,
-    output: integrationOutput,
-    search: async () => {
-      if (deps.meetingSearch) return deps.meetingSearch
-      const connected = await integrationConnection("meeting-search")
-      if (!connected.meetingSearch)
-        throw new ZoomError("configuration_error", "bounded meeting search is unavailable in this store connector")
-      return connected.meetingSearch
-    },
-  })
-  addMeetingSearchIndexCommand(program, {
-    signal,
-    output: integrationOutput,
-    receipt,
-    index: async () => {
-      if (deps.meetingSearchIndex) return deps.meetingSearchIndex
-      const connected = await integrationConnection("meeting-search-index")
-      if (!connected.meetingSearchIndex)
-        throw new ZoomError("configuration_error", "bounded meeting indexing is unavailable in this store connector")
-      return connected.meetingSearchIndex
-    },
-  })
   addMeetingContextCommands(program, {
     signal,
     output: (value) =>
@@ -954,29 +912,40 @@ export const createProgram = (deps: ProgramDeps): Command => {
       return connection.meetingContext
     },
   })
-  addMeetingSemanticCommands(program, {
+  const meetingSemantic = async () => {
+    if (deps.meetingSemantic) return deps.meetingSemantic
+    const config = getConfig()
+    if (!config.accountProfile || !deps.connectStore)
+      throw new ZoomError("configuration_error", "select a stored local profile for meeting vectors")
+    connection = await deps.connectStore({
+      profile: config.accountProfile,
+      externalId: profileAccountKey(config.accountProfile),
+      intent: "read",
+    })
+    if (!connection.meetingSemantic)
+      throw new ZoomError("configuration_error", "meeting vector capabilities are unavailable in this store connector")
+    return connection.meetingSemantic
+  }
+  addMeetingSearchCommands(program, {
+    signal,
+    offline: () => Boolean(program.opts().offline),
+    output: integrationOutput,
+    words: async () => {
+      if (deps.meetingSearch) return deps.meetingSearch
+      const connected = await integrationConnection("meeting-search")
+      if (!connected.meetingSearch)
+        throw new ZoomError("configuration_error", "meeting search is unavailable in this store connector")
+      return connected.meetingSearch
+    },
+    meaning: meetingSemantic,
+    archive: (deps.archiveTranscripts ?? { search: searchArchiveTranscripts }).search,
+  })
+  addMeetingEmbeddingCommand(program, {
     signal,
     offline: () => Boolean(program.opts().offline),
     receipt,
-    output: (value) =>
-      buffer(render(value, program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text", deps, fields, true)),
-    capabilities: async () => {
-      if (deps.meetingSemantic) return deps.meetingSemantic
-      const config = getConfig()
-      if (!config.accountProfile || !deps.connectStore)
-        throw new ZoomError("configuration_error", "select a stored local profile for meeting vectors")
-      connection = await deps.connectStore({
-        profile: config.accountProfile,
-        externalId: profileAccountKey(config.accountProfile),
-        intent: "read",
-      })
-      if (!connection.meetingSemantic)
-        throw new ZoomError(
-          "configuration_error",
-          "meeting vector capabilities are unavailable in this store connector",
-        )
-      return connection.meetingSemantic
-    },
+    output: integrationOutput,
+    capabilities: meetingSemantic,
   })
   annotateMeetingCommands(program)
   const parseAsync = program.parseAsync.bind(program)
@@ -1051,21 +1020,16 @@ export const run = async (args: string[], deps: ProgramDeps): Promise<number> =>
       ["commander.helpDisplayed", "commander.help", "commander.version"].includes(String(error.code))
     )
       return 0
-    const typed = error instanceof CliError || error instanceof MeetingError
     const unknownOutcome = error instanceof Error && "code" in error && error.code === "outcome_unknown"
-    const code = typed
-      ? error.code
+    const failure = isCliError(error)
+      ? error
       : unknownOutcome
-        ? "outcome_unknown"
+        ? new ZoomError("outcome_unknown", "operation outcome is unknown; verify stored state before retrying")
         : error instanceof CommanderError
-          ? "validation_error"
-          : "generic_failure"
-    const message = typed
-      ? error.message
-      : unknownOutcome
-        ? "operation outcome is unknown; verify stored state before retrying"
-        : "command failed; use --help for usage"
-    deps.diagnostic(`${JSON.stringify({ error: { code, message } })}\n`)
-    return code === "generic_failure" ? GENERIC_FAILURE : exitCodeFor(code)
+          ? new ZoomError("validation_error", "command failed; use --help for usage")
+          : error
+    const object = errorObjectOf(failure)
+    deps.diagnostic(`${JSON.stringify(object)}\n`)
+    return exitCodeOfError(object)
   }
 }

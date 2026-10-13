@@ -14,6 +14,7 @@ const result = {
   hasMore: null,
   searched: ["meetings"] as const,
   skipped: [],
+  accounts: [],
   meetings: {
     accountId: 3,
     by: "word-prefixes" as const,

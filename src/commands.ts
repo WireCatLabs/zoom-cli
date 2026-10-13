@@ -51,7 +51,7 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
           globalOptions: describeOptions(program),
           ...(scoped ? { scope: scoped.command.path, inheritedOptions: scoped.inheritedOptions } : {}),
           commands: fields ? projectDiscovery(commands, fields) : commands,
-          exitCodes: { ok: 0, generic_failure: GENERIC_FAILURE, ...EXIT_CODES },
+          exitCodes: { ok: 0, internal_error: GENERIC_FAILURE, ...EXIT_CODES },
         })
       }),
     { mutates: false, examples: ["zm commands --json"] },
@@ -99,7 +99,9 @@ export const annotateMeetingCommands = (program: Command): void => {
     }
     if (command.commands.length) continue
     const path = item.path.join(" ")
-    const knownLocal = ["config set", "session start", "pull", "import", "meetings export"].includes(path)
+    const knownLocal = ["config set", "session start", "meetings sync", "meetings import", "meetings export"].includes(
+      path,
+    )
     const mutates = knownLocal || metaOf(command).mutates === true
     annotate(command, {
       origin: "handwritten",
@@ -118,9 +120,8 @@ const exampleFor = (path: string): string => {
     "meetings transcript": "1",
     "meetings summary": "1",
     "meetings export": "1 --format markdown",
-    "meetings search": '"example plan"',
     "meetings people": '"Alice Example"',
-    import: "./downloaded-transcripts",
+    "meetings import": "./downloaded-transcripts",
   }
   return `zm ${path}${argumentsByPath[path] ? ` ${argumentsByPath[path]}` : ""} --json`
 }

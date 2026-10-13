@@ -77,16 +77,16 @@ OAuth callback values, tokens and private transcript text.
 | Symptom | Check and repair | Success check |
 |---|---|---|
 | No stored profile or empty list | Choose a profile and import or pull; reads do not register accounts | `zm meetings list --json` shows the selected profile's meetings |
-| No hosted meetings in the recent window | Confirm the logged-in Zoom user, API source and date range; try an older explicit `--since` | Compare returned dates with expected hosted occurrences |
+| No hosted meetings in the recent window | Confirm the logged-in Zoom user, API source and date range; try an older explicit `--since-time` | Compare returned dates with expected hosted occurrences |
 | Meeting exists but transcript is empty | Check Zoom's transcript generation/retention and host permissions; expired or never-saved text cannot be recreated by pull | Open the transcript after Zoom makes it available and you pull again |
 | An attended meeting is missing | Ask the host for a VTT file or download it if allowed, then import | Check imported date/title and text |
-| Transcript appeared after the first pull | Revisit with `zm pull --lookback-days 7`, or an older explicit `--since` | Open the newly stored transcript |
+| Transcript appeared after the first pull | Revisit with `zm meetings sync --lookback-days 7`, or an older explicit `--since-time` | Open the newly stored transcript |
 | Pull failed partway | Repair the reported error and retry; failed occurrences do not advance the cursor | Inspect the completion receipt and meeting list |
 | Import rejects a filename or time | Use `YYYY-MM-DD_HHMM_topic.vtt` and the filename's timezone; resolve conflicting or ambiguous times | Import succeeds with the intended date/title |
 | Search gives no matches | Check transcript availability, selected profile and indexing coverage before changing the query | Open a known passage and confirm its indexed/searchable state |
 
-Serialize pulls for the same account. See [transcript settings](zoom-app.md#before-your-first-zm-pull),
-[file import](archive.md#downloaded-transcripts) and [search coverage](search.md#search-stored-meetings).
+Serialize pulls for the same account. See [transcript settings](zoom-app.md#before-your-first-zm-meetings-sync),
+[file import](archive.md#downloaded-transcripts) and [search coverage](search.md#start-with-a-question).
 
 ## Archives
 

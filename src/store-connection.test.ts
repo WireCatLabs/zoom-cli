@@ -51,7 +51,7 @@ describe("persistent account connector", () => {
     await connection.close()
   })
 
-  it("binds bounded search/index and exact append ports to the connection's account", async () => {
+  it("binds search, its index refresh and exact append ports to the connection's account", async () => {
     const store = fixture()
     const search = vi.fn(async () => ({
       items: [],
@@ -64,7 +64,7 @@ describe("persistent account connector", () => {
         indexCompleteness: "unknown" as const,
       },
     }))
-    const index = vi.fn(async () => ({ indexed: 1, remaining: 2 }))
+    const index = vi.fn(async () => ({ indexed: 1, remaining: 0 }))
     const exact = vi.fn(async () => {
       throw new Error("unexpected invalid account append")
     })
@@ -86,18 +86,7 @@ describe("persistent account connector", () => {
     await expect(connection.meetingSearch?.("example", { project: "RES" })).rejects.toMatchObject({
       code: "configuration_error",
     })
-    expect(await connection.meetingSearchIndex?.({ limit: 1 })).toMatchObject({ applied: false, accountId: 3 })
-    expect(index).not.toHaveBeenCalled()
-    expect(await connection.meetingSearchIndex?.({ limit: 1, apply: true, dryRun: true })).toMatchObject({
-      applied: false,
-    })
-    expect(index).not.toHaveBeenCalled()
-    expect(await connection.meetingSearchIndex?.({ limit: 1, maxReadBytes: 1024, apply: true })).toMatchObject({
-      applied: true,
-      indexed: 1,
-      remaining: 2,
-    })
-    expect(index).toHaveBeenCalledWith(expect.objectContaining({ accountId: 3, limit: 1, maxReadBytes: 1024 }))
+    expect(index).toHaveBeenCalledWith(expect.objectContaining({ accountId: 3 }))
     expect(() =>
       connection.appendTranscriptsWithReceipt?.({ accountId: 99, externalId: "example", transcripts: [], now: 1000 }),
     ).toThrowError(expect.objectContaining({ code: "validation_error" }))
@@ -107,7 +96,7 @@ describe("persistent account connector", () => {
   })
 
   it("closes unavailable optional search and context capabilities without registering accounts", async () => {
-    for (const capability of ["meeting-search", "meeting-search-index", "meeting-integration"] as const) {
+    for (const capability of ["meeting-search", "meeting-integration"] as const) {
       const store = fixture()
       await expect(
         createStoreConnector({ openStore: async () => store })({ ...request, capability }),

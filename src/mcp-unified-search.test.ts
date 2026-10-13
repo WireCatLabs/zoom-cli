@@ -12,6 +12,7 @@ it("advertises opt-in meeting-only unified search without store access, rejects 
     hasMore: null,
     searched: ["meetings"] as "meetings"[],
     skipped: [],
+    accounts: [],
     meetings: {
       accountId: 3,
       by: "word-prefixes" as const,

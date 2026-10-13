@@ -189,20 +189,33 @@ it("mounts real durable connector capabilities and rejects absent local profiles
   }
   const reference = `meeting:${value.accountId}/${value.meeting.meeting.id}`
   const links = ["meetings", "update", reference, "--event-id", String(value.event.id)]
-  const search = ["meetings", "search-page", "example"]
-  const index = ["meetings", "search-index"]
+  const search = ["search", "meetings", "example"]
   const transcribe = ["meetings", "transcribe", reference, audio, "--model", "parakeet-v3", "--models-dir", models]
   expect(await run([...search, "--json"], deps)).toBe(3)
   expect(await run([...transcribe, "--json"], deps)).toBe(3)
   expect(connections).toBe(0)
   setConfig(deps.configPath, "account.profile", request.profile)
-  for (const command of [links, index, [...index, "--yes"], search, transcribe]) {
+  for (const command of [links, search, transcribe]) {
     expect(await run([...command, "--json"], deps)).toBe(0)
     expect(output.at(-1)).toBeDefined()
+    if (command === search) {
+      const found = JSON.parse(output.at(-1) ?? "{}")
+      expect(found.items.length).toBeGreaterThan(0)
+      expect(found.items.every((hit: { meetingId: number }) => hit.meetingId === value.meeting.meeting.id)).toBe(true)
+      expect(found.coverage.indexing).toBe("ready")
+    }
   }
-  expect(connections).toBe(5)
+  expect(connections).toBe(3)
+  expect(await run([...links, "--yes", "--json"], deps)).toBe(0)
+  for (const [event, hits] of [
+    [value.event.id, true],
+    [value.event.id + 1, false],
+  ] as const) {
+    expect(await run([...search, "--event-id", String(event), "--json"], deps)).toBe(0)
+    expect(JSON.parse(output.at(-1) ?? "{}").items.length > 0).toBe(hits)
+  }
   deps.connectStore = async () => ({ store: memoryMeetingStore(), accountId: value.accountId, close: async () => {} })
-  for (const command of [links, index, search, transcribe]) {
+  for (const command of [links, search, transcribe]) {
     expect(await run([...command, "--json"], deps)).toBe(3)
     expect(errors.at(-1)).toContain("unavailable in this store connector")
   }

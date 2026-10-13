@@ -12,7 +12,7 @@ Set a value with `zm config set <key> <value>` and see them all with `zm config 
 |---|---|
 | `zoom.clientId` | Public Client ID of the [existing or new app](zoom-app.md); unset by default, required for API login |
 | `account.profile` | [Local label](sessions.md#select-a-local-profile) for stored meetings; unset by default, required for store operations |
-| `source` | Where `pull` and `watch` read from: `api` (default) or `files` |
+| `source` | Where `meetings sync` and `watch` read from: `api` (default) or `files` |
 | `files.folder` | Transcript folder for file-source pull/watch; unset by default |
 | `files.timezone` | the IANA zone of downloaded transcript filenames, for example `Europe/Madrid`; default UTC |
 

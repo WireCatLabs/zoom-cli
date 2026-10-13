@@ -367,7 +367,7 @@ it("uses published summary/history/export commands and writes exact VTT without 
       content: "WEBVTT\n\n00:00.000 --> 00:02.000\nExample: exported words\n",
     },
   ]
-  expect(await run(["import", folder, "--json"], deps)).toBe(0)
+  expect(await run(["meetings", "import", folder, "--json"], deps)).toBe(0)
   const meetings = await deps.store.meetings({ accountId: 1 })
   const id = String(meetings[0]?.id)
   expect(await run(["meetings", "summary", id, "--json"], deps)).toBe(0)

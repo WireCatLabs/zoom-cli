@@ -205,37 +205,6 @@ export const installedMeetingIntegration = async ({
   )
   assert.equal(unchanged.result.changed, false)
   assert.deepEqual(native("audit", target).audit, after.audit)
-  const pending = json(
-    "meetings",
-    "search-page",
-    "running organizar обсуждать needle",
-    "--meeting-id",
-    String(target.meetingId),
-    "--limit",
-    "2",
-  )
-  assert.equal(pending.coverage.indexing, "pending")
-  assert.equal(json("meetings", "search-index", "--limit", "2").applied, false)
-  assert.deepEqual(
-    json(
-      "meetings",
-      "search-page",
-      "running organizar обсуждать needle",
-      "--meeting-id",
-      String(target.meetingId),
-      "--limit",
-      "2",
-    ),
-    pending,
-  )
-  let remaining = 1
-  let batches = 0
-  while (remaining) {
-    assert.ok(++batches < 100, "bounded fixture indexing must terminate")
-    const result = json("meetings", "search-index", "--limit", "2", "--yes")
-    assert.equal(result.applied, true)
-    remaining = result.remaining
-  }
   const query = "running organizar обсуждать needle"
   const hits = []
   const contextFilters = [
@@ -247,24 +216,24 @@ export const installedMeetingIntegration = async ({
     "research-alias",
     "--tag",
     "planning",
-    "--since",
+    "--since-time",
     "1970-01-01T00:00:01Z",
-    "--until",
+    "--until-time",
     "1970-01-01T00:00:01Z",
   ]
   let cursor
   let firstCursor
   do {
     const page = json(
+      "search",
       "meetings",
-      "search-page",
       query,
       "--meeting-id",
       String(target.meetingId),
       "--limit",
       "2",
       ...contextFilters,
-      ...(cursor ? ["--after", cursor] : []),
+      ...(cursor ? ["--cursor", cursor] : []),
     )
     assert.deepEqual(page.coverage, {
       archiveCompleteness: "unknown",
@@ -278,7 +247,7 @@ export const installedMeetingIntegration = async ({
     firstCursor ??= cursor
   } while (cursor)
   assert.equal(hits.length, 9)
-  const topicHits = json("meetings", "search-page", "needle", "--topic", "costs", "--project", "RES")
+  const topicHits = json("search", "meetings", "needle", "--topic", "costs", "--project", "RES")
   assert.equal(topicHits.items.length, 9)
   assert.equal(topicHits.selection[1].name, "budget")
   assert.equal(new Set(hits.map((hit) => hit.id)).size, 9)
@@ -286,15 +255,15 @@ export const installedMeetingIntegration = async ({
   invoke(
     [
       "--json",
+      "search",
       "meetings",
-      "search-page",
       "other query",
       "--meeting-id",
       String(target.meetingId),
       "--limit",
       "2",
       ...contextFilters,
-      "--after",
+      "--cursor",
       firstCursor,
     ],
     2,
@@ -303,15 +272,15 @@ export const installedMeetingIntegration = async ({
   invoke(
     [
       "--json",
+      "search",
       "meetings",
-      "search-page",
       query,
       "--meeting-id",
       String(target.meetingId),
       "--limit",
       "2",
       ...contextFilters,
-      "--after",
+      "--cursor",
       firstCursor,
     ],
     2,
@@ -351,7 +320,8 @@ export const installedMeetingIntegration = async ({
     false,
   )
   assert.ok(commands.includes("meetings update"))
-  assert.ok(commands.includes("meetings search-page"))
+  const searches = json("commands", "search").commands[0].commands.map((command) => command.path.join(" "))
+  assert.ok(searches.includes("search meetings"))
   return {
     scopedLinks: true,
     compareAndSave: true,

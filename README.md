@@ -29,7 +29,7 @@ what you promised in yesterday's call, and get the answer with a reference to th
 ```sh
 zm remote-meetings list --json                      # your upcoming meetings
 zm meetings people "Bob Sample" --json              # him among past participants
-zm meetings search "quote" --since 2026-09-01 --json
+zm search meetings "quote" --since-time 2026-09-01 --json
 zm meetings evidence meeting:1/42/57/118 --json     # the exact passage
 ```
 
@@ -49,13 +49,13 @@ npm install -g @wirecat/zoom-cli
 zm config set zoom.clientId <public-client-id>
 zm session start                          # approve in your browser; the token goes to the keyring
 zm config set account.profile personal    # a label for your stored meetings
-zm pull --lookback-days 7
+zm meetings sync --lookback-days 7
 zm meetings list
 ```
 
 Check Zoom's transcript generation and retention settings first: the API reads available hosted
 meeting text, and permission does not create a transcript. For an attended meeting, obtain a VTT
-file from the host or download one if allowed, then run `zm import <folder>`. Full guide:
+file from the host or download one if allowed, then run `zm meetings import <folder>`. Full guide:
 [installation][docs/installation.md].
 
 More: [installation][docs/installation.md] · [your Zoom app][docs/zoom-app.md] ·
@@ -64,7 +64,7 @@ More: [installation][docs/installation.md] · [your Zoom app][docs/zoom-app.md] 
 ## What you can do
 
 **Prepare for a call.** *"I meet Bob Sample tomorrow. What did we talk about last time?"*
-`remote-meetings list` shows upcoming meetings; `meetings people`, `meetings search-page` (word
+`remote-meetings list` shows upcoming meetings; `meetings people`, `search meetings` (word
 search that also matches English, Spanish and Russian word forms) and `meetings context person:<id>`
 bring back past meetings with the same people.
 
@@ -118,7 +118,7 @@ links meetings to events and people, and creates, changes or cancels simple meet
   covers participants already linked to a person, for example with `meetings link`.
 - **Local transcription takes PCM16 WAV only** (16 or 48 kHz) and an already installed speech model;
   video files are not decoded, and speakers stay unknown.
-- **Attended meetings need a manual download** from your Zoom portal, then `zm import`.
+- **Attended meetings need a manual download** from your Zoom portal, then `zm meetings import`.
 - **A company-managed Zoom account** may need an admin to approve your app.
 - **Daily archive jobs install only on Linux.** Other platforms can preview them.
 - **Zoom only, for now.** Google Meet and Microsoft Teams are
@@ -131,14 +131,14 @@ More: [what is planned][gh/cli-meetings/blob/main/docs/dev/roadmap.md] · [Zoom 
 | Task | Commands |
 |---|---|
 | Set up and log in | `config show`, `config set <key> <value>`, `login [--browser <program>]`, `session status [--check]`, `doctor` |
-| Bring meetings in | `pull [--since <date>] [--lookback-days <days>]`, `import <folder>`, `watch [folder] --source api\|files --jsonl` |
+| Bring meetings in | `meetings sync [--since-time <time>] [--lookback-days <days>]`, `meetings import <folder>`, `watch [folder] --source api\|files --jsonl` |
 | Read stored meetings | `meetings list`, `meetings show <meeting>`, `meetings transcript <meeting>`, `meetings summary <meeting>`, `meetings export <meeting> --format markdown\|vtt`, `events list` |
-| Search | `meetings search-page <query>`, `meetings search-index`, `meetings search <query>`, `meetings people <query>`, `search all <query>` |
+| Search | `search meetings <query>`, `meetings people <query>`, `search all <query>` |
 | Evidence and people | `meetings evidence <reference>`, `meetings context <person>`, `meetings link <reference>`, `meetings update <reference>`, `meetings task-proposal <reference> --type <type>` |
-| Search by meaning | `meetings embeddings --model <model>`, `meetings semantic <query> --model <model>` |
+| Search by meaning | `search meetings <query> --model <model>`, `meetings embeddings --model <model>` |
 | Local transcription | `meetings transcribe <meeting> <file> --model <model>` |
 | Cloud recordings | `recordings list`, `recordings show <meeting>`, `recordings download <meeting> --destination <directory>`, `recordings sync --since-time <date> --until-time <date> --destination <directory> --jsonl`, `recordings schedule create\|list\|show\|run\|disable` |
-| Local archive | `recordings archive show\|check\|locks\|recover <directory>`, `recordings archive transcript\|search\|import <directory>` |
+| Local archive | `recordings archive show\|check\|locks\|recover <directory>`, `recordings archive transcript\|import <directory>`, `search meetings <query> --archive <directory>` |
 | Zoom meetings | `remote-meetings list\|show\|invitation`, `remote-meetings create\|update\|cancel` |
 | Agents | `serve --mcp`, `skill show`, `skill install [--for claude\|agents\|all]`, `commands --json`, `complete -- <words...>` |
 
@@ -181,13 +181,13 @@ More: [profiles][docs/sessions.md#select-a-local-profile] ·
 ## Pull, import and watch
 
 ```sh
-zm pull --lookback-days 7                       # hosted meetings, revisiting late transcripts
-zm import ./downloaded-transcripts              # .vtt files from your Zoom portal
+zm meetings sync --lookback-days 7                       # hosted meetings, revisiting late transcripts
+zm meetings import ./downloaded-transcripts              # .vtt files from your Zoom portal
 zm watch --source api --lookback-days 7 --jsonl # keep pulling in the foreground
 ```
 
 The cursor alone does not revisit transcripts that appear late; use `--lookback-days` or an older
-`--since`. A failed occurrence leaves the cursor unchanged for the next pull. Imported files follow
+`--since-time`. A failed occurrence leaves the cursor unchanged for the next pull. Imported files follow
 the exporter's `YYYY-MM-DD_HHMM_topic-slug.vtt` names; set `files.timezone` to the zone they were
 written in (UTC by default). Participants of imported files stay unknown, and speaker names are
 never turned into identities.
@@ -199,14 +199,14 @@ More: [the local archive][docs/archive.md] · [Zoom on wirecat.dev][wirecat/en/d
 ```sh
 zm recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --destination ./zoom-archive --jsonl
 zm recordings archive check ./zoom-archive --offline --json
-zm recordings archive search ./zoom-archive "example plan" --offline --json
+zm search meetings "example plan" --archive ./zoom-archive --offline --json
 ```
 
 Sync covers up to ten years in monthly requests and downloads serially, streaming to disk. Each
 occurrence gets a manifest with sizes and SHA-256 checksums, never signed URLs or tokens. Existing
 files are never overwritten; repeated runs skip verified files. With a profile, interrupted downloads
-resume safely. `recordings archive transcript|search` read verified WebVTT offline without a
-database; `recordings archive import` appends them to your stored meetings. `recordings schedule
+resume safely. `recordings archive transcript` and `search meetings --archive` read verified WebVTT offline
+without a database; `recordings archive import` appends them to your stored meetings. `recordings schedule
 create --yes` installs a daily systemd user timer (Linux only).
 
 What you can download depends on Zoom permissions, retention and your plan. Recordings of meetings
@@ -218,18 +218,17 @@ More: [archive cloud recordings][docs/archive.md#archive-cloud-recordings] ·
 ## Search and evidence
 
 ```sh
-zm meetings search-index --limit 100 --yes --json         # index queued meetings, one batch
-zm meetings search-page "example plan" --limit 20 --json  # word search with continuation
+zm search meetings "example plan" --limit 20 --json       # word search with continuation
 zm meetings evidence meeting:3/15/20/0 --cues 100 --json  # the exact passage
 zm meetings context person:7 --meetings 10 --json         # meetings linked to a person
 ```
 
-`search-page` matches every word by prefix or by stored English, Spanish and Russian word forms, and
-pages with an opaque `--after` cursor. References have the form
+`search meetings` indexes new meetings first, matches every word by prefix or by stored English, Spanish
+and Russian word forms, and pages with an opaque `--cursor`. References have the form
 `meeting:<account>/<meeting>[/<transcript>[/<cue-position>]]`, stay inside the selected account and
 keep pointing at the same revision after a correction. Every bounded read reports whether it is
-complete. `search all --only meetings,notes` adds store-wide notes. `meetings embeddings` and
-`meetings semantic` search by meaning with a model you name; nothing is downloaded for you.
+complete. `search all --only meetings,notes` adds store-wide notes. `search meetings
+--model` searches by meaning with a model you name; nothing is downloaded for you.
 
 More: [search and evidence][docs/search.md] · [topic search][docs/topic-search.md] ·
 [Zoom on wirecat.dev][wirecat/en/docs/zoom]
@@ -291,7 +290,7 @@ More: [usage][docs/usage.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
 |---|---|
 | `zoom.clientId` | your Zoom app's Public Client ID |
 | `account.profile` | the local profile label |
-| `source` | `api` or `files` for `pull` and `watch` |
+| `source` | `api` or `files` for `meetings sync` and `watch` |
 | `files.folder`, `files.timezone` | the transcript folder and the zone of its filenames |
 | `ZM_CONFIG_DIR` | another configuration directory (also changes the keyring entry) |
 | `MESSAGING_STORE` | another shared database path |
@@ -314,7 +313,7 @@ More: [security][docs/security.md] · [security on wirecat.dev][wirecat/en/docs/
 
 - **"Invalid redirect" from Zoom:** the manifest import left the redirect URL or Public Client OAuth
   unset; fill them in by hand.
-- **No transcripts:** turn on **Allow hosts to retain transcripts**; attended meetings need `zm import`.
+- **No transcripts:** turn on **Allow hosts to retain transcripts**; attended meetings need `zm meetings import`.
 - **Missing-scope error:** add the named scope in your app, then `zm session start` again.
 - **Browser does not start:** `zm session start --browser firefox`, or paste the callback parameters.
 - **Lock left after a crash:** `zm recordings archive locks`, then `recover` with `--yes`.

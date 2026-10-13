@@ -198,3 +198,25 @@ it("rejects invalid accounts and cancellation before loading or opening the mode
   expect(load).not.toHaveBeenCalled()
   expect(api.openMeetingEmbedder).not.toHaveBeenCalled()
 })
+
+it("splits every transcript page and embeds every missing passage page before a search that builds", async () => {
+  const { vectors, descriptor, embedder, api, load } = fixture()
+  vectors.rebuild
+    .mockResolvedValueOnce({ transcripts: 1, chunks: 2, hasMore: true, nextTranscriptId: 20 })
+    .mockResolvedValueOnce({ transcripts: 1, chunks: 1, hasMore: false, nextTranscriptId: 21 })
+  api.applyMeetingEmbedding.mockResolvedValueOnce({
+    accountId: 3,
+    model: descriptor,
+    saved: 1,
+    skipped: 0,
+    hasMore: false,
+    nextHash: "b".repeat(64),
+  })
+  const capability = createMeetingSemanticCapabilities(vectors, 3, { load })
+  await capability.search("example", { model: "example", buildMissing: true })
+  expect(vectors.rebuild).toHaveBeenCalledTimes(2)
+  expect(vectors.rebuild).toHaveBeenLastCalledWith(expect.objectContaining({ afterTranscriptId: 20 }))
+  expect(api.applyMeetingEmbedding).toHaveBeenCalledTimes(1)
+  expect(api.readMeetingSemantic).toHaveBeenCalledOnce()
+  expect(embedder.close).toHaveBeenCalledOnce()
+})

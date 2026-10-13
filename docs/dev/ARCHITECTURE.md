@@ -24,7 +24,7 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [unified-search.ts](../../src/unified-search.ts) | validated public producer search with explicit resource scope |
 | [meeting-context.ts](../../src/meeting-context.ts) | account-fixed bounded evidence, identity context and read-only task proposals |
 | [meeting-integration-commands.ts](../../src/meeting-integration-commands.ts), [meeting-integration.ts](../../src/meeting-integration.ts) | explicit event/person linking through the shared context service |
-| [meeting-search-commands.ts](../../src/meeting-search-commands.ts) | shared bounded hit command registration and explicit keyword index batches |
+| [meeting-search-commands.ts](../../src/meeting-search-commands.ts) | `search meetings`: the shared word search, plus meaning and archive sources |
 | [local-transcription.ts](../../src/local-transcription.ts), [wav-audio.ts](../../src/wav-audio.ts) | native media verification and shared transcription/speech port adaptation |
 | [meeting-semantic.ts](../../src/meeting-semantic.ts) | explicit model selection and public vector/model service adaptation |
 | [store-connection.ts](../../src/store-connection.ts) | lazy public shared-store/account adapter, without SQL |
@@ -137,10 +137,11 @@ are checked in the same transaction. Only the selected identity moves; names nev
 Memo remains the shared notes, tags and memories interface over these same records. Zoom does not
 mount another set of those commands.
 
-Bounded keyword hit search uses the optional producer search capability and an opaque cursor
-that can continue within a transcript. Reads do not drain keyword indexing work. Explicit indexing
-previews by default and applies one bounded batch with `--yes`; coverage reports pending indexing
-and unknown index/archive completeness. The producer owns Unicode tokenization and configured
+`search meetings` uses the producer's word search and an opaque cursor that can continue within a
+transcript. The producer indexes newly stored records before each search, in committed batches;
+coverage reports pending indexing and unknown index/archive completeness. With `--model` the same
+command searches by meaning and first builds missing vectors; with `--archive` it reads an archive
+folder instead of the store. The producer owns Unicode tokenization and configured
 stemming; Zoom does not duplicate either implementation. Command receipts preserve committed local writes when
 cancellation follows acknowledgement.
 

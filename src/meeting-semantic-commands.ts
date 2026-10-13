@@ -9,6 +9,8 @@ export interface MeetingModelOptions {
   dims?: number
 }
 export interface MeetingSemanticOptions extends MeetingModelOptions {
+  /** Split new transcripts and embed passages that have no vector first; MCP reads never write. */
+  buildMissing?: boolean
   limit?: number
   maxChunks?: number
   afterChunkId?: number
@@ -88,7 +90,7 @@ export const validateMeetingEmbeddings = (options: MeetingEmbeddingOptions): voi
   )
     throw new ZoomError("validation_error", "meeting embedding generation requires valid bounded limits and cursors")
 }
-export const addMeetingSemanticCommands = (
+export const addMeetingEmbeddingCommand = (
   program: Command,
   deps: {
     capabilities: () => Promise<MeetingSemanticCapabilities>
@@ -110,30 +112,6 @@ export const addMeetingSemanticCommands = (
       .option("--limit <n>", "how many results or items in one batch, 1 through 1000", bytes)
       .option("--max-rows <n>", "most transcript lines to read, 1 through 100000", bytes)
       .option("--max-text-bytes <bytes>", "most transcript text to read, in bytes (default 4 MiB)", bytes)
-  annotate(
-    budget(
-      model(
-        meetings
-          .command("semantic")
-          .description("find stored meeting passages nearest in meaning to a query")
-          .argument("<query>", "what to look for, in words"),
-      ),
-    )
-      .option("--max-chunks <n>", "most stored passages to compare", bytes)
-      .option("--after-chunk-id <id>", "compare the passages after this one; results are ranked per page only", bytes)
-      .action(async (query: string, options: MeetingSemanticOptions) => {
-        validateMeetingSemantic(query, options)
-        if (options.baseUrl !== undefined && deps.offline())
-          throw new ZoomError("configuration_error", "remote embeddings require network access; remove --offline")
-        const api = await deps.capabilities()
-        deps.output(await api.search(query, { ...options, signal: deps.signal() }))
-      }),
-    {
-      origin: "handwritten",
-      mutates: false,
-      examples: ['zm meetings semantic "example plan" --model e5-small --json'],
-    },
-  )
   annotate(
     budget(
       model(meetings.command("embeddings").description("preview building meeting vectors; --yes builds one batch")),

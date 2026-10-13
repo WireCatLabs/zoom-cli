@@ -79,7 +79,7 @@ Then check the saved session and choose a **profile**, a local label for the mee
 ```sh
 zm session status --json
 zm config set account.profile personal
-zm pull --lookback-days 7
+zm meetings sync --lookback-days 7
 zm meetings list --json
 ```
 
@@ -93,7 +93,7 @@ zm meetings transcript <meeting-id> --json
 
 An empty list is possible when no hosted meetings are available in that period. An empty transcript
 means Zoom did not supply text; app permission does not create a transcript. Check
-[transcript retention](zoom-app.md#before-your-first-zm-pull), then pull an older period if needed.
+[transcript retention](zoom-app.md#before-your-first-zm-meetings-sync), then pull an older period if needed.
 A missing-scope error names the permission to add; authorize again after the app owner changes it.
 
 A local profile does not switch the Zoom account logged in through the browser. Use
@@ -109,7 +109,7 @@ and name it with its meeting date, time and title, for example
 ```sh
 zm config set account.profile personal
 zm config set files.timezone Europe/Madrid
-zm import ./downloaded-transcripts
+zm meetings import ./downloaded-transcripts
 zm meetings list --json
 ```
 

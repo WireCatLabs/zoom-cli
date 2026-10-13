@@ -76,7 +76,7 @@ the existing OAuth credentials.
 
 `MESSAGING_STORE` selects the shared database. Use the same path for Zoom, Memo and your MCP
 client when connecting meeting evidence with notes and projects. File imports do not advance
-the pull cursor; when switching ingestion sources, an older explicit `--since` may be needed.
+the pull cursor; when switching ingestion sources, an older explicit `--since-time` may be needed.
 
 ## Remove access
 

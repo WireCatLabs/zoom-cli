@@ -256,7 +256,7 @@ describe("CLI configuration isolation", () => {
     ]
     setConfig(deps.configPath, "source", "files")
     setConfig(deps.configPath, "files.folder", "example")
-    expect(await run(["pull", "--since", "2026-10-01"], deps)).toBe(0)
+    expect(await run(["meetings", "sync", "--since-time", "2026-10-01"], deps)).toBe(0)
     expect(await deps.store.meetings()).toHaveLength(1)
   })
 })
@@ -272,10 +272,10 @@ it("constructs the API source lazily and respects an injected source", async () 
     scopes: ["meeting:read:list_meetings"],
   })
   deps.fetch = async () => reply({ meetings: [] })
-  expect(await run(["pull", "--since", "2026-10-01"], deps)).toBe(0)
+  expect(await run(["meetings", "sync", "--since-time", "2026-10-01"], deps)).toBe(0)
   const { FilesSource } = await import("./files.js")
   deps.source = new FilesSource([])
-  expect(await run(["pull", "--since", "2026-10-01"], deps)).toBe(0)
+  expect(await run(["meetings", "sync", "--since-time", "2026-10-01"], deps)).toBe(0)
 })
 
 it("preflights every normalized import key before saving and deduplicates identical aliases", async () => {
@@ -288,13 +288,13 @@ it("preflights every normalized import key before saving and deduplicates identi
     { name: "2026-10-10_1530_cafe\u0301.vtt", content: content.replace("Example\n", "Different\n") },
   ]
   deps.readFiles = async () => files
-  expect(await run(["--json", "import", "example-folder"], deps)).toBe(2)
+  expect(await run(["--json", "meetings", "import", "example-folder"], deps)).toBe(2)
   expect(await deps.store.meetings()).toEqual([])
   expect(stdout).toEqual([])
   expect(stderr).toHaveLength(1)
   expect(JSON.parse(stderr[0] ?? "{}").error.code).toBe("validation_error")
   files[1] = { name: "2026-10-10_1530_cafe\u0301.vtt", content }
-  expect(await run(["--json", "import", "example-folder"], deps)).toBe(0)
+  expect(await run(["--json", "meetings", "import", "example-folder"], deps)).toBe(0)
   expect(JSON.parse(stdout[0] ?? "{}")).toMatchObject({ meetings: 1 })
   expect(await deps.store.meetings()).toHaveLength(1)
 })
@@ -356,11 +356,11 @@ it("requires an explicit local profile before connecting and a valid account bef
       },
     }
   }
-  expect(await run(["pull", "--since", "2026-10-01"], deps)).toBe(3)
+  expect(await run(["meetings", "sync", "--since-time", "2026-10-01"], deps)).toBe(3)
   expect(opens).toBe(0)
   expect(JSON.parse(stderr.at(-1) ?? "{}").error.message).toContain("account.profile")
   setConfig(deps.configPath, "account.profile", "example")
-  expect(await run(["pull", "--since", "2026-10-01"], deps)).toBe(3)
+  expect(await run(["meetings", "sync", "--since-time", "2026-10-01"], deps)).toBe(3)
   expect(opens).toBe(1)
   expect(closes).toBe(1)
   deps.store = memoryMeetingStore()
@@ -391,7 +391,7 @@ it("uses the same selected local account for file import and API pull", async ()
       content: "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nAlice Example: Example\n",
     },
   ]
-  expect(await run(["import", "example-folder"], deps)).toBe(0)
+  expect(await run(["meetings", "import", "example-folder"], deps)).toBe(0)
   expect((await store.meetings())[0]?.accountId).toBe(2)
   deps.tokens.save({
     accessToken: "example",
@@ -400,7 +400,7 @@ it("uses the same selected local account for file import and API pull", async ()
     scopes: ["meeting:read:list_meetings"],
   })
   deps.fetch = async () => reply({ meetings: [] })
-  expect(await run(["pull", "--since", "2026-10-01"], deps)).toBe(0)
+  expect(await run(["meetings", "sync", "--since-time", "2026-10-01"], deps)).toBe(0)
   expect(opens).toBe(2)
   expect(closes).toBe(2)
 })
@@ -445,13 +445,13 @@ it("closes after source and rejected-save errors and sanitizes connector failure
       throw new Error("example source failure")
     },
   })
-  expect(await run(["pull", "--since", "2026-10-01"], deps)).toBe(1)
+  expect(await run(["meetings", "sync", "--since-time", "2026-10-01"], deps)).toBe(1)
   expect(closes).toBe(1)
   deps.readFiles = async () => [{ name: "2026-10-10_1530_example.vtt", content: "WEBVTT\n" }]
   store.saveMeeting = async () => {
     throw new Error("example rejected save")
   }
-  expect(await run(["import", "example-folder"], deps)).toBe(0)
+  expect(await run(["meetings", "import", "example-folder"], deps)).toBe(0)
   expect(JSON.parse(stdout.at(-1) ?? "{}").warnings).toHaveLength(1)
   expect(closes).toBe(2)
   deps.connectStore = async () => {
@@ -521,10 +521,10 @@ it("refreshes profile and source configuration between sequential direct parses"
   })
   await program.parseAsync(["config", "set", "source", "files"], { from: "user" })
   await program.parseAsync(["config", "set", "files.folder", "example-folder"], { from: "user" })
-  await program.parseAsync(["pull", "--since", "2026-10-01"], { from: "user" })
+  await program.parseAsync(["meetings", "sync", "--since-time", "2026-10-01"], { from: "user" })
   expect(apiCalls).toBe(0)
   await program.parseAsync(["config", "set", "source", "api"], { from: "user" })
-  await program.parseAsync(["pull", "--since", "2026-10-01"], { from: "user" })
+  await program.parseAsync(["meetings", "sync", "--since-time", "2026-10-01"], { from: "user" })
   expect(apiCalls).toBe(1)
 })
 

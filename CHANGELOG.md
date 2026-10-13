@@ -1,9 +1,21 @@
 # Changelog
 
-## Unreleased
+## 0.8.0 — 13.10.2026
 
 ### Changed — may break callers
 
+- **Runs on `@wirecat/cli-messaging` 0.258.0 and `@wirecat/cli-base` 0.24.0.**
+- **The shared store and models move to the WireCat folder** (`~/.local/share/WireCat/` on Linux and macOS,
+  `%LOCALAPPDATA%\WireCat\Data\` on Windows) on the first start of zm, as tg, max and memo do. Nothing moves when
+  `MESSAGING_STORE` or `WIRECAT_STATE_DIR` is set. Two different stores under the same name stop the command with
+  an error naming both paths; nothing is changed.
+- **Meeting ingestion moves under `meetings`.** The old names stop working:
+  - `zm pull` → `zm meetings sync`, with `--since` → `--since-time`
+  - `zm import <folder>` → `zm meetings import <folder>`
+  - `meetings list --since`/`--until` → `--since-time`/`--until-time`
+- **One error object:** `{ error: { code, reason, message, … } }` on stderr and in MCP results. A failure that is
+  not a typed error is `internal_error` (exit 1) and replaces `generic_failure`, also in `commands --json`
+  `exitCodes`.
 - **`zm commands --json` prints the shared commands document**: `cli`, `version`, `contract`, `description`,
   `globalOptions` (was `options`), `commands` and `exitCodes`; a command path adds `scope` and `inheritedOptions`.
 - `zm commands` without `--json` lists one row per command: usage, description and whether it writes.
@@ -18,6 +30,19 @@
   - `meetings evidence --after` → `--cursor`
   - `meetings task-proposal --kind` → `--type`
   - `remote-meetings create|update --topic` → `--title`
+- **One meeting search, `zm search meetings <query>`, that indexes on its own.** It replaces four commands, which
+  stop working:
+  - `meetings search` and `meetings search-page`: their filters all move over, including `--event-id` and
+    `--series-id`; `--since`/`--until` are `--since-time`/`--until-time` and `--after` is `--cursor`.
+  - `meetings search-index`: gone. The search indexes what was stored since the last search before it reads.
+  - `meetings semantic`: `search meetings <query> --model <model>` (with `--base-url`, `--dims`,
+    `--max-chunks`, `--max-rows`, `--max-text-bytes`; `--after-chunk-id` is `--cursor`). It first builds the
+    vectors that are missing for that model.
+  - `recordings archive search <directory> <query>`: `search meetings <query> --archive <directory>` (with
+    `--uuid`, `--file-ids`, `--max-bytes`).
+  - MCP: `meetings_search`, `meeting_search_page` and `meeting_semantic_search` are one tool,
+    `search_meetings`. With `serve --semantic`, `by_meaning: true` ranks existing vectors; MCP never builds
+    them.
 - Value names in help now say what they hold: `--limit <n>`, `--model <model>`, `--max-read-bytes <bytes>`,
   `--max-text-bytes <bytes>`; every argument has a description and long summaries are shorter.
 
