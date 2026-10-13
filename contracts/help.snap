@@ -21,8 +21,6 @@ Options:
 Commands:
   config                      local Zoom configuration
   meetings                    stored meetings and their records
-  pull [options]              fetch meeting records from the connected account
-  import [options] <folder>   import downloaded meeting transcripts
   events                      the owner's stored events
   commands [path...]          discover commands, flags and examples, optionally
                               scoped to a command path

@@ -3,7 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js"
 import { CallToolRequestSchema, ListToolsRequestSchema, type Tool } from "@modelcontextprotocol/sdk/types.js"
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv"
-import { CliError } from "@wirecat/cli-base"
+import { type ErrorCode, errorObjectOf, isCliError, mcpErrorResult } from "@wirecat/cli-base"
 import type { MeetingStore } from "@wirecat/cli-messaging/meetings"
 import {
   callMeetingSearchTool,
@@ -39,14 +39,8 @@ export interface MeetingMcpOptions {
   semanticModel?: MeetingModelOptions
 }
 
-const failure = (code: string, message: string) => {
-  const result = { error: { code, message } }
-  return {
-    content: [{ type: "text" as const, text: JSON.stringify(result) }],
-    structuredContent: result,
-    isError: true,
-  }
-}
+const failure = (code: ErrorCode, message: string) => mcpErrorResult(errorObjectOf(new ZoomError(code, message)))
+const crashed = () => mcpErrorResult(errorObjectOf(undefined))
 
 /** SDK protocol handling; shared meeting tools own all read behavior and validation. */
 const buildServer = (options: MeetingMcpOptions) => {
@@ -193,7 +187,7 @@ const buildServer = (options: MeetingMcpOptions) => {
     } catch {
       return failure("configuration_error", "could not open the selected meeting account")
     }
-    let result: Awaited<ReturnType<typeof callMeetingTool>> = failure("generic_failure", "Meeting read failed")
+    let result: Awaited<ReturnType<typeof callMeetingTool>> = crashed()
     try {
       if (cancelled()) result = failure("cancelled", "meeting read was cancelled")
       else if (!Number.isSafeInteger(connection.accountId) || connection.accountId < 1)
@@ -323,14 +317,14 @@ const buildServer = (options: MeetingMcpOptions) => {
           "meeting_evidence",
           "person_meeting_context",
           "meeting_task_proposal",
-        ].includes(request.params.name) && error instanceof CliError
+        ].includes(request.params.name) && isCliError(error)
           ? failure(error.code, "selected-account meeting operation failed")
-          : failure("generic_failure", "Meeting read failed")
+          : crashed()
     } finally {
       try {
         await connection.close()
       } catch {
-        result = failure("generic_failure", "could not close the meeting read connection")
+        result = crashed()
       }
     }
     if (cancelled()) return failure("cancelled", "meeting read was cancelled")

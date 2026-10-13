@@ -59,9 +59,9 @@ it("keeps CLI paging, calendar filters and participant reads scoped to the selec
     await invoke([
       "meetings",
       "list",
-      "--since",
+      "--since-time",
       "1970-01-01",
-      "--until",
+      "--until-time",
       "1970-01-01T00:00:03Z",
       "--limit",
       "1",
@@ -113,7 +113,7 @@ it("passes explicit lookback into shared ingestion and emits a single acknowledg
     },
   })
   await store.setCursor(1, "2026-10-10T00:00:00.000Z", 3000)
-  expect(await invoke(["pull", "--lookback-days", "2", "--jsonl"])).toHaveLength(1)
+  expect(await invoke(["meetings", "sync", "--lookback-days", "2", "--jsonl"])).toHaveLength(1)
   expect(boundaries).toEqual(["2026-10-08T00:00:00.000Z"])
   deps.readFiles = async () => [
     {
@@ -121,6 +121,6 @@ it("passes explicit lookback into shared ingestion and emits a single acknowledg
       content: "WEBVTT\n\n00:00.000 --> 00:01.000\nAlice Example: Invented import\n",
     },
   ]
-  expect(await invoke(["import", "invented-folder", "--jsonl"])).toHaveLength(1)
+  expect(await invoke(["meetings", "import", "invented-folder", "--jsonl"])).toHaveLength(1)
   expect(await store.meetings({ accountId: 1 })).toHaveLength(1)
 })

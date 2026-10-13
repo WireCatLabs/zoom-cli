@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**238 ✅ · 1 ⛔ · 0 ❌** — 54 commands, 185 options.
+**224 ✅ · 1 ⛔ · 0 ❌** — 50 commands, 175 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -16,8 +16,8 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings list` |  | ✅ |  |
 | `meetings list` | `--json` | ✅ |  |
 | `meetings list` | `--jsonl` | ✅ |  |
-| `meetings list` | `--since` | ✅ |  |
-| `meetings list` | `--until` | ✅ |  |
+| `meetings list` | `--since-time` | ✅ |  |
+| `meetings list` | `--until-time` | ✅ |  |
 | `meetings list` | `--limit` | ✅ |  |
 | `meetings list` | `--page` | ✅ |  |
 | `meetings show` |  | ✅ |  |
@@ -36,16 +36,17 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings export` | `--output` | ✅ |  |
 | `meetings export` | `--json` | ✅ |  |
 | `meetings export` | `--jsonl` | ✅ |  |
-| `meetings search` |  | ✅ |  |
-| `meetings search` | `--since` | ✅ |  |
-| `meetings search` | `--until` | ✅ |  |
-| `meetings search` | `--event-id` | ✅ |  |
-| `meetings search` | `--series-id` | ✅ |  |
-| `meetings search` | `--json` | ✅ |  |
-| `meetings search` | `--jsonl` | ✅ |  |
 | `meetings people` |  | ✅ |  |
 | `meetings people` | `--json` | ✅ |  |
 | `meetings people` | `--jsonl` | ✅ |  |
+| `meetings sync` |  | ✅ |  |
+| `meetings sync` | `--json` | ✅ |  |
+| `meetings sync` | `--jsonl` | ✅ |  |
+| `meetings sync` | `--since-time` | ✅ |  |
+| `meetings sync` | `--lookback-days` | ✅ |  |
+| `meetings import` |  | ✅ |  |
+| `meetings import` | `--json` | ✅ |  |
+| `meetings import` | `--jsonl` | ✅ |  |
 | `meetings update` |  | ✅ |  |
 | `meetings update` | `--event-id` | ✅ |  |
 | `meetings update` | `--expected-event-id` | ✅ |  |
@@ -67,23 +68,6 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings transcribe` | `--max-text-bytes` | ✅ |  |
 | `meetings transcribe` | `--yes` | ✅ |  |
 | `meetings transcribe` | `--dry-run` | ✅ |  |
-| `meetings search-page` |  | ✅ |  |
-| `meetings search-page` | `--meeting-id` | ✅ |  |
-| `meetings search-page` | `--identity-id` | ✅ |  |
-| `meetings search-page` | `--person-id` | ✅ |  |
-| `meetings search-page` | `--project` | ✅ |  |
-| `meetings search-page` | `--tag` | ✅ |  |
-| `meetings search-page` | `--topic` | ✅ |  |
-| `meetings search-page` | `--since` | ✅ |  |
-| `meetings search-page` | `--until` | ✅ |  |
-| `meetings search-page` | `--limit` | ✅ |  |
-| `meetings search-page` | `--after` | ✅ |  |
-| `meetings search-page` | `--max-read-bytes` | ✅ |  |
-| `meetings search-index` |  | ✅ |  |
-| `meetings search-index` | `--limit` | ✅ |  |
-| `meetings search-index` | `--max-read-bytes` | ✅ |  |
-| `meetings search-index` | `--yes` | ✅ |  |
-| `meetings search-index` | `--dry-run` | ✅ |  |
 | `meetings evidence` |  | ✅ |  |
 | `meetings evidence` | `--cues` | ✅ |  |
 | `meetings evidence` | `--bytes` | ✅ |  |
@@ -99,15 +83,6 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings context` | `--since-time` | ✅ |  |
 | `meetings task-proposal` |  | ✅ |  |
 | `meetings task-proposal` | `--type` | ✅ |  |
-| `meetings semantic` |  | ✅ |  |
-| `meetings semantic` | `--model` | ✅ |  |
-| `meetings semantic` | `--base-url` | ✅ |  |
-| `meetings semantic` | `--dims` | ✅ |  |
-| `meetings semantic` | `--limit` | ✅ |  |
-| `meetings semantic` | `--max-rows` | ✅ |  |
-| `meetings semantic` | `--max-text-bytes` | ✅ |  |
-| `meetings semantic` | `--max-chunks` | ✅ |  |
-| `meetings semantic` | `--after-chunk-id` | ✅ |  |
 | `meetings embeddings` |  | ✅ |  |
 | `meetings embeddings` | `--model` | ✅ |  |
 | `meetings embeddings` | `--base-url` | ✅ |  |
@@ -118,14 +93,6 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings embeddings` | `--after-transcript-id` | ✅ |  |
 | `meetings embeddings` | `--after-hash` | ✅ |  |
 | `meetings embeddings` | `--yes` | ✅ |  |
-| `pull` |  | ✅ |  |
-| `pull` | `--json` | ✅ |  |
-| `pull` | `--jsonl` | ✅ |  |
-| `pull` | `--since` | ✅ |  |
-| `pull` | `--lookback-days` | ✅ |  |
-| `import` |  | ✅ |  |
-| `import` | `--json` | ✅ |  |
-| `import` | `--jsonl` | ✅ |  |
 | `events list` |  | ✅ |  |
 | `events list` | `--json` | ✅ |  |
 | `events list` | `--jsonl` | ✅ |  |
@@ -166,11 +133,6 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `recordings archive transcript` | `--uuid` | ✅ |  |
 | `recordings archive transcript` | `--file-ids` | ✅ |  |
 | `recordings archive transcript` | `--max-bytes` | ✅ |  |
-| `recordings archive search` |  | ✅ |  |
-| `recordings archive search` | `--uuid` | ✅ |  |
-| `recordings archive search` | `--file-ids` | ✅ |  |
-| `recordings archive search` | `--max-bytes` | ✅ |  |
-| `recordings archive search` | `--limit` | ✅ |  |
 | `recordings archive show` |  | ✅ |  |
 | `recordings archive check` |  | ✅ |  |
 | `recordings archive locks` |  | ✅ |  |
@@ -240,6 +202,30 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `search all` | `--max-meetings` | ✅ |  |
 | `search all` | `--meeting-cursor` | ✅ |  |
 | `search all` | `--exact` | ✅ |  |
+| `search meetings` |  | ✅ |  |
+| `search meetings` | `--meeting-id` | ✅ |  |
+| `search meetings` | `--identity-id` | ✅ |  |
+| `search meetings` | `--person-id` | ✅ |  |
+| `search meetings` | `--event-id` | ✅ |  |
+| `search meetings` | `--series-id` | ✅ |  |
+| `search meetings` | `--project` | ✅ |  |
+| `search meetings` | `--tag` | ✅ |  |
+| `search meetings` | `--topic` | ✅ |  |
+| `search meetings` | `--since-time` | ✅ |  |
+| `search meetings` | `--until-time` | ✅ |  |
+| `search meetings` | `--limit` | ✅ |  |
+| `search meetings` | `--cursor` | ✅ |  |
+| `search meetings` | `--max-read-bytes` | ✅ |  |
+| `search meetings` | `--model` | ✅ |  |
+| `search meetings` | `--base-url` | ✅ |  |
+| `search meetings` | `--dims` | ✅ |  |
+| `search meetings` | `--max-chunks` | ✅ |  |
+| `search meetings` | `--max-rows` | ✅ |  |
+| `search meetings` | `--max-text-bytes` | ✅ |  |
+| `search meetings` | `--archive` | ✅ |  |
+| `search meetings` | `--uuid` | ✅ |  |
+| `search meetings` | `--file-ids` | ✅ |  |
+| `search meetings` | `--max-bytes` | ✅ |  |
 | *global* | `--version` | ⛔ | Installed-package acceptance checks the actual bin version; Commander exits before preAction tracing. |
 | *global* | `--json` | ✅ |  |
 | *global* | `--jsonl` | ✅ |  |

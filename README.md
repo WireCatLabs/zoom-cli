@@ -49,13 +49,13 @@ npm install -g @wirecat/zoom-cli
 zm config set zoom.clientId <public-client-id>
 zm session start                          # approve in your browser; the token goes to the keyring
 zm config set account.profile personal    # a label for your stored meetings
-zm pull --lookback-days 7
+zm meetings sync --lookback-days 7
 zm meetings list
 ```
 
 Check Zoom's transcript generation and retention settings first: the API reads available hosted
 meeting text, and permission does not create a transcript. For an attended meeting, obtain a VTT
-file from the host or download one if allowed, then run `zm import <folder>`. Full guide:
+file from the host or download one if allowed, then run `zm meetings import <folder>`. Full guide:
 [installation][docs/installation.md].
 
 More: [installation][docs/installation.md] · [your Zoom app][docs/zoom-app.md] ·
@@ -118,7 +118,7 @@ links meetings to events and people, and creates, changes or cancels simple meet
   covers participants already linked to a person, for example with `meetings link`.
 - **Local transcription takes PCM16 WAV only** (16 or 48 kHz) and an already installed speech model;
   video files are not decoded, and speakers stay unknown.
-- **Attended meetings need a manual download** from your Zoom portal, then `zm import`.
+- **Attended meetings need a manual download** from your Zoom portal, then `zm meetings import`.
 - **A company-managed Zoom account** may need an admin to approve your app.
 - **Daily archive jobs install only on Linux.** Other platforms can preview them.
 - **Zoom only, for now.** Google Meet and Microsoft Teams are
@@ -131,14 +131,14 @@ More: [what is planned][gh/cli-meetings/blob/main/docs/dev/roadmap.md] · [Zoom 
 | Task | Commands |
 |---|---|
 | Set up and log in | `config show`, `config set <key> <value>`, `login [--browser <program>]`, `session status [--check]`, `doctor` |
-| Bring meetings in | `pull [--since <date>] [--lookback-days <days>]`, `import <folder>`, `watch [folder] --source api\|files --jsonl` |
+| Bring meetings in | `meetings sync [--since-time <time>] [--lookback-days <days>]`, `meetings import <folder>`, `watch [folder] --source api\|files --jsonl` |
 | Read stored meetings | `meetings list`, `meetings show <meeting>`, `meetings transcript <meeting>`, `meetings summary <meeting>`, `meetings export <meeting> --format markdown\|vtt`, `events list` |
 | Search | `search meetings <query>`, `meetings people <query>`, `search all <query>` |
 | Evidence and people | `meetings evidence <reference>`, `meetings context <person>`, `meetings link <reference>`, `meetings update <reference>`, `meetings task-proposal <reference> --type <type>` |
 | Search by meaning | `search meetings <query> --model <model>`, `meetings embeddings --model <model>` |
 | Local transcription | `meetings transcribe <meeting> <file> --model <model>` |
 | Cloud recordings | `recordings list`, `recordings show <meeting>`, `recordings download <meeting> --destination <directory>`, `recordings sync --since-time <date> --until-time <date> --destination <directory> --jsonl`, `recordings schedule create\|list\|show\|run\|disable` |
-| Local archive | `recordings archive show\|check\|locks\|recover <directory>`, `recordings archive transcript\|search\|import <directory>` |
+| Local archive | `recordings archive show\|check\|locks\|recover <directory>`, `recordings archive transcript\|import <directory>`, `search meetings <query> --archive <directory>` |
 | Zoom meetings | `remote-meetings list\|show\|invitation`, `remote-meetings create\|update\|cancel` |
 | Agents | `serve --mcp`, `skill show`, `skill install [--for claude\|agents\|all]`, `commands --json`, `complete -- <words...>` |
 
@@ -181,13 +181,13 @@ More: [profiles][docs/sessions.md#select-a-local-profile] ·
 ## Pull, import and watch
 
 ```sh
-zm pull --lookback-days 7                       # hosted meetings, revisiting late transcripts
-zm import ./downloaded-transcripts              # .vtt files from your Zoom portal
+zm meetings sync --lookback-days 7                       # hosted meetings, revisiting late transcripts
+zm meetings import ./downloaded-transcripts              # .vtt files from your Zoom portal
 zm watch --source api --lookback-days 7 --jsonl # keep pulling in the foreground
 ```
 
 The cursor alone does not revisit transcripts that appear late; use `--lookback-days` or an older
-`--since`. A failed occurrence leaves the cursor unchanged for the next pull. Imported files follow
+`--since-time`. A failed occurrence leaves the cursor unchanged for the next pull. Imported files follow
 the exporter's `YYYY-MM-DD_HHMM_topic-slug.vtt` names; set `files.timezone` to the zone they were
 written in (UTC by default). Participants of imported files stay unknown, and speaker names are
 never turned into identities.
@@ -290,7 +290,7 @@ More: [usage][docs/usage.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
 |---|---|
 | `zoom.clientId` | your Zoom app's Public Client ID |
 | `account.profile` | the local profile label |
-| `source` | `api` or `files` for `pull` and `watch` |
+| `source` | `api` or `files` for `meetings sync` and `watch` |
 | `files.folder`, `files.timezone` | the transcript folder and the zone of its filenames |
 | `ZM_CONFIG_DIR` | another configuration directory (also changes the keyring entry) |
 | `MESSAGING_STORE` | another shared database path |
@@ -313,7 +313,7 @@ More: [security][docs/security.md] · [security on wirecat.dev][wirecat/en/docs/
 
 - **"Invalid redirect" from Zoom:** the manifest import left the redirect URL or Public Client OAuth
   unset; fill them in by hand.
-- **No transcripts:** turn on **Allow hosts to retain transcripts**; attended meetings need `zm import`.
+- **No transcripts:** turn on **Allow hosts to retain transcripts**; attended meetings need `zm meetings import`.
 - **Missing-scope error:** add the named scope in your app, then `zm session start` again.
 - **Browser does not start:** `zm session start --browser firefox`, or paste the callback parameters.
 - **Lock left after a crash:** `zm recordings archive locks`, then `recover` with `--yes`.

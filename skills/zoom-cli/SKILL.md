@@ -55,7 +55,7 @@ explicit `--output` path and never overwrites an existing file. VTT export requi
 current transcript or an explicit transcript id.
 
 Store commands use the shared SQLite database; `MESSAGING_STORE` selects an explicit path. Select a
-local profile before import or pull. Reads require existing profile data; they do not register it. `pull --lookback-days` revisits late
+local profile before import or pull. Reads require existing profile data; they do not register it. `meetings sync --lookback-days` revisits late
 transcripts. File imports preserve the API pull cursor. Serialize ingestion for the same account.
 Local profile labels group stored data and do not select a different OAuth account.
 

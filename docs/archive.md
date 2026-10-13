@@ -9,8 +9,8 @@ folder are separate copies; a recording backup is not automatically searchable i
 
 | Source you have | Use | Check afterwards |
 |---|---|---|
-| Hosted meetings available to your app | `zm pull --lookback-days 7` | List meetings, open one transcript and inspect missing parts |
-| Downloaded VTT transcript files | `zm import ./downloaded-transcripts` | Compare the imported date/title with the original |
+| Hosted meetings available to your app | `zm meetings sync --lookback-days 7` | List meetings, open one transcript and inspect missing parts |
+| Downloaded VTT transcript files | `zm meetings import ./downloaded-transcripts` | Compare the imported date/title with the original |
 | Cloud recording assets | Recording list, download or sync | Verify the destination manifest and checksums |
 | Archived VTT files to add to search | Archive import | Check its receipt, then search the stored text |
 
@@ -39,17 +39,17 @@ With the API source selected, pull a recent period and inspect the result:
 
 ```sh
 zm config set source api
-zm pull --lookback-days 7
+zm meetings sync --lookback-days 7
 zm meetings list --json
 zm meetings transcript <meeting-id> --json
 ```
 
-Use an ID from the list. `zm pull` retrieves hosted occurrences with available participants,
+Use an ID from the list. `zm meetings sync` retrieves hosted occurrences with available participants,
 transcripts and AI summaries. It does not create missing transcripts. Check Zoom's
-[generation and retention settings](zoom-app.md#before-your-first-zm-pull) if the text is absent.
+[generation and retention settings](zoom-app.md#before-your-first-zm-meetings-sync) if the text is absent.
 
-Use `pull --lookback-days 7` to revisit the last seven days, or an older explicit
-`pull --since 2026-10-01` for earlier occurrences whose transcript appeared later. The cursor alone
+Use `meetings sync --lookback-days 7` to revisit the last seven days, or an older explicit
+`meetings sync --since-time 2026-10-01` for earlier occurrences whose transcript appeared later. The cursor alone
 does not guarantee that late transcripts are revisited. Serialize pulls for the same account to avoid
 concurrent event creation. A failed occurrence leaves the cursor unchanged so the next pull can retry it.
 
@@ -63,7 +63,7 @@ chosen folder and rename it with the meeting date/time/title, for example
 ```sh
 zm config set account.profile personal
 zm config set files.timezone Europe/Madrid
-zm import ./downloaded-transcripts
+zm meetings import ./downloaded-transcripts
 zm meetings list --json
 ```
 

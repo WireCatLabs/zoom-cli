@@ -4,9 +4,10 @@ import {
   CliError,
   createDeadline,
   createRenderer,
-  exitCodeFor,
+  errorObjectOf,
+  exitCodeOfError,
   fieldsOf,
-  GENERIC_FAILURE,
+  isCliError,
   projectFields,
   realSleep,
   type SleepLike,
@@ -280,8 +281,9 @@ export const createProgram = (deps: ProgramDeps): Command => {
     )
       return
     const config = getConfig()
-    if (opts.offline && action.name() === "pull" && config.source === "api" && !deps.source)
-      throw new ZoomError("configuration_error", "API pull requires network access; remove --offline")
+    const ingestion = family.name() === "meetings" && ["sync", "import"].includes(action.name())
+    if (opts.offline && ingestion && action.name() !== "import" && config.source === "api" && !deps.source)
+      throw new ZoomError("configuration_error", "API sync requires network access; remove --offline")
     if (!selectedStore) {
       if (!deps.connectStore) return unavailable()
       if (!config.accountProfile)
@@ -290,7 +292,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
         connection = await deps.connectStore({
           profile: config.accountProfile,
           externalId: profileAccountKey(config.accountProfile),
-          intent: ["pull", "import"].includes(action.name()) ? "ingestion" : "read",
+          intent: ingestion ? "ingestion" : "read",
         })
       } catch (error) {
         if (error instanceof ZoomError || error instanceof MeetingError) throw error
@@ -381,7 +383,6 @@ export const createProgram = (deps: ProgramDeps): Command => {
     get store() {
       return guardedStore(selectedStore ?? unavailableStore)
     },
-    rootIngestion: true,
     get accountId() {
       return requireAccount()
     },
@@ -560,7 +561,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
               intent: "ingestion",
             })
           } catch (error) {
-            if (error instanceof CliError || error instanceof MeetingError) throw error
+            if (isCliError(error)) throw error
             throw new ZoomError("configuration_error", "could not open the shared meeting store")
           }
         }
@@ -1019,21 +1020,16 @@ export const run = async (args: string[], deps: ProgramDeps): Promise<number> =>
       ["commander.helpDisplayed", "commander.help", "commander.version"].includes(String(error.code))
     )
       return 0
-    const typed = error instanceof CliError || error instanceof MeetingError
     const unknownOutcome = error instanceof Error && "code" in error && error.code === "outcome_unknown"
-    const code = typed
-      ? error.code
+    const failure = isCliError(error)
+      ? error
       : unknownOutcome
-        ? "outcome_unknown"
+        ? new ZoomError("outcome_unknown", "operation outcome is unknown; verify stored state before retrying")
         : error instanceof CommanderError
-          ? "validation_error"
-          : "generic_failure"
-    const message = typed
-      ? error.message
-      : unknownOutcome
-        ? "operation outcome is unknown; verify stored state before retrying"
-        : "command failed; use --help for usage"
-    deps.diagnostic(`${JSON.stringify({ error: { code, message } })}\n`)
-    return code === "generic_failure" ? GENERIC_FAILURE : exitCodeFor(code)
+          ? new ZoomError("validation_error", "command failed; use --help for usage")
+          : error
+    const object = errorObjectOf(failure)
+    deps.diagnostic(`${JSON.stringify(object)}\n`)
+    return exitCodeOfError(object)
   }
 }

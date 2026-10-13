@@ -32,8 +32,8 @@ write files. [Search and evidence](search.md) keeps exact passage references whe
 | Need | Command family | Where it works |
 |---|---|---|
 | Read saved transcripts and evidence | `meetings`, `events`, `search` | Local shared database |
-| Retrieve hosted meeting data | `pull`, API `watch` | Zoom to local database |
-| Import transcript files | `import`, folder `watch` | Local files to database |
+| Retrieve hosted meeting data | `meetings sync`, API `watch` | Zoom to local database |
+| Import transcript files | `meetings import`, folder `watch` | Local files to database |
 | Back up available recording assets | `recordings` | Zoom to the destination you name |
 | Read the Zoom schedule or change a meeting | `remote-meetings` | Zoom account |
 
@@ -51,8 +51,8 @@ does not import that transcript into the meeting database until you request arch
 | `complete -- <words...>` | answer shell completion requests |
 | `doctor` | inspect local runtime and public config without login or database access |
 | `session status` | inspect saved OAuth state separately from local data profiles |
-| `import <folder>` | import downloaded transcripts into the selected local profile |
-| `pull [--since <date>]` | fetch occurrences from the configured source |
+| `meetings import <folder>` | import downloaded transcripts into the selected local profile |
+| `meetings sync [--since-time <time>]` | fetch occurrences from the configured source |
 | `meetings list`, `meetings show <meeting>` | read stored meetings |
 | `meetings transcript <meeting>` | read current transcripts |
 | `meetings summary <meeting>` | read stored summaries |

@@ -1,16 +1,10 @@
 [
   "meetings embeddings",
-  "meetings evidence",
   "meetings people",
   "meetings summary",
   "meetings task-proposal",
-  "meetings transcript",
-  "pull",
   "recordings archive locks",
   "recordings archive recover",
-  "recordings archive transcript",
   "recordings schedule disable",
-  "recordings schedule run",
-  "remote-meetings invitation",
-  "search all"
+  "remote-meetings invitation"
 ]

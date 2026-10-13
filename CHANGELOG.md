@@ -1,9 +1,21 @@
 # Changelog
 
-## Unreleased
+## 0.8.0 — 13.10.2026
 
 ### Changed — may break callers
 
+- **Runs on `@wirecat/cli-messaging` 0.258.0 and `@wirecat/cli-base` 0.24.0.**
+- **The shared store and models move to the WireCat folder** (`~/.local/share/WireCat/` on Linux and macOS,
+  `%LOCALAPPDATA%\WireCat\Data\` on Windows) on the first start of zm, as tg, max and memo do. Nothing moves when
+  `MESSAGING_STORE` or `WIRECAT_STATE_DIR` is set. Two different stores under the same name stop the command with
+  an error naming both paths; nothing is changed.
+- **Meeting ingestion moves under `meetings`.** The old names stop working:
+  - `zm pull` → `zm meetings sync`, with `--since` → `--since-time`
+  - `zm import <folder>` → `zm meetings import <folder>`
+  - `meetings list --since`/`--until` → `--since-time`/`--until-time`
+- **One error object:** `{ error: { code, reason, message, … } }` on stderr and in MCP results. A failure that is
+  not a typed error is `internal_error` (exit 1) and replaces `generic_failure`, also in `commands --json`
+  `exitCodes`.
 - **`zm commands --json` prints the shared commands document**: `cli`, `version`, `contract`, `description`,
   `globalOptions` (was `options`), `commands` and `exitCodes`; a command path adds `scope` and `inheritedOptions`.
 - `zm commands` without `--json` lists one row per command: usage, description and whether it writes.

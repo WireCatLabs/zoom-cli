@@ -99,7 +99,7 @@ permission; a granted scope authorizes an API call, not the existence of the req
 | `meeting:read:list_past_participants` | Read participant records and their join/leave sessions |
 | `meeting:read:summary` | Retrieve an available Zoom AI summary |
 
-Configure all five for `zm pull`: it reads these parts during ingestion, even though transcript
+Configure all five for `zm meetings sync`: it reads these parts during ingestion, even though transcript
 or summary content may be absent. Zoom's plan, host settings and retention determine which parts
 exist. For a schedule-only workflow, meeting listing needs just its list scope.
 
@@ -124,7 +124,7 @@ Archiving does not require meeting write permissions. Changes preview by default
 one request. See [recording archives](archive.md#archive-cloud-recordings) or
 [meeting management](remote-meetings.md) after granting the corresponding permissions.
 
-## Before your first `zm pull`
+## Before your first `zm meetings sync`
 
 A transcript must have been generated and retained in Zoom. In your Zoom web settings, find
 **Meeting → In Meeting (Advanced) → Meeting transcript** and enable the relevant generation and

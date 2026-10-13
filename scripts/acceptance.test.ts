@@ -47,8 +47,7 @@ const invoke = (...args: string[]) => {
     (arg, index) =>
       !arg.startsWith("--") && !["--fields", "--timeout", "--max-output-bytes"].includes(args[index - 1] ?? ""),
   )
-  const opensStore =
-    !args.includes("--help") && ["meetings", "events", "import", "pull", "watch"].includes(command ?? "")
+  const opensStore = !args.includes("--help") && ["meetings", "events", "watch", "search"].includes(command ?? "")
   const result = spawnSync(executable, args, {
     cwd: install,
     encoding: "utf8",
@@ -149,9 +148,9 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
     expect(version.stderr).toBe("")
     const help = invoke("--help")
     expect(help.status).toBe(0)
-    expect(help.stdout).toContain("import")
+    expect(help.stdout).toContain("meetings")
     expect(help.stderr).toBe("")
-    const pullHelp = invoke("pull", "--help")
+    const pullHelp = invoke("meetings", "sync", "--help")
     expect(pullHelp.status).toBe(0)
     expect(pullHelp.stdout).toContain("--lookback-days")
     expect(pullHelp.stderr).toBe("")
@@ -205,7 +204,7 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
     try {
       await client.connect(new StdioServerTransport(child.stdout, child.stdin))
       const listed = await client.listTools()
-      expect(listed.tools).toHaveLength(8)
+      expect(listed.tools).toHaveLength(7)
       expect(listed.tools.map((tool) => tool.name)).toContain("search_meetings")
       expect(listed.tools.every((tool) => tool.annotations?.readOnlyHint === true)).toBe(true)
       expect(existsSync(isolated)).toBe(false)
@@ -259,7 +258,7 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
     const original = "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nAlice Example: Original example\n"
     writeFileSync(transcript, original)
     for (let attempt = 0; attempt < 2; attempt++) {
-      const imported = invoke("--json", "import", files)
+      const imported = invoke("--json", "meetings", "import", files)
       expect(imported.status, imported.stderr).toBe(0)
       expect(imported.stderr).toBe("")
     }
@@ -277,7 +276,7 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
     const transcript = join(files, "2026-10-10_1530_example.vtt")
     const original = readFileSync(transcript, "utf8")
     writeFileSync(transcript, original.replace("Original", "Corrected"))
-    const corrected = invoke("--json", "import", files)
+    const corrected = invoke("--json", "meetings", "import", files)
     expect(corrected.status, corrected.stderr).toBe(0)
     const id = importedMeetingId
     expect(JSON.parse(invoke("--json", "meetings", "show", id).stdout).transcripts).toHaveLength(2)

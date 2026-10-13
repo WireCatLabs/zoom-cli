@@ -104,7 +104,7 @@ describe("command execution controls", () => {
       ["session", "start"],
       ["session", "status", "--check"],
       ["recordings", "list"],
-      ["pull"],
+      ["meetings", "sync"],
       ["remote-meetings", "create", "--title", "Example", "--type", "1", "--yes"],
     ])
       expect(await run(["--offline", ...args], deps)).toBe(3)

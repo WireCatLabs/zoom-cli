@@ -320,7 +320,8 @@ export const installedMeetingIntegration = async ({
     false,
   )
   assert.ok(commands.includes("meetings update"))
-  assert.ok(commands.includes("search meetings"))
+  const searches = json("commands", "search").commands[0].commands.map((command) => command.path.join(" "))
+  assert.ok(searches.includes("search meetings"))
   return {
     scopedLinks: true,
     compareAndSave: true,

@@ -64,8 +64,8 @@ zm meetings list [options]
 |---|---|
 | `--json` | one JSON value. |
 | `--jsonl` | one JSON object per item. |
-| `--since <date>` | meetings starting at or after this date. |
-| `--until <date>` | meetings starting at or before this date. |
+| `--since-time <time>` | meetings starting at or after this ISO 8601 date or time. |
+| `--until-time <time>` | meetings starting at or before this ISO 8601 date or time. |
 | `--limit <n>` | meetings per page. Default: `100`. |
 | `--page <n>` | page number. Default: `1`. |
 
@@ -143,27 +143,6 @@ zm meetings export <meeting> [options]
 | `--json` | one JSON value. |
 | `--jsonl` | one JSON object per item. |
 
-### `zm meetings search`
-
-search stored transcripts, chat and summaries
-
-```sh
-zm meetings search <query> [options]
-```
-
-| Argument | | What it is |
-|---|---|---|
-| `query` | required |  |
-
-| Option | What it does |
-|---|---|
-| `--since <date>` | meetings starting at or after this date. |
-| `--until <date>` | meetings starting at or before this date. |
-| `--event-id <id>` | only meetings linked to this stored event. |
-| `--series-id <id>` | only meetings in this stored series. |
-| `--json` | one JSON value. |
-| `--jsonl` | one JSON object per item. |
-
 ### `zm meetings people`
 
 find meeting participants by name or email
@@ -174,7 +153,43 @@ zm meetings people <query> [options]
 
 | Argument | | What it is |
 |---|---|---|
-| `query` | required |  |
+| `query` | required | a name or an email address. |
+
+| Option | What it does |
+|---|---|
+| `--json` | one JSON value. |
+| `--jsonl` | one JSON object per item. |
+
+### `zm meetings sync`
+
+bring the stored meetings up to date from the connected account
+
+**Changes local data.**
+
+```sh
+zm meetings sync [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--json` | one JSON value. |
+| `--jsonl` | one JSON object per item. |
+| `--since-time <time>` | fetch meetings starting at or after this ISO 8601 date or time. |
+| `--lookback-days <days>` | revisit recent occurrences for late transcripts (0–31). Default: `0`. |
+
+### `zm meetings import`
+
+import downloaded meeting transcripts
+
+**Changes local data.**
+
+```sh
+zm meetings import <folder> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `folder` | required | folder of transcripts downloaded from the provider. |
 
 | Option | What it does |
 |---|---|
@@ -251,49 +266,6 @@ zm meetings transcribe <meeting> <file> [options]
 | `--yes` | recognize locally and append to the existing meeting. |
 | `--dry-run` | preview even when --yes is present. |
 
-### `zm meetings search-page`
-
-bounded keyword search with configured stemming, explicit context filters and hit continuation
-
-```sh
-zm meetings search-page <query> [options]
-```
-
-| Argument | | What it is |
-|---|---|---|
-| `query` | required |  |
-
-| Option | What it does |
-|---|---|
-| `--meeting-id <id>` | restrict to a meeting in the selected account. |
-| `--identity-id <id>` | meetings with this observed participant identity; does not attribute speech. |
-| `--person-id <id>` | meetings with a participant explicitly linked to this person. |
-| `--project <name>` | confirmed membership in a canonical project, key or explicit alias. |
-| `--tag <name>` | an explicit meeting tag, by canonical name or alias. |
-| `--topic <name>` | an explicit meeting topic, by canonical name or alias. |
-| `--since <date>` | meeting start at or after an ISO date or timestamp. |
-| `--until <date>` | meeting start at or before an ISO date or timestamp. |
-| `--limit <count>` | hit limit from 1 through 1000 (default 100). |
-| `--after <cursor>` | opaque nextCursor from the same query, filters and selected account. |
-| `--max-read-bytes <bytes>` | raw SQL read budget from 1 through 67108864 (default 4194304). |
-
-### `zm meetings search-index`
-
-preview indexing one batch of stored meetings for search; --yes indexes it
-
-**Changes local data.**
-
-```sh
-zm meetings search-index [options]
-```
-
-| Option | What it does |
-|---|---|
-| `--limit <n>` | how many queued records, 1 through 1000 (default 100). |
-| `--max-read-bytes <bytes>` | most stored bytes to read, 1 through 67108864 (default 4194304). |
-| `--yes` | apply this indexing batch once. |
-| `--dry-run` | preview even when --yes is present. |
-
 ### `zm meetings evidence`
 
 read the stored transcript lines, chat or summary behind a meeting reference
@@ -351,29 +323,6 @@ zm meetings task-proposal <reference> [options]
 |---|---|
 | `--type <type>` | question, request, mention or promise. |
 
-### `zm meetings semantic`
-
-find stored meeting passages nearest in meaning to a query
-
-```sh
-zm meetings semantic <query> [options]
-```
-
-| Argument | | What it is |
-|---|---|---|
-| `query` | required | what to look for, in words. |
-
-| Option | What it does |
-|---|---|
-| `--model <model>` | embedding model: an installed local one, or one served at --base-url. |
-| `--base-url <url>` | remote embedding service; OpenAI reads OPENAI_API_KEY. |
-| `--dims <n>` | vector size the remote service returns, in dimensions. |
-| `--limit <n>` | how many results or items in one batch, 1 through 1000. |
-| `--max-rows <n>` | most transcript lines to read, 1 through 100000. |
-| `--max-text-bytes <bytes>` | most transcript text to read, in bytes (default 4 MiB). |
-| `--max-chunks <n>` | most stored passages to compare. |
-| `--after-chunk-id <id>` | compare the passages after this one; results are ranked per page only. |
-
 ### `zm meetings embeddings`
 
 preview building meeting vectors; --yes builds one batch
@@ -395,42 +344,6 @@ zm meetings embeddings [options]
 | `--after-transcript-id <id>` | continue splitting transcripts after this one. |
 | `--after-hash <hash>` | continue embedding after this passage. |
 | `--yes` | split transcripts and build their vectors; otherwise only preview. |
-
-## `zm pull`
-
-fetch meeting records from the connected account
-
-**Changes local data.**
-
-```sh
-zm pull [options]
-```
-
-| Option | What it does |
-|---|---|
-| `--json` | one JSON value. |
-| `--jsonl` | one JSON object per item. |
-| `--since <date>` | fetch occurrences starting at or after this date. |
-| `--lookback-days <days>` | revisit recent occurrences for late transcripts (0–31). Default: `0`. |
-
-## `zm import`
-
-import downloaded meeting transcripts
-
-**Changes local data.**
-
-```sh
-zm import <folder> [options]
-```
-
-| Argument | | What it is |
-|---|---|---|
-| `folder` | required |  |
-
-| Option | What it does |
-|---|---|
-| `--json` | one JSON value. |
-| `--jsonl` | one JSON object per item. |
 
 ## `zm events`
 
@@ -627,26 +540,6 @@ zm recordings archive transcript <directory> [options]
 | `--uuid <uuid>` | select an occurrence UUID. |
 | `--file-ids <ids>` | select comma-separated transcript asset ids. |
 | `--max-bytes <bytes>` | largest transcript file to read, in bytes (default 8 MiB). |
-
-#### `zm recordings archive search`
-
-find words in the transcripts of a local archive, before any import
-
-```sh
-zm recordings archive search <directory> <query> [options]
-```
-
-| Argument | | What it is |
-|---|---|---|
-| `directory` | required | archive folder. |
-| `query` | required | words to find, matched literally. |
-
-| Option | What it does |
-|---|---|
-| `--uuid <uuid>` | select an occurrence UUID. |
-| `--file-ids <ids>` | select comma-separated transcript asset ids. |
-| `--max-bytes <bytes>` | largest transcript file to read, in bytes (default 8 MiB). |
-| `--limit <n>` | how many matches, 1 through 1000 (default 100). |
 
 #### `zm recordings archive show`
 
@@ -972,6 +865,44 @@ zm search all <query> [options]
 | `--max-meetings <n>` | most meetings to look at, 1 through 1000 (default 100). Default: `100`. |
 | `--meeting-cursor <json>` | source-only continuation from meetings.nextCursor. |
 | `--exact` | request exact matching; unsupported meeting queries are reported as skipped. |
+
+### `zm search meetings`
+
+find words in stored meetings, by meaning with --model, or in an archive folder
+
+```sh
+zm search meetings <query> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `query` | required | words to find; each also matches its other word forms. |
+
+| Option | What it does |
+|---|---|
+| `--meeting-id <id>` | only this stored meeting. |
+| `--identity-id <id>` | meetings with this participant identity; does not say who spoke a hit. |
+| `--person-id <id>` | meetings with a participant linked to this person. |
+| `--event-id <id>` | only meetings linked to this stored event. |
+| `--series-id <id>` | only meetings in this stored series. |
+| `--project <name>` | meetings confirmed in this project, by name, key or alias. |
+| `--tag <name>` | meetings with this tag, by name or alias. |
+| `--topic <name>` | meetings with this topic, by name or alias. |
+| `--since-time <time>` | meetings starting at or after this ISO 8601 date or time. |
+| `--until-time <time>` | meetings starting at or before this ISO 8601 date or time. |
+| `--limit <n>` | how many hits, 1 through 1000 (default 100). |
+| `--cursor <cursor>` | continue from the previous page's nextCursor, with the same query and filters. |
+| `--max-read-bytes <bytes>` | most stored bytes to read, 1 through 67108864 (default 4194304). |
+| `--model <model>` | search by meaning with this embedding model, building missing vectors first. |
+| `--base-url <url>` | remote embedding service for --model; OpenAI reads OPENAI_API_KEY. |
+| `--dims <n>` | vector size the remote service returns, in dimensions. |
+| `--max-chunks <n>` | by meaning: most stored passages to compare. |
+| `--max-rows <n>` | by meaning: most transcript lines to read, 1 through 100000. |
+| `--max-text-bytes <bytes>` | by meaning: most transcript text to read (default 4 MiB). |
+| `--archive <directory>` | search the transcripts of this archive folder, before any import. |
+| `--uuid <uuid>` | with --archive: only this occurrence UUID. |
+| `--file-ids <ids>` | with --archive: only these comma-separated transcript asset ids. |
+| `--max-bytes <bytes>` | with --archive: largest transcript file to read (default 8 MiB). |
 
 ## Exit codes
 
