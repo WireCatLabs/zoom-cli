@@ -38,6 +38,10 @@
 
 - The search guide distinguishes CLI generation of missing semantic vectors from MCP reads of existing vectors, and the guides use `session start` for browser login and `--cursor` for evidence continuation.
 
+- **`zm meetings import <folder>` and the files source read a folder one transcript at a time.** It opened every
+  `.vtt` at once. A transcript over 10 MiB, the most a Zoom download may be, is now refused before it is read.
+  A folder of more than 10,000 transcripts is refused with an error asking you to move some into another folder.
+
 ## 0.8.0 — 13.10.2026
 
 ### Changed — may break callers

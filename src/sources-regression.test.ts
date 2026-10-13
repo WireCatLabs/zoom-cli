@@ -1,4 +1,4 @@
-import { mkdtemp, writeFile } from "node:fs/promises"
+import { mkdtemp, truncate, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
@@ -251,6 +251,14 @@ it("preserves shared-parser compatibility with lone CR WebVTT line endings", asy
       : new Response(vtt.replaceAll("\n", "\r")),
   )
   expect(await source.transcript("example")).toHaveLength(1)
+})
+
+it("refuses a folder transcript larger than a Zoom download may be, before reading it", async () => {
+  const folder = await mkdtemp(join(tmpdir(), "zm-test-source-"))
+  const name = "2026-10-10_1530_example.vtt"
+  await writeFile(join(folder, name), vtt)
+  await truncate(join(folder, name), 10 * 1024 ** 2 + 1)
+  await expect(readDownloadedFiles(folder)).rejects.toThrow(/larger than 10 MiB/)
 })
 
 it("preflights actual folder imports and injected files before choosing normalized contents", async () => {

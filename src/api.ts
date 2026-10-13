@@ -11,6 +11,9 @@ import { number, object, string, ZoomError } from "./errors.js"
 import { type RemoteOptions, ZoomRemote } from "./remote-http.js"
 import type { TokenManager } from "./tokens.js"
 
+/** A mislabeled HTML login page must not become an empty saved transcript. */
+export const TRANSCRIPT_MAX_BYTES = 10 * 1024 * 1024
+
 const json = (value: unknown): JsonValue => {
   if (value === null || typeof value === "boolean" || typeof value === "string") return value
   if (typeof value === "number") return Number.isFinite(value) ? value : null
@@ -259,8 +262,7 @@ export class ZoomApiSource implements MeetingSource {
       }
       if (!response.ok)
         throw new ZoomError(statusToCode(response.status), `Transcript download failed (HTTP ${response.status})`)
-      // A mislabeled HTML login page must not become an empty saved transcript.
-      const maxBytes = 10 * 1024 * 1024
+      const maxBytes = TRANSCRIPT_MAX_BYTES
       const reader = response.body?.getReader()
       if (!reader) throw new ZoomError("invalid_response", "Zoom returned an invalid transcript")
       const chunks: Uint8Array[] = []

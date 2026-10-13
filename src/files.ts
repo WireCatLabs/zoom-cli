@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto"
-import { readdir, readFile } from "node:fs/promises"
+import { readdir, readFile, stat } from "node:fs/promises"
 import { basename, join } from "node:path"
 import { type ImportFile, type MeetingSource, parseVtt, type SourceMeeting } from "@wirecat/cli-core/meetings"
+import { TRANSCRIPT_MAX_BYTES } from "./api.js"
 import { ZoomError } from "./errors.js"
 
 export interface DownloadedFile {
@@ -128,14 +129,28 @@ const indexDownloadedFiles = (
 }
 export const validateDownloadedFiles = (files: DownloadedFile[], timezone = "UTC"): DownloadedFile[] =>
   [...indexDownloadedFiles(files, timezone).values()].map(({ file }) => file)
+/** Every file is held in memory until the import ends. */
+export const FOLDER_MAX_FILES = 10_000
+
 export const readDownloadedFiles = async (folder: string): Promise<DownloadedFile[]> => {
-  const entries = await readdir(folder, { withFileTypes: true })
-  const files = await Promise.all(
-    entries
-      .filter((entry) => entry.isFile() && /\.vtt$/i.test(entry.name))
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(async (entry) => ({ name: entry.name, content: await readFile(join(folder, entry.name), "utf8") })),
-  )
+  const entries = (await readdir(folder, { withFileTypes: true }))
+    .filter((entry) => entry.isFile() && /\.vtt$/i.test(entry.name))
+    .sort((a, b) => a.name.localeCompare(b.name))
+  if (entries.length > FOLDER_MAX_FILES)
+    throw new ZoomError(
+      "validation_error",
+      `the folder holds ${entries.length} .vtt files and zm reads at most ${FOLDER_MAX_FILES} — move some into another folder`,
+    )
+  const files: DownloadedFile[] = []
+  for (const entry of entries) {
+    const path = join(folder, entry.name)
+    if ((await stat(path)).size > TRANSCRIPT_MAX_BYTES)
+      throw new ZoomError(
+        "validation_error",
+        `${entry.name} is larger than ${TRANSCRIPT_MAX_BYTES / 1024 ** 2} MiB, the most zm reads from one transcript`,
+      )
+    files.push({ name: entry.name, content: await readFile(path, "utf8") })
+  }
   return validateDownloadedFiles(files)
 }
 export class FilesSource implements MeetingSource {
