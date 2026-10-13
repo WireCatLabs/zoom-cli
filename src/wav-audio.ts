@@ -5,4 +5,4 @@ export {
   type WavAudioOptions,
   type WavAudioPlan,
   type WavPcmWindow,
-} from "@wirecat/cli-messaging/speech/wav"
+} from "@wirecat/cli-core/speech/wav"

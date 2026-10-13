@@ -19,7 +19,7 @@ Search the stored meetings:
 
 ```sh
 zm search meetings "example plan" --json
-zm search meetings "example plan" --limit 20 --cursor <nextCursor> --json
+zm search meetings "example plan" --limit 20 --cursor <next_cursor> --json
 ```
 
 This searches the stored profile, not Zoom's live history. [Pull or import missing meetings](archive.md)
@@ -28,7 +28,7 @@ separate index step. All query words must match, through literal prefixes or sto
 configuration adds English, Russian and Spanish word stems; a store can disable or customize it. The query is
 plain words, with no operators. `--meeting-id`, `--event-id`, `--series-id`, `--since-time` and `--until-time`
 narrow the selected account. The opaque cursor belongs to that account, query and filters; it can continue
-inside a large transcript. JSONL preserves the complete page, including `nextCursor` and `coverage`.
+inside a large transcript. JSONL preserves the complete page, including `next_cursor` and `coverage`.
 
 ## Search by meaning or in an archive
 
@@ -86,7 +86,7 @@ zm meetings task-proposal meeting:3/15/20/0 --type promise --json
 Broader search requires explicit `--only messages,mail,notes,meetings`. Message reads use the
 selected local account; mail reads include stored email accounts; notes are global to the shared
 store. Meeting matching uses word prefixes; unsupported meeting syntax or exact queries are reported
-as skipped. A meetings-only continuation uses the returned `meetings.nextCursor` as
+as skipped. A meetings-only continuation uses the returned `meetings.next_cursor` as
 `--meeting-cursor '<json>'`, bound to its account and query. JSONL emits one complete report,
 retaining skips, coverage and cursors.
 

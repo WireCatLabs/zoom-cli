@@ -3,19 +3,20 @@ import { spawn } from "node:child_process"
 import { join } from "node:path"
 import { createInterface } from "node:readline/promises"
 import { fileURLToPath } from "node:url"
-import { CliError, errorObjectOf, exitCodeOfError, isCliError, systemKeyring } from "@wirecat/cli-base"
-import { migrateFolders } from "@wirecat/cli-messaging/background"
+import { CliError, catchCrashes, systemKeyring } from "@wirecat/cli-base"
+import { migrateFolders } from "@wirecat/cli-core/background"
 import { profileAccountKey, readConfig } from "../config.js"
 import { ZoomError } from "../errors.js"
 import { loginService, zmPaths } from "../folders.js"
 import { writeExportFile } from "../output-file.js"
-import { run } from "../program.js"
+import { reportFailure, run } from "../program.js"
 import { createStoreConnector } from "../store-connection.js"
 import { writeStream } from "../streaming.js"
 import { TokenManager } from "../tokens.js"
 
-const paths = zmPaths(systemKeyring, (line) => process.stderr.write(line))
-const configPath = join(paths.config, "config.json")
+const args = process.argv.slice(2)
+const outputIsTTY = Boolean(process.stdout.isTTY)
+const releaseCrashes = catchCrashes({ cli: "zm", interactive: outputIsTTY })
 const cancellation = new AbortController()
 let brokenPipe = false
 const cancel = () => cancellation.abort(new CliError("cancelled", "command cancelled"))
@@ -33,6 +34,8 @@ process.once("SIGINT", cancel)
 process.once("SIGTERM", cancel)
 process.stdout.on("error", onPipeError)
 try {
+  const paths = zmPaths(systemKeyring, (line) => process.stderr.write(line))
+  const configPath = join(paths.config, "config.json")
   migrateFolders({ command: "zm", appName: "zm", envPrefix: "ZM" })
   const connectStore = createStoreConnector({ env: process.env })
   const tokens = new TokenManager({
@@ -43,7 +46,7 @@ try {
     service: loginService(paths.config),
     fetch,
   })
-  process.exitCode = await run(process.argv.slice(2), {
+  process.exitCode = await run(args, {
     configPath,
     recordingScheduleTarget: { runtime: process.execPath, cliPath: fileURLToPath(import.meta.url) },
     tokens,
@@ -70,7 +73,7 @@ try {
     },
     fetch,
     interactive: Boolean(process.stdin.isTTY),
-    outputIsTTY: Boolean(process.stdout.isTTY),
+    outputIsTTY,
     env: process.env,
     signal: cancellation.signal,
     writeFile: writeExportFile,
@@ -100,18 +103,10 @@ try {
       : undefined,
   })
 } catch (error) {
-  if (isCliError(error)) {
-    const object = errorObjectOf(error)
-    process.stderr.write(`${JSON.stringify(object)}\n`)
-    process.exitCode = exitCodeOfError(object)
-  } else {
-    process.stderr.write(
-      `${JSON.stringify({ error: { code: "configuration_error", message: "could not load zm configuration" } })}\n`,
-    )
-    process.exitCode = 3
-  }
+  process.exitCode = reportFailure(error, args, { diagnostic: (text) => process.stderr.write(text), outputIsTTY })
 } finally {
   process.removeListener("SIGINT", cancel)
   process.removeListener("SIGTERM", cancel)
   if (brokenPipe) process.exitCode = 0
+  releaseCrashes()
 }

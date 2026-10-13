@@ -24,7 +24,7 @@ zm session start
 ```
 
 Replace the placeholder without angle brackets. Sign in as the Zoom user whose meetings you want,
-review the consent and approve. Wait for `loggedIn: true` in the terminal. If browser approval leaves
+review the consent and approve. Wait for `logged_in: true` in the terminal. If browser approval leaves
 it waiting, follow [finish the browser callback](sessions.md#finish-the-browser-callback).
 
 ### Use a WireCat or team app

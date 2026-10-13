@@ -1,7 +1,7 @@
 import { mkdtemp, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-messaging/meetings/testing"
+import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { expect, it, vi } from "vitest"
 import {
   compactLocalTranscriptionReceipt,
@@ -250,7 +250,7 @@ const fixtureForIntegration = async () => {
   return { ...input, store, saved, append, capabilities }
 }
 it("persists local revisions through the published native receipt port and survives reopening without changing provider evidence", async () => {
-  const { openStore } = await import("@wirecat/cli-messaging/store")
+  const { openStore } = await import("@wirecat/cli-core/store")
   const input = await fixture()
   const path = join(input.root, "invented-meetings.db")
   const env = { HOME: input.root, MESSAGING_STORE: path }

@@ -2,9 +2,9 @@ import { mkdtemp } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
-import { parseMeetingReference } from "@wirecat/cli-messaging"
-import { createMeetingContext, type MeetingMediaDescriptor, transcribeMeeting } from "@wirecat/cli-messaging/meetings"
-import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-messaging/meetings/testing"
+import { parseMeetingReference } from "@wirecat/cli-core"
+import { createMeetingContext, type MeetingMediaDescriptor, transcribeMeeting } from "@wirecat/cli-core/meetings"
+import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { expect, it, vi } from "vitest"
 import { ZoomError } from "./errors.js"
 import type { LocalTranscriptionOptions } from "./local-transcription.js"
@@ -49,7 +49,7 @@ it("previews links and applies owner-selected event and participant links once",
   expect(
     await run(["meetings", "update", "meeting:1/1", "--event-id", "2", "--expected-event-id", "none", "--json"], deps),
   ).toBe(0)
-  expect(latest(output)).toMatchObject({ applied: false, change: { eventId: 2, expectedEventId: null } })
+  expect(latest(output)).toMatchObject({ applied: false, change: { event_id: 2, expected_event_id: null } })
   expect(writes).not.toHaveBeenCalled()
   expect(
     await run(
@@ -57,7 +57,7 @@ it("previews links and applies owner-selected event and participant links once",
       deps,
     ),
   ).toBe(0)
-  expect(latest(output)).toMatchObject({ applied: false, change: { personUid: "4" } })
+  expect(latest(output)).toMatchObject({ applied: false, change: { person_uid: "4" } })
   expect(writes).not.toHaveBeenCalled()
   expect(
     await run(
@@ -79,7 +79,7 @@ it("previews links and applies owner-selected event and participant links once",
   expect(writes).not.toHaveBeenCalled()
   expect(await run(["meetings", "update", "meeting:1/1", "--event-id", "none", "--yes", "--json"], deps)).toBe(0)
   expect(writes).toHaveBeenCalledTimes(1)
-  expect(latest(output)).toMatchObject({ applied: true, change: { eventId: null } })
+  expect(latest(output)).toMatchObject({ applied: true, change: { event_id: null } })
   expect(
     await run(
       [
@@ -102,9 +102,9 @@ it("previews links and applies owner-selected event and participant links once",
   ).toBe(0)
   expect(writes).toHaveBeenCalledTimes(2)
   expect(latest(output)).toMatchObject({
-    accountId: 1,
+    account_id: 1,
     applied: true,
-    change: { participantId: 3, personUid: "4", targetAccountIds: [1, 2], expectedPersonUid: null },
+    change: { participant_id: 3, person_uid: "4", target_account_ids: [1, 2], expected_person_uid: null },
   })
 })
 
@@ -204,9 +204,9 @@ it("keeps bounded search cursors and coverage in JSONL and forwards typed date/b
     ),
   ).toBe(0)
   expect(latest(output)).toMatchObject({
-    hasMore: true,
-    nextCursor: "example_next",
-    coverage: { archiveCompleteness: "unknown" },
+    has_more: true,
+    next_cursor: "example_next",
+    coverage: { archive_completeness: "unknown" },
   })
   expect(search).toHaveBeenCalledWith(
     "example plan",
@@ -346,6 +346,6 @@ it("mounts bounded local transcription with explicit model, guarded preview and 
   expect(await run([...args, "--yes"], deps)).toBe(0)
   expect(recognize).toHaveBeenCalledTimes(1)
   expect(append).toHaveBeenCalledTimes(1)
-  expect(latest(output)).toMatchObject({ applied: true, insertedTranscripts: 1, meetingId: saved.meeting.id })
+  expect(latest(output)).toMatchObject({ applied: true, inserted_transcripts: 1, meeting_id: saved.meeting.id })
   expect(JSON.stringify(latest(output))).not.toContain("Alice Example local recognition")
 })

@@ -177,7 +177,7 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
     const saved = invoke("--json", "config", "set", "zoom.clientId", "invented-public-client")
     expect(saved.status).toBe(0)
     expect(saved.stderr).toBe("")
-    expect(JSON.parse(saved.stdout).clientId).toBe("invented-public-client")
+    expect(JSON.parse(saved.stdout).client_id).toBe("invented-public-client")
     const read = invoke("--json", "config", "show")
     expect(JSON.parse(read.stdout)).toEqual(JSON.parse(saved.stdout))
     expect(read.stderr).toBe("")
@@ -224,13 +224,13 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
     const selected = invoke("--json", "config", "set", "account.profile", "personal")
     expect(selected.status).toBe(0)
     expect(selected.stderr).toBe("")
-    expect(JSON.parse(selected.stdout).accountProfile).toBe("personal")
+    expect(JSON.parse(selected.stdout).account_profile).toBe("personal")
     const invalid = invoke("config", "set", "account.profile", "bad profile")
     expect(invalid.status).toBe(2)
     expect(invalid.stdout).toBe("")
     expect(JSON.parse(invalid.stderr).error.code).toBe("validation_error")
     const saved = invoke("--json", "config", "show")
-    expect(JSON.parse(saved.stdout).accountProfile).toBe("personal")
+    expect(JSON.parse(saved.stdout).account_profile).toBe("personal")
   })
 
   it("refuses noninteractive login before external access", () => {
@@ -321,7 +321,7 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
         "--input-type=module",
         "-e",
         `
-      const { openStore } = await import('@wirecat/cli-messaging/store');
+      const { openStore } = await import('@wirecat/cli-core/store');
       const store = await openStore();
       try { console.log(JSON.stringify(await store.storedAccounts())); }
       finally { await store.close(); }

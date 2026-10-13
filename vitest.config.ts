@@ -4,7 +4,7 @@ export default defineConfig({
   tsconfig: "./node_modules/@wirecat/cli-base/config/tsconfig.base.json",
   test: {
     // Filesystem fault injection must also reach the shared native helpers.
-    server: { deps: { inline: [/cli-messaging\/dist\/files\//, /cli-messaging\/dist\/speech\/wav\.js/] } },
+    server: { deps: { inline: [/cli-core\/dist\/files\//, /cli-core\/dist\/speech\/wav\.js/] } },
     // Agents run suites side by side on 24 cores; one worker per core ran the machine out of memory (2026-10-11).
     maxWorkers: 4,
     globalSetup: ["scripts/testing/argv-setup.ts"],

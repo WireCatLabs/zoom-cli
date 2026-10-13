@@ -4,15 +4,11 @@ import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js"
 import { CallToolRequestSchema, ListToolsRequestSchema, type Tool } from "@modelcontextprotocol/sdk/types.js"
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv"
 import { type ErrorCode, errorObjectOf, isCliError, mcpErrorResult } from "@wirecat/cli-base"
-import type { MeetingStore } from "@wirecat/cli-messaging/meetings"
-import {
-  callMeetingSearchTool,
-  callMeetingTool,
-  meetingSearchTool,
-  meetingTools,
-} from "@wirecat/cli-messaging/meetings/mcp"
-import type { MeetingSearchCursor } from "@wirecat/cli-messaging/services"
+import type { MeetingStore } from "@wirecat/cli-core/meetings"
+import { callMeetingSearchTool, callMeetingTool, meetingSearchTool, meetingTools } from "@wirecat/cli-core/meetings/mcp"
+import type { MeetingSearchCursor } from "@wirecat/cli-core/services"
 import { ZoomError } from "./errors.js"
+import { camelKeys, snakeKeys } from "./keys.js"
 import {
   type MeetingTaskKind,
   validateEvidenceOptions,
@@ -91,12 +87,12 @@ const buildServer = (options: MeetingMcpOptions) => {
           meeting_cursor: {
             type: "object",
             additionalProperties: false,
-            required: ["accountId", "query", "meetingOffset", "hitOffset"],
+            required: ["account_id", "query", "meeting_offset", "hit_offset"],
             properties: {
-              accountId: { type: "integer", minimum: 1 },
+              account_id: { type: "integer", minimum: 1 },
               query: { type: "string", minLength: 1 },
-              meetingOffset: { type: "integer", minimum: 0 },
-              hitOffset: { type: "integer", minimum: 0 },
+              meeting_offset: { type: "integer", minimum: 0 },
+              hit_offset: { type: "integer", minimum: 0 },
             },
           },
         },
@@ -216,7 +212,7 @@ const buildServer = (options: MeetingMcpOptions) => {
             throw new ZoomError("validation_error", `${wordsOnly.join(", ")} do not apply to a search by meaning`)
           const cursor = args.cursor as string | undefined
           if (cursor !== undefined && !/^[1-9]\d{0,15}$/.test(cursor))
-            throw new ZoomError("validation_error", "cursor by meaning takes the previous page's nextCursor")
+            throw new ZoomError("validation_error", "cursor by meaning takes the previous page's next_cursor")
           const request = {
             ...semanticModel,
             limit: args.limit as number | undefined,
@@ -231,7 +227,10 @@ const buildServer = (options: MeetingMcpOptions) => {
           if (typeof value !== "object" || value === null || Array.isArray(value))
             throw new ZoomError("invalid_response", "meeting search by meaning returned an invalid report")
           const next = (value as { nextChunkId?: number }).nextChunkId
-          const found = { ...value, nextCursor: next === undefined ? null : String(next) }
+          const found = snakeKeys({ ...value, nextCursor: next === undefined ? null : String(next) }) as Record<
+            string,
+            unknown
+          >
           result = { content: [{ type: "text", text: JSON.stringify(found) }], structuredContent: found }
         } else if (request.params.name === "search_meetings") {
           if (!connection.meetingSearch) throw new ZoomError("configuration_error", "meeting search is unavailable")
@@ -280,10 +279,8 @@ const buildServer = (options: MeetingMcpOptions) => {
           }
           if (typeof value !== "object" || value === null || Array.isArray(value))
             throw new ZoomError("invalid_response", "meeting context returned an invalid report")
-          result = {
-            content: [{ type: "text", text: JSON.stringify(value) }],
-            structuredContent: value as Record<string, unknown>,
-          }
+          const found = snakeKeys(value) as Record<string, unknown>
+          result = { content: [{ type: "text", text: JSON.stringify(found) }], structuredContent: found }
         } else if (request.params.name === "search_all") {
           if (!connection.unifiedSearch)
             result = failure("configuration_error", "unified meeting search is unavailable")
@@ -295,13 +292,14 @@ const buildServer = (options: MeetingMcpOptions) => {
                 limit: (args.limit as number | undefined) ?? 100,
                 maxMeetings: args.max_meetings as number | undefined,
                 exact: args.exact as boolean | undefined,
-                meetingCursor: args.meeting_cursor as MeetingSearchCursor | undefined,
+                meetingCursor: camelKeys(args.meeting_cursor) as MeetingSearchCursor | undefined,
                 only: ["meetings"],
                 signal,
               },
               true,
             )
-            result = { content: [{ type: "text", text: JSON.stringify(found) }], structuredContent: found }
+            const snake = snakeKeys(found) as Record<string, unknown>
+            result = { content: [{ type: "text", text: JSON.stringify(snake) }], structuredContent: snake }
           }
         } else
           result = await callMeetingTool(store, request.params.name, {

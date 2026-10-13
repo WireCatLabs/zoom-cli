@@ -1,15 +1,17 @@
 import { homedir } from "node:os"
 import { dirname, join } from "node:path"
 import {
-  CliError,
+  type CliError,
   createDeadline,
   createRenderer,
   errorObjectOf,
+  errorRecordOf,
   exitCodeOfError,
   fieldsOf,
   isCliError,
   projectFields,
   realSleep,
+  renderError,
   type SleepLike,
 } from "@wirecat/cli-base"
 import {
@@ -21,8 +23,8 @@ import {
   type MeetingTranscriptReceiptStore,
   type MeetingTranscriptStore,
   pull,
-} from "@wirecat/cli-messaging/meetings"
-import { addMeetingCommands } from "@wirecat/cli-messaging/meetings/cli"
+} from "@wirecat/cli-core/meetings"
+import { addMeetingCommands } from "@wirecat/cli-core/meetings/cli"
 import { Command, CommanderError } from "commander"
 import { addZoomSkillCommands } from "./agent-skill.js"
 import { ZoomApiSource } from "./api.js"
@@ -41,6 +43,7 @@ import { checkCancelled, ZoomError } from "./errors.js"
 import { bytes, duration, type ExecutionState, resetCliOptions, startExecution } from "./execution.js"
 import { FilesSource, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { addIngestionSearchCommands } from "./ingestion-search-commands.js"
+import { snakeKeys } from "./keys.js"
 import type { LocalTranscriptionCapabilities } from "./local-transcription.js"
 import { addLocalTranscriptionCommands } from "./local-transcription-commands.js"
 import { login } from "./login.js"
@@ -161,7 +164,9 @@ const render = (
   deps: ProgramDeps,
   fields?: readonly string[],
   preserveEnvelope = false,
+  providerKeys = false,
 ): string => {
+  if (!providerKeys) value = snakeKeys(value)
   if (fields) value = projectFields(value, fields)
   const chunks: string[] = []
   const renderer = createRenderer({
@@ -246,6 +251,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     )
     .option("--max-output-bytes <bytes>", "bound rendered result bytes (default 4194304; zero is unlimited)", bytes)
     .option("--offline", "refuse network requests")
+    .option("--debug", "on a failure, its whole record — cause and stack — in place of the short line")
     .exitOverride()
     .configureOutput({ writeOut: deps.data, writeErr: deps.diagnostic, outputError: () => {} })
   const api = () => {
@@ -313,7 +319,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
     if (format === "json") buffer('{"items":[')
     for await (const value of values) {
       checkCancelled(signal())
-      const projected = fields ? (projectFields(listed([value]), fields) as { items: unknown[] }).items[0] : value
+      const item = snakeKeys(value)
+      const projected = fields ? (projectFields(listed([item]), fields) as { items: unknown[] }).items[0] : item
       if (format === "json") {
         if (count) buffer(",")
         buffer(render(projected, "json", deps).trimEnd())
@@ -321,7 +328,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
       count++
     }
     metadata.limit = count
-    if (format === "json") buffer(`],${JSON.stringify(metadata).slice(1)}\n`)
+    if (format === "json") buffer(`],${JSON.stringify(snakeKeys(metadata)).slice(1)}\n`)
     else if (format === "text") buffer(render(count ? metadata : listed([]), "text", deps))
   }
   const cfg = program.command("config").description("local Zoom configuration")
@@ -395,7 +402,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     },
     now: deps.now,
     write: (value, format) => {
-      buffer(render(value, format, deps, fields))
+      buffer(render(value, format, deps, fields, false, true))
     },
     writeFile: deps.writeFile
       ? async (path, content) => {
@@ -409,7 +416,16 @@ export const createProgram = (deps: ProgramDeps): Command => {
   addStandardCommands(program, {
     output,
     discovery: (value) =>
-      buffer(render(value, program.opts().json ? "json" : program.opts().jsonl ? "jsonl" : "text", deps)),
+      buffer(
+        render(
+          value,
+          program.opts().json ? "json" : program.opts().jsonl ? "jsonl" : "text",
+          deps,
+          undefined,
+          false,
+          true,
+        ),
+      ),
     fields: () => fields,
     raw: buffer,
     doctor: () => {
@@ -601,7 +617,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
                       checkCancelled(operation)
                       return value
                     } catch (error) {
-                      if (error instanceof CliError && error.code === "outcome_unknown") {
+                      if (isCliError(error) && error.code === "outcome_unknown") {
                         sourceFailure = error
                         throw error
                       }
@@ -1009,8 +1025,9 @@ export const createProgram = (deps: ProgramDeps): Command => {
   return program
 }
 export const run = async (args: string[], deps: ProgramDeps): Promise<number> => {
+  const program = createProgram(deps)
   try {
-    await createProgram(deps).parseAsync(args, { from: "user" })
+    await program.parseAsync(args, { from: "user" })
     return 0
   } catch (error) {
     if (
@@ -1028,8 +1045,38 @@ export const run = async (args: string[], deps: ProgramDeps): Promise<number> =>
         : error instanceof CommanderError
           ? new ZoomError("validation_error", "command failed; use --help for usage")
           : error
-    const object = errorObjectOf(failure)
-    deps.diagnostic(`${JSON.stringify(object)}\n`)
-    return exitCodeOfError(object)
+    return reportFailure(failure, args, deps, commandPath(program, args))
   }
+}
+
+export const reportFailure = (
+  failure: unknown,
+  args: readonly string[],
+  deps: Pick<ProgramDeps, "diagnostic" | "outputIsTTY">,
+  command = "zm",
+): number => {
+  const end = args.indexOf("--")
+  const flags = args.slice(0, end < 0 ? undefined : end)
+  const machine = flags.some((word) => word === "--json" || word === "--jsonl")
+  const object = errorObjectOf(failure)
+  const record = flags.includes("--debug")
+    ? errorRecordOf(failure, object, { command, service: "zm", version: VERSION })
+    : undefined
+  const interactive = deps.outputIsTTY === true && !machine
+  deps.diagnostic(`${renderError(object, { cli: "zm", interactive, ...(record ? { record } : {}) })}\n`)
+  return exitCodeOfError(object)
+}
+
+const commandPath = (program: Command, args: readonly string[]): string => {
+  const words: string[] = []
+  let current = program
+  for (const word of args) {
+    if (word === "--") break
+    if (word.startsWith("-")) continue
+    const next = current.commands.find((command) => command.name() === word || command.aliases().includes(word))
+    if (!next) break
+    words.push(word)
+    current = next
+  }
+  return words.length ? words.join(" ") : "zm"
 }

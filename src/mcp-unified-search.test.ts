@@ -1,6 +1,6 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js"
-import { memoryMeetingStore } from "@wirecat/cli-messaging/meetings/testing"
+import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { expect, it, vi } from "vitest"
 import { createMeetingMcpServer } from "./mcp-server.js"
 import type { UnifiedSearchRequest } from "./unified-search.js"
@@ -32,7 +32,7 @@ it("advertises opt-in meeting-only unified search without store access, rejects 
     expect((await client.listTools()).tools.some((tool) => tool.name === "search_all")).toBe(true)
     expect(connectStore).not.toHaveBeenCalled()
     const result = await client.callTool({ name: "search_all", arguments: { query: "example", limit: 10 } })
-    expect(result.structuredContent).toMatchObject({ hasMore: null, meetings: { complete: false } })
+    expect(result.structuredContent).toMatchObject({ has_more: null, meetings: { complete: false } })
     expect(search.mock.calls[0]?.[0]).toMatchObject({ only: ["meetings"], text: "example", limit: 10 })
     expect(close).toHaveBeenCalledOnce()
     for (const override of [
@@ -48,7 +48,7 @@ it("advertises opt-in meeting-only unified search without store access, rejects 
       name: "search_all",
       arguments: {
         query: "example",
-        meeting_cursor: { accountId: 3, query: "example", meetingOffset: 1, hitOffset: 0 },
+        meeting_cursor: { account_id: 3, query: "example", meeting_offset: 1, hit_offset: 0 },
       },
     })
     expect(continuation.isError).not.toBe(true)

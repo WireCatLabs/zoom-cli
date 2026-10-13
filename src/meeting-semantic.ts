@@ -1,5 +1,5 @@
-import type { MeetingEmbedder, ModelChoice } from "@wirecat/cli-messaging/services"
-import type { MeetingVectors } from "@wirecat/cli-messaging/store"
+import type { MeetingEmbedder, ModelChoice } from "@wirecat/cli-core/services"
+import type { MeetingVectors } from "@wirecat/cli-core/store"
 import { checkCancelled, ZoomError } from "./errors.js"
 import {
   type MeetingEmbeddingOptions,
@@ -11,7 +11,7 @@ import {
 } from "./meeting-semantic-commands.js"
 
 type ProducerSemanticApi = Pick<
-  typeof import("@wirecat/cli-messaging/services"),
+  typeof import("@wirecat/cli-core/services"),
   | "meetingEmbeddingModel"
   | "createMeetingRemoteModel"
   | "openMeetingEmbedder"
@@ -19,7 +19,7 @@ type ProducerSemanticApi = Pick<
   | "proposeMeetingEmbedding"
   | "applyMeetingEmbedding"
 >
-const loadProducer = async (): Promise<ProducerSemanticApi> => import("@wirecat/cli-messaging/services")
+const loadProducer = async (): Promise<ProducerSemanticApi> => import("@wirecat/cli-core/services")
 /** The connection selects the account; explicit command options select the model. */
 export const createMeetingSemanticCapabilities = (
   vectors: MeetingVectors,

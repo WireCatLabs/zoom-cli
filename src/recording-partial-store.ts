@@ -7,7 +7,7 @@ import type {
   RecordingPartial,
   RecordingTransferStorage,
   RecordingTransferWriter,
-} from "@wirecat/cli-messaging/meetings"
+} from "@wirecat/cli-core/meetings"
 import { checkCancelled, ZoomError } from "./errors.js"
 import { openOrdinaryFile, syncDirectory } from "./ordinary-file.js"
 

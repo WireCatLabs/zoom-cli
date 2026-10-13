@@ -1,7 +1,4 @@
-import type {
-  SearchAllIncludingMeetingsFound,
-  SearchAllIncludingMeetingsRequest,
-} from "@wirecat/cli-messaging/services"
+import type { SearchAllIncludingMeetingsFound, SearchAllIncludingMeetingsRequest } from "@wirecat/cli-core/services"
 import { checkCancelled, ZoomError } from "./errors.js"
 
 export type UnifiedSearchRequest = Pick<

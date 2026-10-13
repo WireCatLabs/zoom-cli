@@ -1,4 +1,4 @@
-import { CliError } from "@wirecat/cli-base"
+import { isCliError } from "@wirecat/cli-base"
 import {
   type MeetingContextStore,
   type MeetingSearchIndexStore,
@@ -6,8 +6,8 @@ import {
   type MeetingTranscriptReceiptStore,
   type MeetingTranscriptStore,
   validateMeetingContextChange,
-} from "@wirecat/cli-messaging/meetings"
-import type { MessageStore, StoreOptions } from "@wirecat/cli-messaging/store"
+} from "@wirecat/cli-core/meetings"
+import type { MessageStore, StoreOptions } from "@wirecat/cli-core/store"
 import { profileAccountKey } from "./config.js"
 import { ZoomError } from "./errors.js"
 import { createLocalTranscriptionCapabilities } from "./local-transcription.js"
@@ -69,7 +69,7 @@ export const createStoreConnector =
       throw new ZoomError("validation_error", "expected a selected Zoom profile and read or ingestion intent")
     let store: SharedMeetingStore | undefined
     try {
-      const open = options.openStore ?? (await import("@wirecat/cli-messaging/store")).openStore
+      const open = options.openStore ?? (await import("@wirecat/cli-core/store")).openStore
       store = await open({ path: options.path, env: options.env, now: options.now })
       const append = (store.meetings as Partial<MeetingTranscriptStore>).appendTranscripts
       const appendReceipt = (store.meetings as Partial<MeetingTranscriptReceiptStore>).appendTranscriptsWithReceipt
@@ -164,7 +164,7 @@ export const createStoreConnector =
           ? {
               meetingSearch: async (query, options) => {
                 validateMeetingHitSearch(query, options)
-                const { searchMeetingHits } = await import("@wirecat/cli-messaging/services")
+                const { searchMeetingHits } = await import("@wirecat/cli-core/services")
                 return searchMeetingHits(
                   { meetings: connected.meetings as MessageStore["meetings"], knowledge },
                   query,
@@ -187,7 +187,7 @@ export const createStoreConnector =
                       "meeting linking supports only explicit event or person changes",
                     )
                   const mutation = { apply: options.apply, dryRun: options.dryRun, signal: options.signal }
-                  const api = await import("@wirecat/cli-messaging/services")
+                  const api = await import("@wirecat/cli-core/services")
                   if (typeof api.createMeetingContextService !== "function")
                     throw new ZoomError(
                       "configuration_error",
@@ -220,7 +220,7 @@ export const createStoreConnector =
           : {}),
         unifiedSearch: async (input) => {
           const request = validateUnifiedSearch(input)
-          const { searchAllIncludingMeetings } = await import("@wirecat/cli-messaging/services")
+          const { searchAllIncludingMeetings } = await import("@wirecat/cli-core/services")
           return searchAllIncludingMeetings(connected as MessageStore, key, {
             ...request,
             meetingAccount: key,
@@ -245,7 +245,7 @@ export const createStoreConnector =
         }
       }
       if (error instanceof ZoomError) throw error
-      if (error instanceof CliError && error.code === "not_found")
+      if (isCliError(error) && error.code === "not_found")
         throw new ZoomError(
           "configuration_error",
           "no stored meetings for the selected profile; import transcripts or pull first",

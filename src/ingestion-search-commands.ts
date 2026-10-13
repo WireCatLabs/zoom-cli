@@ -1,9 +1,10 @@
 import { annotate } from "@wirecat/cli-base/commands"
-import type { MeetingSearchCursor, ResourceWithMeetings } from "@wirecat/cli-messaging/services"
+import type { MeetingSearchCursor, ResourceWithMeetings } from "@wirecat/cli-core/services"
 import type { Command } from "commander"
 import type { ArchiveImportPlan, applyArchiveImport, preflightArchiveImport } from "./archive-import.js"
 import { ZoomError } from "./errors.js"
 import { bytes } from "./execution.js"
+import { camelKeys } from "./keys.js"
 import { type UnifiedSearch, validateUnifiedSearch } from "./unified-search.js"
 
 interface Deps {
@@ -17,7 +18,7 @@ interface Deps {
 }
 const cursor = (value: string): MeetingSearchCursor => {
   try {
-    return JSON.parse(value) as MeetingSearchCursor
+    return camelKeys(JSON.parse(value)) as MeetingSearchCursor
   } catch {
     throw new ZoomError("validation_error", "meeting cursor must be a JSON object")
   }
@@ -69,7 +70,7 @@ export const addIngestionSearchCommands = (program: Command, deps: Deps): void =
       .option("--only <resources>", "comma-separated meetings,messages,mail,notes (default meetings)")
       .option("--limit <n>", "how many results, 1 through 1000 (default 100)", bytes, 100)
       .option("--max-meetings <n>", "most meetings to look at, 1 through 1000 (default 100)", bytes, 100)
-      .option("--meeting-cursor <json>", "source-only continuation from meetings.nextCursor", cursor)
+      .option("--meeting-cursor <json>", "source-only continuation from meetings.next_cursor", cursor)
       .option("--exact", "request exact matching; unsupported meeting queries are reported as skipped")
       .action(
         async (

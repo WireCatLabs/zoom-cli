@@ -2,7 +2,7 @@ import type {
   RecordingAsset as CommonRecordingAsset,
   RecordingCatalog,
   RecordingPage,
-} from "@wirecat/cli-messaging/meetings"
+} from "@wirecat/cli-core/meetings"
 import { encodeUuid } from "./api.js"
 import { object, string, ZoomError } from "./errors.js"
 import {

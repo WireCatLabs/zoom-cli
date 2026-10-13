@@ -2,9 +2,10 @@ import { access, mkdtemp, readFile, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { CliError, memoryKeyring } from "@wirecat/cli-base"
-import { memoryMeetingStore } from "@wirecat/cli-messaging/meetings/testing"
+import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { describe, expect, it, vi } from "vitest"
 import { setConfig } from "./config.js"
+import { snakeKeys } from "./keys.js"
 import { writeExportFile } from "./output-file.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
@@ -224,7 +225,7 @@ describe("archive and explicit remote command wiring", () => {
     expect(list).toHaveBeenCalledWith(
       expect.objectContaining({ from: "2026-09-10", to: "2026-10-10", signal: expect.any(AbortSignal) }),
     )
-    expect(value(stdout).items).toEqual([meeting])
+    expect(value(stdout).items).toEqual([snakeKeys(meeting)])
     expect(
       await run(["--jsonl", "recordings", "list", "--since-time", "2026-10-01", "--until-time", "2026-10-10"], deps),
     ).toBe(0)

@@ -2,8 +2,8 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
-import { memoryMeetingStore, sampleEvent, sampleMeeting } from "@wirecat/cli-messaging/meetings/testing"
-import { openStore } from "@wirecat/cli-messaging/store"
+import { memoryMeetingStore, sampleEvent, sampleMeeting } from "@wirecat/cli-core/meetings/testing"
+import { openStore } from "@wirecat/cli-core/store"
 import { expect, it } from "vitest"
 import { setConfig } from "./config.js"
 import { type ProgramDeps, run } from "./program.js"
@@ -201,7 +201,7 @@ it("mounts real durable connector capabilities and rejects absent local profiles
     if (command === search) {
       const found = JSON.parse(output.at(-1) ?? "{}")
       expect(found.items.length).toBeGreaterThan(0)
-      expect(found.items.every((hit: { meetingId: number }) => hit.meetingId === value.meeting.meeting.id)).toBe(true)
+      expect(found.items.every((hit: { meeting_id: number }) => hit.meeting_id === value.meeting.meeting.id)).toBe(true)
       expect(found.coverage.indexing).toBe("ready")
     }
   }

@@ -2,7 +2,7 @@ import { access, mkdtemp, readFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
-import { planRecordingArchiveSchedule } from "@wirecat/cli-messaging/meetings"
+import { planRecordingArchiveSchedule } from "@wirecat/cli-core/meetings"
 import { expect, it, vi } from "vitest"
 import { profileAccountKey, setConfig } from "./config.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
@@ -176,7 +176,7 @@ it("uses paged account-bound discovery and an explicit durable checkpoint with r
   )
   expect(JSON.parse(output.at(-1) ?? "{}")).toMatchObject({
     availability: "unknown",
-    checkpointRevision: expect.any(Number),
+    checkpoint_revision: expect.any(Number),
   })
   const saved = JSON.parse(await readFile(checkpoint, "utf8"))
   expect(saved.scope).toEqual({ provider: "zoom", account: profileAccountKey("AliceExample") })
@@ -333,8 +333,8 @@ it("previews native schedules offline without persisting jobs, units or opening 
   ).toBe(0)
   expect(JSON.parse(output.at(-1) ?? "{}")).toMatchObject({
     applied: false,
-    timerState: "not_checked",
-    job: { capture: { profile: "AliceExample", clientId: "example-client" } },
+    timer_state: "not_checked",
+    job: { capture: { profile: "AliceExample", client_id: "example-client" } },
   })
   expect(tokenAccess).not.toHaveBeenCalled()
   await expect(access(join(directory, "recording-schedules"))).rejects.toMatchObject({ code: "ENOENT" })

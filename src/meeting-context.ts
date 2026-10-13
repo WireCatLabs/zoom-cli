@@ -1,4 +1,4 @@
-import type { MeetingReadStore, PersonMeetingReadStore, TaskKind } from "@wirecat/cli-messaging/services"
+import type { MeetingReadStore, PersonMeetingReadStore, TaskKind } from "@wirecat/cli-core/services"
 import { checkCancelled, ZoomError } from "./errors.js"
 
 export type MeetingTaskKind = TaskKind
@@ -23,9 +23,9 @@ export interface MeetingContextCapabilities {
   taskProposal?: (reference: string, kind: MeetingTaskKind, signal?: AbortSignal) => Promise<unknown>
 }
 type ProducerContextApi = Partial<
-  Pick<typeof import("@wirecat/cli-messaging"), "parseMeetingReference" | "canonicalMeetingReference"> &
+  Pick<typeof import("@wirecat/cli-core"), "parseMeetingReference" | "canonicalMeetingReference"> &
     Pick<
-      typeof import("@wirecat/cli-messaging/services"),
+      typeof import("@wirecat/cli-core/services"),
       "readMeetingEvidence" | "personMeetingContext" | "proposeMeetingTask"
     >
 >
@@ -80,10 +80,7 @@ const missing = () =>
     "the installed producer does not expose this meeting context capability; install a compatible published version",
   )
 const loadProducer = async (): Promise<ProducerContextApi> => {
-  const [domain, services] = await Promise.all([
-    import("@wirecat/cli-messaging"),
-    import("@wirecat/cli-messaging/services"),
-  ])
+  const [domain, services] = await Promise.all([import("@wirecat/cli-core"), import("@wirecat/cli-core/services")])
   return { ...services, ...domain }
 }
 export const createMeetingContextCapabilities = (

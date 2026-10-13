@@ -2,12 +2,7 @@ import { mkdtemp } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
-import {
-  fakeMeetingSource,
-  memoryMeetingStore,
-  sampleEvent,
-  sampleMeeting,
-} from "@wirecat/cli-messaging/meetings/testing"
+import { fakeMeetingSource, memoryMeetingStore, sampleEvent, sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { expect, it } from "vitest"
 import { type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"

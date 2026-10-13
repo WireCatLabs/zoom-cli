@@ -45,5 +45,5 @@ The shared store uses `wirecat.db`. Producer versions from 0.222.0 delete the le
 `messages.db` and its SQLite sidecars on default-path store open, without migrating them. Explicit
 paths and `MESSAGING_STORE` preserve those files; an active legacy lock defers deletion to a later
 open. Release notes must
-retain this security-related breaking change. The SQLite adapter belongs to cli-messaging; do not
+retain this security-related breaking change. The SQLite adapter belongs to cli-core; do not
 substitute test memory storage for production persistence.

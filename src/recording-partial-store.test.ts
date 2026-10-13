@@ -2,7 +2,7 @@ import { createHash } from "node:crypto"
 import { mkdtemp, readdir, readFile, symlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { recordingTransferStorageContract } from "@wirecat/cli-messaging/meetings/testing"
+import { recordingTransferStorageContract } from "@wirecat/cli-core/meetings/testing"
 import { expect, it } from "vitest"
 import { RecordingPartialStore } from "./recording-partial-store.js"
 

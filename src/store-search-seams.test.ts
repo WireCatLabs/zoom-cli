@@ -1,9 +1,9 @@
-import { memoryMeetingStore } from "@wirecat/cli-messaging/meetings/testing"
+import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { expect, it, vi } from "vitest"
 import { createStoreConnector, type StoreConnectionOptions } from "./store-connection.js"
 
 const mocked = vi.hoisted(() => ({ search: vi.fn() }))
-vi.mock("@wirecat/cli-messaging/services", () => ({ searchAllIncludingMeetings: mocked.search }))
+vi.mock("@wirecat/cli-core/services", () => ({ searchAllIncludingMeetings: mocked.search }))
 const setup = () => ({
   meetings: Object.assign(memoryMeetingStore(), {
     appendTranscripts: vi.fn(),

@@ -20,6 +20,7 @@ These options apply to every command.
 | `--timeout <duration>` | command deadline: reads 30s, login 5m, downloads/transcription 1h; watch/MCP have no default. |
 | `--max-output-bytes <bytes>` | bound rendered result bytes (default 4194304; zero is unlimited). |
 | `--offline` | refuse network requests. |
+| `--debug` | on a failure, its whole record — cause and stack — in place of the short line. |
 
 ## `zm config`
 
@@ -863,7 +864,7 @@ zm search all <query> [options]
 | `--only <resources>` | comma-separated meetings,messages,mail,notes (default meetings). |
 | `--limit <n>` | how many results, 1 through 1000 (default 100). Default: `100`. |
 | `--max-meetings <n>` | most meetings to look at, 1 through 1000 (default 100). Default: `100`. |
-| `--meeting-cursor <json>` | source-only continuation from meetings.nextCursor. |
+| `--meeting-cursor <json>` | source-only continuation from meetings.next_cursor. |
 | `--exact` | request exact matching; unsupported meeting queries are reported as skipped. |
 
 ### `zm search meetings`

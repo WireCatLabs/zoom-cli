@@ -1,7 +1,8 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js"
-import { memoryMeetingStore } from "@wirecat/cli-messaging/meetings/testing"
+import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { expect, it, vi } from "vitest"
+import { snakeKeys } from "./keys.js"
 import { createMeetingMcpServer } from "./mcp-server.js"
 import { createMeetingContextCapabilities } from "./meeting-context.js"
 
@@ -125,7 +126,7 @@ it("exposes semantic queries only with a server-selected model and never exposes
         name: "search_meetings",
         arguments: { query: "example", by_meaning: true, cursor: "4" },
       }),
-    ).toMatchObject({ structuredContent: { ...report, nextCursor: "12" } })
+    ).toMatchObject({ structuredContent: snakeKeys({ ...report, nextCursor: "12" }) })
     expect(search).toHaveBeenCalledWith("example", expect.not.objectContaining({ buildMissing: true }))
     expect(search).toHaveBeenCalledWith(
       "example",

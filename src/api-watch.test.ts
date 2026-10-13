@@ -2,7 +2,7 @@ import { mkdtemp } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { CliError, memoryKeyring } from "@wirecat/cli-base"
-import { fakeMeetingSource, memoryMeetingStore } from "@wirecat/cli-messaging/meetings/testing"
+import { fakeMeetingSource, memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { expect, it, vi } from "vitest"
 import { readConfig, setConfig } from "./config.js"
 import { type ProgramDeps, run } from "./program.js"
@@ -186,7 +186,7 @@ it("uses shared cursor lookback to discover a late API transcript with fresh sou
   expect(listed).toBe(2)
   expect(profiles).toEqual(["example-first", "example-first"])
   expect(order).toEqual(["open", "close", "receipt", "open", "close", "receipt"])
-  expect(output.map((line) => JSON.parse(line).transcriptRows)).toEqual([0, 1])
+  expect(output.map((line) => JSON.parse(line).transcript_rows)).toEqual([0, 1])
   expect(await store.cursor(1)).toBe("2026-10-11T12:00:00.000Z")
   expect(await store.search("Late transcript", { accountId: 1 })).toHaveLength(1)
 })

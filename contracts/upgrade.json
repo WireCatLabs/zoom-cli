@@ -50,8 +50,8 @@
       "stream": "stdout",
       "kind": "json",
       "json": {
-        "accountProfile": "contract",
-        "filesTimezone": "UTC"
+        "account_profile": "contract",
+        "files_timezone": "UTC"
       }
     },
     {

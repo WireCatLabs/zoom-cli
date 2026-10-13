@@ -30,7 +30,7 @@ Read cues with `recordings archive transcript <directory>` or search their text 
 login or a database and verify each WebVTT file they read before returning results. Search can stop
 before reading later files once it proves another match beyond the limit. Select `--uuid` or
 comma-separated `--file-ids`; `--max-bytes` defaults to 8 MiB per file. Search is literal, normalized
-and case-insensitive, with a maximum of 1000 matches. When `hasMore` is true, increase the limit or
+and case-insensitive, with a maximum of 1000 matches. When `has_more` is true, increase the limit or
 narrow the occurrence, file or query selection;
 there is no continuation cursor. These reads do not import archive assets into the database.
 
@@ -98,7 +98,7 @@ is read-only: `applied: false` and `persistence: "proposal-only"` do not mean a 
 `search all <query>` searches meetings by default. Broader `--only messages,mail,notes,meetings`
 is explicit. Messages use the selected local account, mail includes stored email accounts, and
 notes are store-global. Meetings use word prefixes; unsupported syntax or exact queries
-are reported as skipped. Resume meetings-only results using the returned `meetings.nextCursor` as
+are reported as skipped. Resume meetings-only results using the returned `meetings.next_cursor` as
 `--meeting-cursor '<json>'`, bound to account and query. JSONL retains the entire report, including
 coverage, skips and cursors.
 

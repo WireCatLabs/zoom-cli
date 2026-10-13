@@ -1,4 +1,4 @@
-import { CliError, type ErrorCode } from "@wirecat/cli-base"
+import { CliError, type ErrorCode, isCliError } from "@wirecat/cli-base"
 
 export class ZoomError extends CliError {
   constructor(code: ErrorCode, message: string) {
@@ -7,7 +7,7 @@ export class ZoomError extends CliError {
 }
 export const checkCancelled = (signal?: AbortSignal): void => {
   if (!signal?.aborted) return
-  if (signal.reason instanceof CliError) throw signal.reason
+  if (isCliError(signal.reason)) throw signal.reason
   const timedOut = signal.reason instanceof Error && signal.reason.name === "TimeoutError"
   throw new ZoomError(timedOut ? "timeout" : "cancelled", timedOut ? "command timed out" : "command cancelled")
 }
