@@ -434,12 +434,12 @@ describe("zm", () => {
     await writeFile(deps.configPath, "{}")
     expect(() => readConfig(deps.configPath)).toThrow(/invalid/)
   })
-  it("imports a folder through the real command and finds its transcript in memory", async () => {
+  it("imports a folder through the real command and lists its meeting in memory", async () => {
     const { deps, stdout } = await programSetup()
     expect(await run(["import", "example-folder", "--json"], deps)).toBe(0)
     expect(JSON.parse(stdout[0] ?? "{}")).toMatchObject({ meetings: 1 })
-    expect(await run(["--jsonl", "meetings", "search", "Example plan"], deps)).toBe(0)
-    expect(JSON.parse(stdout[1] ?? "{}")).toHaveProperty("scope", "transcript")
+    expect(await run(["--jsonl", "meetings", "list"], deps)).toBe(0)
+    expect(JSON.parse(stdout[1] ?? "{}")).toHaveProperty("title")
     expect(await run(["meetings", "import", "example-folder"], deps)).toBe(2)
     expect(await run(["--help"], deps)).toBe(0)
     expect(await run(["--version"], deps)).toBe(0)

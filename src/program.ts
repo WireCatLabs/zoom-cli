@@ -47,14 +47,9 @@ import type { MeetingContextCapabilities } from "./meeting-context.js"
 import { addMeetingContextCommands } from "./meeting-context-commands.js"
 import type { MeetingIntegrationCapabilities } from "./meeting-integration.js"
 import { addMeetingIntegrationCommands } from "./meeting-integration-commands.js"
+import { addMeetingSearchCommands, type MeetingHitSearch } from "./meeting-search-commands.js"
 import {
-  addMeetingHitSearchCommand,
-  addMeetingSearchIndexCommand,
-  type MeetingHitSearch,
-  type MeetingSearchIndex,
-} from "./meeting-search-commands.js"
-import {
-  addMeetingSemanticCommands,
+  addMeetingEmbeddingCommand,
   type MeetingModelOptions,
   type MeetingSemanticCapabilities,
   validateMeetingModel,
@@ -87,7 +82,6 @@ export interface StoreConnection {
   appendTranscriptsWithReceipt?: MeetingTranscriptReceiptStore["appendTranscriptsWithReceipt"]
   meetingIntegration?: MeetingIntegrationCapabilities
   meetingSearch?: MeetingHitSearch
-  meetingSearchIndex?: MeetingSearchIndex
   meetingTranscription?: LocalTranscriptionCapabilities
   unifiedSearch?: UnifiedSearch
   meetingContext?: MeetingContextCapabilities
@@ -97,7 +91,7 @@ export interface StoreConnectRequest {
   profile: string
   externalId: string
   intent: "read" | "ingestion"
-  capability?: "transcript-append" | "meeting-integration" | "meeting-search" | "meeting-search-index"
+  capability?: "transcript-append" | "meeting-integration" | "meeting-search"
 }
 export interface ProgramDeps {
   configPath: string
@@ -112,7 +106,6 @@ export interface ProgramDeps {
   meetingSemantic?: MeetingSemanticCapabilities
   meetingIntegration?: MeetingIntegrationCapabilities
   meetingSearch?: MeetingHitSearch
-  meetingSearchIndex?: MeetingSearchIndex
   meetingTranscription?: LocalTranscriptionCapabilities
   source?: MeetingSource
   recordings?: RecordingsService
@@ -283,18 +276,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
         "search",
       ].includes(family.name()) ||
       (family.name() === "meetings" &&
-        [
-          "evidence",
-          "context",
-          "task-proposal",
-          "semantic",
-          "embeddings",
-          "update",
-          "link",
-          "search-page",
-          "search-index",
-          "transcribe",
-        ].includes(action.name()))
+        ["evidence", "context", "task-proposal", "embeddings", "update", "link", "transcribe"].includes(action.name()))
     )
       return
     const config = getConfig()
@@ -864,9 +846,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
       return runUnifiedSearch(connection.unifiedSearch, request)
     },
   })
-  const integrationConnection = async (
-    capability: "meeting-integration" | "meeting-search" | "meeting-search-index",
-  ) => {
+  const integrationConnection = async (capability: "meeting-integration" | "meeting-search") => {
     const config = getConfig()
     if (!config.accountProfile || !deps.connectStore)
       throw new ZoomError("configuration_error", "select a stored local profile for meeting integration")
@@ -912,29 +892,6 @@ export const createProgram = (deps: ProgramDeps): Command => {
       return connection.meetingTranscription
     },
   })
-  addMeetingHitSearchCommand(program, {
-    signal,
-    output: integrationOutput,
-    search: async () => {
-      if (deps.meetingSearch) return deps.meetingSearch
-      const connected = await integrationConnection("meeting-search")
-      if (!connected.meetingSearch)
-        throw new ZoomError("configuration_error", "bounded meeting search is unavailable in this store connector")
-      return connected.meetingSearch
-    },
-  })
-  addMeetingSearchIndexCommand(program, {
-    signal,
-    output: integrationOutput,
-    receipt,
-    index: async () => {
-      if (deps.meetingSearchIndex) return deps.meetingSearchIndex
-      const connected = await integrationConnection("meeting-search-index")
-      if (!connected.meetingSearchIndex)
-        throw new ZoomError("configuration_error", "bounded meeting indexing is unavailable in this store connector")
-      return connected.meetingSearchIndex
-    },
-  })
   addMeetingContextCommands(program, {
     signal,
     output: (value) =>
@@ -954,29 +911,40 @@ export const createProgram = (deps: ProgramDeps): Command => {
       return connection.meetingContext
     },
   })
-  addMeetingSemanticCommands(program, {
+  const meetingSemantic = async () => {
+    if (deps.meetingSemantic) return deps.meetingSemantic
+    const config = getConfig()
+    if (!config.accountProfile || !deps.connectStore)
+      throw new ZoomError("configuration_error", "select a stored local profile for meeting vectors")
+    connection = await deps.connectStore({
+      profile: config.accountProfile,
+      externalId: profileAccountKey(config.accountProfile),
+      intent: "read",
+    })
+    if (!connection.meetingSemantic)
+      throw new ZoomError("configuration_error", "meeting vector capabilities are unavailable in this store connector")
+    return connection.meetingSemantic
+  }
+  addMeetingSearchCommands(program, {
+    signal,
+    offline: () => Boolean(program.opts().offline),
+    output: integrationOutput,
+    words: async () => {
+      if (deps.meetingSearch) return deps.meetingSearch
+      const connected = await integrationConnection("meeting-search")
+      if (!connected.meetingSearch)
+        throw new ZoomError("configuration_error", "meeting search is unavailable in this store connector")
+      return connected.meetingSearch
+    },
+    meaning: meetingSemantic,
+    archive: (deps.archiveTranscripts ?? { search: searchArchiveTranscripts }).search,
+  })
+  addMeetingEmbeddingCommand(program, {
     signal,
     offline: () => Boolean(program.opts().offline),
     receipt,
-    output: (value) =>
-      buffer(render(value, program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text", deps, fields, true)),
-    capabilities: async () => {
-      if (deps.meetingSemantic) return deps.meetingSemantic
-      const config = getConfig()
-      if (!config.accountProfile || !deps.connectStore)
-        throw new ZoomError("configuration_error", "select a stored local profile for meeting vectors")
-      connection = await deps.connectStore({
-        profile: config.accountProfile,
-        externalId: profileAccountKey(config.accountProfile),
-        intent: "read",
-      })
-      if (!connection.meetingSemantic)
-        throw new ZoomError(
-          "configuration_error",
-          "meeting vector capabilities are unavailable in this store connector",
-        )
-      return connection.meetingSemantic
-    },
+    output: integrationOutput,
+    capabilities: meetingSemantic,
   })
   annotateMeetingCommands(program)
   const parseAsync = program.parseAsync.bind(program)

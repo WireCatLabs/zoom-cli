@@ -194,7 +194,7 @@ archived transcripts directly:
 
 ```sh
 zm recordings archive transcript ./zoom-archive --offline --json
-zm recordings archive search ./zoom-archive "example plan" --limit 100 --offline --json
+zm search meetings "example plan" --archive ./zoom-archive --limit 100 --offline --json
 ```
 
 Both commands verify each WebVTT file they read against manifest sizes and SHA-256 digests before

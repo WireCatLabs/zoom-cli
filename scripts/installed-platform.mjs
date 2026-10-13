@@ -225,8 +225,8 @@ const meetingId = String(meetings[0].id)
 writeFileSync(vtt, original.replace("Original", "Corrected"))
 json("import", folder)
 assert.equal(json("meetings", "show", meetingId).transcripts.length, 2)
-assert.equal(json("meetings", "search", "Original").items.length, 0)
-assert.equal(json("meetings", "search", "Corrected").items.length, 1)
+assert.equal(json("search", "meetings", "Original").items.length, 0)
+assert.equal(json("search", "meetings", "Corrected").items.length, 1)
 assert.equal(json("meetings", "transcript", meetingId).items.length, 1)
 assert.equal(json("meetings", "transcript", meetingId, "--history").items.length, 2)
 const exported = join(sandbox, "exported.vtt")
@@ -279,7 +279,7 @@ try {
 }
 assert.equal(json("recordings", "archive", "transcript", archive).items[0].cues[0].text, "Original invented plan")
 assert.equal(
-  json("recordings", "archive", "search", archive, "invented", "--uuid", uuid, "--file-ids", fileId).items.length,
+  json("search", "meetings", "invented", "--archive", archive, "--uuid", uuid, "--file-ids", fileId).items.length,
   1,
 )
 invoke(["recordings", "archive", "transcript", archive, "--json"], 2, { ZM_PLATFORM_RACE: asset })
@@ -326,8 +326,8 @@ assert.equal(correctedReceipt.replayedTranscripts, 0)
 assert.equal(correctedReceipt.supersededTranscripts, 1)
 json("recordings", "archive", "import", archive)
 assert.equal(json("meetings", "show", archivedMeetingId).transcripts.length, 2)
-assert.equal(json("meetings", "search", "Original").items.length, 0)
-assert.equal(json("meetings", "search", "Revised archive").items.length, 1)
+assert.equal(json("search", "meetings", "Original").items.length, 0)
+assert.equal(json("search", "meetings", "Revised archive").items.length, 1)
 assert.equal(json("meetings", "show", meetingId).transcripts.length, 2, "append preserves unrelated history")
 // Seed a distinct account, then restore the initial profile before the MCP process starts.
 json("config", "set", "account.profile", "invented-foreign-platform")
@@ -449,7 +449,7 @@ try {
   assert.deepEqual(preview.status, { chunks: 0, embedded: 0 })
   assert.equal(requests().length, 0, "preview must not open a model or call the embedding endpoint")
   for (const args of [
-    ["meetings", "semantic", "invented", ...modelOptions],
+    ["search", "meetings", "invented", ...modelOptions],
     ["meetings", "embeddings", ...modelOptions, "--yes"],
     ["serve", "--mcp", "--semantic", ...modelOptions],
   ])
@@ -466,7 +466,7 @@ try {
   assert.equal(status.embedded, status.chunks)
   assert.equal(requests().length, generatedRequests, "preview remains model-free with populated chunks")
   const query = "invented selected-profile semantic question"
-  const semantic = remoteJson("meetings", "semantic", query, ...modelOptions)
+  const semantic = remoteJson("search", "meetings", query, ...modelOptions)
   assert.ok(semantic.items.length > 0)
   assert.ok(semantic.items.every((hit) => String(hit.meetingId) !== foreignMeetingId))
   assert.ok(semantic.items.every((hit) => /^meeting:[1-9][0-9]*\/[1-9][0-9]*\/[1-9][0-9]*$/.test(hit.reference)))
@@ -498,7 +498,7 @@ try {
   try {
     await semanticClient.connect(new StdioServerTransport(semanticChild.stdout, semanticChild.stdin))
     const tools = (await semanticClient.listTools()).tools
-    assert.equal(tools.length, 9)
+    assert.equal(tools.length, 7)
     assert.equal(
       tools.some((tool) => /generat|embedding/.test(tool.name)),
       false,
@@ -506,13 +506,16 @@ try {
     assert.equal(requests().length, generatedRequests + 1, "semantic MCP discovery is model-free")
     for (const override of [{ model: "forbidden-caller-model" }, { account_id: 99999 }]) {
       const refused = await semanticClient.callTool({
-        name: "meeting_semantic_search",
-        arguments: { query, ...override },
+        name: "search_meetings",
+        arguments: { query, by_meaning: true, ...override },
       })
       assert.equal(refused.isError, true)
     }
     assert.equal(requests().length, generatedRequests + 1, "invalid MCP overrides never invoke the model")
-    const result = await semanticClient.callTool({ name: "meeting_semantic_search", arguments: { query } })
+    const result = await semanticClient.callTool({
+      name: "search_meetings",
+      arguments: { query, by_meaning: true },
+    })
     assert.notEqual(result.isError, true)
     const report = result.structuredContent ?? JSON.parse(result.content[0].text)
     assert.equal(report.accountId, semantic.accountId)

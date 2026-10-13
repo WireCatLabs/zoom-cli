@@ -18,6 +18,19 @@
   - `meetings evidence --after` → `--cursor`
   - `meetings task-proposal --kind` → `--type`
   - `remote-meetings create|update --topic` → `--title`
+- **One meeting search, `zm search meetings <query>`, that indexes on its own.** It replaces four commands, which
+  stop working:
+  - `meetings search` and `meetings search-page`: their filters all move over, including `--event-id` and
+    `--series-id`; `--since`/`--until` are `--since-time`/`--until-time` and `--after` is `--cursor`.
+  - `meetings search-index`: gone. The search indexes what was stored since the last search before it reads.
+  - `meetings semantic`: `search meetings <query> --model <model>` (with `--base-url`, `--dims`,
+    `--max-chunks`, `--max-rows`, `--max-text-bytes`; `--after-chunk-id` is `--cursor`). It first builds the
+    vectors that are missing for that model.
+  - `recordings archive search <directory> <query>`: `search meetings <query> --archive <directory>` (with
+    `--uuid`, `--file-ids`, `--max-bytes`).
+  - MCP: `meetings_search`, `meeting_search_page` and `meeting_semantic_search` are one tool,
+    `search_meetings`. With `serve --semantic`, `by_meaning: true` ranks existing vectors; MCP never builds
+    them.
 - Value names in help now say what they hold: `--limit <n>`, `--model <model>`, `--max-read-bytes <bytes>`,
   `--max-text-bytes <bytes>`; every argument has a description and long summaries are shorter.
 

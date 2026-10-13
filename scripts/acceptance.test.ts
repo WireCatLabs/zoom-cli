@@ -206,7 +206,7 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
       await client.connect(new StdioServerTransport(child.stdout, child.stdin))
       const listed = await client.listTools()
       expect(listed.tools).toHaveLength(8)
-      expect(listed.tools.map((tool) => tool.name)).toContain("meeting_search_page")
+      expect(listed.tools.map((tool) => tool.name)).toContain("search_meetings")
       expect(listed.tools.every((tool) => tool.annotations?.readOnlyHint === true)).toBe(true)
       expect(existsSync(isolated)).toBe(false)
       expect(existsSync(join(install, "mcp-unused.db"))).toBe(false)
@@ -285,8 +285,8 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
 
   it("searches the current correction while exposing retained history explicitly", () => {
     const id = importedMeetingId
-    expect(JSON.parse(invoke("--json", "meetings", "search", "Corrected").stdout).items).toHaveLength(1)
-    expect(JSON.parse(invoke("--json", "meetings", "search", "Original").stdout).items).toHaveLength(0)
+    expect(JSON.parse(invoke("--json", "search", "meetings", "Corrected").stdout).items).toHaveLength(1)
+    expect(JSON.parse(invoke("--json", "search", "meetings", "Original").stdout).items).toHaveLength(0)
     expect(JSON.parse(invoke("--json", "events", "list").stdout).items).toHaveLength(1)
     expect(JSON.parse(invoke("--json", "meetings", "transcript", id, "--history").stdout).items).toHaveLength(2)
     expect(JSON.parse(invoke("--json", "meetings", "summary", id).stdout).items).toHaveLength(0)
@@ -382,7 +382,7 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
       expect(receipts).toHaveLength(1)
       expect(receipts[0].meetings).toBe(1)
       expect(JSON.parse(diagnostics(errors)).error.code).toBe("cancelled")
-      const reopened = invoke("--json", "meetings", "search", "Watched")
+      const reopened = invoke("--json", "search", "meetings", "Watched")
       expect(reopened.status, reopened.stderr).toBe(0)
       expect(JSON.parse(reopened.stdout).items).toHaveLength(1)
       expect(existsSync(marker)).toBe(false)

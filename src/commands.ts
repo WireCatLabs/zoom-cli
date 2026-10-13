@@ -118,7 +118,6 @@ const exampleFor = (path: string): string => {
     "meetings transcript": "1",
     "meetings summary": "1",
     "meetings export": "1 --format markdown",
-    "meetings search": '"example plan"',
     "meetings people": '"Alice Example"',
     import: "./downloaded-transcripts",
   }

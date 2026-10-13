@@ -26,7 +26,7 @@ unavailable assets. A failed transfer can leave earlier completed files; retry s
 file again. Existing files are never overwritten. Do not infer HTTP byte-range resume.
 
 Read cues with `recordings archive transcript <directory>` or search their text with
-`recordings archive search <directory> <query> --limit 100`. Both work offline without configuration,
+`search meetings <query> --archive <directory> --limit 100`. Both work offline without configuration,
 login or a database and verify each WebVTT file they read before returning results. Search can stop
 before reading later files once it proves another match beyond the limit. Select `--uuid` or
 comma-separated `--file-ids`; `--max-bytes` defaults to 8 MiB per file. Search is literal, normalized
@@ -74,7 +74,7 @@ The selected overlap also subtracts from the initial bound.
 `zm serve --mcp` provides seven read-only stored meeting tools. Discovery opens no database; reads
 use the selected account. MCP uses its own framing, so omit JSON/JSONL/field-selection flags. `--meeting-context` adds three
 read-only context tools; `--unified-search` adds one meetings-only shared search tool;
-`--semantic --model <model>` adds one vector query tool. Remote model selection also requires
+`--semantic --model <model>` lets `search_meetings` rank existing vectors with `by_meaning`. Remote model selection also requires
 `--base-url` and `--dims`. The server fixes the model at startup and the profile on its first read.
 Clients cannot select another model or account. Generation and task creation are not MCP tools.
 
@@ -100,7 +100,7 @@ is explicit. Messages use the selected local account, mail includes stored email
 notes are store-global. Meetings use word prefixes; unsupported syntax or exact queries
 are reported as skipped. Resume meetings-only results using the returned `meetings.nextCursor` as
 `--meeting-cursor '<json>'`, bound to account and query. JSONL retains the entire report, including
-coverage, skips and cursors. Existing `meetings search` remains literal transcript search.
+coverage, skips and cursors.
 
 ## Explicit vector work
 
@@ -111,10 +111,12 @@ models require explicit `--base-url` and `--dims`; OpenAI uses `OPENAI_API_KEY`.
 is refused with `--offline`. Keep credentials out of endpoint URLs and output.
 
 `--after-transcript-id` resumes chunk rebuilding; `--after-hash` resumes missing vectors. Current
-revision hashes are rechecked before save. `meetings semantic <query> --model <model>` embeds only
-the query and reads existing vectors; it never generates stored vectors or rebuilds chunks. Ranking
-covers scanned candidates, not all history. `--after-chunk-id` continues candidate scanning rather
-than globally ranked pagination. Index and archive completeness remain unknown. Use returned
+revision hashes are rechecked before save. `search meetings <query> --model <model>` searches by
+meaning: it first splits current transcripts again and embeds passages without a vector for that
+model (with a remote model, those passages are sent to it), then ranks. Store filters do not apply.
+Ranking covers scanned candidates, not all history. `--cursor` continues candidate scanning rather
+than globally ranked pagination. The MCP `search_meetings` tool with `by_meaning` only reads
+existing vectors. Index and archive completeness remain unknown. Use returned
 candidate coverage and the explicit row/text byte bounds.
 
 ## Remote meeting changes
@@ -137,4 +139,4 @@ bounded by `--max-output-bytes`, separate from the download's per-file `--max-by
 
 ## Bounded context-filtered search
 
-Use `meetings search-page <query>` with `--since`/`--until` and optionally `--identity-id`, `--person-id`, `--project`, `--tag` or `--topic`. Identity IDs come from observed participant results; person IDs follow explicit identity links. Filters select meetings, never attribute cue speech. Project names, keys and aliases resolve existing vocabulary and require confirmed membership; labels require explicit meeting taggings. Do not silently infer membership from matching words or merge similar participant names. Missing or ambiguous names fail. Inspect pending indexing and unknown archive coverage even for empty pages. `meeting_search_page` exposes the same selected-account MCP read.
+Use `search meetings <query>` with `--since-time`/`--until-time` and optionally `--identity-id`, `--person-id`, `--event-id`, `--series-id`, `--project`, `--tag` or `--topic`. It indexes newly stored meetings before reading; there is no separate index step. Identity IDs come from observed participant results; person IDs follow explicit identity links. Filters select meetings, never attribute cue speech. Project names, keys and aliases resolve existing vocabulary and require confirmed membership; labels require explicit meeting taggings. Do not silently infer membership from matching words or merge similar participant names. Missing or ambiguous names fail. Inspect pending indexing and unknown archive coverage even for empty pages. `search_meetings` exposes the same selected-account MCP read.

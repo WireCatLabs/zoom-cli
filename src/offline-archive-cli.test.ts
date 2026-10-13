@@ -106,11 +106,11 @@ it("projects archive fields, supports finite JSONL and preserves true search pag
   expect(
     await run(
       [
-        "recordings",
-        "archive",
         "search",
-        directory,
+        "meetings",
         "PLAN",
+        "--archive",
+        directory,
         "--uuid",
         uuid,
         "--file-ids",
@@ -134,10 +134,10 @@ it("projects archive fields, supports finite JSONL and preserves true search pag
   })
   expect(latest(output).items[0]).not.toHaveProperty("asset")
   output.length = 0
-  expect(await run(["recordings", "archive", "search", directory, "Cafe\u0301", "--json"], deps)).toBe(0)
+  expect(await run(["search", "meetings", "Cafe\u0301", "--archive", directory, "--json"], deps)).toBe(0)
   expect(latest(output)).toMatchObject({ hasMore: false, items: [{ text: "Café [Plan]" }] })
   output.length = 0
-  expect(await run(["recordings", "archive", "search", directory, "not present", "--json"], deps)).toBe(0)
+  expect(await run(["search", "meetings", "not present", "--archive", directory, "--json"], deps)).toBe(0)
   expect(latest(output)).toMatchObject({ items: [], hasMore: false })
 })
 
@@ -157,7 +157,15 @@ it("reports corruption, byte bounds and unknown selectors without emitting parti
   expect(await run(["recordings", "archive", "transcript", directory, "--jsonl"], deps)).toBe(2)
   expect(output).toEqual([])
   output.length = 0
-  expect(await run(["recordings", "archive", "search", directory, "plan", "--limit", "1001", "--json"], deps)).toBe(2)
+  expect(await run(["search", "meetings", "plan", "--archive", directory, "--limit", "1001", "--json"], deps)).toBe(2)
+  expect(output).toEqual([])
+  for (const flags of [
+    ["--since-time", "2026-10-01"],
+    ["--event-id", "1"],
+    ["--model", "e5-small"],
+    ["--cursor", "1"],
+  ])
+    expect(await run(["search", "meetings", "plan", "--archive", directory, ...flags, "--json"], deps)).toBe(2)
   expect(output).toEqual([])
 })
 

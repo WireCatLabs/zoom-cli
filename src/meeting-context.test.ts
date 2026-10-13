@@ -342,13 +342,15 @@ it("requires an explicit semantic model, preserves scan coverage, and previews g
   const search = vi.fn(async () => report)
   const generate = vi.fn(async (options: MeetingEmbeddingOptions) => ({ applied: options.yes === true }))
   deps.meetingSemantic = { search, generate }
-  expect(await run(["meetings", "semantic", "example", "--json"], deps)).toBe(2)
+  expect(await run(["search", "meetings", "example", "--max-chunks", "5", "--json"], deps)).toBe(2)
+  expect(await run(["search", "meetings", "example", "--model", "installed-example", "--event-id", "1"], deps)).toBe(2)
+  expect(await run(["search", "meetings", "example", "--model", "installed-example", "--cursor", "abc"], deps)).toBe(2)
   expect(
-    await run(["meetings", "semantic", "example", "--model", "installed-example", "--max-chunks", "10001"], deps),
+    await run(["search", "meetings", "example", "--model", "installed-example", "--max-chunks", "10001"], deps),
   ).toBe(2)
   expect(
     await run(
-      ["meetings", "semantic", "example", "--model", "served-example", "--base-url", "https://example.invalid/v1"],
+      ["search", "meetings", "example", "--model", "served-example", "--base-url", "https://example.invalid/v1"],
       deps,
     ),
   ).toBe(2)
@@ -358,7 +360,7 @@ it("requires an explicit semantic model, preserves scan coverage, and previews g
   ] as const)
     expect(
       await run(
-        ["meetings", "semantic", "example", "--model", "served-example", "--base-url", baseUrl, "--dims", dims],
+        ["search", "meetings", "example", "--model", "served-example", "--base-url", baseUrl, "--dims", dims],
         deps,
       ),
     ).toBe(2)
@@ -366,12 +368,12 @@ it("requires an explicit semantic model, preserves scan coverage, and previews g
   expect(
     await run(
       [
+        "search",
         "meetings",
-        "semantic",
         "example",
         "--model",
         "installed-example",
-        "--after-chunk-id",
+        "--cursor",
         "4",
         "--limit",
         "2",
@@ -386,11 +388,12 @@ it("requires an explicit semantic model, preserves scan coverage, and previews g
       deps,
     ),
   ).toBe(0)
-  expect(JSON.parse(output.pop() ?? "{}")).toEqual(report)
+  expect(JSON.parse(output.pop() ?? "{}")).toEqual({ ...report, nextCursor: "12" })
   expect(search).toHaveBeenCalledWith(
     "example",
     expect.objectContaining({
       model: "installed-example",
+      buildMissing: true,
       afterChunkId: 4,
       limit: 2,
       maxChunks: 10,
@@ -456,7 +459,7 @@ it("refuses remote semantic models offline before connecting, querying, generati
   deps.serveMcp = serve
   const remote = ["--model", "served-example", "--base-url", "https://example.invalid/v1", "--dims", "2"]
   for (const args of [
-    ["meetings", "semantic", "example", ...remote],
+    ["search", "meetings", "example", ...remote],
     ["meetings", "embeddings", ...remote],
     ["meetings", "embeddings", ...remote, "--yes"],
     ["serve", "--mcp", "--semantic", ...remote],
@@ -469,7 +472,7 @@ it("refuses remote semantic models offline before connecting, querying, generati
   expect(output).toEqual([])
   search.mockResolvedValue({ items: [] })
   expect(
-    await run(["meetings", "semantic", "example", "--model", "installed-example", "--offline", "--json"], deps),
+    await run(["search", "meetings", "example", "--model", "installed-example", "--offline", "--json"], deps),
   ).toBe(0)
   expect(search).toHaveBeenCalledOnce()
 })
@@ -514,7 +517,7 @@ it("flushes acknowledged embedding writes after cancellation while discarding ca
     },
     generate: vi.fn(),
   }
-  expect(await run(["meetings", "semantic", "example", "--model", "installed-example", "--jsonl"], read.deps)).toBe(130)
+  expect(await run(["search", "meetings", "example", "--model", "installed-example", "--jsonl"], read.deps)).toBe(130)
   expect(read.output).toEqual([])
 })
 
@@ -563,7 +566,7 @@ it("opens only the selected semantic read connection and closes it before finite
   const connection = { store: {} as never, accountId: 3, meetingSemantic: { search, generate: vi.fn() }, close }
   const connect = vi.fn<NonNullable<ProgramDeps["connectStore"]>>(async () => connection)
   deps.connectStore = connect
-  const args = ["meetings", "semantic", "example", "--model", "installed-example", "--json"]
+  const args = ["search", "meetings", "example", "--model", "installed-example", "--json"]
   expect(await run(args, deps)).toBe(3)
   expect(connect).not.toHaveBeenCalled()
   setConfig(deps.configPath, "account.profile", "example")

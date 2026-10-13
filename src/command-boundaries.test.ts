@@ -70,22 +70,6 @@ it("keeps CLI paging, calendar filters and participant reads scoped to the selec
       "--jsonl",
     ]),
   ).toMatchObject([{ id: first.meeting.id, accountId: 1 }])
-  const filtered = await invoke([
-    "meetings",
-    "search",
-    "example",
-    "--since",
-    "1970-01-01",
-    "--until",
-    "1970-01-01T00:00:03Z",
-    "--event-id",
-    String(event.id),
-    "--series-id",
-    String(first.series?.id),
-    "--json",
-  ])
-  expect(filtered[0].items.length).toBeGreaterThan(0)
-  expect(filtered[0].items.every((item: { meetingId: number }) => item.meetingId === first.meeting.id)).toBe(true)
   expect((await invoke(["meetings", "people", "Alice", "--json"]))[0].items).toHaveLength(2)
   expect(await invoke(["meetings", "people", "Alice", "--jsonl"])).toHaveLength(2)
   expect((await invoke(["events", "list", "--json"]))[0].items).toEqual([event])

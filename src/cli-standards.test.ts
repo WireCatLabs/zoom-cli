@@ -56,14 +56,14 @@ describe("portable CLI discovery and diagnostics", () => {
       local: true,
       examples: ["zm config set account.profile personal --json"],
     })
-    expect(commands.find((item) => item.path.join(" ") === "meetings search")?.examples).toEqual([
-      'zm meetings search "example plan" --json',
-    ])
-    expect(await run(["complete", "--", "meetings", "s"], deps)).toBe(0)
-    expect(stdout[1]).toContain("search\t")
+    expect(commands.find((item) => item.path.join(" ") === "search meetings")?.examples).toContain(
+      'zm search meetings "example plan" --model e5-small --json',
+    )
+    expect(await run(["complete", "--", "search", "m"], deps)).toBe(0)
+    expect(stdout[1]).toContain("meetings\t")
     expect(stdout[1]).toContain(":4\n")
-    expect(await run(["--json", "complete", "--", "meetings", "s"], deps)).toBe(0)
-    expect(JSON.parse(stdout[2] ?? "{}").items.some((item: { value: string }) => item.value === "search")).toBe(true)
+    expect(await run(["--json", "complete", "--", "search", "m"], deps)).toBe(0)
+    expect(JSON.parse(stdout[2] ?? "{}").items.some((item: { value: string }) => item.value === "meetings")).toBe(true)
     expect(stderr).toEqual([])
   })
   it("prints the shared commands document, whole and scoped", async () => {

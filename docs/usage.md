@@ -57,14 +57,13 @@ does not import that transcript into the meeting database until you request arch
 | `meetings transcript <meeting>` | read current transcripts |
 | `meetings summary <meeting>` | read stored summaries |
 | `meetings export <meeting> --format markdown\|vtt` | export stored meeting content |
-| `meetings search <query>`, `meetings people <query>` | find stored text or participants |
-| `meetings search-page <query>`, `meetings search-index` | bounded hit continuation and explicit keyword indexing |
+| `search meetings <query>`, `meetings people <query>` | find stored text, indexing new meetings first, or participants |
 | `meetings update <reference>`, `meetings link <reference>` | preview or apply owner-selected stored links |
 | `meetings transcribe <meeting> <file> --model <model>` | preview or locally recognize a WAV file into an independent transcript |
 | `meetings evidence <reference>`, `meetings context <person>` | read bounded evidence or identity-linked person context |
 | `meetings task-proposal <reference> --type <type>` | preview a task with meeting provenance |
-| `meetings semantic <query> --model <model>` | rank scanned stored vectors with an explicit query model |
-| `meetings embeddings --model <model>` | preview local vector generation; `--yes` applies one bounded batch |
+| `search meetings <query> --model <model>` | rank stored passages by meaning, building missing vectors first |
+| `meetings embeddings --model <model>` | preview vector generation ahead of a search; `--yes` applies one bounded batch |
 | `search all <query>` | search meetings by default, or explicitly selected shared resources |
 | `events list` | read stored events |
 | `watch [folder] --source api\|files --jsonl` | repeatedly ingest the configured source in the foreground |
@@ -75,7 +74,7 @@ does not import that transcript into the meeting database until you request arch
 | `recordings archive show\|check\|locks <directory>` | inspect local manifests, checksums or locks |
 | `recordings archive recover <directory>` | preview recovery of stale local locks |
 | `recordings archive transcript <directory>` | read verified archived WebVTT cues without a database |
-| `recordings archive search <directory> <query>` | search verified archived cue text without a database |
+| `search meetings <query> --archive <directory>` | search verified archived cue text without a database |
 | `recordings archive import <directory>` | verify archived VTT assets and append them to stored occurrences |
 | `remote-meetings list\|show\|invitation` | read upcoming Zoom meetings and invitations |
 | `remote-meetings create\|update\|cancel` | preview or apply a simple Zoom meeting change |

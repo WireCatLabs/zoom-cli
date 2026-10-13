@@ -2,7 +2,7 @@ import { PassThrough } from "node:stream"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
-import { callMeetingTool, meetingHitSearchTool, meetingTools } from "@wirecat/cli-messaging/meetings/mcp"
+import { callMeetingTool, meetingSearchTool, meetingTools } from "@wirecat/cli-messaging/meetings/mcp"
 import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-messaging/meetings/testing"
 import { describe, expect, it, vi } from "vitest"
 import { createMeetingMcpServer, type MeetingMcpOptions, serveMeetingMcp } from "./mcp-server.js"
@@ -34,7 +34,7 @@ describe("read-only SDK meeting server", () => {
     try {
       expect(client.getServerVersion()).toEqual({ name: "zoom-meetings", version: "example" })
       const { tools } = await client.listTools()
-      expect(tools.map((tool) => tool.name)).toEqual([...meetingTools, meetingHitSearchTool].map((tool) => tool.name))
+      expect(tools.map((tool) => tool.name)).toEqual([...meetingTools, meetingSearchTool].map((tool) => tool.name))
       for (const tool of tools) {
         expect(tool.annotations?.readOnlyHint).toBe(true)
         expect(tool.inputSchema.properties).not.toHaveProperty("account_id")
@@ -56,7 +56,6 @@ describe("read-only SDK meeting server", () => {
         ["meeting_transcript", { meeting: data.selected.meeting.id, history: true }],
         ["meeting_summary", { meeting: data.selected.meeting.id }],
         ["meeting_export", { meeting: data.selected.meeting.id, format: "markdown" }],
-        ["meetings_search", { query: "agenda" }],
         ["meeting_people", { query: "Alice" }],
       ] as const
       for (const [name, args] of inputs) {
@@ -64,11 +63,11 @@ describe("read-only SDK meeting server", () => {
         expect(await client.callTool({ name, arguments: args })).toEqual(expected)
         expect(data.close).toHaveBeenCalledTimes(data.connectStore.mock.calls.length)
       }
-      expect(data.connectStore).toHaveBeenCalledTimes(7)
+      expect(data.connectStore).toHaveBeenCalledTimes(6)
       expect(
         await client.callTool({ name: "meeting_show", arguments: { meeting: data.other.meeting.id } }),
       ).toMatchObject({ isError: true, structuredContent: { error: { code: "not_found" } } })
-      expect(data.close).toHaveBeenCalledTimes(8)
+      expect(data.close).toHaveBeenCalledTimes(7)
     } finally {
       await client.close()
       await server.close()

@@ -16,15 +16,24 @@ The examples below use `e5-small` for a local model. Confirm it is installed bef
 batch; its name alone does not install it. Local and remote results need the same model/dimensions
 as their stored vectors to be comparable.
 
-## Explicit meeting vectors
+## Search by meaning
 
 Choose an already installed local model, or explicitly select a remote endpoint and dimensions:
 
 ```sh
+zm search meetings "example plan" --model e5-small --max-chunks 1000 --json
+zm search meetings "example plan" --model example-model --base-url http://127.0.0.1:8080/v1 --dims 384 --json
+```
+
+Before it reads, the search splits the current transcripts into passages again and embeds every passage that
+has no vector for that model yet, so a first search on a large store takes longer and, with a remote model,
+sends those passages to it. Continue with `--cursor <nextCursor>`; results are ranked per page only.
+
+To prepare vectors ahead of time instead, preview and build them in batches:
+
+```sh
 zm meetings embeddings --model e5-small --json
 zm meetings embeddings --model e5-small --yes --limit 100 --json
-zm meetings semantic "example plan" --model e5-small --max-chunks 1000 --json
-zm meetings semantic "example plan" --model example-model --base-url http://127.0.0.1:8080/v1 --dims 384 --json
 ```
 
 The first embedding command previews existing chunk status without opening a model, downloading

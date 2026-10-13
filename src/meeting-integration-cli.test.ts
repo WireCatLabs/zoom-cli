@@ -3,12 +3,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
 import { parseMeetingReference } from "@wirecat/cli-messaging"
-import {
-  createMeetingContext,
-  dispatchMeetingMutation,
-  type MeetingMediaDescriptor,
-  transcribeMeeting,
-} from "@wirecat/cli-messaging/meetings"
+import { createMeetingContext, type MeetingMediaDescriptor, transcribeMeeting } from "@wirecat/cli-messaging/meetings"
 import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-messaging/meetings/testing"
 import { expect, it, vi } from "vitest"
 import { ZoomError } from "./errors.js"
@@ -176,8 +171,8 @@ it("keeps bounded search cursors and coverage in JSONL and forwards typed date/b
   expect(
     await run(
       [
+        "search",
         "meetings",
-        "search-page",
         "example plan",
         "--identity-id",
         "12",
@@ -189,13 +184,17 @@ it("keeps bounded search cursors and coverage in JSONL and forwards typed date/b
         "planning",
         "--meeting-id",
         "1",
-        "--since",
+        "--event-id",
+        "5",
+        "--series-id",
+        "6",
+        "--since-time",
         "2026-10-01",
-        "--until",
+        "--until-time",
         "2026-10-11T12:00:00+02:00",
         "--limit",
         "2",
-        "--after",
+        "--cursor",
         "example_previous",
         "--max-read-bytes",
         "1024",
@@ -217,6 +216,8 @@ it("keeps bounded search cursors and coverage in JSONL and forwards typed date/b
       personId: 34,
       project: "RES",
       tag: "planning",
+      eventId: 5,
+      meetingSeriesId: 6,
       since: Date.parse("2026-10-01T00:00:00Z"),
       until: Date.parse("2026-10-11T10:00:00Z"),
       limit: 2,
@@ -224,7 +225,7 @@ it("keeps bounded search cursors and coverage in JSONL and forwards typed date/b
       maxReadBytes: 1024,
     }),
   )
-  expect(await run(["meetings", "search-page", "example", "--topic", "costs", "--json"], deps)).toBe(0)
+  expect(await run(["search", "meetings", "example", "--topic", "costs", "--json"], deps)).toBe(0)
   expect(search).toHaveBeenLastCalledWith("example", expect.objectContaining({ topic: "costs" }))
   expect(connect).not.toHaveBeenCalled()
 })
@@ -240,33 +241,17 @@ it("rejects impossible search dates, oversized bounds and opaque cursor tamperin
     ["--limit", "1001"],
     ["--max-read-bytes", "67108865"],
     ["--meeting-id", "0"],
-    ["--after", "not/a/cursor"],
-    ["--since", "2026-02-30"],
-    ["--since", "2026-10-11", "--until", "2026-10-01"],
+    ["--cursor", "not/a/cursor"],
+    ["--since-time", "2026-02-30"],
+    ["--since-time", "2026-10-11", "--until-time", "2026-10-01"],
+    ["--event-id", "0"],
+    ["--uuid", "example-uuid"],
+    ["--max-chunks", "5"],
   ])
-    expect(await run(["meetings", "search-page", "example", ...flags, "--json"], deps)).toBe(2)
-  expect(await run(["meetings", "search-page", " ", "--json"], deps)).toBe(2)
+    expect(await run(["search", "meetings", "example", ...flags, "--json"], deps)).toBe(2)
+  expect(await run(["search", "meetings", " ", "--json"], deps)).toBe(2)
   expect(search).not.toHaveBeenCalled()
   expect(connect).not.toHaveBeenCalled()
-})
-
-it("indexes only explicit bounded batches and preserves the applied receipt", async () => {
-  const { deps, output } = await setup()
-  const write = vi.fn(async () => ({ indexed: 2, remaining: 1 }))
-  deps.meetingSearchIndex = async (options) => {
-    const request = { limit: options.limit ?? 100, maxReadBytes: options.maxReadBytes ?? 4194304 }
-    const outcome = await dispatchMeetingMutation(options, write)
-    return { applied: outcome.applied, accountId: 1, request, ...(outcome.value ?? {}) }
-  }
-  const args = ["meetings", "search-index", "--limit", "2", "--max-read-bytes", "1024", "--json"]
-  expect(await run(args, deps)).toBe(0)
-  expect(latest(output)).toMatchObject({ applied: false, request: { limit: 2, maxReadBytes: 1024 } })
-  expect(write).not.toHaveBeenCalled()
-  expect(await run([...args, "--yes", "--dry-run"], deps)).toBe(0)
-  expect(write).not.toHaveBeenCalled()
-  expect(await run([...args, "--yes"], deps)).toBe(0)
-  expect(latest(output)).toMatchObject({ applied: true, indexed: 2, remaining: 1 })
-  expect(write).toHaveBeenCalledTimes(1)
 })
 
 it("retains memo as the shared note, tag and memory interface in command discovery", async () => {
@@ -275,7 +260,7 @@ it("retains memo as the shared note, tag and memory interface in command discove
   const paths = latest(output).commands[0].commands.map((command: { path: string[] }) => command.path.join(" "))
   expect(paths.some((path: string) => /^meetings (notes|tags|memories)(?: |$)/.test(path))).toBe(false)
   expect(paths).toContain("meetings update")
-  expect(paths).toContain("meetings search-page")
+  expect(paths).not.toContain("meetings search-page")
   expect(connect).not.toHaveBeenCalled()
 })
 

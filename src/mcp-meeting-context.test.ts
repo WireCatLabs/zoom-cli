@@ -43,7 +43,7 @@ it("discovers opt-in context without IO, rejects account overrides, and closes b
   await client.connect(left)
   try {
     const { tools } = await client.listTools()
-    expect(tools).toHaveLength(11)
+    expect(tools).toHaveLength(10)
     expect(tools.every((tool) => tool.annotations?.readOnlyHint === true)).toBe(true)
     expect(connect).not.toHaveBeenCalled()
     for (const request of [
@@ -104,28 +104,33 @@ it("exposes semantic queries only with a server-selected model and never exposes
   await client.connect(left)
   try {
     const { tools } = await client.listTools()
-    expect(tools).toHaveLength(9)
-    expect(tools.find((tool) => tool.name === "meeting_semantic_search")?.annotations?.readOnlyHint).toBe(true)
+    expect(tools).toHaveLength(7)
+    expect(tools.find((tool) => tool.name === "search_meetings")?.annotations?.readOnlyHint).toBe(true)
+    expect(tools.find((tool) => tool.name === "search_meetings")?.inputSchema.properties).toHaveProperty("by_meaning")
     expect(tools.some((tool) => tool.name.includes("generate"))).toBe(false)
     expect(connect).not.toHaveBeenCalled()
     for (const arguments_ of [
       { query: "example", model: "foreign-model" },
       { query: "example", account_id: 99 },
       { query: "example", yes: true },
-      { query: "example", max_chunks: 10001 },
+      { query: "example", by_meaning: true, max_chunks: 10001 },
+      { query: "example", by_meaning: true, cursor: "abc" },
+      { query: "example", by_meaning: true, event_id: 1 },
     ])
-      expect(await client.callTool({ name: "meeting_semantic_search", arguments: arguments_ })).toMatchObject({
+      expect(await client.callTool({ name: "search_meetings", arguments: arguments_ })).toMatchObject({
         isError: true,
       })
-    expect(connect).not.toHaveBeenCalled()
     expect(
-      await client.callTool({ name: "meeting_semantic_search", arguments: { query: "example", after_chunk_id: 4 } }),
-    ).toMatchObject({ structuredContent: report })
+      await client.callTool({
+        name: "search_meetings",
+        arguments: { query: "example", by_meaning: true, cursor: "4" },
+      }),
+    ).toMatchObject({ structuredContent: { ...report, nextCursor: "12" } })
+    expect(search).toHaveBeenCalledWith("example", expect.not.objectContaining({ buildMissing: true }))
     expect(search).toHaveBeenCalledWith(
       "example",
       expect.objectContaining({ model: "installed-example", afterChunkId: 4 }),
     )
-    expect(close).toHaveBeenCalledOnce()
     expect(generate).not.toHaveBeenCalled()
   } finally {
     await client.close()

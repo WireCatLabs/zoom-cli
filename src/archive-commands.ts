@@ -232,26 +232,6 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
     "zm recordings archive transcript ./zoom-archive --uuid example-occurrence --json",
   )
   label(
-    transcriptOptions(
-      archive
-        .command("search")
-        .description("find words in the transcripts of a local archive, before any import")
-        .argument("<directory>", "archive folder")
-        .argument("<query>", "words to find, matched literally"),
-    )
-      .option("--limit <n>", "how many matches, 1 through 1000 (default 100)", positive)
-      .action(
-        async (
-          directory: string,
-          query: string,
-          options: { uuid?: string; fileIds?: string; maxBytes?: number; limit?: number },
-        ) => {
-          deps.output(await deps.transcripts.search(directory, query, { ...selected(options), limit: options.limit }))
-        },
-      ),
-    'zm recordings archive search ./zoom-archive "example plan" --limit 10 --json',
-  )
-  label(
     archive
       .command("show")
       .description("show what a local archive holds, from its transfer records")

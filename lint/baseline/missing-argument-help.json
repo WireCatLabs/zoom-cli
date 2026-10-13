@@ -1,6 +1,4 @@
 [
   "import <folder>",
-  "meetings people <query>",
-  "meetings search <query>",
-  "meetings search-page <query>"
+  "meetings people <query>"
 ]

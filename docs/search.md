@@ -15,34 +15,32 @@ The agent should identify the meeting, open the matching passage and distinguish
 participant from a person merely named in the text. Check the surrounding cues before accepting
 a decision or promise. An empty search result does not prove that a discussion never happened.
 
-For a quick local word search:
+Search the stored meetings:
 
 ```sh
-zm meetings search "example plan" --json
+zm search meetings "example plan" --json
+zm search meetings "example plan" --limit 20 --cursor <nextCursor> --json
 ```
 
 This searches the stored profile, not Zoom's live history. [Pull or import missing meetings](archive.md)
-first. For indexed matches with word forms and continuation inside long transcripts, use the next steps.
+first. `search meetings` indexes whatever was stored since the last search before it reads, so there is no
+separate index step. All query words must match, through literal prefixes or stored word forms. The default
+configuration adds English, Russian and Spanish word stems; a store can disable or customize it. The query is
+plain words, with no operators. `--meeting-id`, `--event-id`, `--series-id`, `--since-time` and `--until-time`
+narrow the selected account. The opaque cursor belongs to that account, query and filters; it can continue
+inside a large transcript. JSONL preserves the complete page, including `nextCursor` and `coverage`.
 
-## Search stored meetings
+## Search by meaning or in an archive
 
-For bounded text search, first index queued meeting records explicitly, then page through hits:
+`--model <model>` searches by meaning instead of by words, building missing vectors first; see
+[topic search](topic-search.md). `--archive <directory>` searches the transcripts of a downloaded archive
+folder before any import, with no store, configuration or login:
 
 ```sh
-zm meetings search-index --limit 100 --max-read-bytes 4194304 --json
-zm meetings search-index --limit 100 --yes --json
-zm meetings search-page "example plan" --limit 20 --json
-zm meetings search-page "example plan" --limit 20 --after <nextCursor> --json
+zm search meetings "example plan" --archive ./zoom-archive --limit 100 --offline --json
 ```
 
-Indexing previews by default; `--yes` applies one bounded batch and `--dry-run` overrides it.
-Repeat until the applied receipt reports `remaining: 0`. A search read never processes indexing
-work. Its coverage reports pending indexing and unknown index/archive completeness. All normalized
-query words must match, through literal prefixes or the stored stemming configuration. The default
-configuration adds English, Russian and Spanish word stems; a store can disable or customize it.
-This is keyword search, with no semantic model or query operators. `--meeting-id`, `--since` and
-`--until` narrow the selected account. The opaque cursor belongs to that account, query and filters;
-it can continue inside a large transcript. JSONL preserves the complete page, including `nextCursor`.
+Store filters do not apply to an archive or to a search by meaning.
 
 ## Narrow by people and work
 
@@ -50,9 +48,9 @@ Combine a participant identity or explicitly linked person with a project and da
 
 ```sh
 zm meetings people "Alice Example" --json
-zm meetings search-page "launch" --identity-id 12 --project RES --since 2026-09-12 --until 2026-10-12 --json
-zm meetings search-page "budget" --person-id 7 --topic costs --since 2026-09-12 --json
-zm meetings search-page "launch" --tag planning --limit 20 --json
+zm search meetings "launch" --identity-id 12 --project RES --since-time 2026-09-12 --until-time 2026-10-12 --json
+zm search meetings "budget" --person-id 7 --topic costs --since-time 2026-09-12 --json
+zm search meetings "launch" --tag planning --limit 20 --json
 ```
 
 The IDs and labels above are fictional: replace them with records in your local store. Use the
@@ -71,14 +69,12 @@ you need the start or end of a local day. Existing continuation and coverage rul
 
 If a meeting has not been linked to a project or labelled yet, start with word search and inspect
 the evidence before organising it with [Memo's shared records](https://wirecat.dev/en/docs/memo/usage).
-The read-only MCP tool `meeting_search_page` provides the same filters in the server-selected
-account, using `identity_id`, `person_id`, `project`, `tag`, `topic`, `since` and `until`;
-its dates are epoch milliseconds.
+The read-only MCP tool `search_meetings` provides the same filters in the server-selected
+account, using `identity_id`, `person_id`, `event_id`, `series_id`, `project`, `tag`, `topic`,
+`since_time`, `until_time` and `cursor`; its times are epoch milliseconds.
 
-`meetings search` keeps its existing literal prefix transcript search over stored transcripts, chat
-and summaries; `--since`, `--until`, `--event-id` and `--series-id` narrow it. `meetings people <query>`
-finds participants by name or email. `search all` uses the shared search service and searches only
-meetings by default:
+`meetings people <query>` finds participants by name or email. `search all` uses the shared search
+service and searches only meetings by default:
 
 ```sh
 zm search all "example plan" --limit 100 --max-meetings 100 --json
