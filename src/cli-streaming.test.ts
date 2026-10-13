@@ -113,9 +113,9 @@ it("streams bounded archive sync receipts with consumer backpressure", async () 
     [
       "recordings",
       "sync",
-      "--from",
+      "--since-time",
       "2026-10-01",
-      "--to",
+      "--until-time",
       "2026-10-10",
       "--destination",
       "example",
@@ -146,14 +146,27 @@ it("keeps completed sync receipts when a later occurrence fails and rejects head
   }
   expect(
     await run(
-      ["recordings", "sync", "--from", "2026-10-01", "--to", "2026-10-10", "--destination", "example", "--jsonl"],
+      [
+        "recordings",
+        "sync",
+        "--since-time",
+        "2026-10-01",
+        "--until-time",
+        "2026-10-10",
+        "--destination",
+        "example",
+        "--jsonl",
+      ],
       deps,
     ),
   ).toBe(10)
   expect(output).toHaveLength(1)
   expect(JSON.parse(output[0] ?? "{}").archive.manifestPath).toBe("example.json")
   expect(
-    await run(["recordings", "sync", "--from", "2026-10-01", "--to", "2026-10-10", "--destination", "example"], deps),
+    await run(
+      ["recordings", "sync", "--since-time", "2026-10-01", "--until-time", "2026-10-10", "--destination", "example"],
+      deps,
+    ),
   ).toBe(2)
 })
 
@@ -241,10 +254,23 @@ it("rejects aggregate JSON for continuous streams and sanitizes a synchronous wr
   const { deps, folder } = await setup()
   expect(await run(["watch", folder, "--json"], { ...deps, outputIsTTY: true })).toBe(2)
   expect(
-    await run(["recordings", "sync", "--from", "2026-10-01", "--to", "2026-10-10", "--destination", folder, "--json"], {
-      ...deps,
-      outputIsTTY: true,
-    }),
+    await run(
+      [
+        "recordings",
+        "sync",
+        "--since-time",
+        "2026-10-01",
+        "--until-time",
+        "2026-10-10",
+        "--destination",
+        folder,
+        "--json",
+      ],
+      {
+        ...deps,
+        outputIsTTY: true,
+      },
+    ),
   ).toBe(2)
   const stream = new Writable({
     write(_chunk, _encoding, callback) {
@@ -321,8 +347,8 @@ it("publishes usable serve/login discovery examples and forwards MCP per-tool bo
   const { deps, output } = await setup()
   expect(await run(["commands", "serve", "--json"], deps)).toBe(0)
   expect(JSON.parse(output.at(-1) ?? "{}").commands[0].examples).toEqual(["zm serve --mcp"])
-  expect(await run(["commands", "login", "--json"], deps)).toBe(0)
-  expect(JSON.parse(output.at(-1) ?? "{}").commands[0].examples).toEqual(["zm login --interactive"])
+  expect(await run(["commands", "session", "start", "--json"], deps)).toBe(0)
+  expect(JSON.parse(output.at(-1) ?? "{}").commands[0].examples).toEqual(["zm session start --interactive"])
   deps.serveMcp = vi.fn(async ({ maxResultBytes }) => {
     expect(maxResultBytes).toBe(0)
   })

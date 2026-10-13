@@ -79,9 +79,7 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
       .action(() => deps.output(deps.doctor())),
     { mutates: false, examples: ["zm doctor --json"] },
   )
-  const session = program
-    .command("session")
-    .description("inspect the saved OAuth session separately from local data profiles")
+  const session = program.command("session").description("the saved Zoom login, separate from local data profiles")
   annotate(
     session
       .command("status")
@@ -101,7 +99,7 @@ export const annotateMeetingCommands = (program: Command): void => {
     }
     if (command.commands.length) continue
     const path = item.path.join(" ")
-    const knownLocal = ["config set", "login", "pull", "import", "meetings export"].includes(path)
+    const knownLocal = ["config set", "session start", "pull", "import", "meetings export"].includes(path)
     const mutates = knownLocal || metaOf(command).mutates === true
     annotate(command, {
       origin: "handwritten",
@@ -113,7 +111,7 @@ export const annotateMeetingCommands = (program: Command): void => {
 }
 const exampleFor = (path: string): string => {
   if (path === "serve") return "zm serve --mcp"
-  if (path === "login") return "zm login --interactive"
+  if (path === "session start") return "zm session start --interactive"
   const argumentsByPath: Record<string, string> = {
     "config set": "account.profile personal",
     "meetings show": "1",

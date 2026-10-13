@@ -50,10 +50,10 @@ it("validates watch options and offline policy before any account, keyring or ne
     ["--interval", "25h"],
     ["--lookback-days", "32"],
     ["--lookback-days", "1.5"],
-    ["--since", "2026-02-30T10:00:00Z"],
-    ["--since", "2026-10-10"],
+    ["--since-time", "2026-02-30T10:00:00Z"],
+    ["--since-time", "2026-10-10"],
     ["--source", "files", "--lookback-days", "0"],
-    ["example", "--since", "2026-10-10T10:00:00Z"],
+    ["example", "--since-time", "2026-10-10T10:00:00Z"],
     ["example", "--source", "api"],
   ])
     expect(await run(["watch", ...args, "--jsonl"], deps)).toBe(2)
@@ -216,7 +216,7 @@ it("delegates an injected source without requiring a real client and never overl
     controller.abort(new CliError("cancelled", "example done"))
   }
   const running = run(
-    ["watch", "--source", "api", "--since", "2026-10-01T00:00:00.123456+02:00", "--lookback-days", "1", "--jsonl"],
+    ["watch", "--source", "api", "--since-time", "2026-10-01T00:00:00.123456+02:00", "--lookback-days", "1", "--jsonl"],
     deps,
   )
   await started
@@ -293,7 +293,10 @@ it("uses an explicit initial bound until an acknowledged cursor advance, then ap
     }
   }
   expect(
-    await run(["watch", "--source", "api", "--since", "2026-01-01T00:00:00Z", "--lookback-days", "2", "--jsonl"], deps),
+    await run(
+      ["watch", "--source", "api", "--since-time", "2026-01-01T00:00:00Z", "--lookback-days", "2", "--jsonl"],
+      deps,
+    ),
   ).toBe(130)
   expect(since).toEqual(["2025-12-30T00:00:00.000Z", "2025-12-30T00:00:00.000Z", "2026-10-09T12:00:00.000Z"])
   expect(await store.cursor(1)).toBe("2026-10-12T12:00:00.000Z")
@@ -310,7 +313,7 @@ it("does not acknowledge an uncertain or cancelled cursor write and always close
     controller.abort(new CliError("cancelled", "example cursor cancelled"))
     throw new CliError("outcome_unknown", "example uncertain cursor")
   })
-  expect(await run(["watch", "--source", "api", "--since", "2026-01-01T00:00:00Z", "--jsonl"], deps)).toBe(14)
+  expect(await run(["watch", "--source", "api", "--since-time", "2026-01-01T00:00:00Z", "--jsonl"], deps)).toBe(14)
   expect(setter).toHaveBeenCalledOnce()
   expect(close).toHaveBeenCalledOnce()
   expect(output).toEqual([])

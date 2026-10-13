@@ -6,7 +6,7 @@ import { duration } from "./execution.js"
 
 export interface WatchFlags {
   source?: "api" | "files"
-  since?: string
+  sinceTime?: string
   lookbackDays?: number
   interval: number
 }
@@ -39,18 +39,18 @@ const since = (value: string): string => {
     !Number.isFinite(dayTime) ||
     new Date(dayTime).toISOString().slice(0, 10) !== day
   )
-    throw new ZoomError("validation_error", "since must be a real ISO timestamp with timezone")
+    throw new ZoomError("validation_error", "--since-time must be a real ISO 8601 time with a time zone")
   return value
 }
 export const addWatchCommand = (program: Command, deps: WatchCommandDeps): void => {
   const command = program
     .command("watch")
-    .description("foreground serial API pulls or folder rescans, with closed-store receipts")
-    .argument("[folder]", "downloaded VTT/TXT folder; defaults source to files")
+    .description("keep fetching new meetings from Zoom, or rescanning a folder, until stopped")
+    .argument("[folder]", "folder of downloaded transcripts; implies --source files")
     .addOption(
       new Option("--source <source>", "api or files; otherwise uses configured source").choices(["api", "files"]),
     )
-    .option("--since <timestamp>", "initial API lower bound until the first successful cursor write", since)
+    .option("--since-time <time>", "on the first run, fetch meetings from this ISO 8601 time", since)
     .option("--lookback-days <days>", "API cursor overlap for late transcripts (0 through 31)", days)
     .option("--interval <duration>", "delay after each completed receipt (1s through 24h)", duration, 10000)
     .action(async (folder: string | undefined, options: WatchFlags) => {

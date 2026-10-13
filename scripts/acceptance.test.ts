@@ -235,7 +235,7 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
   })
 
   it("refuses noninteractive login before external access", () => {
-    const result = invoke("--no-input", "login")
+    const result = invoke("--no-input", "session", "start")
     expect(result.status).toBe(3)
     expect(result.stdout).toBe("")
     expect(JSON.parse(result.stderr).error.code).toBe("configuration_error")

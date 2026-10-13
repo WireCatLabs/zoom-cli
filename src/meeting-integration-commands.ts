@@ -46,9 +46,9 @@ export const addMeetingIntegrationCommands = (
   label(
     guards(
       meetings
-        .command("link-event")
-        .description("preview or apply an owner-selected event link")
-        .argument("<reference>")
+        .command("update")
+        .description("preview linking a stored meeting to an event; --yes applies it")
+        .argument("<reference>", "meeting reference, such as meeting:1/1")
         .requiredOption("--event-id <id>", "stored event id, or none to unlink", nullableId)
         .option("--expected-event-id <id>", "compare current event id, or none", nullableId),
     ).action(
@@ -68,15 +68,15 @@ export const addMeetingIntegrationCommands = (
           options,
         ),
     ),
-    "zm meetings link-event meeting:1/1 --event-id 1 --yes --json",
+    "zm meetings update meeting:1/1 --event-id 1 --yes --json",
     true,
   )
   label(
     guards(
       meetings
-        .command("link-person")
-        .description("preview or apply an explicit participant identity link to a stored person")
-        .argument("<reference>")
+        .command("link")
+        .description("preview linking a meeting participant to a stored person; --yes applies it")
+        .argument("<reference>", "meeting reference, such as meeting:1/1")
         .requiredOption("--participant-id <id>", "participant id from this meeting", bytes)
         .requiredOption("--person <uid>", "explicit stored person UID")
         .option("--target-accounts <ids>", "explicit additional account ids authorized for target-person lookup")
@@ -109,7 +109,7 @@ export const addMeetingIntegrationCommands = (
           options,
         ),
     ),
-    "zm meetings link-person meeting:1/1 --participant-id 1 --person 1 --yes --json",
+    "zm meetings link meeting:1/1 --participant-id 1 --person 1 --yes --json",
     true,
   )
 }

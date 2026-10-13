@@ -13,14 +13,14 @@ on stderr; use `--fields` to limit returned content. `zm doctor --json` checks l
 
 ## Recording archives
 
-Use `recordings sync --from <date> --to <date> --destination <directory> --jsonl` to archive history
+Use `recordings sync --since-time <date> --until-time <date> --destination <directory> --jsonl` to archive history
 across months. It emits serial occurrence receipts and accepts up to ten calendar years.
 Use `recordings list` to find cloud recording occurrences, then `recordings show <id-or-uuid>` to
 inspect assets. Download with `recordings download <id-or-uuid> --destination <directory>`.
 Prefer occurrence UUIDs for recurring meetings. Download access depends on Zoom scopes and the
 signed-in account; attending a meeting does not imply access to its recording API.
 
-Re-run against the same destination to skip verified manifest entries. Use `recordings archive verify`
+Re-run against the same destination to skip verified manifest entries. Use `recordings archive check`
 for local checksums; it works with `--offline`. The receipt distinguishes downloaded, skipped and
 unavailable assets. A failed transfer can leave earlier completed files; retry starts the incomplete
 file again. Existing files are never overwritten. Do not infer HTTP byte-range resume.
@@ -66,15 +66,15 @@ one second to flush; cancellation never starts another cycle. Hashed cloud archi
 
 Use `zm watch --source api --lookback-days 7 --jsonl` for repeated online pulls that revisit late
 transcripts. Without a folder or explicit source, watch uses the configured source; files can use
-the configured folder. `--since` and `--lookback-days` apply only to API watching. Configuration is
+the configured folder. `--since-time` and `--lookback-days` apply only to API watching. Configuration is
 captured before the first cycle, so restart to change profiles or source settings.
-`--since` is the initial bound until a cursor write succeeds; later cycles use cursor plus overlap.
+`--since-time` is the initial bound until a cursor write succeeds; later cycles use cursor plus overlap.
 The selected overlap also subtracts from the initial bound.
 
 `zm serve --mcp` provides seven read-only stored meeting tools. Discovery opens no database; reads
 use the selected account. MCP uses its own framing, so omit JSON/JSONL/field-selection flags. `--meeting-context` adds three
 read-only context tools; `--unified-search` adds one meetings-only shared search tool;
-`--semantic --model <id>` adds one vector query tool. Remote model selection also requires
+`--semantic --model <model>` adds one vector query tool. Remote model selection also requires
 `--base-url` and `--dims`. The server fixes the model at startup and the profile on its first read.
 Clients cannot select another model or account. Generation and task creation are not MCP tools.
 
@@ -92,7 +92,7 @@ never both. Bound content with `--cues` and `--bytes`, and work with `--max-read
 
 Use `meetings context person:<id>` for identity-linked context in the selected account. It does not
 match speakers by name or prove that a linked participant spoke. Pending indexes and scan limits
-can leave context incomplete. `meetings task-proposal <reference> --kind question|request|mention|promise`
+can leave context incomplete. `meetings task-proposal <reference> --type question|request|mention|promise`
 is read-only: `applied: false` and `persistence: "proposal-only"` do not mean a task was created.
 
 `search all <query>` searches meetings by default. Broader `--only messages,mail,notes,meetings`
@@ -111,7 +111,7 @@ models require explicit `--base-url` and `--dims`; OpenAI uses `OPENAI_API_KEY`.
 is refused with `--offline`. Keep credentials out of endpoint URLs and output.
 
 `--after-transcript-id` resumes chunk rebuilding; `--after-hash` resumes missing vectors. Current
-revision hashes are rechecked before save. `meetings semantic <query> --model <id>` embeds only
+revision hashes are rechecked before save. `meetings semantic <query> --model <model>` embeds only
 the query and reads existing vectors; it never generates stored vectors or rebuilds chunks. Ranking
 covers scanned candidates, not all history. `--after-chunk-id` continues candidate scanning rather
 than globally ranked pagination. Index and archive completeness remain unknown. Use returned

@@ -84,7 +84,7 @@ meetings by default:
 zm search all "example plan" --limit 100 --max-meetings 100 --json
 zm meetings evidence meeting:3/15/20/0 --cues 100 --bytes 65536 --json
 zm meetings context person:7 --meetings 10 --scan-limit 1000 --json
-zm meetings task-proposal meeting:3/15/20/0 --kind promise --json
+zm meetings task-proposal meeting:3/15/20/0 --type promise --json
 ```
 
 Broader search requires explicit `--only messages,mail,notes,meetings`. Message reads use the
@@ -108,7 +108,7 @@ continuation and completeness fields rather than assuming a bounded response is 
 
 Person context uses stored identity links and account presence, without matching speaker names.
 A person linked to a meeting is not necessarily a speaker. Pending derived indexes or bounded scans
-can leave context incomplete. Link a participant to a person explicitly with `meetings link-person`.
+can leave context incomplete. Link a participant to a person explicitly with `meetings link`.
 
 ## Link meetings to events and people
 
@@ -116,9 +116,9 @@ Stored meeting references use `meeting:<accountId>/<meetingId>`. A retained tran
 revision id, and a cue appends its position. Event and person linking accept root references:
 
 ```sh
-zm meetings link-event meeting:1/1 --event-id 1 --expected-event-id none --json
-zm meetings link-event meeting:1/1 --event-id 1 --expected-event-id none --yes --json
-zm meetings link-person meeting:1/1 --participant-id 1 --person 1 --expected-person none --yes --json
+zm meetings update meeting:1/1 --event-id 1 --expected-event-id none --json
+zm meetings update meeting:1/1 --event-id 1 --expected-event-id none --yes --json
+zm meetings link meeting:1/1 --participant-id 1 --person 1 --expected-person none --yes --json
 ```
 
 These local changes preview by default; `--yes` applies once and `--dry-run` overrides it. Expected

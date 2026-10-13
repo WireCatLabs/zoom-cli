@@ -59,20 +59,20 @@ does not import that transcript into the meeting database until you request arch
 | `meetings export <meeting> --format markdown\|vtt` | export stored meeting content |
 | `meetings search <query>`, `meetings people <query>` | find stored text or participants |
 | `meetings search-page <query>`, `meetings search-index` | bounded hit continuation and explicit keyword indexing |
-| `meetings link-event <reference>`, `meetings link-person <reference>` | preview or apply owner-selected stored links |
+| `meetings update <reference>`, `meetings link <reference>` | preview or apply owner-selected stored links |
 | `meetings transcribe <meeting> <file> --model <model>` | preview or locally recognize a WAV file into an independent transcript |
 | `meetings evidence <reference>`, `meetings context <person>` | read bounded evidence or identity-linked person context |
-| `meetings task-proposal <reference> --kind <kind>` | preview a task with meeting provenance |
-| `meetings semantic <query> --model <id>` | rank scanned stored vectors with an explicit query model |
-| `meetings embeddings --model <id>` | preview local vector generation; `--yes` applies one bounded batch |
+| `meetings task-proposal <reference> --type <type>` | preview a task with meeting provenance |
+| `meetings semantic <query> --model <model>` | rank scanned stored vectors with an explicit query model |
+| `meetings embeddings --model <model>` | preview local vector generation; `--yes` applies one bounded batch |
 | `search all <query>` | search meetings by default, or explicitly selected shared resources |
 | `events list` | read stored events |
 | `watch [folder] --source api\|files --jsonl` | repeatedly ingest the configured source in the foreground |
 | `recordings list`, `recordings show <meeting>` | discover cloud recordings and asset metadata |
 | `recordings download <meeting> --destination <directory>` | archive available recording files |
-| `recordings sync --from <date> --to <date> --destination <directory> --jsonl` | archive recording history across calendar months |
+| `recordings sync --since-time <date> --until-time <date> --destination <directory> --jsonl` | archive recording history across calendar months |
 | `recordings schedule create\|list\|show\|run\|disable` | plan and manage local daily archive jobs |
-| `recordings archive inspect\|verify\|locks <directory>` | inspect local manifests, checksums or locks |
+| `recordings archive show\|check\|locks <directory>` | inspect local manifests, checksums or locks |
 | `recordings archive recover <directory>` | preview recovery of stale local locks |
 | `recordings archive transcript <directory>` | read verified archived WebVTT cues without a database |
 | `recordings archive search <directory> <query>` | search verified archived cue text without a database |

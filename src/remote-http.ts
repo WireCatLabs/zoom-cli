@@ -76,7 +76,7 @@ export class ZoomRemote {
     if (![scope, `${scope}:admin`, `${scope}:master`].some((grant) => tokens.scopes.includes(grant)))
       throw new ZoomError(
         "configuration_error",
-        `Zoom scope ${scope} is missing; add it to the app and run zm login again`,
+        `Zoom scope ${scope} is missing; add it to the app and run zm session start again`,
       )
     checkCancelled(signal)
     const method = options.method ?? "GET"
@@ -123,7 +123,7 @@ export class ZoomRemote {
     if (body.code === 4711)
       throw new ZoomError(
         "authentication_error",
-        `Zoom scope ${scope} is missing; add it to the app and run zm login again`,
+        `Zoom scope ${scope} is missing; add it to the app and run zm session start again`,
       )
     if (response.status === 404 && missingCode !== undefined && body.code === missingCode) return null
     if (!response.ok || (typeof body.code === "number" && body.code !== 0))

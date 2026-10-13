@@ -20,7 +20,7 @@ separate OAuth client outside the app: enable Public Client OAuth inside it and 
 ```sh
 zm config set zoom.clientId <public-client-id>
 zm config set source api
-zm login
+zm session start
 ```
 
 Replace the placeholder without angle brackets. Sign in as the Zoom user whose meetings you want,
@@ -36,7 +36,7 @@ you authorize your own account.
 
 An app in development is not automatically available to users in another Zoom account. Check access
 with its owner; a company administrator may also need to approve it. A Marketplace authorization
-link by itself does not configure `zm` or complete its login: start `zm login` so its current callback
+link by itself does not configure `zm` or complete its login: start `zm session start` so its current callback
 and verification key exist. If you cannot authorize the shared app, create your own with the steps below.
 
 ## Create your own app
@@ -64,7 +64,7 @@ redirects for eligible public clients, but that is not the redirect this tool se
    scopes and save. Explain their use if Zoom asks for a scope description. Add recording or write
    permissions only if you need those tasks.
 6. Check **Local Test** for app installation/access and any account approval requirement. Zoom's
-   **Add App Now** can authorize a development app, but return to the terminal and run `zm login`
+   **Add App Now** can authorize a development app, but return to the terminal and run `zm session start`
    to establish this tool's session. Other-account distribution has a separate Zoom review process.
 7. Return to [installation's first run](installation.md#first-run) with the Public Client ID.
 
@@ -81,7 +81,7 @@ in-client features. If Marketplace offers creation from
 an app manifest, save that JSON file and import it when creating the General app.
 
 **The manifest does not include scopes or enable Public Client OAuth.** Complete steps 3–6 above
-manually after import. Do not assume that a successful import made the app ready for `zm login`.
+manually after import. Do not assume that a successful import made the app ready for `zm session start`.
 Manual creation is the complete path when the import option is unavailable.
 
 <a id="what-the-manifest-asks-for" />
@@ -105,7 +105,7 @@ exist. For a schedule-only workflow, meeting listing needs just its list scope.
 
 ## Add archive or management access
 
-The app owner adds the required scope in **Scopes**, saves it, then the user runs `zm login` again.
+The app owner adds the required scope in **Scopes**, saves it, then the user runs `zm session start` again.
 Already issued tokens do not acquire new permissions automatically. Check actual granted scopes
 with `zm session status --json`.
 

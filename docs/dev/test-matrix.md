@@ -13,8 +13,6 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 |---|---|---|---|
 | `config show` |  | ✅ |  |
 | `config set` |  | ✅ |  |
-| `login` |  | ✅ |  |
-| `login` | `--browser` | ✅ |  |
 | `meetings list` |  | ✅ |  |
 | `meetings list` | `--json` | ✅ |  |
 | `meetings list` | `--jsonl` | ✅ |  |
@@ -48,18 +46,18 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings people` |  | ✅ |  |
 | `meetings people` | `--json` | ✅ |  |
 | `meetings people` | `--jsonl` | ✅ |  |
-| `meetings link-event` |  | ✅ |  |
-| `meetings link-event` | `--event-id` | ✅ |  |
-| `meetings link-event` | `--expected-event-id` | ✅ |  |
-| `meetings link-event` | `--yes` | ✅ |  |
-| `meetings link-event` | `--dry-run` | ✅ |  |
-| `meetings link-person` |  | ✅ |  |
-| `meetings link-person` | `--participant-id` | ✅ |  |
-| `meetings link-person` | `--person` | ✅ |  |
-| `meetings link-person` | `--target-accounts` | ✅ |  |
-| `meetings link-person` | `--expected-person` | ✅ |  |
-| `meetings link-person` | `--yes` | ✅ |  |
-| `meetings link-person` | `--dry-run` | ✅ |  |
+| `meetings update` |  | ✅ |  |
+| `meetings update` | `--event-id` | ✅ |  |
+| `meetings update` | `--expected-event-id` | ✅ |  |
+| `meetings update` | `--yes` | ✅ |  |
+| `meetings update` | `--dry-run` | ✅ |  |
+| `meetings link` |  | ✅ |  |
+| `meetings link` | `--participant-id` | ✅ |  |
+| `meetings link` | `--person` | ✅ |  |
+| `meetings link` | `--target-accounts` | ✅ |  |
+| `meetings link` | `--expected-person` | ✅ |  |
+| `meetings link` | `--yes` | ✅ |  |
+| `meetings link` | `--dry-run` | ✅ |  |
 | `meetings transcribe` |  | ✅ |  |
 | `meetings transcribe` | `--model` | ✅ |  |
 | `meetings transcribe` | `--models-dir` | ✅ |  |
@@ -89,7 +87,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings evidence` |  | ✅ |  |
 | `meetings evidence` | `--cues` | ✅ |  |
 | `meetings evidence` | `--bytes` | ✅ |  |
-| `meetings evidence` | `--after` | ✅ |  |
+| `meetings evidence` | `--cursor` | ✅ |  |
 | `meetings evidence` | `--after-transcript-id` | ✅ |  |
 | `meetings evidence` | `--max-read-bytes` | ✅ |  |
 | `meetings evidence` | `--max-transcript-pages` | ✅ |  |
@@ -98,9 +96,9 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings context` | `--bytes` | ✅ |  |
 | `meetings context` | `--meetings` | ✅ |  |
 | `meetings context` | `--scan-limit` | ✅ |  |
-| `meetings context` | `--since` | ✅ |  |
+| `meetings context` | `--since-time` | ✅ |  |
 | `meetings task-proposal` |  | ✅ |  |
-| `meetings task-proposal` | `--kind` | ✅ |  |
+| `meetings task-proposal` | `--type` | ✅ |  |
 | `meetings semantic` |  | ✅ |  |
 | `meetings semantic` | `--model` | ✅ |  |
 | `meetings semantic` | `--base-url` | ✅ |  |
@@ -136,23 +134,25 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `doctor` |  | ✅ |  |
 | `session status` |  | ✅ |  |
 | `session status` | `--check` | ✅ |  |
+| `session start` |  | ✅ |  |
+| `session start` | `--browser` | ✅ |  |
 | `watch` |  | ✅ |  |
 | `watch` | `--source` | ✅ |  |
-| `watch` | `--since` | ✅ |  |
+| `watch` | `--since-time` | ✅ |  |
 | `watch` | `--lookback-days` | ✅ |  |
 | `watch` | `--interval` | ✅ |  |
 | `recordings list` |  | ✅ |  |
-| `recordings list` | `--from` | ✅ |  |
-| `recordings list` | `--to` | ✅ |  |
+| `recordings list` | `--since-time` | ✅ |  |
+| `recordings list` | `--until-time` | ✅ |  |
 | `recordings sync` |  | ✅ |  |
-| `recordings sync` | `--from` | ✅ |  |
-| `recordings sync` | `--to` | ✅ |  |
+| `recordings sync` | `--since-time` | ✅ |  |
+| `recordings sync` | `--until-time` | ✅ |  |
 | `recordings sync` | `--destination` | ✅ |  |
 | `recordings sync` | `--max-bytes` | ✅ |  |
 | `recordings sync` | `--resume` | ✅ |  |
 | `recordings sync` | `--no-resume` | ✅ |  |
 | `recordings sync` | `--checkpoint` | ✅ |  |
-| `recordings sync` | `--recheck-from` | ✅ |  |
+| `recordings sync` | `--recheck-since-time` | ✅ |  |
 | `recordings sync` | `--max-pages` | ✅ |  |
 | `recordings sync` | `--max-entries` | ✅ |  |
 | `recordings show` |  | ✅ |  |
@@ -171,8 +171,8 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `recordings archive search` | `--file-ids` | ✅ |  |
 | `recordings archive search` | `--max-bytes` | ✅ |  |
 | `recordings archive search` | `--limit` | ✅ |  |
-| `recordings archive inspect` |  | ✅ |  |
-| `recordings archive verify` |  | ✅ |  |
+| `recordings archive show` |  | ✅ |  |
+| `recordings archive check` |  | ✅ |  |
 | `recordings archive locks` |  | ✅ |  |
 | `recordings archive recover` |  | ✅ |  |
 | `recordings archive recover` | `--yes` | ✅ |  |
@@ -185,7 +185,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `recordings schedule create` |  | ✅ |  |
 | `recordings schedule create` | `--name` | ✅ |  |
 | `recordings schedule create` | `--destination` | ✅ |  |
-| `recordings schedule create` | `--from` | ✅ |  |
+| `recordings schedule create` | `--since-time` | ✅ |  |
 | `recordings schedule create` | `--at` | ✅ |  |
 | `recordings schedule create` | `--timezone` | ✅ |  |
 | `recordings schedule create` | `--lookback-days` | ✅ |  |
@@ -202,7 +202,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `remote-meetings show` |  | ✅ |  |
 | `remote-meetings invitation` |  | ✅ |  |
 | `remote-meetings create` |  | ✅ |  |
-| `remote-meetings create` | `--topic` | ✅ |  |
+| `remote-meetings create` | `--title` | ✅ |  |
 | `remote-meetings create` | `--start-time` | ✅ |  |
 | `remote-meetings create` | `--duration-minutes` | ✅ |  |
 | `remote-meetings create` | `--timezone` | ✅ |  |
@@ -211,7 +211,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `remote-meetings create` | `--yes` | ✅ |  |
 | `remote-meetings create` | `--dry-run` | ✅ |  |
 | `remote-meetings update` |  | ✅ |  |
-| `remote-meetings update` | `--topic` | ✅ |  |
+| `remote-meetings update` | `--title` | ✅ |  |
 | `remote-meetings update` | `--start-time` | ✅ |  |
 | `remote-meetings update` | `--duration-minutes` | ✅ |  |
 | `remote-meetings update` | `--timezone` | ✅ |  |

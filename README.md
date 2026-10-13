@@ -47,7 +47,7 @@ walks through app settings, browser approval and callback completion.
 ```sh
 npm install -g @wirecat/zoom-cli
 zm config set zoom.clientId <public-client-id>
-zm login                                  # approve in your browser; the token goes to the keyring
+zm session start                          # approve in your browser; the token goes to the keyring
 zm config set account.profile personal    # a label for your stored meetings
 zm pull --lookback-days 7
 zm meetings list
@@ -70,10 +70,10 @@ bring back past meetings with the same people.
 
 **Follow up after it.** *"What did I promise in today's call?"* The agent reads
 `meetings transcript` and `meetings summary`, cites passages with `meetings evidence`, and
-`meetings task-proposal --kind promise` previews a follow-up task tied to that passage.
+`meetings task-proposal --type promise` previews a follow-up task tied to that passage.
 
 **Keep the whole history.** *"Back up every recording since January."*
-`recordings sync --from 2026-01-01 --to 2026-10-10 --destination ./zoom-archive --jsonl` downloads
+`recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --destination ./zoom-archive --jsonl` downloads
 video, audio, transcripts and chat with SHA-256 manifests; `recordings schedule` runs it daily.
 
 More: [the local archive][docs/archive.md] · [search and evidence][docs/search.md] ·
@@ -115,7 +115,7 @@ links meetings to events and people, and creates, changes or cancels simple meet
 - **It does not find commitments on its own.** Your agent finds them in transcripts;
   `task-proposal` only previews a task and creates nothing.
 - **People are linked by hand.** `zm` never guesses a person from a speaker name; person context
-  covers participants already linked to a person, for example with `meetings link-person`.
+  covers participants already linked to a person, for example with `meetings link`.
 - **Local transcription takes PCM16 WAV only** (16 or 48 kHz) and an already installed speech model;
   video files are not decoded, and speakers stay unknown.
 - **Attended meetings need a manual download** from your Zoom portal, then `zm import`.
@@ -134,11 +134,11 @@ More: [what is planned][gh/cli-meetings/blob/main/docs/dev/roadmap.md] · [Zoom 
 | Bring meetings in | `pull [--since <date>] [--lookback-days <days>]`, `import <folder>`, `watch [folder] --source api\|files --jsonl` |
 | Read stored meetings | `meetings list`, `meetings show <meeting>`, `meetings transcript <meeting>`, `meetings summary <meeting>`, `meetings export <meeting> --format markdown\|vtt`, `events list` |
 | Search | `meetings search-page <query>`, `meetings search-index`, `meetings search <query>`, `meetings people <query>`, `search all <query>` |
-| Evidence and people | `meetings evidence <reference>`, `meetings context <person>`, `meetings link-person <reference>`, `meetings link-event <reference>`, `meetings task-proposal <reference> --kind <kind>` |
-| Search by meaning | `meetings embeddings --model <id>`, `meetings semantic <query> --model <id>` |
+| Evidence and people | `meetings evidence <reference>`, `meetings context <person>`, `meetings link <reference>`, `meetings update <reference>`, `meetings task-proposal <reference> --type <type>` |
+| Search by meaning | `meetings embeddings --model <model>`, `meetings semantic <query> --model <model>` |
 | Local transcription | `meetings transcribe <meeting> <file> --model <model>` |
-| Cloud recordings | `recordings list`, `recordings show <meeting>`, `recordings download <meeting> --destination <directory>`, `recordings sync --from <date> --to <date> --destination <directory> --jsonl`, `recordings schedule create\|list\|show\|run\|disable` |
-| Local archive | `recordings archive inspect\|verify\|locks\|recover <directory>`, `recordings archive transcript\|search\|import <directory>` |
+| Cloud recordings | `recordings list`, `recordings show <meeting>`, `recordings download <meeting> --destination <directory>`, `recordings sync --since-time <date> --until-time <date> --destination <directory> --jsonl`, `recordings schedule create\|list\|show\|run\|disable` |
+| Local archive | `recordings archive show\|check\|locks\|recover <directory>`, `recordings archive transcript\|search\|import <directory>` |
 | Zoom meetings | `remote-meetings list\|show\|invitation`, `remote-meetings create\|update\|cancel` |
 | Agents | `serve --mcp`, `skill show`, `skill install [--for claude\|agents\|all]`, `commands --json`, `complete -- <words...>` |
 
@@ -154,7 +154,7 @@ Public Client OAuth. Create it once from the supplied manifest: it asks for read
 meetings, participants, transcripts and AI summaries. Recording archives and meeting management need
 extra scopes, which you add only if you want those features. The app has no client secret.
 
-`zm login` opens Zoom's consent page. Zoom redirects to the static page
+`zm session start` opens Zoom's consent page. Zoom redirects to the static page
 `https://wirecat.dev/zoom-callback`, which passes the answer to a listener on your machine; if it
 cannot, paste the `code=…&state=…` parameters it shows. Login checks the state and PKCE verifier and
 stores tokens only in the system keyring. Browser login needs an interactive terminal; piped or JSON
@@ -197,8 +197,8 @@ More: [the local archive][docs/archive.md] · [Zoom on wirecat.dev][wirecat/en/d
 ## Archive cloud recordings
 
 ```sh
-zm recordings sync --from 2026-01-01 --to 2026-10-10 --destination ./zoom-archive --jsonl
-zm recordings archive verify ./zoom-archive --offline --json
+zm recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --destination ./zoom-archive --jsonl
+zm recordings archive check ./zoom-archive --offline --json
 zm recordings archive search ./zoom-archive "example plan" --offline --json
 ```
 
@@ -254,7 +254,7 @@ with `["serve", "--mcp"]`:
 ```
 
 The server has seven read-only tools: meeting list and show, transcripts, summaries, exports, text
-search and participant search. `--meeting-context`, `--unified-search` and `--semantic --model <id>`
+search and participant search. `--meeting-context`, `--unified-search` and `--semantic --model <model>`
 add evidence, shared search and meaning search. It reads only the selected profile, and never exposes
 file exports, Zoom changes, embedding generation or task creation. A desktop app may need the full
 path from `which zm`, and the same `ZM_CONFIG_DIR` or `MESSAGING_STORE` in the entry's `env`.
@@ -265,7 +265,7 @@ More: [MCP and skills][docs/mcp.md] · [MCP and skills on wirecat.dev][wirecat/e
 ## Manage Zoom meetings
 
 ```sh
-zm remote-meetings create --topic "Example planning" --start-time 2026-10-20T10:00:00Z --duration-minutes 30 --json
+zm remote-meetings create --title "Example planning" --start-time 2026-10-20T10:00:00Z --duration-minutes 30 --json
 zm remote-meetings cancel 123456789 --dry-run --json
 ```
 
@@ -315,8 +315,8 @@ More: [security][docs/security.md] · [security on wirecat.dev][wirecat/en/docs/
 - **"Invalid redirect" from Zoom:** the manifest import left the redirect URL or Public Client OAuth
   unset; fill them in by hand.
 - **No transcripts:** turn on **Allow hosts to retain transcripts**; attended meetings need `zm import`.
-- **Missing-scope error:** add the named scope in your app, then `zm login` again.
-- **Browser does not start:** `zm login --browser firefox`, or paste the callback parameters.
+- **Missing-scope error:** add the named scope in your app, then `zm session start` again.
+- **Browser does not start:** `zm session start --browser firefox`, or paste the callback parameters.
 - **Lock left after a crash:** `zm recordings archive locks`, then `recover` with `--yes`.
 
 More: [troubleshooting][docs/troubleshooting.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]

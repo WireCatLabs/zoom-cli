@@ -30,12 +30,16 @@ export const addIngestionSearchCommands = (program: Command, deps: Deps): void =
   annotate(
     archive
       .command("import")
-      .description("verify all selected VTT before atomic per-occurrence transcript append")
-      .argument("<directory>")
+      .description("check an archive's transcripts, then add them to the stored meetings")
+      .argument("<directory>", "archive folder")
       .option("--uuid <uuid>", "select an occurrence UUID")
-      .option("--file-ids <ids>", "select comma-separated VTT asset ids")
-      .option("--max-bytes <bytes>", "per-file VTT byte limit (default 8 MiB)", bytes)
-      .option("--max-total-bytes <bytes>", "aggregate VTT byte limit before any write (default 64 MiB)", bytes)
+      .option("--file-ids <ids>", "select comma-separated transcript asset ids")
+      .option("--max-bytes <bytes>", "largest transcript file, in bytes (default 8 MiB)", bytes)
+      .option(
+        "--max-total-bytes <bytes>",
+        "most transcript bytes in all, checked before any write (default 64 MiB)",
+        bytes,
+      )
       .action(
         async (
           directory: string,
@@ -60,13 +64,11 @@ export const addIngestionSearchCommands = (program: Command, deps: Deps): void =
   annotate(
     search
       .command("all")
-      .description(
-        "meeting word prefixes plus selected resources; notes are store-global; JSONL emits one complete report",
-      )
-      .argument("<query>")
+      .description("search meetings and, with --only, messages, mail and notes in the local store")
+      .argument("<query>", "words to find; a word also matches longer words it starts")
       .option("--only <resources>", "comma-separated meetings,messages,mail,notes (default meetings)")
-      .option("--limit <items>", "result bound 1 through 1000 (default 100)", bytes, 100)
-      .option("--max-meetings <count>", "candidate meeting scan bound 1 through 1000 (default 100)", bytes, 100)
+      .option("--limit <n>", "how many results, 1 through 1000 (default 100)", bytes, 100)
+      .option("--max-meetings <n>", "most meetings to look at, 1 through 1000 (default 100)", bytes, 100)
       .option("--meeting-cursor <json>", "source-only continuation from meetings.nextCursor", cursor)
       .option("--exact", "request exact matching; unsupported meeting queries are reported as skipped")
       .action(

@@ -11,7 +11,7 @@ interactive terminal on the computer that will store the session:
 
 ```sh
 zm config set zoom.clientId <public-client-id>
-zm login --browser firefox
+zm session start --browser firefox
 ```
 
 Omit `--browser firefox` to use the default browser. Zoom displays the app's requested permissions;
@@ -28,7 +28,7 @@ If nothing appears in the terminal after approval:
 
 1. Look at the callback page in the browser. Copy the displayed `code=…&state=…` parameters or its
    full callback URL.
-2. Paste into the **same terminal still waiting in `zm login`**, then press Enter. Do not start
+2. Paste into the **same terminal still waiting in `zm session start`**, then press Enter. Do not start
    another process or paste the value as a new shell command.
 3. If the five-minute deadline expired, run login again and use the new callback. Each attempt has
    its own state and verification key; a callback from an older attempt is rejected.
@@ -52,7 +52,7 @@ zm session status --check --json
 ```
 
 Missing-scope errors name the required permission. The app owner adds it, saves the app and the
-user runs `zm login` again. Configuration changes alone do not expand an existing token's scope.
+user runs `zm session start` again. Configuration changes alone do not expand an existing token's scope.
 
 Browser login requires interactive input. Piped output or `--json` login also requires
 `--interactive`; `--no-input` refuses browser login. Keep initial connection in an ordinary

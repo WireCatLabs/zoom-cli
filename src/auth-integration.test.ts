@@ -151,7 +151,7 @@ describe("token validation and refresh recovery", () => {
     })
     await expect(tokens.exchange({})).rejects.toMatchObject({
       code: "outcome_unknown",
-      message: "Zoom token exchange did not finish; run zm login again before retrying",
+      message: "Zoom token exchange did not finish; run zm session start again before retrying",
     })
     expect(calls).toBe(1)
     await expect(manager(async () => new Response("invalid JSON")).exchange({})).rejects.toMatchObject({
@@ -231,17 +231,17 @@ describe("CLI configuration isolation", () => {
     expect(stderr).toHaveLength(1)
     setConfig(deps.configPath, "zoom.clientId", "example-client")
     expect(await run(["--json", "--jsonl", "config", "show"], deps)).toBe(2)
-    expect(await run(["--no-input", "login"], deps)).toBe(3)
+    expect(await run(["--no-input", "session", "start"], deps)).toBe(3)
   })
   it("reports browser and token exchange failures with their structured exit codes", async () => {
     const { deps, stderr } = await setup()
     setConfig(deps.configPath, "zoom.clientId", "example-client")
-    expect(await run(["login"], deps)).toBe(3)
+    expect(await run(["session", "start"], deps)).toBe(3)
     expect(JSON.parse(stderr.at(-1) ?? "{}").error.code).toBe("configuration_error")
     deps.openBrowser = async (url) => {
       await fetch(callback(url, { code: "example-code" }))
     }
-    expect(await run(["login"], deps)).toBe(14)
+    expect(await run(["session", "start"], deps)).toBe(14)
     expect(JSON.parse(stderr.at(-1) ?? "{}").error.code).toBe("outcome_unknown")
   })
   it("delegates all configured file-source parts without changing the source port", async () => {
@@ -337,9 +337,9 @@ it("never connects for help, version, config, parser failures or login", async (
     ["config", "show"],
     ["config", "set", "account.profile", "example"],
     ["unknown-command"],
-    ["--no-input", "login"],
+    ["--no-input", "session", "start"],
   ])
-    expect(await run(args, deps)).toBe(args[0] === "unknown-command" ? 2 : args.includes("login") ? 3 : 0)
+    expect(await run(args, deps)).toBe(args[0] === "unknown-command" ? 2 : args.includes("start") ? 3 : 0)
 })
 
 it("requires an explicit local profile before connecting and a valid account before fetching", async () => {

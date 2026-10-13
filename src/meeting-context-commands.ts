@@ -26,20 +26,21 @@ export const addMeetingContextCommands = (
     annotate(command, { origin: "handwritten", mutates: false, examples: [example] })
   const limits = (command: Command) =>
     command
-      .option("--cues <count>", "cue limit from 1 through 1000", bytes)
-      .option("--bytes <count>", "content byte limit from 2 through 4194304", bytes)
+      .option("--cues <n>", "how many transcript lines, 1 through 1000", bytes)
+      .option("--bytes <bytes>", "how much text, in bytes, 2 through 4194304", bytes)
   label(
     limits(
       meetings
         .command("evidence")
-        .description("read bounded stored evidence from a selected-account meeting reference")
-        .argument("<reference>"),
+        .description("read the stored transcript lines, chat or summary behind a meeting reference")
+        .argument("<reference>", "meeting reference, such as meeting:3/15"),
     )
-      .option("--after <reference>", "resume after a cue reference from the same source")
+      .option("--cursor <cursor>", "continue after this line reference from the previous page")
       .option("--after-transcript-id <id>", "resume root-reference revision scan, including empty revisions", bytes)
-      .option("--max-read-bytes <count>", "SQL input byte budget per page (default 4 MiB)", bytes)
-      .option("--max-transcript-pages <count>", "transcript page work budget from 1 through 1000", bytes)
-      .action(async (reference: string, options: EvidenceOptions) => {
+      .option("--max-read-bytes <bytes>", "most stored bytes to read per page (default 4 MiB)", bytes)
+      .option("--max-transcript-pages <n>", "most transcript pages to read, 1 through 1000", bytes)
+      .action(async (reference: string, { cursor, ...rest }: Omit<EvidenceOptions, "after"> & { cursor?: string }) => {
+        const options: EvidenceOptions = { ...rest, after: cursor }
         validateEvidenceOptions(options)
         const context = await deps.context()
         if (!context.evidence) throw new ZoomError("configuration_error", "meeting evidence capability is unavailable")
@@ -61,43 +62,49 @@ export const addMeetingContextCommands = (
     limits(
       meetings
         .command("context")
-        .description("identity-linked person context restricted to the selected account; completeness is explicit")
-        .argument("<person>"),
+        .description("what the stored meetings say about a person, through linked identities")
+        .argument("<person>", "stored person, such as person:7"),
     )
-      .option("--meetings <count>", "meeting limit from 1 through 100", bytes)
-      .option("--scan-limit <count>", "identity-link candidate bound from 1 through 1000", bytes)
-      .option("--since <iso>", "read identity links since this ISO instant", (value: string) => {
+      .option("--meetings <n>", "how many meetings, 1 through 100", bytes)
+      .option("--scan-limit <n>", "most identity links to look at, 1 through 1000", bytes)
+      .option("--since-time <time>", "only identity links since this ISO 8601 time", (value: string) => {
         const stamp = Date.parse(value)
         if (!Number.isSafeInteger(stamp) || new Date(stamp).toISOString() !== value)
-          throw new ZoomError("validation_error", "since must be a canonical ISO timestamp")
+          throw new ZoomError("validation_error", "--since-time must be a canonical ISO 8601 time")
         return stamp
       })
-      .action(async (person: string, options: PersonContextOptions) => {
-        validatePersonContext(person, options)
-        const context = await deps.context()
-        if (!context.personContext)
-          throw new ZoomError("configuration_error", "person meeting context capability is unavailable")
-        deps.output(
-          await context.personContext(person, {
-            meetings: options.meetings,
-            cues: options.cues,
-            bytes: options.bytes,
-            scanLimit: options.scanLimit,
-            since: options.since,
-            signal: deps.signal(),
-          }),
-        )
-      }),
+      .action(
+        async (
+          person: string,
+          { sinceTime, ...rest }: Omit<PersonContextOptions, "since"> & { sinceTime?: number },
+        ) => {
+          const options: PersonContextOptions = { ...rest, since: sinceTime }
+          validatePersonContext(person, options)
+          const context = await deps.context()
+          if (!context.personContext)
+            throw new ZoomError("configuration_error", "person meeting context capability is unavailable")
+          deps.output(
+            await context.personContext(person, {
+              meetings: options.meetings,
+              cues: options.cues,
+              bytes: options.bytes,
+              scanLimit: options.scanLimit,
+              since: options.since,
+              signal: deps.signal(),
+            }),
+          )
+        },
+      ),
     "zm meetings context person:7 --meetings 10 --json",
   )
   label(
     meetings
       .command("task-proposal")
-      .description("preview a provenance-linked task proposal without creating a task")
-      .argument("<reference>")
-      .requiredOption("--kind <kind>", "question, request, mention or promise")
-      .action(async (reference: string, options: { kind: string }) => {
-        const kind = validateTaskKind(options.kind)
+      .description("preview the task a meeting line would become, without creating it")
+      .argument("<reference>", "transcript line reference, such as meeting:3/15/20/0")
+      .requiredOption("--type <type>", "question, request, mention or promise")
+      .action(async (reference: string, options: { type: string }) => {
+        const kind = validateTaskKind(options.type)
         const context = await deps.context()
         if (!context.taskProposal)
           throw new ZoomError("configuration_error", "meeting task proposal capability is unavailable")
@@ -105,6 +112,6 @@ export const addMeetingContextCommands = (
         validateTaskProposal(proposal)
         deps.output(proposal)
       }),
-    "zm meetings task-proposal meeting:3/15/20/0 --kind promise --json",
+    "zm meetings task-proposal meeting:3/15/20/0 --type promise --json",
   )
 }

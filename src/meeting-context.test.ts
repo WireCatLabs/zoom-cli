@@ -235,7 +235,7 @@ it("CLI forwards complete context envelopes and proposal-only previews with no a
         "meetings",
         "evidence",
         "meeting:3/15",
-        "--after",
+        "--cursor",
         reference,
         "--max-read-bytes",
         "1000",
@@ -267,7 +267,7 @@ it("CLI forwards complete context envelopes and proposal-only previews with no a
         "person:7",
         "--meetings",
         "2",
-        "--since",
+        "--since-time",
         "2026-10-10T00:00:00.000Z",
         "--scan-limit",
         "20",
@@ -291,7 +291,7 @@ it("CLI forwards complete context envelopes and proposal-only previews with no a
       bytes: 512,
     }),
   )
-  expect(await run(["meetings", "task-proposal", reference, "--kind", "promise", "--json"], deps)).toBe(0)
+  expect(await run(["meetings", "task-proposal", reference, "--type", "promise", "--json"], deps)).toBe(0)
   expect(JSON.parse(output.pop() ?? "{}").applied).toBe(false)
   const serve = vi.fn(async () => {})
   deps.serveMcp = serve
@@ -316,8 +316,8 @@ it("CLI validates before connection, uses one read connection, closes before std
   deps.connectStore = connect
   expect(await run(["meetings", "context", "person:0", "--json"], deps)).toBe(2)
   expect(await run(["meetings", "evidence", reference, "--cues", "0", "--json"], deps)).toBe(2)
-  expect(await run(["meetings", "task-proposal", reference, "--kind", "invalid", "--json"], deps)).toBe(2)
-  expect(await run(["meetings", "context", "person:7", "--since", "invalid", "--json"], deps)).toBe(2)
+  expect(await run(["meetings", "task-proposal", reference, "--type", "invalid", "--json"], deps)).toBe(2)
+  expect(await run(["meetings", "context", "person:7", "--since-time", "invalid", "--json"], deps)).toBe(2)
   expect(connect).not.toHaveBeenCalled()
   expect(await run(["meetings", "evidence", reference, "--json"], deps)).toBe(3)
   setConfig(deps.configPath, "account.profile", "example")
@@ -330,7 +330,7 @@ it("CLI validates before connection, uses one read connection, closes before std
   for (const args of [
     ["evidence", reference],
     ["context", "person:7"],
-    ["task-proposal", reference, "--kind", "promise"],
+    ["task-proposal", reference, "--type", "promise"],
   ])
     expect(await run(["meetings", ...args, "--json"], deps)).toBe(3)
   expect(output).toEqual([])
