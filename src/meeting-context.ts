@@ -1,4 +1,6 @@
+import type { MeetingPassageReader } from "@wirecat/cli-core/meetings"
 import type { MeetingReadStore, PersonMeetingReadStore, TaskKind } from "@wirecat/cli-core/services"
+import type { MeetingContextReadCapabilities } from "@wirecat/cli-core/store"
 import { checkCancelled, ZoomError } from "./errors.js"
 
 export type MeetingTaskKind = TaskKind
@@ -18,6 +20,7 @@ export interface PersonContextOptions extends Pick<EvidenceOptions, "cues" | "by
 }
 /** Each callback is bound to the connection's selected account; producer DTOs pass through unchanged. */
 export interface MeetingContextCapabilities {
+  passage?: MeetingPassageReader
   evidence?: (reference: string, options?: EvidenceOptions) => Promise<unknown>
   personContext?: (person: string, options?: PersonContextOptions) => Promise<unknown>
   taskProposal?: (reference: string, kind: MeetingTaskKind, signal?: AbortSignal) => Promise<unknown>
@@ -26,7 +29,7 @@ type ProducerContextApi = Partial<
   Pick<typeof import("@wirecat/cli-core"), "parseMeetingReference" | "canonicalMeetingReference"> &
     Pick<
       typeof import("@wirecat/cli-core/services"),
-      "readMeetingEvidence" | "personMeetingContext" | "proposeMeetingTask"
+      "readMeetingEvidence" | "personMeetingContext" | "proposeMeetingTask" | "readMeetingPassage"
     >
 >
 
@@ -85,7 +88,7 @@ const loadProducer = async (): Promise<ProducerContextApi> => {
 }
 export const createMeetingContextCapabilities = (
   store: Partial<Omit<PersonMeetingReadStore, "meetings">>,
-  meetings: MeetingReadStore,
+  meetings: MeetingReadStore & Partial<MeetingContextReadCapabilities>,
   accountId: number,
   load: () => Promise<ProducerContextApi> = loadProducer,
 ): MeetingContextCapabilities => {
@@ -99,6 +102,16 @@ export const createMeetingContextCapabilities = (
     return api.canonicalMeetingReference(reference)
   }
   return {
+    passage: async (reference, options = {}) => {
+      checkCancelled(options.signal)
+      const api = await load()
+      checkCancelled(options.signal)
+      const owned = ownedReference(api, reference)
+      if (typeof api.readMeetingPassage !== "function") throw missing()
+      const result = await api.readMeetingPassage(meetings, accountId, owned, options)
+      checkCancelled(options.signal)
+      return result
+    },
     evidence: async (reference, options = {}) => {
       validateEvidenceOptions(options)
       checkCancelled(options.signal)

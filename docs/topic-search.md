@@ -53,13 +53,14 @@ can prevent delivery.
 
 ## Searching
 
-Semantic search embeds only the query and reads existing vectors; it never rebuilds or generates
-stored vectors. Results rank scanned candidates for the selected account and model. Use
-`--after-chunk-id` to continue candidate scanning, not to page through globally ranked results.
-The report states candidate scan coverage; index completeness and archive completeness are unknown.
-`--max-rows` and `--max-text-bytes` bound transcript reads for generation and search.
+The command builds missing stored vectors first, then embeds the query and ranks the scanned
+candidates for the selected account and model. Continue with `--cursor <nextCursor>`; each page
+ranks its own candidates, rather than extending one global ranking. The report states scan coverage;
+index completeness and archive completeness remain unknown. `--max-rows` and `--max-text-bytes`
+bound transcript reads for generation and search. With MCP's server-configured `by_meaning` option,
+search reads existing vectors only; it cannot generate them.
 
-Check that generation produced vectors before expecting matches. Open a ranked passage with
-[meeting evidence](search.md#read-evidence) and read its context: a similar passage is a candidate,
-not proof of a decision. If the query returns no candidates, check selected profile/model, generated
-vectors and scan coverage before concluding there is no relevant discussion.
+Open a ranked passage with [meeting context](search.md#read-around-a-search-hit) and read its
+surroundings: similarity is a candidate, not proof of a decision. If there are no candidates,
+check the selected profile/model, transcript availability and generation/scan coverage before
+concluding there is no relevant discussion.

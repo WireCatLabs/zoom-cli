@@ -30,7 +30,7 @@ what you promised in yesterday's call, and get the answer with a reference to th
 zm remote-meetings list --json                      # your upcoming meetings
 zm meetings people "Bob Sample" --json              # him among past participants
 zm search meetings "quote" --since-time 2026-09-01 --json
-zm meetings evidence meeting:1/42/57/118 --json     # the exact passage
+zm meetings passage meeting:1/42/57/118 --format markdown  # the line and its context
 ```
 
 > **Agent:** You last spoke on 2 October in "Pricing review". You promised Bob a revised quote by
@@ -134,7 +134,7 @@ More: [what is planned][gh/cli-meetings/blob/main/docs/dev/roadmap.md] · [Zoom 
 | Bring meetings in | `meetings sync [--since-time <time>] [--lookback-days <days>]`, `meetings import <folder>`, `watch [api\|files] [folder] --jsonl` |
 | Read stored meetings | `meetings list`, `meetings show <meeting>`, `meetings transcript <meeting>`, `meetings summary <meeting>`, `meetings export <meeting> --format markdown\|vtt`, `events list` |
 | Search | `search meetings <query>`, `meetings people <query>`, `search all <query>` |
-| Evidence and people | `meetings evidence <reference>`, `meetings context <person>`, `meetings link <reference>`, `meetings update <reference>`, `meetings task-proposal <reference> --type <type>` |
+| Evidence and people | `meetings passage <reference>`, `meetings evidence <reference>`, `meetings context <person>`, `meetings link <reference>`, `meetings update <reference>`, `meetings task-proposal <reference> --type <type>` |
 | Search by meaning | `search meetings <query> --model <model>`, `meetings embeddings --model <model>` |
 | Local transcription | `meetings transcribe <meeting> <file> --model <model>` |
 | Cloud recordings | `recordings list`, `recordings show <meeting>`, `recordings download <meeting> --destination <directory>`, `recordings sync --since-time <date> --until-time <date> --destination <directory> --jsonl`, `recordings schedule create\|list\|show\|run\|disable` |

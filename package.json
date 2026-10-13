@@ -54,7 +54,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",
     "@wirecat/cli-base": "0.26.0",
-    "@wirecat/cli-core": "0.262.0",
+    "@wirecat/cli-core": "0.263.0",
     "commander": "15.0.0"
   },
   "devDependencies": {

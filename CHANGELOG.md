@@ -4,7 +4,7 @@
 
 ### Changed — may break callers
 
-- **Runs on `@wirecat/cli-core` 0.262.0** (cli-messaging renamed) **and `@wirecat/cli-base` 0.26.0.**
+- **Runs on `@wirecat/cli-core` 0.263.0** (cli-messaging renamed) **and `@wirecat/cli-base` 0.26.0.**
 - **Every key zm writes itself is snake_case**, on stdout and in its own MCP results: `config show`
   (`account_profile`, `client_id`, `files_folder`, `files_timezone`), `doctor` and `session status`
   (`data_profile`, `expires_at`), `session start` (`logged_in`), recordings, archives and schedules (`manifest_path`, `timer_state`,
@@ -23,8 +23,14 @@
 
 ### Added
 
+- Open a transcript search hit with `meetings passage <ref>` to read cited surrounding lines as text, Markdown or JSON. `--before-n`, `--after-n`, byte budgets and explicit coverage keep the result bounded; retained revisions and optional fingerprint checks preserve the source. MCP adds the same account-bound `meeting_passage` tool with `--meeting-context`.
+
 - **`--debug`:** on a failure, the whole log record — cause and stack — after the error object or in place of the
   short line.
+
+### Fixed
+
+- The search guide distinguishes CLI generation of missing semantic vectors from MCP reads of existing vectors, and the usage guide names `session start` for browser login.
 
 ## 0.8.0 — 13.10.2026
 

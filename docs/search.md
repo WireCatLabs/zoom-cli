@@ -100,6 +100,41 @@ options are mutually exclusive. `--max-read-bytes` defaults to 4 MiB per page an
 `--max-transcript-pages` bounds revision scanning, including empty revisions. Follow the returned
 continuation and completeness fields rather than assuming a bounded response is exhaustive.
 
+## Read around a search hit
+
+Use a transcript hit's `ref` to check the discussion immediately before and after the matching line:
+
+```sh
+zm meetings passage meeting:3/15/20/4 --before-n 3 --after-n 4 --format markdown
+zm meetings passage meeting:3/15/20/4 --before-n 0 --after-n 0 --json
+```
+
+Replace the fictional reference with one from your search result. The passage shows timestamps,
+speaker labels and a reference for each line. It reads your stored transcript without contacting
+Zoom. Summary and chat hits carry a meeting reference; use `meetings show` or `meetings evidence`
+for those instead, because `passage` needs a transcript line reference.
+
+`--before-n` and `--after-n` count transcript lines, including when their stored positions have gaps.
+Both default to 3; the combined maximum is 999. `--bytes` bounds the included cue JSON (64 KiB by
+default), while `--max-read-bytes` bounds selected stored text (4 MiB by default). A line too large
+for the anchor budget fails rather than returning a misleading empty passage. The global
+`--max-output-bytes` also bounds the final rendered result.
+
+Check `coverage.has_before`, `has_after` and `truncated_by` before treating a passage as complete.
+To extend it, open `before_ref` with more preceding lines, or `after_ref` with more following lines.
+These anchors are inclusive: the boundary line repeats, so an agent can deduplicate by `ref`.
+`archive_completeness: "unknown"` describes the archive, even when this local window is complete.
+
+A corrected transcript keeps the old reference readable and marks it `superseded`; it does not
+silently switch to the replacement. To reject an altered anchor, pass its previously returned
+`target_fingerprint` as `--expected-fingerprint`. JSON output retains the structured cues and
+fingerprints; Markdown quotes transcript content as text. Use `--json` when selecting fields with `--fields`.
+
+For agents using `zm serve --mcp --meeting-context`, `meeting_passage` provides the same read,
+with `reference`, `before`, `after`, `bytes`, `max_read_bytes`, `expected_fingerprint` and
+`format` (`json`, `text` or `markdown`). Its account is fixed by the server. Ask the agent to quote
+and cite the surrounding passage before suggesting a fact or follow-up task.
+
 ## Person context
 
 Person context uses stored identity links and account presence, without matching speaker names.

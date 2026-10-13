@@ -15,8 +15,8 @@ importers:
         specifier: 0.26.0
         version: 0.26.0(commander@15.0.0)(typescript@7.0.2)
       '@wirecat/cli-core':
-        specifier: 0.262.0
-        version: 0.262.0(@wirecat/cli-base@0.26.0(commander@15.0.0)(typescript@7.0.2))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.5)
+        specifier: 0.263.0
+        version: 0.263.0(@wirecat/cli-base@0.26.0(commander@15.0.0)(typescript@7.0.2))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.5)
       commander:
         specifier: 15.0.0
         version: 15.0.0
@@ -983,8 +983,8 @@ packages:
       commander:
         optional: true
 
-  '@wirecat/cli-core@0.262.0':
-    resolution: {integrity: sha512-jyGJJuzzHyE33YhCOzI3LY3Z2C0Hxu/1MEY2jg0zW9I9Hi9Ti8STTJwdDlC1dNbVB+j/FDRcP5X6Bqphmkgihw==}
+  '@wirecat/cli-core@0.263.0':
+    resolution: {integrity: sha512-Z6h87VdUlxUJSKkn7JIC1rtFGaIeQH68HL7BSZyP3+6I165TH7iM0hSPPURybzTd0I6rI/BgCkMRr9QFv+wnGg==}
     engines: {node: ^22.16.0 || >=24}
     hasBin: true
     peerDependencies:
@@ -3067,7 +3067,7 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@wirecat/cli-core@0.262.0(@wirecat/cli-base@0.26.0(commander@15.0.0)(typescript@7.0.2))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.5)':
+  '@wirecat/cli-core@0.263.0(@wirecat/cli-base@0.26.0(commander@15.0.0)(typescript@7.0.2))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.5)':
     dependencies:
       '@anthropic-ai/sdk': 0.131.0(zod@4.6.5)
       '@bomb.sh/tab': 0.0.22(commander@15.0.0)

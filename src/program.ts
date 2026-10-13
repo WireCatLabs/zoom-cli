@@ -24,7 +24,7 @@ import {
   type MeetingTranscriptStore,
   pull,
 } from "@wirecat/cli-core/meetings"
-import { addMeetingCommands } from "@wirecat/cli-core/meetings/cli"
+import { addMeetingCommands, addMeetingPassageCommand } from "@wirecat/cli-core/meetings/cli"
 import { Command, CommanderError } from "commander"
 import { addZoomSkillCommands } from "./agent-skill.js"
 import { ZoomApiSource } from "./api.js"
@@ -909,23 +909,39 @@ export const createProgram = (deps: ProgramDeps): Command => {
       return connection.meetingTranscription
     },
   })
+  const meetingContext = async () => {
+    if (deps.meetingContext) return deps.meetingContext
+    const config = getConfig()
+    if (!config.accountProfile || !deps.connectStore)
+      throw new ZoomError("configuration_error", "select a stored local profile for meeting context")
+    connection = await deps.connectStore({
+      profile: config.accountProfile,
+      externalId: profileAccountKey(config.accountProfile),
+      intent: "read",
+    })
+    if (!connection.meetingContext)
+      throw new ZoomError("configuration_error", "meeting context is unavailable in this store connector")
+    return connection.meetingContext
+  }
   addMeetingContextCommands(program, {
     signal,
     output: (value) =>
       buffer(render(value, program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text", deps, fields, true)),
-    context: async () => {
-      if (deps.meetingContext) return deps.meetingContext
-      const config = getConfig()
-      if (!config.accountProfile || !deps.connectStore)
-        throw new ZoomError("configuration_error", "select a stored local profile for meeting context")
-      connection = await deps.connectStore({
-        profile: config.accountProfile,
-        externalId: profileAccountKey(config.accountProfile),
-        intent: "read",
-      })
-      if (!connection.meetingContext)
-        throw new ZoomError("configuration_error", "meeting context is unavailable in this store connector")
-      return connection.meetingContext
+    context: meetingContext,
+  })
+  addMeetingPassageCommand(program, {
+    signal,
+    read: async (reference, options) => {
+      if (fields && options.format !== "json")
+        throw new ZoomError("validation_error", "passage field selection requires --json or --format json")
+      const context = await meetingContext()
+      if (!context.passage)
+        throw new ZoomError("configuration_error", "meeting passage is unavailable in this store connector")
+      return context.passage(reference, options)
+    },
+    output: (result, format) => {
+      if (format === "json") buffer(render(result.packet, program.opts().jsonl ? "jsonl" : "json", deps, fields, true))
+      else buffer(result.content)
     },
   })
   const meetingSemantic = async () => {

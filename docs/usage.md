@@ -46,7 +46,7 @@ does not import that transcript into the meeting database until you request arch
 |---|---|
 | `config show` | show local configuration |
 | `config set <key> <value>` | configure the public client or file source |
-| `login [--browser <program>]` | approve access through your browser |
+| `session start [--browser <program>]` | approve access through your browser |
 | `commands --json` | discover command arguments, flags and examples |
 | `complete -- <words...>` | answer shell completion requests |
 | `doctor` | inspect local runtime and public config without login or database access |
@@ -60,7 +60,7 @@ does not import that transcript into the meeting database until you request arch
 | `search meetings <query>`, `meetings people <query>` | find stored text, indexing new meetings first, or participants |
 | `meetings update <reference>`, `meetings link <reference>` | preview or apply owner-selected stored links |
 | `meetings transcribe <meeting> <file> --model <model>` | preview or locally recognize a WAV file into an independent transcript |
-| `meetings evidence <reference>`, `meetings context <person>` | read bounded evidence or identity-linked person context |
+| `meetings passage <reference>`, `meetings evidence <reference>`, `meetings context <person>` | read bounded evidence or identity-linked person context |
 | `meetings task-proposal <reference> --type <type>` | preview a task with meeting provenance |
 | `search meetings <query> --model <model>` | rank stored passages by meaning, building missing vectors first |
 | `meetings embeddings --model <model>` | preview vector generation ahead of a search; `--yes` applies one bounded batch |

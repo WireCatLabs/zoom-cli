@@ -44,7 +44,7 @@ it("discovers opt-in context without IO, rejects account overrides, and closes b
   await client.connect(left)
   try {
     const { tools } = await client.listTools()
-    expect(tools).toHaveLength(10)
+    expect(tools).toHaveLength(11)
     expect(tools.every((tool) => tool.annotations?.readOnlyHint === true)).toBe(true)
     expect(connect).not.toHaveBeenCalled()
     for (const request of [

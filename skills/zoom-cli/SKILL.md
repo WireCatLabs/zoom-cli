@@ -49,7 +49,7 @@ adopt untracked files. Keep active and foreign locks intact.
 ## Stored meeting content
 
 Stored `meetings` ids are local database ids, different from remote Zoom ids. Use `meetings show`,
-`transcript`, `summary` and `search` for local reads. `transcript --history` includes retained versions.
+`transcript`, `summary` and `search meetings` for local reads. `transcript --history` includes retained versions.
 Export Markdown or VTT with `meetings export <id> --format markdown|vtt`; file output requires an
 explicit `--output` path and never overwrites an existing file. VTT export requires an unambiguous
 current transcript or an explicit transcript id.
@@ -72,7 +72,7 @@ captured before the first cycle, so restart to change profiles or source setting
 The selected overlap also subtracts from the initial bound.
 
 `zm serve --mcp` provides seven read-only stored meeting tools. Discovery opens no database; reads
-use the selected account. MCP uses its own framing, so omit JSON/JSONL/field-selection flags. `--meeting-context` adds three
+use the selected account. MCP uses its own framing, so omit JSON/JSONL/field-selection flags. `--meeting-context` adds four
 read-only context tools; `--unified-search` adds one meetings-only shared search tool;
 `--semantic --model <model>` lets `search_meetings` rank existing vectors with `by_meaning`. Remote model selection also requires
 `--base-url` and `--dims`. The server fixes the model at startup and the profile on its first read.
@@ -83,6 +83,12 @@ store open, without migration. Explicit paths and `MESSAGING_STORE` preserve the
 database held open by another process is kept until a later default-path open can delete it.
 
 ## Evidence, context and shared search
+
+Transcript word-search hits include a retained cue `ref`. Use `meetings passage <ref> --before-n 3
+--after-n 3 --format markdown` to inspect nearby lines, or `--json` for structured cues. Context has
+explicit boundaries and byte clipping; inclusive `before_ref`/`after_ref` anchors overlap. Historical
+revisions remain readable and are marked superseded. `meeting_passage` is available with the
+MCP `--meeting-context` option; it cannot select another account.
 
 Use `meetings evidence meeting:<account>/<meeting>[/<transcript>[/<cue-position>]]` for bounded
 stored evidence. Historical transcript references remain stable. Follow returned coverage and

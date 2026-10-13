@@ -68,7 +68,7 @@ unless it has a supported connection to your machine.
 
 ## Optional tools
 
-Optional flags add tools without changing the defaults: `--meeting-context` adds evidence, person
+Optional flags add tools without changing the defaults: `--meeting-context` adds cited passages, evidence, person
 context and task proposals; `--unified-search` adds meetings-only shared search;
 `--semantic --model <model>` lets `search_meetings` rank existing vectors by meaning (`by_meaning`). Remote semantic models additionally
 require `--base-url` and `--dims`. The server fixes the model at startup and the profile on its first
