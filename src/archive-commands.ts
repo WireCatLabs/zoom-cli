@@ -75,15 +75,17 @@ const resumable = (command: Command): Command =>
   command
     .option("--resume", "resume verified partial downloads and archive progress; requires a local profile")
     .option("--no-resume", "disable persistent resume state for this invocation")
-const change = (options: MeetingChange): MeetingChange =>
+type ChangeOptions = Omit<MeetingChange, "topic"> & { title?: string }
+const change = ({ title, ...options }: ChangeOptions): MeetingChange =>
   Object.fromEntries(
-    ["topic", "startTime", "durationMinutes", "timezone", "agenda", "type"]
-      .filter((key) => options[key as keyof MeetingChange] !== undefined)
-      .map((key) => [key, options[key as keyof MeetingChange]]),
+    Object.entries({ topic: title, ...options }).filter(
+      ([key, value]) =>
+        value !== undefined && ["topic", "startTime", "durationMinutes", "timezone", "agenda", "type"].includes(key),
+    ),
   )
 const changes = (command: Command): Command =>
   command
-    .option("--topic <text>", "meeting topic")
+    .option("--title <text>", "meeting title")
     .option("--start-time <timestamp>", "ISO start time with timezone")
     .option("--duration-minutes <minutes>", "positive meeting duration in minutes", positive)
     .option("--timezone <zone>", "IANA timezone")
@@ -101,42 +103,42 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
     recordings
       .command("list")
       .description("list cloud recording occurrences (last 30 days by default)")
-      .option("--from <date>", "first YYYY-MM-DD date")
-      .option("--to <date>", "last YYYY-MM-DD date")
-      .action(async (options: { from?: string; to?: string }) => {
+      .option("--since-time <time>", "first day, YYYY-MM-DD")
+      .option("--until-time <time>", "last day, YYYY-MM-DD")
+      .action(async (options: { sinceTime?: string; untilTime?: string }) => {
         deps.api()
-        const to = options.to ?? new Date(deps.now()).toISOString().slice(0, 10)
+        const to = options.untilTime ?? new Date(deps.now()).toISOString().slice(0, 10)
         const end = Date.parse(`${to}T00:00:00Z`)
         if (!/^\d{4}-\d{2}-\d{2}$/.test(to) || !Number.isFinite(end) || new Date(end).toISOString().slice(0, 10) !== to)
-          throw new ZoomError("validation_error", "to must be a real YYYY-MM-DD date")
-        const from = options.from ?? new Date(end - 30 * 86400000).toISOString().slice(0, 10)
+          throw new ZoomError("validation_error", "--until-time must be a real YYYY-MM-DD date")
+        const from = options.sinceTime ?? new Date(end - 30 * 86400000).toISOString().slice(0, 10)
         deps.output(listed(await deps.recordings().list({ from, to, signal: deps.signal() })))
       }),
-    "zm recordings list --from 2026-10-01 --to 2026-10-10 --json",
+    "zm recordings list --since-time 2026-10-01 --until-time 2026-10-10 --json",
   )
   label(
     resumable(
       recordings
         .command("sync")
-        .description("serial monthly recording archive synchronization with completed JSONL receipts")
-        .requiredOption("--from <date>", "first YYYY-MM-DD date")
-        .requiredOption("--to <date>", "last YYYY-MM-DD date (at most ten years)")
+        .description("download a date range of recordings into an archive folder, a month at a time")
+        .requiredOption("--since-time <time>", "first day, YYYY-MM-DD")
+        .requiredOption("--until-time <time>", "last day, YYYY-MM-DD; at most ten years after the first")
         .requiredOption("--destination <directory>", "explicit archive directory")
         .option("--max-bytes <bytes>", "maximum bytes per recording file", positive),
     )
       .option("--checkpoint <file>", "explicit durable checkpoint file; implies resume")
-      .option("--recheck-from <date>", "revisit completed windows from this YYYY-MM-DD date for late recordings")
+      .option("--recheck-since-time <time>", "look again from this day, YYYY-MM-DD, for recordings that came late")
       .option("--max-pages <pages>", "catalog page limit from 1 through 10000 (default 1000)", discoveryLimit)
       .option("--max-entries <entries>", "occurrence limit from 1 through 10000 (default 10000)", discoveryLimit)
       .action(
         async (options: {
-          from: string
-          to: string
+          sinceTime: string
+          untilTime: string
           destination: string
           maxBytes?: number
           resume?: boolean
           checkpoint?: string
-          recheckFrom?: string
+          recheckSinceTime?: string
           maxPages?: number
           maxEntries?: number
         }) => {
@@ -145,18 +147,19 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
           if (program.opts().json)
             throw new ZoomError("validation_error", "recording sync streams receipts; use --jsonl")
           const scope = archiveScope(deps, options)
-          recordingWindows(options.from, options.to)
-          if (options.recheckFrom !== undefined) recordingWindows(options.recheckFrom, options.recheckFrom)
+          recordingWindows(options.sinceTime, options.untilTime)
+          if (options.recheckSinceTime !== undefined)
+            recordingWindows(options.recheckSinceTime, options.recheckSinceTime)
           validateDownloadOptions({ ...options, ...scope })
           deps.api()
           for await (const receipt of syncRecordingArchive(deps.recordings(), {
-            from: options.from,
-            to: options.to,
+            from: options.sinceTime,
+            to: options.untilTime,
             destination: options.destination,
             ...scope,
             maxBytes: options.maxBytes,
             checkpointPath: options.checkpoint,
-            recheckFrom: options.recheckFrom,
+            recheckFrom: options.recheckSinceTime,
             maxPages: options.maxPages,
             maxEntries: options.maxEntries,
             now: deps.now,
@@ -165,7 +168,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
             await deps.receipt(receipt)
         },
       ),
-    "zm recordings sync --from 2026-01-01 --to 2026-10-10 --destination ./archive --jsonl",
+    "zm recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --destination ./archive --jsonl",
     "local",
   )
   label(
@@ -210,7 +213,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
     command
       .option("--uuid <uuid>", "select an occurrence UUID")
       .option("--file-ids <ids>", "select comma-separated transcript asset ids")
-      .option("--max-bytes <bytes>", "maximum VTT bytes per file (default 8 MiB)", positive)
+      .option("--max-bytes <bytes>", "largest transcript file to read, in bytes (default 8 MiB)", positive)
   const selected = (options: { uuid?: string; fileIds?: string; maxBytes?: number }) => ({
     uuid: options.uuid,
     fileIds: options.fileIds?.split(",").map((id) => id.trim()),
@@ -221,8 +224,8 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
     transcriptOptions(
       archive
         .command("transcript")
-        .description("read checksum-verified local VTT cues without Zoom or a database")
-        .argument("<directory>"),
+        .description("read the transcripts of a local archive, checking each file first")
+        .argument("<directory>", "archive folder"),
     ).action(async (directory: string, options: { uuid?: string; fileIds?: string; maxBytes?: number }) => {
       await deps.outputItems(deps.transcripts.read(directory, selected(options)))
     }),
@@ -232,11 +235,11 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
     transcriptOptions(
       archive
         .command("search")
-        .description("literal normalized text search across verified local VTT cues")
-        .argument("<directory>")
-        .argument("<query>"),
+        .description("find words in the transcripts of a local archive, before any import")
+        .argument("<directory>", "archive folder")
+        .argument("<query>", "words to find, matched literally"),
     )
-      .option("--limit <matches>", "maximum matches from 1 through 1000 (default 100)", positive)
+      .option("--limit <n>", "how many matches, 1 through 1000 (default 100)", positive)
       .action(
         async (
           directory: string,
@@ -250,29 +253,29 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
   )
   label(
     archive
-      .command("inspect")
-      .description("read local transfer manifests")
-      .argument("<directory>")
+      .command("show")
+      .description("show what a local archive holds, from its transfer records")
+      .argument("<directory>", "archive folder")
       .action(async (directory: string) =>
         deps.output(listed(await deps.archive.inspect(directory, { signal: deps.signal() }))),
       ),
-    "zm recordings archive inspect ./zoom-archive --json",
+    "zm recordings archive show ./zoom-archive --json",
   )
   label(
     archive
-      .command("verify")
-      .description("verify local file sizes and checksums")
-      .argument("<directory>")
+      .command("check")
+      .description("check the size and checksum of every file in a local archive")
+      .argument("<directory>", "archive folder")
       .action(async (directory: string) =>
         deps.output(listed(await deps.archive.verify(directory, { signal: deps.signal() }))),
       ),
-    "zm recordings archive verify ./zoom-archive --json",
+    "zm recordings archive check ./zoom-archive --json",
   )
   label(
     archive
       .command("locks")
-      .description("inspect active, stale or foreign archive locks")
-      .argument("<directory>")
+      .description("list the locks on a local archive: active, stale or another machine's")
+      .argument("<directory>", "archive folder")
       .action(async (directory: string) =>
         deps.output(listed(await deps.archive.locks(directory, { signal: deps.signal() }))),
       ),
@@ -281,8 +284,8 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
   label(
     archive
       .command("recover")
-      .description("preview recovery of recognized stale local locks")
-      .argument("<directory>")
+      .description("preview removing stale locks; --yes removes them")
+      .argument("<directory>", "archive folder")
       .option("--yes", "remove recognized locks left by a dead local process")
       .option("--dry-run", "preview only, including when --yes is present")
       .action(async (directory: string, options: { yes?: boolean; dryRun?: boolean }) =>
@@ -334,10 +337,10 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
   )
   label(
     changes(remote.command("create").description("preview a meeting creation; --yes performs it once")).action(
-      async (options: MeetingChange & MutationOptions & { yes?: boolean }) =>
+      async (options: ChangeOptions & MutationOptions & { yes?: boolean }) =>
         deps.output(await deps.remoteMeetings().create(change(options), mutation(options, deps))),
     ),
-    'zm remote-meetings create --topic "Example planning" --start-time 2026-10-10T15:30:00Z --dry-run --json',
+    'zm remote-meetings create --title "Example planning" --start-time 2026-10-10T15:30:00Z --dry-run --json',
     "remote",
   )
   label(
@@ -346,10 +349,10 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         .command("update")
         .description("preview a meeting update; --yes performs it once")
         .argument("<meeting>", "positive numeric Zoom meeting id"),
-    ).action(async (id: string, options: MeetingChange & MutationOptions & { yes?: boolean }) =>
+    ).action(async (id: string, options: ChangeOptions & MutationOptions & { yes?: boolean }) =>
       deps.output(await deps.remoteMeetings().update(id, change(options), mutation(options, deps))),
     ),
-    'zm remote-meetings update 123456789 --topic "Example planning" --dry-run --json',
+    'zm remote-meetings update 123456789 --title "Example planning" --dry-run --json',
     "remote",
   )
   label(

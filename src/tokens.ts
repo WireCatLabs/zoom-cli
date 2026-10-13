@@ -63,7 +63,7 @@ export class TokenManager {
         scopes: value.scopes,
       }
     } catch {
-      throw new ZoomError("authentication_error", "saved login is invalid; run zm login again")
+      throw new ZoomError("authentication_error", "saved login is invalid; run zm session start again")
     }
   }
   save(tokens: Tokens, clientId = this.options.clientId): void {
@@ -88,12 +88,15 @@ export class TokenManager {
         redirect: "error",
       })
     } catch {
-      throw new ZoomError("outcome_unknown", "Zoom token exchange did not finish; run zm login again before retrying")
+      throw new ZoomError(
+        "outcome_unknown",
+        "Zoom token exchange did not finish; run zm session start again before retrying",
+      )
     }
     if (!response.ok)
       throw new ZoomError(
         "authentication_error",
-        `Zoom token request failed (HTTP ${response.status}); run zm login again`,
+        `Zoom token request failed (HTTP ${response.status}); run zm session start again`,
       )
     let body: Record<string, unknown>
     try {
@@ -101,7 +104,7 @@ export class TokenManager {
     } catch {
       throw new ZoomError(
         "outcome_unknown",
-        "Zoom returned an invalid token response; run zm login again before retrying",
+        "Zoom returned an invalid token response; run zm session start again before retrying",
       )
     }
     const refreshToken = typeof body.refresh_token === "string" ? body.refresh_token : previous?.refreshToken
@@ -118,7 +121,7 @@ export class TokenManager {
     )
       throw new ZoomError(
         "outcome_unknown",
-        "Zoom returned an invalid token response; run zm login again before retrying",
+        "Zoom returned an invalid token response; run zm session start again before retrying",
       )
     const tokens = {
       accessToken: body.access_token,
@@ -133,7 +136,7 @@ export class TokenManager {
     checkCancelled(this.options.signal)
     const clientId = this.options.clientId
     const saved = this.load(clientId)
-    if (!saved) throw new ZoomError("authentication_error", "run zm login first")
+    if (!saved) throw new ZoomError("authentication_error", "run zm session start first")
     if (saved.expiresAt > (this.options.now?.() ?? Date.now()) + 30000) return saved
     let refreshing = this.refreshState.get(clientId)
     if (!refreshing) {

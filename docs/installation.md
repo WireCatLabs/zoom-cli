@@ -62,7 +62,7 @@ at a time; keep the login terminal open while approving in the browser:
 ```sh
 zm config set zoom.clientId <public-client-id>
 zm config set source api
-zm login
+zm session start
 ```
 
 1. Sign in to the intended Zoom account in the browser and review the app's permissions.
@@ -72,7 +72,7 @@ zm login
    the prompt. Browser approval alone is not completion.
 4. If the terminal keeps waiting, copy the callback page's `code=…&state=…` value or full callback
    URL, paste it into that same waiting terminal and press Enter. Do this before the five-minute
-   login deadline. If the process already ended, run `zm login` again and approve the new attempt.
+   login deadline. If the process already ended, run `zm session start` again and approve the new attempt.
 
 Then check the saved session and choose a **profile**, a local label for the meetings you store:
 

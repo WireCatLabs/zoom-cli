@@ -52,27 +52,13 @@ const latest = (rows: string[]) => JSON.parse(rows.at(-1) ?? "{}")
 it("previews links and applies owner-selected event and participant links once", async () => {
   const { deps, output, writes } = await setup()
   expect(
-    await run(
-      ["meetings", "link-event", "meeting:1/1", "--event-id", "2", "--expected-event-id", "none", "--json"],
-      deps,
-    ),
+    await run(["meetings", "update", "meeting:1/1", "--event-id", "2", "--expected-event-id", "none", "--json"], deps),
   ).toBe(0)
   expect(latest(output)).toMatchObject({ applied: false, change: { eventId: 2, expectedEventId: null } })
   expect(writes).not.toHaveBeenCalled()
   expect(
     await run(
-      [
-        "meetings",
-        "link-person",
-        "meeting:1/1",
-        "--participant-id",
-        "3",
-        "--person",
-        "4",
-        "--yes",
-        "--dry-run",
-        "--json",
-      ],
+      ["meetings", "link", "meeting:1/1", "--participant-id", "3", "--person", "4", "--yes", "--dry-run", "--json"],
       deps,
     ),
   ).toBe(0)
@@ -82,7 +68,7 @@ it("previews links and applies owner-selected event and participant links once",
     await run(
       [
         "meetings",
-        "link-event",
+        "update",
         "meeting:1/1",
         "--event-id",
         "none",
@@ -96,14 +82,14 @@ it("previews links and applies owner-selected event and participant links once",
     ),
   ).toBe(0)
   expect(writes).not.toHaveBeenCalled()
-  expect(await run(["meetings", "link-event", "meeting:1/1", "--event-id", "none", "--yes", "--json"], deps)).toBe(0)
+  expect(await run(["meetings", "update", "meeting:1/1", "--event-id", "none", "--yes", "--json"], deps)).toBe(0)
   expect(writes).toHaveBeenCalledTimes(1)
   expect(latest(output)).toMatchObject({ applied: true, change: { eventId: null } })
   expect(
     await run(
       [
         "meetings",
-        "link-person",
+        "link",
         "meeting:1/1",
         "--participant-id",
         "3",
@@ -130,14 +116,14 @@ it("previews links and applies owner-selected event and participant links once",
 it("rejects malformed links before connecting and refuses foreign meeting scope", async () => {
   const { deps, writes, connect } = await setup()
   for (const args of [
-    ["link-event", "meeting:1/1/2", "--event-id", "1"],
-    ["link-event", "meeting:1/1", "--event-id", "0"],
-    ["link-person", "meeting:1/1", "--participant-id", "0", "--person", "1"],
-    ["link-person", "meeting:1/1", "--participant-id", "1", "--person", "Alice Example"],
-    ["link-person", "meeting:1/1", "--participant-id", "1", "--person", "1", "--target-accounts", "0"],
+    ["update", "meeting:1/1/2", "--event-id", "1"],
+    ["update", "meeting:1/1", "--event-id", "0"],
+    ["link", "meeting:1/1", "--participant-id", "0", "--person", "1"],
+    ["link", "meeting:1/1", "--participant-id", "1", "--person", "Alice Example"],
+    ["link", "meeting:1/1", "--participant-id", "1", "--person", "1", "--target-accounts", "0"],
   ])
     expect(await run(["meetings", ...args, "--yes", "--json"], deps)).toBe(2)
-  expect(await run(["meetings", "link-event", "meeting:2/1", "--event-id", "1", "--yes", "--json"], deps)).toBe(6)
+  expect(await run(["meetings", "update", "meeting:2/1", "--event-id", "1", "--yes", "--json"], deps)).toBe(6)
   expect(writes).not.toHaveBeenCalled()
   expect(connect).not.toHaveBeenCalled()
 })
@@ -154,7 +140,7 @@ it("preserves an acknowledged link receipt when cancellation follows commit", as
     await run(
       [
         "meetings",
-        "link-person",
+        "link",
         "meeting:1/1",
         "--participant-id",
         "3",
@@ -288,7 +274,7 @@ it("retains memo as the shared note, tag and memory interface in command discove
   expect(await run(["commands", "meetings", "--json"], deps)).toBe(0)
   const paths = latest(output).commands[0].commands.map((command: { path: string[] }) => command.path.join(" "))
   expect(paths.some((path: string) => /^meetings (notes|tags|memories)(?: |$)/.test(path))).toBe(false)
-  expect(paths).toContain("meetings link-event")
+  expect(paths).toContain("meetings update")
   expect(paths).toContain("meetings search-page")
   expect(connect).not.toHaveBeenCalled()
 })

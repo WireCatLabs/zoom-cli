@@ -1,23 +1,6 @@
 [
-  "config set <key>",
-  "config set <value>",
   "import <folder>",
-  "meetings context <person>",
-  "meetings evidence <reference>",
-  "meetings link-event <reference>",
-  "meetings link-person <reference>",
   "meetings people <query>",
   "meetings search <query>",
-  "meetings search-page <query>",
-  "meetings semantic <query>",
-  "meetings task-proposal <reference>",
-  "recordings archive import <directory>",
-  "recordings archive inspect <directory>",
-  "recordings archive locks <directory>",
-  "recordings archive recover <directory>",
-  "recordings archive search <directory>",
-  "recordings archive search <query>",
-  "recordings archive transcript <directory>",
-  "recordings archive verify <directory>",
-  "search all <query>"
+  "meetings search-page <query>"
 ]

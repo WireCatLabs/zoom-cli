@@ -39,9 +39,9 @@ export const addMeetingSearchIndexCommand = (
   annotate(
     meetings
       .command("search-index")
-      .description("preview or apply one bounded batch of queued meeting search indexing")
-      .option("--limit <count>", "queued record limit from 1 through 1000 (default 100)", bytes)
-      .option("--max-read-bytes <bytes>", "raw SQL read budget from 1 through 67108864 (default 4194304)", bytes)
+      .description("preview indexing one batch of stored meetings for search; --yes indexes it")
+      .option("--limit <n>", "how many queued records, 1 through 1000 (default 100)", bytes)
+      .option("--max-read-bytes <bytes>", "most stored bytes to read, 1 through 67108864 (default 4194304)", bytes)
       .option("--yes", "apply this indexing batch once")
       .option("--dry-run", "preview even when --yes is present")
       .action(async (options: { limit?: number; maxReadBytes?: number; yes?: boolean; dryRun?: boolean }) => {

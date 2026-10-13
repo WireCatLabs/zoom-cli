@@ -45,22 +45,8 @@ zm config set <key> <value>
 
 | Argument | | What it is |
 |---|---|---|
-| `key` | required |  |
-| `value` | required |  |
-
-## `zm login`
-
-log in to Zoom through your browser
-
-**Changes local data.**
-
-```sh
-zm login [options]
-```
-
-| Option | What it does |
-|---|---|
-| `--browser <program>` | browser program. |
+| `key` | required | setting name, such as account.profile. |
+| `value` | required | new value. |
 
 ## `zm meetings`
 
@@ -195,19 +181,19 @@ zm meetings people <query> [options]
 | `--json` | one JSON value. |
 | `--jsonl` | one JSON object per item. |
 
-### `zm meetings link-event`
+### `zm meetings update`
 
-preview or apply an owner-selected event link
+preview linking a stored meeting to an event; --yes applies it
 
 **Changes local data.**
 
 ```sh
-zm meetings link-event <reference> [options]
+zm meetings update <reference> [options]
 ```
 
 | Argument | | What it is |
 |---|---|---|
-| `reference` | required |  |
+| `reference` | required | meeting reference, such as meeting:1/1. |
 
 | Option | What it does |
 |---|---|
@@ -216,19 +202,19 @@ zm meetings link-event <reference> [options]
 | `--yes` | apply this local change once. |
 | `--dry-run` | preview even when --yes is present. |
 
-### `zm meetings link-person`
+### `zm meetings link`
 
-preview or apply an explicit participant identity link to a stored person
+preview linking a meeting participant to a stored person; --yes applies it
 
 **Changes local data.**
 
 ```sh
-zm meetings link-person <reference> [options]
+zm meetings link <reference> [options]
 ```
 
 | Argument | | What it is |
 |---|---|---|
-| `reference` | required |  |
+| `reference` | required | meeting reference, such as meeting:1/1. |
 
 | Option | What it does |
 |---|---|
@@ -241,7 +227,7 @@ zm meetings link-person <reference> [options]
 
 ### `zm meetings transcribe`
 
-preview local PCM WAV transcription; --yes recognizes and appends an independent transcript
+preview transcribing a recording on this machine; --yes adds the transcript
 
 **Changes local data.**
 
@@ -251,17 +237,17 @@ zm meetings transcribe <meeting> <file> [options]
 
 | Argument | | What it is |
 |---|---|---|
-| `meeting` | required | selected-account stored meeting id or meeting reference. |
+| `meeting` | required | stored meeting id or meeting reference. |
 | `file` | required | local PCM16 WAV file (16 or 48 kHz, mono/stereo). |
 
 | Option | What it does |
 |---|---|
-| `--model <model>` | explicit installed speech model. |
+| `--model <model>` | installed speech model. |
 | `--models-dir <directory>` | shared installed speech-model directory. |
-| `--max-bytes <bytes>` | bounded media input bytes (default 1 GiB). |
-| `--max-duration <duration>` | bounded audio duration (default 4h). |
-| `--max-segments <count>` | recognized segment limit (default 10000). |
-| `--max-text-bytes <bytes>` | aggregate transcript text limit (default 4 MiB). |
+| `--max-bytes <bytes>` | largest audio file to read, in bytes (default 1 GiB). |
+| `--max-duration <duration>` | longest audio to transcribe (default 4h). |
+| `--max-segments <n>` | most recognized segments (default 10000). |
+| `--max-text-bytes <bytes>` | most transcript text, in bytes (default 4 MiB). |
 | `--yes` | recognize locally and append to the existing meeting. |
 | `--dry-run` | preview even when --yes is present. |
 
@@ -293,7 +279,7 @@ zm meetings search-page <query> [options]
 
 ### `zm meetings search-index`
 
-preview or apply one bounded batch of queued meeting search indexing
+preview indexing one batch of stored meetings for search; --yes indexes it
 
 **Changes local data.**
 
@@ -303,14 +289,14 @@ zm meetings search-index [options]
 
 | Option | What it does |
 |---|---|
-| `--limit <count>` | queued record limit from 1 through 1000 (default 100). |
-| `--max-read-bytes <bytes>` | raw SQL read budget from 1 through 67108864 (default 4194304). |
+| `--limit <n>` | how many queued records, 1 through 1000 (default 100). |
+| `--max-read-bytes <bytes>` | most stored bytes to read, 1 through 67108864 (default 4194304). |
 | `--yes` | apply this indexing batch once. |
 | `--dry-run` | preview even when --yes is present. |
 
 ### `zm meetings evidence`
 
-read bounded stored evidence from a selected-account meeting reference
+read the stored transcript lines, chat or summary behind a meeting reference
 
 ```sh
 zm meetings evidence <reference> [options]
@@ -318,20 +304,20 @@ zm meetings evidence <reference> [options]
 
 | Argument | | What it is |
 |---|---|---|
-| `reference` | required |  |
+| `reference` | required | meeting reference, such as meeting:3/15. |
 
 | Option | What it does |
 |---|---|
-| `--cues <count>` | cue limit from 1 through 1000. |
-| `--bytes <count>` | content byte limit from 2 through 4194304. |
-| `--after <reference>` | resume after a cue reference from the same source. |
+| `--cues <n>` | how many transcript lines, 1 through 1000. |
+| `--bytes <bytes>` | how much text, in bytes, 2 through 4194304. |
+| `--cursor <cursor>` | continue after this line reference from the previous page. |
 | `--after-transcript-id <id>` | resume root-reference revision scan, including empty revisions. |
-| `--max-read-bytes <count>` | SQL input byte budget per page (default 4 MiB). |
-| `--max-transcript-pages <count>` | transcript page work budget from 1 through 1000. |
+| `--max-read-bytes <bytes>` | most stored bytes to read per page (default 4 MiB). |
+| `--max-transcript-pages <n>` | most transcript pages to read, 1 through 1000. |
 
 ### `zm meetings context`
 
-identity-linked person context restricted to the selected account; completeness is explicit
+what the stored meetings say about a person, through linked identities
 
 ```sh
 zm meetings context <person> [options]
@@ -339,19 +325,19 @@ zm meetings context <person> [options]
 
 | Argument | | What it is |
 |---|---|---|
-| `person` | required |  |
+| `person` | required | stored person, such as person:7. |
 
 | Option | What it does |
 |---|---|
-| `--cues <count>` | cue limit from 1 through 1000. |
-| `--bytes <count>` | content byte limit from 2 through 4194304. |
-| `--meetings <count>` | meeting limit from 1 through 100. |
-| `--scan-limit <count>` | identity-link candidate bound from 1 through 1000. |
-| `--since <iso>` | read identity links since this ISO instant. |
+| `--cues <n>` | how many transcript lines, 1 through 1000. |
+| `--bytes <bytes>` | how much text, in bytes, 2 through 4194304. |
+| `--meetings <n>` | how many meetings, 1 through 100. |
+| `--scan-limit <n>` | most identity links to look at, 1 through 1000. |
+| `--since-time <time>` | only identity links since this ISO 8601 time. |
 
 ### `zm meetings task-proposal`
 
-preview a provenance-linked task proposal without creating a task
+preview the task a meeting line would become, without creating it
 
 ```sh
 zm meetings task-proposal <reference> [options]
@@ -359,15 +345,15 @@ zm meetings task-proposal <reference> [options]
 
 | Argument | | What it is |
 |---|---|---|
-| `reference` | required |  |
+| `reference` | required | transcript line reference, such as meeting:3/15/20/0. |
 
 | Option | What it does |
 |---|---|
-| `--kind <kind>` | question, request, mention or promise. |
+| `--type <type>` | question, request, mention or promise. |
 
 ### `zm meetings semantic`
 
-search stored meeting vectors with an explicit query model; ranks only scanned candidates
+find stored meeting passages nearest in meaning to a query
 
 ```sh
 zm meetings semantic <query> [options]
@@ -375,22 +361,22 @@ zm meetings semantic <query> [options]
 
 | Argument | | What it is |
 |---|---|---|
-| `query` | required |  |
+| `query` | required | what to look for, in words. |
 
 | Option | What it does |
 |---|---|
-| `--model <id>` | explicit installed local model ID, or model served at --base-url. |
-| `--base-url <url>` | explicit remote endpoint; OpenAI uses OPENAI_API_KEY. |
-| `--dims <count>` | remote embedding vector dimensions. |
-| `--limit <count>` | bounded batch/result count from 1 through 1000. |
-| `--max-rows <count>` | transcript cue read limit from 1 through 100000. |
-| `--max-text-bytes <count>` | aggregate transcript text read byte limit (default 4 MiB). |
-| `--max-chunks <count>` | embedded candidate scan bound. |
-| `--after-chunk-id <id>` | candidate scan continuation; not globally ranked result pagination. |
+| `--model <model>` | embedding model: an installed local one, or one served at --base-url. |
+| `--base-url <url>` | remote embedding service; OpenAI reads OPENAI_API_KEY. |
+| `--dims <n>` | vector size the remote service returns, in dimensions. |
+| `--limit <n>` | how many results or items in one batch, 1 through 1000. |
+| `--max-rows <n>` | most transcript lines to read, 1 through 100000. |
+| `--max-text-bytes <bytes>` | most transcript text to read, in bytes (default 4 MiB). |
+| `--max-chunks <n>` | most stored passages to compare. |
+| `--after-chunk-id <id>` | compare the passages after this one; results are ranked per page only. |
 
 ### `zm meetings embeddings`
 
-preview meeting vector generation; --yes explicitly rebuilds and embeds one bounded batch
+preview building meeting vectors; --yes builds one batch
 
 **Changes local data.**
 
@@ -400,15 +386,15 @@ zm meetings embeddings [options]
 
 | Option | What it does |
 |---|---|
-| `--model <id>` | explicit installed local model ID, or model served at --base-url. |
-| `--base-url <url>` | explicit remote endpoint; OpenAI uses OPENAI_API_KEY. |
-| `--dims <count>` | remote embedding vector dimensions. |
-| `--limit <count>` | bounded batch/result count from 1 through 1000. |
-| `--max-rows <count>` | transcript cue read limit from 1 through 100000. |
-| `--max-text-bytes <count>` | aggregate transcript text read byte limit (default 4 MiB). |
-| `--after-transcript-id <id>` | transcript chunk rebuild continuation. |
-| `--after-hash <hash>` | missing embedding batch continuation. |
-| `--yes` | apply chunk rebuild and embedding generation; preview otherwise. |
+| `--model <model>` | embedding model: an installed local one, or one served at --base-url. |
+| `--base-url <url>` | remote embedding service; OpenAI reads OPENAI_API_KEY. |
+| `--dims <n>` | vector size the remote service returns, in dimensions. |
+| `--limit <n>` | how many results or items in one batch, 1 through 1000. |
+| `--max-rows <n>` | most transcript lines to read, 1 through 100000. |
+| `--max-text-bytes <bytes>` | most transcript text to read, in bytes (default 4 MiB). |
+| `--after-transcript-id <id>` | continue splitting transcripts after this one. |
+| `--after-hash <hash>` | continue embedding after this passage. |
+| `--yes` | split transcripts and build their vectors; otherwise only preview. |
 
 ## `zm pull`
 
@@ -497,7 +483,7 @@ zm doctor
 
 ## `zm session`
 
-inspect the saved OAuth session separately from local data profiles
+the saved Zoom login, separate from local data profiles
 
 ### `zm session status`
 
@@ -511,9 +497,23 @@ zm session status [options]
 |---|---|
 | `--check` | verify the session with Zoom. |
 
+### `zm session start`
+
+log in to Zoom through your browser
+
+**Changes local data.**
+
+```sh
+zm session start [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--browser <program>` | browser program. |
+
 ## `zm watch`
 
-foreground serial API pulls or folder rescans, with closed-store receipts
+keep fetching new meetings from Zoom, or rescanning a folder, until stopped
 
 **Changes local data.**
 
@@ -523,12 +523,12 @@ zm watch [folder] [options]
 
 | Argument | | What it is |
 |---|---|---|
-| `folder` | optional | downloaded VTT/TXT folder; defaults source to files. |
+| `folder` | optional | folder of downloaded transcripts; implies --source files. |
 
 | Option | What it does |
 |---|---|
 | `--source <source>` | api or files; otherwise uses configured source. One of: `api`, `files`. |
-| `--since <timestamp>` | initial API lower bound until the first successful cursor write. |
+| `--since-time <time>` | on the first run, fetch meetings from this ISO 8601 time. |
 | `--lookback-days <days>` | API cursor overlap for late transcripts (0 through 31). |
 | `--interval <duration>` | delay after each completed receipt (1s through 24h). Default: `10000`. |
 
@@ -546,12 +546,12 @@ zm recordings list [options]
 
 | Option | What it does |
 |---|---|
-| `--from <date>` | first YYYY-MM-DD date. |
-| `--to <date>` | last YYYY-MM-DD date. |
+| `--since-time <time>` | first day, YYYY-MM-DD. |
+| `--until-time <time>` | last day, YYYY-MM-DD. |
 
 ### `zm recordings sync`
 
-serial monthly recording archive synchronization with completed JSONL receipts
+download a date range of recordings into an archive folder, a month at a time
 
 **Changes local data.**
 
@@ -561,14 +561,14 @@ zm recordings sync [options]
 
 | Option | What it does |
 |---|---|
-| `--from <date>` | first YYYY-MM-DD date. |
-| `--to <date>` | last YYYY-MM-DD date (at most ten years). |
+| `--since-time <time>` | first day, YYYY-MM-DD. |
+| `--until-time <time>` | last day, YYYY-MM-DD; at most ten years after the first. |
 | `--destination <directory>` | explicit archive directory. |
 | `--max-bytes <bytes>` | maximum bytes per recording file. |
 | `--resume` | resume verified partial downloads and archive progress; requires a local profile. |
 | `--no-resume` | disable persistent resume state for this invocation. |
 | `--checkpoint <file>` | explicit durable checkpoint file; implies resume. |
-| `--recheck-from <date>` | revisit completed windows from this YYYY-MM-DD date for late recordings. |
+| `--recheck-since-time <time>` | look again from this day, YYYY-MM-DD, for recordings that came late. |
 | `--max-pages <pages>` | catalog page limit from 1 through 10000 (default 1000). |
 | `--max-entries <entries>` | occurrence limit from 1 through 10000 (default 10000). |
 
@@ -612,7 +612,7 @@ inspect archives without Zoom or a database
 
 #### `zm recordings archive transcript`
 
-read checksum-verified local VTT cues without Zoom or a database
+read the transcripts of a local archive, checking each file first
 
 ```sh
 zm recordings archive transcript <directory> [options]
@@ -620,17 +620,17 @@ zm recordings archive transcript <directory> [options]
 
 | Argument | | What it is |
 |---|---|---|
-| `directory` | required |  |
+| `directory` | required | archive folder. |
 
 | Option | What it does |
 |---|---|
 | `--uuid <uuid>` | select an occurrence UUID. |
 | `--file-ids <ids>` | select comma-separated transcript asset ids. |
-| `--max-bytes <bytes>` | maximum VTT bytes per file (default 8 MiB). |
+| `--max-bytes <bytes>` | largest transcript file to read, in bytes (default 8 MiB). |
 
 #### `zm recordings archive search`
 
-literal normalized text search across verified local VTT cues
+find words in the transcripts of a local archive, before any import
 
 ```sh
 zm recordings archive search <directory> <query> [options]
@@ -638,43 +638,43 @@ zm recordings archive search <directory> <query> [options]
 
 | Argument | | What it is |
 |---|---|---|
-| `directory` | required |  |
-| `query` | required |  |
+| `directory` | required | archive folder. |
+| `query` | required | words to find, matched literally. |
 
 | Option | What it does |
 |---|---|
 | `--uuid <uuid>` | select an occurrence UUID. |
 | `--file-ids <ids>` | select comma-separated transcript asset ids. |
-| `--max-bytes <bytes>` | maximum VTT bytes per file (default 8 MiB). |
-| `--limit <matches>` | maximum matches from 1 through 1000 (default 100). |
+| `--max-bytes <bytes>` | largest transcript file to read, in bytes (default 8 MiB). |
+| `--limit <n>` | how many matches, 1 through 1000 (default 100). |
 
-#### `zm recordings archive inspect`
+#### `zm recordings archive show`
 
-read local transfer manifests
+show what a local archive holds, from its transfer records
 
 ```sh
-zm recordings archive inspect <directory>
+zm recordings archive show <directory>
 ```
 
 | Argument | | What it is |
 |---|---|---|
-| `directory` | required |  |
+| `directory` | required | archive folder. |
 
-#### `zm recordings archive verify`
+#### `zm recordings archive check`
 
-verify local file sizes and checksums
+check the size and checksum of every file in a local archive
 
 ```sh
-zm recordings archive verify <directory>
+zm recordings archive check <directory>
 ```
 
 | Argument | | What it is |
 |---|---|---|
-| `directory` | required |  |
+| `directory` | required | archive folder. |
 
 #### `zm recordings archive locks`
 
-inspect active, stale or foreign archive locks
+list the locks on a local archive: active, stale or another machine's
 
 ```sh
 zm recordings archive locks <directory>
@@ -682,11 +682,11 @@ zm recordings archive locks <directory>
 
 | Argument | | What it is |
 |---|---|---|
-| `directory` | required |  |
+| `directory` | required | archive folder. |
 
 #### `zm recordings archive recover`
 
-preview recovery of recognized stale local locks
+preview removing stale locks; --yes removes them
 
 **Changes local data.**
 
@@ -696,7 +696,7 @@ zm recordings archive recover <directory> [options]
 
 | Argument | | What it is |
 |---|---|---|
-| `directory` | required |  |
+| `directory` | required | archive folder. |
 
 | Option | What it does |
 |---|---|
@@ -705,7 +705,7 @@ zm recordings archive recover <directory> [options]
 
 #### `zm recordings archive import`
 
-verify all selected VTT before atomic per-occurrence transcript append
+check an archive's transcripts, then add them to the stored meetings
 
 **Changes local data.**
 
@@ -715,14 +715,14 @@ zm recordings archive import <directory> [options]
 
 | Argument | | What it is |
 |---|---|---|
-| `directory` | required |  |
+| `directory` | required | archive folder. |
 
 | Option | What it does |
 |---|---|
 | `--uuid <uuid>` | select an occurrence UUID. |
-| `--file-ids <ids>` | select comma-separated VTT asset ids. |
-| `--max-bytes <bytes>` | per-file VTT byte limit (default 8 MiB). |
-| `--max-total-bytes <bytes>` | aggregate VTT byte limit before any write (default 64 MiB). |
+| `--file-ids <ids>` | select comma-separated transcript asset ids. |
+| `--max-bytes <bytes>` | largest transcript file, in bytes (default 8 MiB). |
+| `--max-total-bytes <bytes>` | most transcript bytes in all, checked before any write (default 64 MiB). |
 
 ### `zm recordings schedule`
 
@@ -730,7 +730,7 @@ local archive jobs and Linux user systemd timers
 
 #### `zm recordings schedule create`
 
-preview a captured daily archive job; --yes installs its user timer
+preview a daily archive job; --yes installs its timer
 
 **Changes local data.**
 
@@ -742,7 +742,7 @@ zm recordings schedule create [options]
 |---|---|
 | `--name <name>` | local job name. |
 | `--destination <directory>` | absolute archive directory. |
-| `--from <date>` | first YYYY-MM-DD archive date. |
+| `--since-time <time>` | first day to archive, YYYY-MM-DD. |
 | `--at <time>` | daily HH:mm time. |
 | `--timezone <zone>` | IANA timezone for the timer. |
 | `--lookback-days <days>` | revisit the latest zero through 31 UTC days (default seven). |
@@ -763,12 +763,12 @@ zm recordings schedule list
 show one saved local job and its captured settings
 
 ```sh
-zm recordings schedule show <id>
+zm recordings schedule show <job>
 ```
 
 | Argument | | What it is |
 |---|---|---|
-| `id` | required | schedule id. |
+| `job` | required | saved job id. |
 
 #### `zm recordings schedule run`
 
@@ -777,12 +777,12 @@ run the captured job once with durable archive progress
 **Changes local data.**
 
 ```sh
-zm recordings schedule run <id>
+zm recordings schedule run <job>
 ```
 
 | Argument | | What it is |
 |---|---|---|
-| `id` | required | schedule id. |
+| `job` | required | saved job id. |
 
 #### `zm recordings schedule disable`
 
@@ -791,12 +791,12 @@ preview disabling a saved timer; --yes disables it without deleting files
 **Changes local data.**
 
 ```sh
-zm recordings schedule disable <id> [options]
+zm recordings schedule disable <job> [options]
 ```
 
 | Argument | | What it is |
 |---|---|---|
-| `id` | required | schedule id. |
+| `job` | required | saved job id. |
 
 | Option | What it does |
 |---|---|
@@ -851,7 +851,7 @@ zm remote-meetings create [options]
 
 | Option | What it does |
 |---|---|
-| `--topic <text>` | meeting topic. |
+| `--title <text>` | meeting title. |
 | `--start-time <timestamp>` | ISO start time with timezone. |
 | `--duration-minutes <minutes>` | positive meeting duration in minutes. |
 | `--timezone <zone>` | IANA timezone. |
@@ -876,7 +876,7 @@ zm remote-meetings update <meeting> [options]
 
 | Option | What it does |
 |---|---|
-| `--topic <text>` | meeting topic. |
+| `--title <text>` | meeting title. |
 | `--start-time <timestamp>` | ISO start time with timezone. |
 | `--duration-minutes <minutes>` | positive meeting duration in minutes. |
 | `--timezone <zone>` | IANA timezone. |
@@ -945,9 +945,9 @@ zm serve [options]
 | `--unified-search` | include selected-profile meetings-only unified search. |
 | `--meeting-context` | include account-fixed evidence, person context and task proposals. |
 | `--semantic` | include read-only meeting vector search with an explicit query model. |
-| `--model <id>` | explicit installed query model, or remote model at --base-url. |
+| `--model <model>` | query embedding model: an installed one, or one served at --base-url. |
 | `--base-url <url>` | explicit remote embedding endpoint for semantic queries. |
-| `--dims <count>` | remote embedding dimensions. |
+| `--dims <n>` | vector size the remote service returns, in dimensions. |
 
 ## `zm search`
 
@@ -955,7 +955,7 @@ opt-in shared store search; meetings by default
 
 ### `zm search all`
 
-meeting word prefixes plus selected resources; notes are store-global; JSONL emits one complete report
+search meetings and, with --only, messages, mail and notes in the local store
 
 ```sh
 zm search all <query> [options]
@@ -963,13 +963,13 @@ zm search all <query> [options]
 
 | Argument | | What it is |
 |---|---|---|
-| `query` | required |  |
+| `query` | required | words to find; a word also matches longer words it starts. |
 
 | Option | What it does |
 |---|---|
 | `--only <resources>` | comma-separated meetings,messages,mail,notes (default meetings). |
-| `--limit <items>` | result bound 1 through 1000 (default 100). Default: `100`. |
-| `--max-meetings <count>` | candidate meeting scan bound 1 through 1000 (default 100). Default: `100`. |
+| `--limit <n>` | how many results, 1 through 1000 (default 100). Default: `100`. |
+| `--max-meetings <n>` | most meetings to look at, 1 through 1000 (default 100). Default: `100`. |
 | `--meeting-cursor <json>` | source-only continuation from meetings.nextCursor. |
 | `--exact` | request exact matching; unsupported meeting queries are reported as skipped. |
 

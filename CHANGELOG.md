@@ -7,6 +7,19 @@
 - **`zm commands --json` prints the shared commands document**: `cli`, `version`, `contract`, `description`,
   `globalOptions` (was `options`), `commands` and `exitCodes`; a command path adds `scope` and `inheritedOptions`.
 - `zm commands` without `--json` lists one row per command: usage, description and whether it writes.
+- **Commands renamed to the shared command words.** The old names stop working:
+  - `zm login` → `zm session start`
+  - `meetings link-person` → `meetings link`; `meetings link-event` → `meetings update`
+  - `recordings archive inspect` → `recordings archive show`; `recordings archive verify` → `recordings archive check`
+- **Options renamed.** The old names stop working:
+  - `recordings list|sync --from`/`--to` → `--since-time`/`--until-time`; `recordings sync --recheck-from` →
+    `--recheck-since-time`; `recordings schedule create --from` → `--since-time`
+  - `watch --since` and `meetings context --since` → `--since-time`
+  - `meetings evidence --after` → `--cursor`
+  - `meetings task-proposal --kind` → `--type`
+  - `remote-meetings create|update --topic` → `--title`
+- Value names in help now say what they hold: `--limit <n>`, `--model <model>`, `--max-read-bytes <bytes>`,
+  `--max-text-bytes <bytes>`; every argument has a description and long summaries are shorter.
 
 ## 0.7.3 — 12.10.2026
 

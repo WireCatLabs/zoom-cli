@@ -17,7 +17,7 @@ export const bytes = (text: string): number => {
 }
 export const commandDeadline = (action: Command): number | undefined => {
   if (action.name() === "watch" || action.name() === "serve") return undefined
-  if (action.name() === "login") return 300000
+  if (action.name() === "start" && action.parent?.name() === "session") return 300000
   if (
     action.name() === "download" ||
     action.name() === "sync" ||
@@ -25,7 +25,7 @@ export const commandDeadline = (action: Command): number | undefined => {
     (action.name() === "run" &&
       action.parent?.name() === "schedule" &&
       action.parent.parent?.name() === "recordings") ||
-    (action.name() === "verify" && action.parent?.name() === "archive")
+    (action.name() === "check" && action.parent?.name() === "archive")
   )
     return 3600000
   return 30000

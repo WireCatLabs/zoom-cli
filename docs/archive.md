@@ -83,10 +83,10 @@ importing a partial folder.
 
 For repeated API ingestion, use `zm watch --source api --lookback-days 7 --jsonl`. A folder argument
 selects file watching; otherwise the configured source applies. File watching can use `files.folder`.
-API watching accepts `--since` and revisits zero through 31 days, and requires online access.
-`--since` sets the initial lower bound; after a successful cursor write, later cycles use the cursor
+API watching accepts `--since-time` and revisits zero through 31 days, and requires online access.
+`--since-time` sets the initial lower bound; after a successful cursor write, later cycles use the cursor
 with the selected overlap. Failed cycles retain the initial bound until a cursor write succeeds.
-The overlap also subtracts from the initial `--since` bound.
+The overlap also subtracts from the initial `--since-time` bound.
 `--interval` controls the delay between completed cycles. Profile, source and file settings are
 captured, along with the OAuth client, before watching begins; changing configuration requires
 restarting the watch. Cycles never overlap and close their store connection before emitting a
@@ -113,10 +113,10 @@ store close. A blocked output pipe stops that flush; no later cycle starts.
 and download its available files to an explicit destination:
 
 ```sh
-zm recordings list --from 2026-10-01 --to 2026-10-10 --json
+zm recordings list --since-time 2026-10-01 --until-time 2026-10-10 --json
 zm recordings show <zoom-occurrence-uuid> --json
 zm recordings download <zoom-occurrence-uuid> --destination ./zoom-archive --json
-zm recordings archive verify ./zoom-archive --offline --json
+zm recordings archive check ./zoom-archive --offline --json
 ```
 
 Replace `<zoom-occurrence-uuid>` with an occurrence UUID returned by the recording list, not a
@@ -128,19 +128,19 @@ cloud recording availability and scopes before widening the backup.
 For recording history across months, use:
 
 ```sh
-zm recordings sync --from 2026-01-01 --to 2026-10-10 --destination ./zoom-archive --jsonl
+zm recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --destination ./zoom-archive --jsonl
 ```
 
 Sync accepts explicit ordered dates spanning at most ten calendar years. It splits them into monthly
 requests, deduplicates occurrence UUIDs and downloads serially. Each JSONL receipt describes one
 completed occurrence; earlier receipts and completed files remain if a later request fails. Repeat the
 same range or an overlapping recent range to discover new assets. With a selected local profile,
-sync saves durable progress and retains pending recordings. Use `--recheck-from YYYY-MM-DD` to
+sync saves durable progress and retains pending recordings. Use `--recheck-since-time YYYY-MM-DD` to
 rediscover recent dates for late or changed assets, and `--checkpoint` to select its checkpoint file.
 `--max-pages` and `--max-entries` bound discovery. Headless sync requires `--jsonl`.
 
 Checkpoints acknowledge earlier successful archives; they do not check current disk integrity or
-prove that all provider recordings were available. Run `recordings archive verify` to check local
+prove that all provider recordings were available. Run `recordings archive check` to check local
 files. Use `--no-resume` to rescan the full requested range without durable progress.
 
 Recording lists accept an ordered date range of at most 31 days. Downloads stream to disk rather
@@ -172,7 +172,7 @@ verified partial and final file all match; unrelated untracked files remain prot
 To plan a daily backup, choose an absolute destination and timer timezone:
 
 ```sh
-zm recordings schedule create --name daily --destination /home/AliceExample/zoom-archive --from 2026-01-01 --at 03:15 --timezone Europe/Madrid --json
+zm recordings schedule create --name daily --destination /home/AliceExample/zoom-archive --since-time 2026-01-01 --at 03:15 --timezone Europe/Madrid --json
 zm recordings schedule list --offline --json
 zm recordings schedule run <schedule-id> --jsonl
 zm recordings schedule disable <schedule-id> --yes --json

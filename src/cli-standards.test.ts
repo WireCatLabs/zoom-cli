@@ -170,17 +170,21 @@ describe("portable CLI discovery and diagnostics", () => {
     const { deps, stdout } = await setup()
     setConfig(deps.configPath, "zoom.clientId", "example-client")
     deps.interactive = false
-    expect(await run(["--interactive", "login"], deps)).toBe(3)
+    expect(await run(["--interactive", "session", "start"], deps)).toBe(3)
     deps.interactive = true
     deps.env = { CI: "1" }
-    expect(await run(["login"], deps)).toBe(3)
+    expect(await run(["session", "start"], deps)).toBe(3)
     deps.env = {}
-    expect(await run(["--json", "login"], deps)).toBe(3)
+    expect(await run(["--json", "session", "start"], deps)).toBe(3)
     deps.outputIsTTY = false
-    expect(await run(["login"], deps)).toBe(3)
+    expect(await run(["session", "start"], deps)).toBe(3)
     expect(stdout).toEqual([])
     const program = createProgram(deps)
-    expect(describeProgram(program).find((cmd) => cmd.name === "login")?.mutates).toBe(true)
+    expect(
+      describeProgram(program)
+        .find((cmd) => cmd.name === "session")
+        ?.commands.find((cmd) => cmd.name === "start")?.mutates,
+    ).toBe(true)
   })
   it("uses shared human rendering only for terminal output", async () => {
     const { deps, stdout } = await setup()
@@ -196,7 +200,7 @@ describe("portable CLI discovery and diagnostics", () => {
 it("quiet suppresses optional login instructions but retains the failure envelope", async () => {
   const { deps, stdout, stderr } = await setup()
   setConfig(deps.configPath, "zoom.clientId", "example-client")
-  expect(await run(["--quiet", "login"], deps)).toBe(3)
+  expect(await run(["--quiet", "session", "start"], deps)).toBe(3)
   expect(stdout).toEqual([])
   expect(stderr).toHaveLength(1)
   expect(JSON.parse(stderr[0] ?? "{}").error.code).toBe("configuration_error")

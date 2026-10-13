@@ -10,7 +10,7 @@ recording files and inspect an uncertain remote change before retrying it.
 
 The browser approved the app, but its callback has not reached the waiting process. Leave that
 terminal open. On the WireCat callback page, copy `code=…&state=…` or the full callback URL, paste
-it into **the same running `zm login` terminal**, and press Enter. The command must report
+it into **the same running `zm session start` terminal**, and press Enter. The command must report
 `loggedIn: true` and return to the prompt. If it timed out, start a new login and use its new callback.
 A callback from an earlier attempt cannot finish a later one.
 
@@ -30,7 +30,7 @@ Use [the full app checklist](zoom-app.md#create-your-own-app), then verify termi
 Try an installed browser explicitly:
 
 ```sh
-zm login --browser firefox
+zm session start --browser firefox
 ```
 
 In an interactive terminal, open the authorization URL printed by that running login yourself,
@@ -54,7 +54,7 @@ run login again and check `zm session status --json`.
 ### A required scope is missing
 
 The error names the exact permission. The app owner adds it in **Scopes** and saves; then the user
-runs `zm login` again. Check the granted scopes with `zm session status --json` and retry the failed
+runs `zm session start` again. Check the granted scopes with `zm session status --json` and retry the failed
 read. Tokens already issued do not gain newly configured scopes. Archive, remote meeting details,
 remote verification and meeting changes have [separate permissions](zoom-app.md#add-archive-or-management-access).
 

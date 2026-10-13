@@ -101,11 +101,11 @@ describe("command execution controls", () => {
       throw new Error("unexpected database")
     }
     for (const args of [
-      ["login"],
+      ["session", "start"],
       ["session", "status", "--check"],
       ["recordings", "list"],
       ["pull"],
-      ["remote-meetings", "create", "--topic", "Example", "--type", "1", "--yes"],
+      ["remote-meetings", "create", "--title", "Example", "--type", "1", "--yes"],
     ])
       expect(await run(["--offline", ...args], deps)).toBe(3)
     expect(stdout).toEqual([])
@@ -174,7 +174,7 @@ describe("command execution controls", () => {
       )
     }
     expect(
-      await run(["--timeout", "1s", "remote-meetings", "create", "--topic", "Example", "--type", "1", "--yes"], deps),
+      await run(["--timeout", "1s", "remote-meetings", "create", "--title", "Example", "--type", "1", "--yes"], deps),
     ).toBe(14)
     expect(calls).toBe(1)
     expect(stdout).toEqual([])
@@ -204,7 +204,7 @@ describe("command execution controls", () => {
         `http://127.0.0.1:${state.split(".")[0]}/callback?${new URLSearchParams({ state, code: "example-code" })}`,
       )
     }
-    expect(await run(["login"], deps)).toBe(0)
+    expect(await run(["session", "start"], deps)).toBe(0)
     expect(durations.at(-1)).toBe(300000)
   })
 })
@@ -225,7 +225,9 @@ describe("archive and explicit remote command wiring", () => {
       expect.objectContaining({ from: "2026-09-10", to: "2026-10-10", signal: expect.any(AbortSignal) }),
     )
     expect(value(stdout).items).toEqual([meeting])
-    expect(await run(["--jsonl", "recordings", "list", "--from", "2026-10-01", "--to", "2026-10-10"], deps)).toBe(0)
+    expect(
+      await run(["--jsonl", "recordings", "list", "--since-time", "2026-10-01", "--until-time", "2026-10-10"], deps),
+    ).toBe(0)
     expect(JSON.parse(stdout.at(-1) ?? "{}").uuid).toBe(meeting.uuid)
     expect(await run(["--json", "recordings", "show", "example-occurrence"], deps)).toBe(0)
     expect(show).toHaveBeenCalledWith(
@@ -267,7 +269,7 @@ describe("archive and explicit remote command wiring", () => {
     const verify = vi.fn(async () => [])
     const locks = vi.fn(async () => [])
     deps.archive = { inspect, verify, locks, recover }
-    for (const action of ["inspect", "verify", "locks"])
+    for (const action of ["show", "check", "locks"])
       expect(await run(["--offline", "--json", "recordings", "archive", action, "invented"], deps)).toBe(0)
     expect(value(stdout).items).toEqual([])
     expect(await run(["recordings", "archive", "recover", "invented"], deps)).toBe(0)
@@ -289,7 +291,7 @@ describe("archive and explicit remote command wiring", () => {
           "--json",
           "remote-meetings",
           "create",
-          "--topic",
+          "--title",
           "Example planning",
           "--start-time",
           "2026-10-10T15:30:00Z",
@@ -316,7 +318,7 @@ describe("archive and explicit remote command wiring", () => {
           "remote-meetings",
           "update",
           "123456789",
-          "--topic",
+          "--title",
           "Example",
           "--start-time",
           "2026-10-10T15:30:00Z",
@@ -403,8 +405,8 @@ describe("archive and explicit remote command wiring", () => {
       ["list"],
       ["show", "123456789"],
       ["invitation", "123456789"],
-      ["create", "--topic", "Example", "--type", "1", "--yes"],
-      ["update", "123456789", "--topic", "Example", "--yes"],
+      ["create", "--title", "Example", "--type", "1", "--yes"],
+      ["update", "123456789", "--title", "Example", "--yes"],
       ["cancel", "123456789", "--yes"],
     ])
       expect(await run(["--json", "remote-meetings", ...args], deps)).toBe(0)
@@ -519,7 +521,7 @@ it("classifies dispatched token failures as uncertain while preflight cancellati
     const tokens = new TokenManager({ ...deps.tokens.options, fetch: fetcher })
     await expect(tokens.exchange({})).rejects.toMatchObject({
       code: "outcome_unknown",
-      message: expect.stringContaining("login again"),
+      message: expect.stringContaining("session start again"),
     })
     expect(fetcher).toHaveBeenCalledOnce()
   }

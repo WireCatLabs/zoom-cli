@@ -102,25 +102,25 @@ export const addMeetingSemanticCommands = (
   if (!meetings) throw new ZoomError("configuration_error", "meeting command group is unavailable")
   const model = (command: Command) =>
     command
-      .requiredOption("--model <id>", "explicit installed local model ID, or model served at --base-url")
-      .option("--base-url <url>", "explicit remote endpoint; OpenAI uses OPENAI_API_KEY")
-      .option("--dims <count>", "remote embedding vector dimensions", bytes)
+      .requiredOption("--model <model>", "embedding model: an installed local one, or one served at --base-url")
+      .option("--base-url <url>", "remote embedding service; OpenAI reads OPENAI_API_KEY")
+      .option("--dims <n>", "vector size the remote service returns, in dimensions", bytes)
   const budget = (command: Command) =>
     command
-      .option("--limit <count>", "bounded batch/result count from 1 through 1000", bytes)
-      .option("--max-rows <count>", "transcript cue read limit from 1 through 100000", bytes)
-      .option("--max-text-bytes <count>", "aggregate transcript text read byte limit (default 4 MiB)", bytes)
+      .option("--limit <n>", "how many results or items in one batch, 1 through 1000", bytes)
+      .option("--max-rows <n>", "most transcript lines to read, 1 through 100000", bytes)
+      .option("--max-text-bytes <bytes>", "most transcript text to read, in bytes (default 4 MiB)", bytes)
   annotate(
     budget(
       model(
         meetings
           .command("semantic")
-          .description("search stored meeting vectors with an explicit query model; ranks only scanned candidates")
-          .argument("<query>"),
+          .description("find stored meeting passages nearest in meaning to a query")
+          .argument("<query>", "what to look for, in words"),
       ),
     )
-      .option("--max-chunks <count>", "embedded candidate scan bound", bytes)
-      .option("--after-chunk-id <id>", "candidate scan continuation; not globally ranked result pagination", bytes)
+      .option("--max-chunks <n>", "most stored passages to compare", bytes)
+      .option("--after-chunk-id <id>", "compare the passages after this one; results are ranked per page only", bytes)
       .action(async (query: string, options: MeetingSemanticOptions) => {
         validateMeetingSemantic(query, options)
         if (options.baseUrl !== undefined && deps.offline())
@@ -136,15 +136,11 @@ export const addMeetingSemanticCommands = (
   )
   annotate(
     budget(
-      model(
-        meetings
-          .command("embeddings")
-          .description("preview meeting vector generation; --yes explicitly rebuilds and embeds one bounded batch"),
-      ),
+      model(meetings.command("embeddings").description("preview building meeting vectors; --yes builds one batch")),
     )
-      .option("--after-transcript-id <id>", "transcript chunk rebuild continuation", bytes)
-      .option("--after-hash <hash>", "missing embedding batch continuation")
-      .option("--yes", "apply chunk rebuild and embedding generation; preview otherwise")
+      .option("--after-transcript-id <id>", "continue splitting transcripts after this one", bytes)
+      .option("--after-hash <hash>", "continue embedding after this passage")
+      .option("--yes", "split transcripts and build their vectors; otherwise only preview")
       .action(async (options: MeetingEmbeddingOptions) => {
         validateMeetingEmbeddings(options)
         if (options.baseUrl !== undefined && deps.offline())

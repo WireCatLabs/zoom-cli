@@ -130,9 +130,9 @@ invoke(
   [
     "recordings",
     "sync",
-    "--from",
+    "--since-time",
     "2026-10-01",
-    "--to",
+    "--until-time",
     "2026-10-11",
     "--destination",
     missingProfileArchive,
@@ -153,7 +153,7 @@ const schedulePreview = json(
   "Alice Example backup",
   "--destination",
   scheduleArchive,
-  "--from",
+  "--since-time",
   "2026-10-01",
   "--at",
   "03:15",
@@ -180,11 +180,11 @@ for (const [path, flags] of [
     ["--file-ids", " "],
   ],
   [
-    ["recordings", "sync", "--from", "2026-10-01", "--to", "2026-10-11", "--jsonl"],
+    ["recordings", "sync", "--since-time", "2026-10-01", "--until-time", "2026-10-11", "--jsonl"],
     ["--max-pages", "10001"],
   ],
   [
-    ["recordings", "sync", "--from", "2026-10-01", "--to", "2026-10-11", "--jsonl"],
+    ["recordings", "sync", "--since-time", "2026-10-01", "--until-time", "2026-10-11", "--jsonl"],
     ["--checkpoint", join(sandbox, "contradictory-checkpoint"), "--no-resume"],
   ],
 ])

@@ -33,10 +33,10 @@ export const addRecordingScheduleCommands = (
   label(
     schedule
       .command("create")
-      .description("preview a captured daily archive job; --yes installs its user timer")
+      .description("preview a daily archive job; --yes installs its timer")
       .requiredOption("--name <name>", "local job name")
       .requiredOption("--destination <directory>", "absolute archive directory")
-      .requiredOption("--from <date>", "first YYYY-MM-DD archive date")
+      .requiredOption("--since-time <time>", "first day to archive, YYYY-MM-DD")
       .requiredOption("--at <time>", "daily HH:mm time")
       .requiredOption("--timezone <zone>", "IANA timezone for the timer")
       .option("--lookback-days <days>", "revisit the latest zero through 31 UTC days (default seven)", bytes)
@@ -47,7 +47,7 @@ export const addRecordingScheduleCommands = (
         async (options: {
           name: string
           destination: string
-          from: string
+          sinceTime: string
           at: string
           timezone: string
           lookbackDays?: number
@@ -65,7 +65,7 @@ export const addRecordingScheduleCommands = (
               {
                 name: options.name,
                 destination: options.destination,
-                from: options.from,
+                from: options.sinceTime,
                 dailyAt: options.at,
                 timeZone: options.timezone,
                 lookbackDays: options.lookbackDays,
@@ -77,7 +77,7 @@ export const addRecordingScheduleCommands = (
           )
         },
       ),
-    "zm recordings schedule create --name daily --destination /home/AliceExample/archive --from 2026-01-01 --at 03:15 --timezone UTC --json",
+    "zm recordings schedule create --name daily --destination /home/AliceExample/archive --since-time 2026-01-01 --at 03:15 --timezone UTC --json",
     true,
   )
   label(
@@ -93,17 +93,17 @@ export const addRecordingScheduleCommands = (
     schedule
       .command("show")
       .description("show one saved local job and its captured settings")
-      .argument("<id>", "schedule id")
+      .argument("<job>", "saved job id")
       .action(async (id: string) => {
         deps.output(await deps.service().show(id, { signal: deps.signal() }))
       }),
-    "zm recordings schedule show <schedule-id> --offline --json",
+    "zm recordings schedule show example-job --offline --json",
   )
   label(
     schedule
       .command("run")
       .description("run the captured job once with durable archive progress")
-      .argument("<id>", "schedule id")
+      .argument("<job>", "saved job id")
       .action(async (id: string) => {
         if (program.opts().json || (!program.opts().jsonl && !deps.outputIsTTY))
           throw new ZoomError("validation_error", "headless archive schedule runs stream receipts; use --jsonl")
@@ -111,14 +111,14 @@ export const addRecordingScheduleCommands = (
         for await (const receipt of deps.service().run(id, { offline: deps.offline(), signal: deps.signal() }))
           await deps.receipt(receipt)
       }),
-    "zm recordings schedule run <schedule-id> --jsonl",
+    "zm recordings schedule run example-job --jsonl",
     true,
   )
   label(
     schedule
       .command("disable")
       .description("preview disabling a saved timer; --yes disables it without deleting files")
-      .argument("<id>", "schedule id")
+      .argument("<job>", "saved job id")
       .option("--yes", "disable and stop the timer")
       .option("--dry-run", "preview even when --yes is present")
       .action(async (id: string, options: { yes?: boolean; dryRun?: boolean }) => {
@@ -126,7 +126,7 @@ export const addRecordingScheduleCommands = (
           await deps.service().disable(id, { apply: options.yes, dryRun: options.dryRun, signal: deps.signal() }),
         )
       }),
-    "zm recordings schedule disable <schedule-id> --yes --json",
+    "zm recordings schedule disable example-job --yes --json",
     true,
   )
 }

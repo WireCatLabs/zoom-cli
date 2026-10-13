@@ -42,7 +42,7 @@ export const zmPaths = (
       copyLogin(keyring, moved.from, moved.to)
     } catch (error) {
       warn(
-        `zm: moved its files out of ~/Library but not the login — run \`zm login\` again (${(error as Error).message})\n`,
+        `zm: moved its files out of ~/Library but not the login — run \`zm session start\` again (${(error as Error).message})\n`,
       )
     }
   return resolvePaths({ appName: "zm", env, platform })

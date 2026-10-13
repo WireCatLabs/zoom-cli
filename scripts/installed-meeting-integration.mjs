@@ -137,7 +137,7 @@ export const installedMeetingIntegration = async ({
   assert.deepEqual(before.audit, [])
   const eventArgs = [
     "meetings",
-    "link-event",
+    "update",
     reference,
     "--event-id",
     String(target.eventId),
@@ -154,7 +154,7 @@ export const installedMeetingIntegration = async ({
   invoke(["--json", ...eventArgs, "--yes"], 3)
   const unlinked = json(
     "meetings",
-    "link-event",
+    "update",
     reference,
     "--event-id",
     "none",
@@ -167,7 +167,7 @@ export const installedMeetingIntegration = async ({
   assert.equal(json(...eventArgs, "--yes").result.changed, true)
   const personArgs = [
     "meetings",
-    "link-person",
+    "link",
     reference,
     "--participant-id",
     String(target.participantId),
@@ -193,7 +193,7 @@ export const installedMeetingIntegration = async ({
   assert.deepEqual(native("audit", target).audit, after.audit)
   const unchanged = json(
     "meetings",
-    "link-person",
+    "link",
     reference,
     "--participant-id",
     String(target.participantId),
@@ -316,7 +316,7 @@ export const installedMeetingIntegration = async ({
     ],
     2,
   )
-  invoke(["--json", "meetings", "link-event", reference, "--event-id", "none", "--yes"], 6)
+  invoke(["--json", "meetings", "update", reference, "--event-id", "none", "--yes"], 6)
   json("config", "set", "account.profile", "invented-platform")
   const audio = join(sandbox, "AliceExample-transcription.wav")
   const dataSize = 32000
@@ -350,7 +350,7 @@ export const installedMeetingIntegration = async ({
     commands.some((command) => /^meetings (notes|tags|memories)(?: |$)/.test(command)),
     false,
   )
-  assert.ok(commands.includes("meetings link-event"))
+  assert.ok(commands.includes("meetings update"))
   assert.ok(commands.includes("meetings search-page"))
   return {
     scopedLinks: true,

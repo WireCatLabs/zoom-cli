@@ -70,7 +70,7 @@ describe("zmPaths", () => {
     }
 
     expect(zmPaths(broken, (line) => warnings.push(line), mac(HOME)).config).toBe(fresh)
-    expect(warnings).toEqual([expect.stringMatching(/run `zm login` again/)])
+    expect(warnings).toEqual([expect.stringMatching(/run `zm session start` again/)])
   })
 
   it("warns and stays on the old folders while another process holds them", () => {

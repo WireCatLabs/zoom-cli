@@ -1,9 +1,3 @@
 [
-  "--after",
-  "--limit",
-  "--max-read-bytes",
-  "--max-text-bytes",
-  "--model",
-  "--since",
-  "--topic"
+  "--limit"
 ]

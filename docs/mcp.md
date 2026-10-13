@@ -70,7 +70,7 @@ unless it has a supported connection to your machine.
 
 Optional flags add tools without changing the defaults: `--meeting-context` adds evidence, person
 context and task proposals; `--unified-search` adds meetings-only shared search;
-`--semantic --model <id>` adds one read-only vector query tool. Remote semantic models additionally
+`--semantic --model <model>` adds one read-only vector query tool. Remote semantic models additionally
 require `--base-url` and `--dims`. The server fixes the model at startup and the profile on its first
 read; restart it to change either. Clients cannot override either selection. Embedding generation
 and task creation are never MCP tools.

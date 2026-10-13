@@ -24,15 +24,15 @@ export const addLocalTranscriptionCommands = (
   annotate(
     meetings
       .command("transcribe")
-      .description("preview local PCM WAV transcription; --yes recognizes and appends an independent transcript")
-      .argument("<meeting>", "selected-account stored meeting id or meeting reference")
+      .description("preview transcribing a recording on this machine; --yes adds the transcript")
+      .argument("<meeting>", "stored meeting id or meeting reference")
       .argument("<file>", "local PCM16 WAV file (16 or 48 kHz, mono/stereo)")
-      .requiredOption("--model <model>", "explicit installed speech model")
+      .requiredOption("--model <model>", "installed speech model")
       .option("--models-dir <directory>", "shared installed speech-model directory")
-      .option("--max-bytes <bytes>", "bounded media input bytes (default 1 GiB)", bytes)
-      .option("--max-duration <duration>", "bounded audio duration (default 4h)", duration)
-      .option("--max-segments <count>", "recognized segment limit (default 10000)", bytes)
-      .option("--max-text-bytes <bytes>", "aggregate transcript text limit (default 4 MiB)", bytes)
+      .option("--max-bytes <bytes>", "largest audio file to read, in bytes (default 1 GiB)", bytes)
+      .option("--max-duration <duration>", "longest audio to transcribe (default 4h)", duration)
+      .option("--max-segments <n>", "most recognized segments (default 10000)", bytes)
+      .option("--max-text-bytes <bytes>", "most transcript text, in bytes (default 4 MiB)", bytes)
       .option("--yes", "recognize locally and append to the existing meeting")
       .option("--dry-run", "preview even when --yes is present")
       .action(

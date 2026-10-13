@@ -270,7 +270,6 @@ export const createProgram = (deps: ProgramDeps): Command => {
     while (family.parent && family.parent !== program) family = family.parent
     if (
       [
-        "login",
         "commands",
         "complete",
         "doctor",
@@ -290,8 +289,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
           "task-proposal",
           "semantic",
           "embeddings",
-          "link-event",
-          "link-person",
+          "update",
+          "link",
           "search-page",
           "search-index",
           "transcribe",
@@ -351,40 +350,10 @@ export const createProgram = (deps: ProgramDeps): Command => {
   cfg
     .command("set")
     .description("set a configuration value")
-    .argument("<key>")
-    .argument("<value>")
+    .argument("<key>", "setting name, such as account.profile")
+    .argument("<value>", "new value")
     .action((key: string, value: string) => {
       output(setConfig(deps.configPath, key, value))
-    })
-  program
-    .command("login")
-    .description("log in to Zoom through your browser")
-    .option("--browser <program>", "browser program")
-    .action(async (opts: { browser?: string }) => {
-      const config = getConfig()
-      if (!config.clientId)
-        throw new ZoomError("configuration_error", "run zm config set zoom.clientId <Public Client ID> first")
-      const globals = program.opts()
-      if (globals.offline) throw new ZoomError("configuration_error", "login requires network access; remove --offline")
-      const headless =
-        deps.interactive === false ||
-        Boolean(deps.env?.CI) ||
-        (deps.interactive !== undefined &&
-          (globals.json || globals.jsonl || deps.outputIsTTY === false) &&
-          !globals.interactive)
-      if (globals.input === false || headless)
-        throw new ZoomError("configuration_error", "login requires browser approval; remove --no-input")
-      output(
-        await login({
-          tokens: tokens(),
-          signal: signal(),
-          openBrowser: (url) => deps.openBrowser(url, opts.browser),
-          readPaste: deps.readPaste,
-          showUrl: (url) => {
-            if (!program.opts().quiet) deps.diagnostic(`Open this URL to approve Zoom login:\n${url}\n`)
-          },
-        }),
-      )
     })
   let activeSource: Promise<MeetingSource> | undefined
   const getSource = (): Promise<MeetingSource> => {
@@ -499,6 +468,38 @@ export const createProgram = (deps: ProgramDeps): Command => {
       }
     },
   })
+  const session = program.commands.find((command) => command.name() === "session")
+  if (!session) throw new ZoomError("configuration_error", "session command group is unavailable")
+  session
+    .command("start")
+    .description("log in to Zoom through your browser")
+    .option("--browser <program>", "browser program")
+    .action(async (opts: { browser?: string }) => {
+      const config = getConfig()
+      if (!config.clientId)
+        throw new ZoomError("configuration_error", "run zm config set zoom.clientId <Public Client ID> first")
+      const globals = program.opts()
+      if (globals.offline) throw new ZoomError("configuration_error", "login requires network access; remove --offline")
+      const headless =
+        deps.interactive === false ||
+        Boolean(deps.env?.CI) ||
+        (deps.interactive !== undefined &&
+          (globals.json || globals.jsonl || deps.outputIsTTY === false) &&
+          !globals.interactive)
+      if (globals.input === false || headless)
+        throw new ZoomError("configuration_error", "login requires browser approval; remove --no-input")
+      output(
+        await login({
+          tokens: tokens(),
+          signal: signal(),
+          openBrowser: (url) => deps.openBrowser(url, opts.browser),
+          readPaste: deps.readPaste,
+          showUrl: (url) => {
+            if (!program.opts().quiet) deps.diagnostic(`Open this URL to approve Zoom login:\n${url}\n`)
+          },
+        }),
+      )
+    })
   let watchConfig: ZoomConfig | undefined
   let watchSince: string | undefined
   const watchSleep = deps.sleep
@@ -525,14 +526,14 @@ export const createProgram = (deps: ProgramDeps): Command => {
       const source = flags.source ?? (folder !== undefined ? "files" : config.source)
       const plan = {
         source,
-        since: flags.since,
+        since: flags.sinceTime,
         lookbackDays: flags.lookbackDays ?? 0,
         intervalMs: flags.interval,
         folder: folder ?? config.filesFolder ?? undefined,
       }
       if (source === "files") {
-        if (flags.since !== undefined || flags.lookbackDays !== undefined)
-          throw new ZoomError("validation_error", "since and lookback days apply only to API watching")
+        if (flags.sinceTime !== undefined || flags.lookbackDays !== undefined)
+          throw new ZoomError("validation_error", "--since-time and --lookback-days apply only to API watching")
         if (!plan.folder?.trim())
           throw new ZoomError("configuration_error", "set files.folder or provide a folder for file watching")
       } else {
@@ -776,9 +777,9 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .option("--unified-search", "include selected-profile meetings-only unified search")
     .option("--meeting-context", "include account-fixed evidence, person context and task proposals")
     .option("--semantic", "include read-only meeting vector search with an explicit query model")
-    .option("--model <id>", "explicit installed query model, or remote model at --base-url")
+    .option("--model <model>", "query embedding model: an installed one, or one served at --base-url")
     .option("--base-url <url>", "explicit remote embedding endpoint for semantic queries")
-    .option("--dims <count>", "remote embedding dimensions", bytes)
+    .option("--dims <n>", "vector size the remote service returns, in dimensions", bytes)
     .action(
       async (options: {
         unifiedSearch?: boolean

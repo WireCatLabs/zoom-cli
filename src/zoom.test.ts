@@ -78,7 +78,7 @@ describe("tokens", () => {
   it("refuses missing, corrupt or unavailable keyring entries and invalid token replies", async () => {
     const tokens = tokenManager()
     expect(tokens.load()).toBeNull()
-    await expect(tokens.tokens()).rejects.toThrow(/login first/)
+    await expect(tokens.tokens()).rejects.toThrow(/session start first/)
     tokens.options.keyring.set("example-service", "example-client", "broken")
     expect(() => tokens.load()).toThrow(/invalid/)
     tokens.options.keyring.set(
@@ -456,9 +456,9 @@ describe("zm", () => {
     expect(await run(["import", "example-folder"], missing.deps)).toBe(3)
     expect(await run(["meetings", "show", "1"], missing.deps)).toBe(3)
     expect(await run(["--json", "--jsonl", "config", "show"], deps)).toBe(2)
-    expect(await run(["login"], deps)).toBe(3)
+    expect(await run(["session", "start"], deps)).toBe(3)
     setConfig(deps.configPath, "zoom.clientId", "example-client")
-    expect(await run(["--no-input", "login"], deps)).toBe(3)
+    expect(await run(["--no-input", "session", "start"], deps)).toBe(3)
   })
   it("logs in through an injected browser and exposes only status and grants", async () => {
     const setup = await programSetup({
@@ -470,7 +470,7 @@ describe("zm", () => {
       },
     })
     setConfig(setup.deps.configPath, "zoom.clientId", "example-client")
-    expect(await run(["--json", "login", "--browser", "example-browser"], setup.deps)).toBe(0)
+    expect(await run(["--json", "session", "start", "--browser", "example-browser"], setup.deps)).toBe(0)
     expect(JSON.parse(setup.stdout[0] ?? "{}")).toEqual({ loggedIn: true, scopes })
     expect(setup.stdout.join("")).not.toContain("example-access")
   })
