@@ -253,7 +253,7 @@ it("preserves shared-parser compatibility with lone CR WebVTT line endings", asy
   expect(await source.transcript("example")).toHaveLength(1)
 })
 
-it("refuses a folder transcript larger than a Zoom download may be, before reading it", async () => {
+it("refuses a folder transcript larger than zm downloads, before reading it", async () => {
   const folder = await mkdtemp(join(tmpdir(), "zm-test-source-"))
   const name = "2026-10-10_1530_example.vtt"
   await writeFile(join(folder, name), vtt)
