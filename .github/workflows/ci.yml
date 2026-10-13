@@ -26,6 +26,7 @@ jobs:
         pnpm docs:check
         pnpm generate:check
         pnpm test:matrix:check
+        pnpm lint:commands
 
   installed-platforms:
     needs: ci

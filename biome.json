@@ -10,7 +10,8 @@
       "!docs/zoom-app.json",
       "!package-lock.json",
       "!.worktrees",
-      "!config/wirecat"
+      "!config/wirecat",
+      "!lint/baseline"
     ]
   }
 }

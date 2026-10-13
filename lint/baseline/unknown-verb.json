@@ -1,0 +1,23 @@
+[
+  "login",
+  "meetings embeddings",
+  "meetings evidence",
+  "meetings link-event",
+  "meetings link-person",
+  "meetings people",
+  "meetings search-index",
+  "meetings search-page",
+  "meetings semantic",
+  "meetings summary",
+  "meetings task-proposal",
+  "meetings transcript",
+  "pull",
+  "recordings archive locks",
+  "recordings archive recover",
+  "recordings archive transcript",
+  "recordings archive verify",
+  "recordings schedule disable",
+  "recordings schedule run",
+  "remote-meetings invitation",
+  "search all"
+]

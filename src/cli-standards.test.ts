@@ -3,6 +3,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { CliError, memoryKeyring } from "@wirecat/cli-base"
 import { describeProgram, flatten } from "@wirecat/cli-base/commands"
+import { parseCommandsDocument } from "@wirecat/cli-base-next/commands"
 import { describe, expect, it } from "vitest"
 import { setConfig } from "./config.js"
 import { checkCancelled, ZoomError } from "./errors.js"
@@ -64,6 +65,16 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(await run(["--json", "complete", "--", "meetings", "s"], deps)).toBe(0)
     expect(JSON.parse(stdout[2] ?? "{}").items.some((item: { value: string }) => item.value === "search")).toBe(true)
     expect(stderr).toEqual([])
+  })
+  it("prints the shared commands document, whole and scoped", async () => {
+    const { deps, stdout } = await setup()
+    expect(await run(["commands", "--json"], deps)).toBe(0)
+    expect(await run(["commands", "meetings", "show", "--json"], deps)).toBe(0)
+    const [whole, scoped] = stdout.map((text) => parseCommandsDocument(JSON.parse(text)))
+    expect(whole?.problems).toBeUndefined()
+    expect(whole?.document).toMatchObject({ cli: "zm", contract: 0, exitCodes: { ok: 0 } })
+    expect(scoped?.problems).toBeUndefined()
+    expect(scoped?.document?.scope).toEqual(["meetings", "show"])
   })
   it("reports local health and explicitly unknown authentication without keyring/DB access", async () => {
     const { deps, stdout } = await setup()
