@@ -24,7 +24,7 @@ Login, cloud recording downloads and remote meeting commands work independently 
 database. Import, pull, folder watching and meeting reads use the published shared SQLite adapter.
 Store connections open lazily and close before successful results are emitted. Meeting data persists
 in the shared WireCat database; `MESSAGING_STORE` selects an explicit database path. The shared model,
-exports and ingestion loop come from `@wirecat/cli-messaging/meetings`.
+exports and ingestion loop come from `@wirecat/cli-core/meetings`.
 
 The shared store uses `wirecat.db`. Opening its default path deletes the legacy unencrypted
 `messages.db` and its `-wal` and `-shm` sidecars, without migrating them. The legacy files are kept
@@ -202,7 +202,7 @@ returning parsed cues. Search stops after finding one match beyond its limit; la
 unread. They need no login, configuration or database. Use `--uuid` or comma-separated
 `--file-ids` to select assets, and `--max-bytes` to change the default 8 MiB per-file read limit.
 Search matches literal cue text after Unicode normalization and lowercasing; speaker names are
-not searched. Its default limit is 100, with a maximum of 1000. `hasMore` means another matching cue
+not searched. Its default limit is 100, with a maximum of 1000. `has_more` means another matching cue
 exists; increase the limit or narrow the occurrence, file or query selection to read more.
 Results have no continuation cursor. Finite output remains bounded by `--max-output-bytes`, and a
 failed verification emits no successful result.

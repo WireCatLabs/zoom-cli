@@ -14,7 +14,7 @@ const packageRoot = join(root, "node_modules", "@wirecat", "zoom-cli")
 const metadata = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"))
 assert.equal(metadata.version, expectedVersion)
 const require = createRequire(join(packageRoot, "package.json"))
-const producerRequire = createRequire(require.resolve("@wirecat/cli-messaging"))
+const producerRequire = createRequire(require.resolve("@wirecat/cli-core"))
 assert.equal(require.resolve("@wirecat/cli-base"), producerRequire.resolve("@wirecat/cli-base"))
 const dependencyVersion = (name) => {
   let directory = dirname(require.resolve(name))
@@ -29,12 +29,12 @@ const dependencyVersion = (name) => {
   throw new Error(`installed dependency metadata missing: ${name}`)
 }
 const dependencies = {
-  messaging: dependencyVersion("@wirecat/cli-messaging"),
+  messaging: dependencyVersion("@wirecat/cli-core"),
   core: dependencyVersion("@wirecat/cli-base"),
 }
 const declared = (name) => metadata.dependencies[name] ?? metadata.peerDependencies?.[name]
 assert.deepEqual(dependencies, {
-  messaging: declared("@wirecat/cli-messaging"),
+  messaging: declared("@wirecat/cli-core"),
   core: declared("@wirecat/cli-base"),
 })
 const guard = join(root, "guard.cjs")
@@ -168,9 +168,9 @@ const schedulePreview = json(
   "--offline",
 )
 assert.equal(schedulePreview.applied, false)
-assert.equal(schedulePreview.timerState, "not_checked")
+assert.equal(schedulePreview.timer_state, "not_checked")
 assert.equal(schedulePreview.job.capture.profile, "invented-platform")
-assert.equal(schedulePreview.job.capture.clientId, "example-public-client")
+assert.equal(schedulePreview.job.capture.client_id, "example-public-client")
 assert.deepEqual(json("recordings", "schedule", "list", "--offline").items, [])
 invoke(["recordings", "schedule", "show", schedulePreview.job.schedule.id, "--offline", "--json"], 6)
 invoke(["recordings", "schedule", "disable", schedulePreview.job.schedule.id, "--dry-run", "--offline", "--json"], 6)
@@ -301,16 +301,16 @@ assert.equal(existsSync(cancelMarker), true)
 const imported = json("recordings", "archive", "import", archive).items[0]
 assert.equal(imported.status, "acknowledged")
 assert.equal(imported.created, true)
-assert.equal(imported.insertedTranscripts, 1)
-assert.equal(imported.replayedTranscripts, 0)
-assert.equal(imported.supersededTranscripts, 0)
-const archivedMeetingId = String(imported.meetingId)
+assert.equal(imported.inserted_transcripts, 1)
+assert.equal(imported.replayed_transcripts, 0)
+assert.equal(imported.superseded_transcripts, 0)
+const archivedMeetingId = String(imported.meeting_id)
 const importedReplay = json("recordings", "archive", "import", archive).items[0]
-assert.equal(importedReplay.meetingId, imported.meetingId)
+assert.equal(importedReplay.meeting_id, imported.meeting_id)
 assert.equal(importedReplay.created, false)
-assert.equal(importedReplay.insertedTranscripts, 0)
-assert.equal(importedReplay.replayedTranscripts, 1)
-assert.equal(importedReplay.supersededTranscripts, 0)
+assert.equal(importedReplay.inserted_transcripts, 0)
+assert.equal(importedReplay.replayed_transcripts, 1)
+assert.equal(importedReplay.superseded_transcripts, 0)
 assert.equal(json("meetings", "show", archivedMeetingId).transcripts.length, 1)
 const manifestPath = join(archive, `.zoom-archive-${digest(uuid)}.json`)
 const correctedArchive = original.replace("Original", "Revised archive")
@@ -321,9 +321,9 @@ manifest.files[0].sha256 = digest(correctedArchive)
 writeFileSync(manifestPath, JSON.stringify(manifest))
 const correctedReceipt = json("recordings", "archive", "import", archive).items[0]
 assert.equal(correctedReceipt.created, false)
-assert.equal(correctedReceipt.insertedTranscripts, 1)
-assert.equal(correctedReceipt.replayedTranscripts, 0)
-assert.equal(correctedReceipt.supersededTranscripts, 1)
+assert.equal(correctedReceipt.inserted_transcripts, 1)
+assert.equal(correctedReceipt.replayed_transcripts, 0)
+assert.equal(correctedReceipt.superseded_transcripts, 1)
 json("recordings", "archive", "import", archive)
 assert.equal(json("meetings", "show", archivedMeetingId).transcripts.length, 2)
 assert.equal(json("search", "meetings", "Original").items.length, 0)
@@ -468,12 +468,12 @@ try {
   const query = "invented selected-profile semantic question"
   const semantic = remoteJson("search", "meetings", query, ...modelOptions)
   assert.ok(semantic.items.length > 0)
-  assert.ok(semantic.items.every((hit) => String(hit.meetingId) !== foreignMeetingId))
+  assert.ok(semantic.items.every((hit) => String(hit.meeting_id) !== foreignMeetingId))
   assert.ok(semantic.items.every((hit) => /^meeting:[1-9][0-9]*\/[1-9][0-9]*\/[1-9][0-9]*$/.test(hit.reference)))
-  assert.ok(semantic.items.every((hit) => hit.firstCueReference.startsWith(`${hit.reference}/`)))
+  assert.ok(semantic.items.every((hit) => hit.first_cue_reference.startsWith(`${hit.reference}/`)))
   assert.equal(semantic.coverage.scope, "current-indexed-vectors")
-  assert.equal(semantic.coverage.indexCompleteness, "unknown")
-  assert.equal(semantic.coverage.archiveCompleteness, "unknown")
+  assert.equal(semantic.coverage.index_completeness, "unknown")
+  assert.equal(semantic.coverage.archive_completeness, "unknown")
   assert.equal(requests().length, generatedRequests + 1)
   assert.deepEqual(requests().at(-1).input, [query], "semantic read embeds only the explicit query")
   assert.deepEqual(remoteJson("meetings", "embeddings", ...modelOptions).status, status)
@@ -518,7 +518,7 @@ try {
     })
     assert.notEqual(result.isError, true)
     const report = result.structuredContent ?? JSON.parse(result.content[0].text)
-    assert.equal(report.accountId, semantic.accountId)
+    assert.equal(report.account_id, semantic.account_id)
     assert.deepEqual(report.model, semantic.model)
     assert.ok(report.items.length > 0)
     assert.equal(requests().length, generatedRequests + 2)

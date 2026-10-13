@@ -1,5 +1,5 @@
 import { annotate } from "@wirecat/cli-base/commands"
-import { listed, recordingWindows } from "@wirecat/cli-messaging/meetings"
+import { listed, recordingWindows } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
 import type { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
 import { ZoomError } from "./errors.js"

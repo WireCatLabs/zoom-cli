@@ -3,7 +3,7 @@ import { connect } from "node:net"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
-import { memoryMeetingStore } from "@wirecat/cli-messaging/meetings/testing"
+import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { describe, expect, it } from "vitest"
 import { setConfig } from "./config.js"
 import { login } from "./login.js"
@@ -429,7 +429,7 @@ it("closes after command failures and preserves the primary error if close also 
 
 it("closes after source and rejected-save errors and sanitizes connector failures", async () => {
   const { deps, stderr, stdout } = await setup()
-  const { fakeMeetingSource } = await import("@wirecat/cli-messaging/meetings/testing")
+  const { fakeMeetingSource } = await import("@wirecat/cli-core/meetings/testing")
   setConfig(deps.configPath, "account.profile", "example")
   let closes = 0
   const store = memoryMeetingStore()

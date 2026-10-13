@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 const self = fileURLToPath(import.meta.url)
 const loadStore = async (root) => {
   const require = createRequire(join(root, "node_modules", "@wirecat", "zoom-cli", "package.json"))
-  const { openStore } = await import(pathToFileURL(require.resolve("@wirecat/cli-messaging/store")).href)
+  const { openStore } = await import(pathToFileURL(require.resolve("@wirecat/cli-core/store")).href)
   return openStore({ path: process.env.MESSAGING_STORE, env: process.env, now: () => 3000 })
 }
 
@@ -18,7 +18,7 @@ const fixture = async (root, phase, input) => {
     if (phase === "seed") {
       const require = createRequire(join(root, "node_modules", "@wirecat", "zoom-cli", "package.json"))
       const { sampleMeeting, sampleEvent } = await import(
-        pathToFileURL(require.resolve("@wirecat/cli-messaging/meetings/testing")).href
+        pathToFileURL(require.resolve("@wirecat/cli-core/meetings/testing")).href
       )
       const key = { provider: "zoom", account: "zm-profile:invented-platform" }
       const foreignKey = { provider: "zoom", account: "zm-profile:invented-foreign-platform" }
@@ -162,7 +162,7 @@ export const installedMeetingIntegration = async ({
     String(target.eventId),
     "--yes",
   )
-  assert.equal(unlinked.result.previousEventId, target.eventId)
+  assert.equal(unlinked.result.previous_event_id, target.eventId)
   assert.equal(native("audit", target).eventId, null)
   assert.equal(json(...eventArgs, "--yes").result.changed, true)
   const personArgs = [
@@ -236,14 +236,14 @@ export const installedMeetingIntegration = async ({
       ...(cursor ? ["--cursor", cursor] : []),
     )
     assert.deepEqual(page.coverage, {
-      archiveCompleteness: "unknown",
-      currentRevisions: true,
+      archive_completeness: "unknown",
+      current_revisions: true,
       indexing: "ready",
-      indexCompleteness: "unknown",
+      index_completeness: "unknown",
     })
-    assert.ok(page.items.every((hit) => hit.meetingId === target.meetingId))
+    assert.ok(page.items.every((hit) => hit.meeting_id === target.meetingId))
     hits.push(...page.items)
-    cursor = page.nextCursor
+    cursor = page.next_cursor
     firstCursor ??= cursor
   } while (cursor)
   assert.equal(hits.length, 9)
@@ -308,7 +308,7 @@ export const installedMeetingIntegration = async ({
   const transcribe = ["meetings", "transcribe", reference, audio, "--model", "parakeet-v3", "--models-dir", models]
   const preview = json(...transcribe)
   assert.equal(preview.applied, false)
-  assert.equal(preview.media.durationMs, 1000)
+  assert.equal(preview.media.duration_ms, 1000)
   assert.equal(json(...transcribe, "--yes", "--dry-run").applied, false)
   const missingModel = invoke(["--json", ...transcribe, "--yes"], 6)
   assert.match(missingModel.stderr, /not installed/)

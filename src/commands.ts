@@ -1,7 +1,8 @@
-import { EXIT_CODES, GENERIC_FAILURE, projectFields } from "@wirecat/cli-base"
+import { projectFields } from "@wirecat/cli-base"
 import {
   annotate,
   type CommandInfo,
+  commandsDocument,
   describeOptions,
   describeProgram,
   flatten,
@@ -12,7 +13,7 @@ import type { Command } from "commander"
 import { ZoomError } from "./errors.js"
 import { VERSION } from "./version.js"
 
-const CONTRACT = 0
+const CONTRACT = 1
 
 export interface StandardCommandsDeps {
   output: (value: unknown) => void
@@ -43,15 +44,16 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
           return
         }
         const fields = deps.fields()
-        deps.discovery({
+        const { exit_codes, ...document } = commandsDocument(program, {
           cli: "zm",
           version: VERSION,
           contract: CONTRACT,
-          description: program.description(),
-          globalOptions: describeOptions(program),
-          ...(scoped ? { scope: scoped.command.path, inheritedOptions: scoped.inheritedOptions } : {}),
+        })
+        deps.discovery({
+          ...document,
+          ...(scoped ? { scope: scoped.command.path, inherited_options: scoped.inheritedOptions } : {}),
           commands: fields ? projectDiscovery(commands, fields) : commands,
-          exitCodes: { ok: 0, internal_error: GENERIC_FAILURE, ...EXIT_CODES },
+          exit_codes,
         })
       }),
     { mutates: false, examples: ["zm commands --json"] },

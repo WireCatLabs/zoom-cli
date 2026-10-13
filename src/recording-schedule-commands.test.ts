@@ -2,7 +2,7 @@ import { mkdtemp } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
-import { planRecordingArchiveSchedule } from "@wirecat/cli-messaging/meetings"
+import { planRecordingArchiveSchedule } from "@wirecat/cli-core/meetings"
 import { Command } from "commander"
 import { expect, it, vi } from "vitest"
 import { setConfig } from "./config.js"
@@ -252,7 +252,7 @@ it.each(["create", "disable"] as const)(
     expect(streamData).toHaveBeenCalledTimes(1)
     expect(JSON.parse(fixture.output.join(""))).toMatchObject({
       applied: true,
-      timerState: committed.timerState,
+      timer_state: committed.timerState,
       job: { state: committed.job.state },
     })
     expect(fixture.fail).not.toHaveBeenCalled()

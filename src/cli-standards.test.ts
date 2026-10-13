@@ -71,9 +71,33 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(await run(["commands", "meetings", "show", "--json"], deps)).toBe(0)
     const [whole, scoped] = stdout.map((text) => parseCommandsDocument(JSON.parse(text)))
     expect(whole?.problems).toBeUndefined()
-    expect(whole?.document).toMatchObject({ cli: "zm", contract: 0, exitCodes: { ok: 0 } })
+    expect(whole?.document).toMatchObject({ cli: "zm", contract: 1, exit_codes: { ok: 0 } })
     expect(scoped?.problems).toBeUndefined()
     expect(scoped?.document?.scope).toEqual(["meetings", "show"])
+  })
+  it("reports a crash as internal_error, with its record only under --debug", async () => {
+    const { deps, stderr } = await setup()
+    deps.data = () => {
+      throw new Error("disk on fire")
+    }
+    expect(await run(["--json", "doctor"], deps)).toBe(1)
+    expect(stderr).toHaveLength(1)
+    expect(JSON.parse(stderr[0] ?? "{}").error.code).toBe("internal_error")
+    expect(stderr[0]).not.toContain("disk on fire")
+    expect(await run(["--json", "--debug", "doctor"], deps)).toBe(1)
+    const [object, record] = (stderr[1] ?? "")
+      .trimEnd()
+      .split("\n")
+      .map((line) => JSON.parse(line))
+    expect(object.error.code).toBe("internal_error")
+    expect(record).toMatchObject({ command: "doctor", resource: { service: "zm" } })
+    expect(JSON.stringify(record)).toContain("disk on fire")
+  })
+  it("says a failure in one line to a person at a terminal", async () => {
+    const { deps, stderr } = await setup()
+    deps.outputIsTTY = true
+    expect(await run(["config", "set", "no.such.key", "x"], deps)).not.toBe(0)
+    expect(stderr[0]).toMatch(/^✗ /)
   })
   it("lists one row per command without --json", async () => {
     const { deps, stdout } = await setup()
@@ -96,7 +120,7 @@ describe("portable CLI discovery and diagnostics", () => {
     }
     expect(await run(["--json", "doctor"], deps)).toBe(0)
     expect(JSON.parse(stdout[0] ?? "{}")).toMatchObject({
-      dataProfile: "example",
+      data_profile: "example",
       authentication: { configured: true, state: "not_checked" },
       database: "not_checked",
     })
@@ -119,7 +143,7 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(JSON.parse(stdout.at(-1) ?? "{}")).toMatchObject({
       state: "saved",
       verified: false,
-      dataProfile: "local-example",
+      data_profile: "local-example",
       scopes: ["example:read"],
     })
     deps.now = () => 1000

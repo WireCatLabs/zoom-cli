@@ -68,7 +68,7 @@ zm session start
 1. Sign in to the intended Zoom account in the browser and review the app's permissions.
 2. Choose **Allow**. Zoom opens the WireCat callback page, which forwards the authorization to
    the waiting `zm` process on your computer.
-3. Return to the terminal. Login is complete when `zm` reports `loggedIn: true` and returns to
+3. Return to the terminal. Login is complete when `zm` reports `logged_in: true` and returns to
    the prompt. Browser approval alone is not completion.
 4. If the terminal keeps waiting, copy the callback page's `code=…&state=…` value or full callback
    URL, paste it into that same waiting terminal and press Enter. Do this before the five-minute
@@ -83,7 +83,7 @@ zm meetings sync --lookback-days 7
 zm meetings list --json
 ```
 
-The session should report `loggedIn: true`. A successful pull stores the available hosted meetings;
+The session should report `logged_in: true`. A successful pull stores the available hosted meetings;
 the list returns their local IDs. Open one using the ID from that list:
 
 ```sh

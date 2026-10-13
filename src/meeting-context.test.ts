@@ -5,6 +5,7 @@ import { Writable } from "node:stream"
 import { memoryKeyring } from "@wirecat/cli-base"
 import { expect, it, vi } from "vitest"
 import { setConfig } from "./config.js"
+import { snakeKeys } from "./keys.js"
 import {
   createMeetingContextCapabilities,
   validateEvidenceOptions,
@@ -28,11 +29,11 @@ const api = vi.hoisted(() => ({
   personMeetingContext: vi.fn(),
   proposeMeetingTask: vi.fn(),
 }))
-vi.mock("@wirecat/cli-messaging", () => ({
+vi.mock("@wirecat/cli-core", () => ({
   parseMeetingReference: api.parseMeetingReference,
   canonicalMeetingReference: api.canonicalMeetingReference,
 }))
-vi.mock("@wirecat/cli-messaging/services", () => ({
+vi.mock("@wirecat/cli-core/services", () => ({
   readMeetingEvidence: api.readMeetingEvidence,
   personMeetingContext: api.personMeetingContext,
   proposeMeetingTask: api.proposeMeetingTask,
@@ -228,7 +229,7 @@ it("CLI forwards complete context envelopes and proposal-only previews with no a
     taskProposal: async () => proposal,
   }
   expect(await run(["meetings", "evidence", reference, "--jsonl"], deps)).toBe(0)
-  expect(JSON.parse(output.pop() ?? "{}")).toEqual(evidence)
+  expect(JSON.parse(output.pop() ?? "{}")).toEqual(snakeKeys(evidence))
   expect(
     await run(
       [
@@ -388,7 +389,7 @@ it("requires an explicit semantic model, preserves scan coverage, and previews g
       deps,
     ),
   ).toBe(0)
-  expect(JSON.parse(output.pop() ?? "{}")).toEqual({ ...report, nextCursor: "12" })
+  expect(JSON.parse(output.pop() ?? "{}")).toEqual(snakeKeys({ ...report, nextCursor: "12" }))
   expect(search).toHaveBeenCalledWith(
     "example",
     expect.objectContaining({
@@ -574,7 +575,7 @@ it("opens only the selected semantic read connection and closes it before finite
   expect(connect).toHaveBeenCalledWith({ profile: "example", externalId: "zm-profile:example", intent: "read" })
   expect(search).toHaveBeenCalledOnce()
   expect(close).toHaveBeenCalledOnce()
-  expect(JSON.parse(output.pop() ?? "{}").coverage.archiveCompleteness).toBe("unknown")
+  expect(JSON.parse(output.pop() ?? "{}").coverage.archive_completeness).toBe("unknown")
   connect.mockResolvedValue({ ...connection, meetingSemantic: undefined })
   expect(await run(args, deps)).toBe(3)
   expect(close).toHaveBeenCalledTimes(2)

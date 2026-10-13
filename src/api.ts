@@ -6,7 +6,7 @@ import {
   type SourceMeeting,
   type SourceParticipant,
   type SummaryContent,
-} from "@wirecat/cli-messaging/meetings"
+} from "@wirecat/cli-core/meetings"
 import { number, object, string, ZoomError } from "./errors.js"
 import { type RemoteOptions, ZoomRemote } from "./remote-http.js"
 import type { TokenManager } from "./tokens.js"

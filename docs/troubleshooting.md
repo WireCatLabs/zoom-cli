@@ -11,7 +11,7 @@ recording files and inspect an uncertain remote change before retrying it.
 The browser approved the app, but its callback has not reached the waiting process. Leave that
 terminal open. On the WireCat callback page, copy `code=…&state=…` or the full callback URL, paste
 it into **the same running `zm session start` terminal**, and press Enter. The command must report
-`loggedIn: true` and return to the prompt. If it timed out, start a new login and use its new callback.
+`logged_in: true` and return to the prompt. If it timed out, start a new login and use its new callback.
 A callback from an earlier attempt cannot finish a later one.
 
 A browser on another device or a remote terminal can prevent automatic local forwarding.

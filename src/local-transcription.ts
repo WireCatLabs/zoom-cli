@@ -5,12 +5,12 @@ import type {
   MeetingTranscriptionReceipt,
   MeetingTranscriptionSource,
   MeetingTranscriptReceiptStore,
-} from "@wirecat/cli-messaging/meetings"
+} from "@wirecat/cli-core/meetings"
 import type {
   LocalSpeechRecognitionModel,
   LocalSpeechRecognizer,
   LocalSpeechRecognizerOptions,
-} from "@wirecat/cli-messaging/speech"
+} from "@wirecat/cli-core/speech"
 import { checkCancelled, ZoomError } from "./errors.js"
 import { openWavAudio, preflightWavAudio, type WavAudioPlan } from "./wav-audio.js"
 
@@ -82,7 +82,7 @@ export const compactLocalTranscriptionReceipt = (receipt: MeetingTranscriptionRe
   }
 }
 const loadSpeech = async (): Promise<LocalSpeechPort> => {
-  const speech = await import("@wirecat/cli-messaging/speech")
+  const speech = await import("@wirecat/cli-core/speech")
   return { describe: speech.localSpeechRecognitionModel, open: speech.openLocalSpeechRecognizer }
 }
 export const createWavTranscriptionSource = (
@@ -202,7 +202,7 @@ export const createLocalTranscriptionCapabilities = (
         env: options.env,
         speech: options.speech,
       })
-      const { transcribeMeeting } = await import("@wirecat/cli-messaging/meetings")
+      const { transcribeMeeting } = await import("@wirecat/cli-core/meetings")
       return transcribeMeeting(
         source,
         {

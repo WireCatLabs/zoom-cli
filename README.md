@@ -396,7 +396,7 @@ More: [development setup][docs/dev/development.md] · [test matrix][docs/dev/tes
 [docs/troubleshooting.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/troubleshooting.md
 [docs/usage.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/usage.md
 [docs/zoom-app.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/zoom-app.md
-[gh/cli-meetings/blob/main/docs/dev/roadmap.md]: https://github.com/WireCatLabs/cli-messaging/blob/main/docs/dev/MEETINGS.md#providers-next
+[gh/cli-meetings/blob/main/docs/dev/roadmap.md]: https://github.com/WireCatLabs/cli-core/blob/main/docs/dev/MEETINGS.md#providers-next
 [license]: https://github.com/WireCatLabs/zoom-cli/blob/main/LICENSE
 [wirecat/en/docs/agents]: https://wirecat.dev/en/docs/agents
 [wirecat/en/docs/mcp]: https://wirecat.dev/en/docs/mcp

@@ -22,7 +22,7 @@ keyring, never the public configuration file. If that password store is unavaila
 
 Leave the terminal running. After **Allow**, the callback page at `https://wirecat.dev/zoom-callback`
 forwards the response to a temporary listener on your computer. Successful receipt closes the listener;
-the command reports `loggedIn: true` with granted scopes and returns to the shell prompt.
+the command reports `logged_in: true` with granted scopes and returns to the shell prompt.
 
 If nothing appears in the terminal after approval:
 
@@ -43,7 +43,7 @@ it belongs to the active login attempt. Approval is complete only after the term
 zm session status --json
 ```
 
-This checks cached keyring state without contacting Zoom or refreshing tokens. `loggedIn: true`
+This checks cached keyring state without contacting Zoom or refreshing tokens. `logged_in: true`
 means credentials are saved; it is not a remote validity check. The returned scopes show what was
 granted. For a remote check, add the `user:read:user` scope in the app, authorize again, then run:
 

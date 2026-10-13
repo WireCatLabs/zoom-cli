@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto"
-import { CliError } from "@wirecat/cli-base"
+import { isCliError } from "@wirecat/cli-base"
 import type {
   MeetingTranscriptReceiptStore,
   MeetingTranscriptStore,
   TranscriptAppend,
-} from "@wirecat/cli-messaging/meetings"
+} from "@wirecat/cli-core/meetings"
 import { type ArchiveTranscriptOptions, readArchiveTranscripts } from "./archive-transcripts.js"
 import { checkCancelled, ZoomError } from "./errors.js"
 
@@ -183,7 +183,7 @@ export async function* applyArchiveImport(
           : {}),
       }
     } catch (error) {
-      if (error instanceof CliError && (error.code === "timeout" || error.code === "cancelled")) {
+      if (isCliError(error) && (error.code === "timeout" || error.code === "cancelled")) {
         checkCancelled(signal)
         throw error
       }

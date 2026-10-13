@@ -1,5 +1,5 @@
 import { annotate } from "@wirecat/cli-base/commands"
-import { validateMeetingContextChange } from "@wirecat/cli-messaging/meetings"
+import { validateMeetingContextChange } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
 import { ZoomError } from "./errors.js"
 import { bytes } from "./execution.js"

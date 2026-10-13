@@ -6,7 +6,7 @@ import {
   RecordingSyncError,
   recordingWindows,
   syncRecordingArchive as syncArchive,
-} from "@wirecat/cli-messaging/meetings"
+} from "@wirecat/cli-core/meetings"
 import { checkCancelled, ZoomError } from "./errors.js"
 import { validateDownloadOptions } from "./recording-archive.js"
 import { fileRecordingSyncCheckpointStore } from "./recording-sync-store.js"

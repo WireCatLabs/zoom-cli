@@ -1,8 +1,8 @@
 import { mkdtemp } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { sampleMeeting } from "@wirecat/cli-messaging/meetings/testing"
-import { openStore } from "@wirecat/cli-messaging/store"
+import { sampleMeeting } from "@wirecat/cli-core/meetings/testing"
+import { openStore } from "@wirecat/cli-core/store"
 import { expect, it } from "vitest"
 import { createStoreConnector } from "./store-connection.js"
 

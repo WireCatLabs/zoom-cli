@@ -1,5 +1,5 @@
-import type { MeetingEmbedder, MeetingEmbeddingModel } from "@wirecat/cli-messaging/services"
-import type { MeetingVectors } from "@wirecat/cli-messaging/store"
+import type { MeetingEmbedder, MeetingEmbeddingModel } from "@wirecat/cli-core/services"
+import type { MeetingVectors } from "@wirecat/cli-core/store"
 import { expect, it, vi } from "vitest"
 import { createMeetingSemanticCapabilities } from "./meeting-semantic.js"
 

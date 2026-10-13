@@ -27,7 +27,7 @@ zm search meetings "example plan" --model example-model --base-url http://127.0.
 
 Before it reads, the search splits the current transcripts into passages again and embeds every passage that
 has no vector for that model yet, so a first search on a large store takes longer and, with a remote model,
-sends those passages to it. Continue with `--cursor <nextCursor>`; results are ranked per page only.
+sends those passages to it. Continue with `--cursor <next_cursor>`; results are ranked per page only.
 
 To prepare vectors ahead of time instead, preview and build them in batches:
 

@@ -1,5 +1,5 @@
 import { annotate } from "@wirecat/cli-base/commands"
-import { addMeetingSearchCommand, type MeetingHitSearch } from "@wirecat/cli-messaging/meetings/cli"
+import { addMeetingSearchCommand, type MeetingHitSearch } from "@wirecat/cli-core/meetings/cli"
 import type { Command } from "commander"
 import type { ArchiveTranscriptService } from "./archive-commands.js"
 import { ZoomError } from "./errors.js"
@@ -10,7 +10,7 @@ export {
   type MeetingHitSearch,
   type MeetingHitSearchOptions,
   validateMeetingHitSearch,
-} from "@wirecat/cli-messaging/meetings/cli"
+} from "@wirecat/cli-core/meetings/cli"
 
 interface SearchOptions {
   meetingId?: number
@@ -79,7 +79,7 @@ const refuse = (options: SearchOptions, keys: readonly (keyof typeof FLAG)[], mo
 const chunkCursor = (cursor: string | undefined): number | undefined => {
   if (cursor === undefined) return undefined
   if (!/^[1-9]\d*$/.test(cursor) || !Number.isSafeInteger(Number(cursor)))
-    throw new ZoomError("validation_error", "--cursor by meaning takes the previous page's nextCursor")
+    throw new ZoomError("validation_error", "--cursor by meaning takes the previous page's next_cursor")
   return Number(cursor)
 }
 

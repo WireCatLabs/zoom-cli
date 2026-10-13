@@ -3,8 +3,8 @@ import { mkdir, mkdtemp, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { brokenKeyring, memoryKeyring } from "@wirecat/cli-base"
-import { importFiles, pull } from "@wirecat/cli-messaging/meetings"
-import { memoryMeetingStore } from "@wirecat/cli-messaging/meetings/testing"
+import { importFiles, pull } from "@wirecat/cli-core/meetings"
+import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { describe, expect, it } from "vitest"
 import { encodeUuid, ZoomApiSource } from "./api.js"
 import { readConfig, setConfig } from "./config.js"
@@ -417,7 +417,7 @@ describe("zm", () => {
     expect(readConfig(deps.configPath).clientId).toBeNull()
     expect(await run(["config", "set", "zoom.clientId", "example-client"], deps)).toBe(0)
     expect(await run(["--json", "config", "show"], deps)).toBe(0)
-    expect(JSON.parse(stdout[1] ?? "{}")).toHaveProperty("clientId", "example-client")
+    expect(JSON.parse(stdout[1] ?? "{}")).toHaveProperty("client_id", "example-client")
     setConfig(deps.configPath, "files.timezone", "Europe/Madrid")
     setConfig(deps.configPath, "source", "files")
     setConfig(deps.configPath, "files.folder", "example-folder")
@@ -471,7 +471,7 @@ describe("zm", () => {
     })
     setConfig(setup.deps.configPath, "zoom.clientId", "example-client")
     expect(await run(["--json", "session", "start", "--browser", "example-browser"], setup.deps)).toBe(0)
-    expect(JSON.parse(setup.stdout[0] ?? "{}")).toEqual({ loggedIn: true, scopes })
+    expect(JSON.parse(setup.stdout[0] ?? "{}")).toEqual({ logged_in: true, scopes })
     expect(setup.stdout.join("")).not.toContain("example-access")
   })
 })

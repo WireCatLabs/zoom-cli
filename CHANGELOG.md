@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased
+
+### Changed — may break callers
+
+- **Runs on `@wirecat/cli-core` 0.262.0** (cli-messaging renamed) **and `@wirecat/cli-base` 0.26.0.**
+- **Every key zm writes itself is snake_case**, on stdout and in its own MCP results: `config show`
+  (`account_profile`, `client_id`, `files_folder`, `files_timezone`), `doctor` and `session status`
+  (`data_profile`, `expires_at`), `session start` (`logged_in`), recordings, archives and schedules (`manifest_path`, `timer_state`,
+  `checkpoint_revision`, `job.capture.client_id`), `meetings update|link|transcribe|evidence|context`,
+  `search meetings`, `search all` and `watch` (`has_more`, `next_cursor`, `meeting_id`, `transcript_rows`). `--fields`
+  takes the snake_case names. `commands --json` has `global_options`, `inherited_options` and `exit_codes`, and its
+  `contract` is 1. The meeting commands that come from cli-core (`meetings list|show|transcript|summary|export|people`)
+  keep their keys until cli-core changes them.
+- **`search all --meeting-cursor` and MCP `search_all` `meeting_cursor` take the snake_case cursor** that
+  `meetings.next_cursor` prints (`account_id`, `query`, `meeting_offset`, `hit_offset`).
+- **A failure reads as one line at a terminal** (`✗ message`), and as the JSON error object when output is piped or
+  `--json`/`--jsonl` is set. A crash in start-up is `internal_error` (exit 1), not `configuration_error`.
+
+### Added
+
+- **`--debug`:** on a failure, the whole log record — cause and stack — after the error object or in place of the
+  short line.
+
 ## 0.8.0 — 13.10.2026
 
 ### Changed — may break callers
