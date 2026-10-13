@@ -7,7 +7,7 @@
 - **Runs on `@wirecat/cli-core` 0.262.0** (cli-messaging renamed) **and `@wirecat/cli-base` 0.26.0.**
 - **Every key zm writes itself is snake_case**, on stdout and in its own MCP results: `config show`
   (`account_profile`, `client_id`, `files_folder`, `files_timezone`), `doctor` and `session status`
-  (`data_profile`, `logged_in`, `expires_at`), recordings, archives and schedules (`manifest_path`, `timer_state`,
+  (`data_profile`, `expires_at`), `session start` (`logged_in`), recordings, archives and schedules (`manifest_path`, `timer_state`,
   `checkpoint_revision`, `job.capture.client_id`), `meetings update|link|transcribe|evidence|context`,
   `search meetings`, `search all` and `watch` (`has_more`, `next_cursor`, `meeting_id`, `transcript_rows`). `--fields`
   takes the snake_case names. `commands --json` has `global_options`, `inherited_options` and `exit_codes`, and its

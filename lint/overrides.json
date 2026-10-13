@@ -1,1 +1,7 @@
-[]
+[
+  {
+    "rule": "flag-two-meanings",
+    "target": "--source",
+    "reason": "watch --source picks api or files; cli-base 0.25 registered --source as an account scope. Waits for the owner: drop it or rename it (w2side-zoom report)."
+  }
+]
