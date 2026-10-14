@@ -74,6 +74,32 @@ const setup = async () => {
   setConfig(deps.configPath, "account.profile", "AliceExample")
   return { ...f, deps, output, close, opened, network, connectStore }
 }
+it("projects cited cues while retaining coverage, source and execution metadata", async () => {
+  const f = await setup()
+  expect(
+    await run(
+      [
+        "meetings",
+        "passage",
+        f.reference,
+        "--before-n",
+        "1",
+        "--after-n",
+        "1",
+        "--json=items.ref,items.start_ms,items.speaker_name,items.text",
+      ],
+      f.deps,
+    ),
+  ).toBe(0)
+  const answer = JSON.parse(f.output.join(""))
+  expect(answer.meta).toMatchObject({ complete: true })
+  expect(answer.item).toMatchObject({ target_ref: f.reference, coverage: { included: 3 } })
+  expect(answer.item.items).toHaveLength(3)
+  expect(answer.item.items[0]).toHaveProperty("ref")
+  expect(answer.item.items[0]).not.toHaveProperty("fingerprint")
+  expect(answer.item.items[0]).not.toHaveProperty("content_hash")
+  expect(f.network).not.toHaveBeenCalled()
+})
 it("opens published search-hit context as Markdown or structured JSON and closes before output", async () => {
   const f = await setup()
   f.deps.data = (text) => {

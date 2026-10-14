@@ -42,11 +42,7 @@ export const renderBody = (
 ): { text: string; exitCode: number } => {
   const data = snakeKeys(body) as Body
   const fields = options.fields
-  const projected: Body = !fields
-    ? data
-    : "items" in data
-      ? { ...data, items: projectFields(data.items, fields) as unknown[] }
-      : { ...data, item: projectFields(data.item, fields) }
+  const projected = fields ? (projectFields(data, fields) as Body) : data
   const meta = metaNow({ ...projected.meta, run_id: options.meta.run_id, duration_ms: options.meta.duration_ms })
   const chunks: string[] = []
   const streams = {
