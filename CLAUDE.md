@@ -12,11 +12,17 @@ No live check or real import before the owner authorizes it and the shared store
 Use a branch and a worktree. The pre-commit hook checks staged lint and secrets. Conventional commits; visible changes get an Unreleased changelog entry. Never clean up
 files, branches or worktrees mid-task: record them in CLEANUP.md for the owner's confirmation.
 
+Security audits of this repository follow the shared
+[security method](https://github.com/WireCatLabs/cli-testing/tree/main/docs/security) in cli-testing;
+vulnerabilities are reported as the
+[security policy](https://github.com/WireCatLabs/.github/blob/main/SECURITY.md) says.
+
 ## Development check budget
 
 Local commits check only staged lint and secrets. There is no pre-push check.
 Config integrity, repository lint, Markdown, and secret detection run in PR CI.
 The bounded `ci:quick` step adds typechecking for CLI packages or synthetic unit tests for the docs site.
-Full tests, coverage, builds, parity, browser and platform suites run for releases,
-explicit manual validation, and monthly nonpublishing validation. See the
+Full tests, coverage and builds also run once on each merge to `main` (Linux only, no publishing).
+Browser and platform suites run for releases, explicit manual validation, and monthly nonpublishing
+validation. See the
 [shared policy](https://github.com/WireCatLabs/community/blob/main/standards/README.md#ci-and-hooks).
