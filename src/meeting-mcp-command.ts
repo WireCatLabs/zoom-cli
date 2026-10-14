@@ -1,5 +1,5 @@
+import { CliError } from "@wirecat/cli-base"
 import type { Command } from "commander"
-import { ZoomError } from "./errors.js"
 import { bytes } from "./execution.js"
 import type { ZoomPreparationOptions } from "./meeting-preparation.js"
 import { type MeetingModelOptions, validateMeetingModel } from "./meeting-semantic-commands.js"
@@ -45,16 +45,16 @@ export const addZoomMcpCommand = (
       }) => {
         const opts = program.opts()
         if (opts.json || opts.jsonl || deps.fields())
-          throw new ZoomError("validation_error", "MCP stdio controls its own output; omit --json and --jsonl")
-        if (!deps.serve) throw new ZoomError("configuration_error", "the MCP server adapter is not available")
+          throw new CliError("validation_error", "MCP stdio controls its own output; omit --json and --jsonl")
+        if (!deps.serve) throw new CliError("configuration_error", "the MCP server adapter is not available")
         if (options.semantic)
           validateMeetingModel({ model: options.model ?? "", baseUrl: options.baseUrl, dims: options.dims })
         else if (options.model !== undefined || options.baseUrl !== undefined || options.dims !== undefined)
-          throw new ZoomError("validation_error", "MCP model options require --semantic")
+          throw new CliError("validation_error", "MCP model options require --semantic")
         if (options.semantic && options.baseUrl !== undefined && opts.offline)
-          throw new ZoomError("configuration_error", "remote embeddings require network access; remove --offline")
+          throw new CliError("configuration_error", "remote embeddings require network access; remove --offline")
         if (options.meetingPreparation && opts.offline)
-          throw new ZoomError("configuration_error", "meeting preparation requires network access; remove --offline")
+          throw new CliError("configuration_error", "meeting preparation requires network access; remove --offline")
         await deps.serve({
           commandRegistry: program,
           signal: deps.signal() as AbortSignal,

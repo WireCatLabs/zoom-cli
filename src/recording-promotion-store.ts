@@ -1,9 +1,9 @@
 import { createHash, randomUUID } from "node:crypto"
 import { open, rename, unlink } from "node:fs/promises"
 import { join } from "node:path"
+import { CliError } from "@wirecat/cli-base"
+import { openOrdinaryFile, syncDirectory } from "@wirecat/cli-core/files"
 import { type RecordingAssetLocator, type RecordingPartial, strongRecordingValidator } from "@wirecat/cli-core/meetings"
-import { ZoomError } from "./errors.js"
-import { openOrdinaryFile, syncDirectory } from "./ordinary-file.js"
 import type { ArchivedFile, ArchiveManifest } from "./recording-archive.js"
 
 export interface RecordingPromotion {
@@ -50,7 +50,7 @@ export const writeRecordingPromotion = async (
   }
   const content = JSON.stringify(record)
   if (Buffer.byteLength(content) > 32768)
-    throw new ZoomError("validation_error", "recording recovery record exceeds its metadata limit")
+    throw new CliError("validation_error", "recording recovery record exceeds its metadata limit")
   const temp = join(root, `.zoom-promotion-${randomUUID()}.tmp`)
   const handle = await open(temp, "wx", 0o600)
   try {
@@ -104,7 +104,7 @@ export const readRecordingPromotion = async (
       throw new Error("record shape")
     return record
   } catch {
-    throw new ZoomError("validation_error", "recording recovery record does not match this scoped asset")
+    throw new CliError("validation_error", "recording recovery record does not match this scoped asset")
   } finally {
     await handle.close()
   }

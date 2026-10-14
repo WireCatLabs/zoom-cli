@@ -62,6 +62,9 @@ const setup = async () => {
     configPath: join(root, "missing-config.json"),
     recordings: {
       list: async () => [],
+      catalog: () => {
+        throw new Error("unexpected provider")
+      },
       show: async () => {
         throw new Error("unexpected provider")
       },
@@ -165,7 +168,7 @@ it("the modular command hook streams only acknowledged service receipts and reje
     },
   }))
   await root.parseAsync(["recordings", "schedule", "run", fixture.job.schedule.id, "--jsonl"], { from: "user" })
-  expect(deps.receipt).toHaveBeenCalledExactlyOnceWith(receipt)
+  expect(deps.receipt).toHaveBeenCalledExactlyOnceWith({ item: receipt })
 })
 
 it("offline installation and manual run fail before an injected service can dispatch side effects", async () => {

@@ -4,6 +4,17 @@
 
 ### Changed — may break callers
 
+- **`recordings download` and `recordings sync` need a selected profile.** The archive belongs to the profile's
+  account; without `account.profile` they fail with `configuration_error` instead of using an unnamed account.
+  The SDK's `DownloadOptions.account` is required, and `syncRecordingArchive` takes a service with `catalog`.
+
+- **`ZoomError` is gone from the SDK**; failures are cli-base `CliError`s. `StoreConnection` capabilities are
+  required, `StoreConnectRequest.capability` and `StoreConnection.appendTranscripts` are gone, and
+  `ProgramDeps` no longer takes capability overrides; `createStoreConnector` takes a full cli-core store.
+
+- **A terminal prints the answer's items, not the whole envelope**, with next steps on stderr — cli-core's shared
+  renderer. JSON and JSONL output keep their shape.
+
 - **`--json=id,title` replaces `--fields`** (the standard's `--json [fields]`, read as tg, max, drive and memo read it
   through cli-core's shared `liftJson`). `--fields` is gone, and fields come only with `--json`, not `--jsonl`. A
   field the answer does not declare is refused with the fields it has. Adopts cli-core 0.280.0.

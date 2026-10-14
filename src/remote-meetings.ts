@@ -1,3 +1,4 @@
+import { CliError } from "@wirecat/cli-base"
 import {
   createMeetingManagement,
   dispatchMeetingMutation,
@@ -5,7 +6,7 @@ import {
   type ManagedMeetingChange,
   validateMeetingChange,
 } from "@wirecat/cli-core/meetings"
-import { object, string, ZoomError } from "./errors.js"
+import { object, string } from "./errors.js"
 import { required } from "./recordings.js"
 import { operationSignal, type RemoteOptions, type RemoteRequest, ZoomRemote } from "./remote-http.js"
 import { zoomMeetingPath as idPath } from "./remote-meeting-id.js"
@@ -66,9 +67,9 @@ const changeBody = (change: MeetingChange, create: boolean): Record<string, unkn
       (key) => !["topic", "startTime", "durationMinutes", "timezone", "agenda", "type"].includes(key),
     )
   )
-    throw new ZoomError("validation_error", "unsupported meeting change field")
+    throw new CliError("validation_error", "unsupported meeting change field")
   if (change.type !== undefined && change.type !== 1 && change.type !== 2)
-    throw new ZoomError("validation_error", "only instant or scheduled meeting types are supported")
+    throw new CliError("validation_error", "only instant or scheduled meeting types are supported")
   const neutral: ManagedMeetingChange = {
     ...(change.topic !== undefined ? { title: change.topic } : {}),
     ...(change.type !== undefined ? { kind: change.type === 1 ? "instant" : "scheduled" } : {}),
@@ -100,15 +101,14 @@ export class ZoomRemoteMeetings {
     const result = new Map<string, RemoteMeeting>()
     for (;;) {
       const body = await this.remote.request(`/users/me/meetings?${query}`, "meeting:read:list_meetings", { signal })
-      if (!Array.isArray(body.meetings))
-        throw new ZoomError("invalid_response", "Zoom returned an invalid meeting list")
+      if (!Array.isArray(body.meetings)) throw new CliError("invalid_response", "Zoom returned an invalid meeting list")
       for (const row of body.meetings) {
         const item = normalized(row)
         result.set(item.id, item)
       }
       const next = string(body.next_page_token)
       if (!next) return [...result.values()]
-      if (seen.has(next)) throw new ZoomError("invalid_response", "Zoom repeated a pagination token")
+      if (seen.has(next)) throw new CliError("invalid_response", "Zoom repeated a pagination token")
       seen.add(next)
       query.set("next_page_token", next)
     }
@@ -138,7 +138,7 @@ export class ZoomRemoteMeetings {
         try {
           return normalized(body)
         } catch {
-          throw new ZoomError(
+          throw new CliError(
             "outcome_unknown",
             "Zoom mutation returned incomplete meeting details; verify remote state before retrying",
           )
@@ -169,7 +169,7 @@ export class ZoomRemoteMeetings {
   cancel(id: string, options: MutationOptions = {}): Promise<MeetingMutation> {
     const path = idPath(id)
     if (options.occurrenceId !== undefined && !string(options.occurrenceId))
-      throw new ZoomError("validation_error", "occurrence id must be nonempty")
+      throw new CliError("validation_error", "occurrence id must be nonempty")
     const query = options.occurrenceId ? `?${new URLSearchParams({ occurrence_id: options.occurrenceId })}` : ""
     return this.mutate("cancel", { method: "DELETE", path: `${path}${query}` }, "meeting:delete:meeting", options)
   }
@@ -205,7 +205,7 @@ export const createZoomMeetingManagement = (remote: ZoomRemoteMeetings, account:
       invitation: (id, { signal }) => remote.invitation(id, { signal }),
       create: async (change, { signal }) => {
         const receipt = await remote.create(zoomChange(change), { apply: true, signal })
-        if (!receipt.meeting) throw new ZoomError("outcome_unknown", "Zoom did not acknowledge the created meeting")
+        if (!receipt.meeting) throw new CliError("outcome_unknown", "Zoom did not acknowledge the created meeting")
         return managedMeeting(receipt.meeting)
       },
       update: async (id, change, { signal }) => {

@@ -1,9 +1,8 @@
-import { errorObjectOf, mcpErrorResult } from "@wirecat/cli-base"
+import { CliError, errorObjectOf, mcpErrorResult } from "@wirecat/cli-base"
 import { callMeetingPreparationTool, REMOTE_READ } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { hostFailureContext } from "./answer-policy.js"
-import { meetingAnswer, readMetadata } from "./answers.js"
-import { ZoomError } from "./errors.js"
+import { readMetadata, toolAnswer } from "./answers.js"
 import {
   createZoomPreparationReader,
   type PreparationConnection,
@@ -23,7 +22,7 @@ export const readPreparationTool = async (
   const meta = readMetadata(deps.now)
   const result = await callMeetingPreparationTool(
     async (seriesId, request) => {
-      if (!deps.preparation) throw new ZoomError("configuration_error", "meeting preparation is not enabled")
+      if (!deps.preparation) throw new CliError("configuration_error", "meeting preparation is not enabled")
       return createZoomPreparationReader({ ...deps.preparation, connect: deps.connectStore })(seriesId, request)
     },
     input,
@@ -35,10 +34,10 @@ export const readPreparationTool = async (
   if (signal.aborted)
     return mcpErrorResult(
       errorObjectOf(
-        new ZoomError("cancelled", "meeting preparation was cancelled"),
+        new CliError("cancelled", "meeting preparation was cancelled"),
         hostFailureContext(undefined, REMOTE_READ),
       ),
     )
-  const answer = meetingAnswer(result.structuredContent, meta(), deps.commandRegistry)
+  const answer = toolAnswer(result.structuredContent, meta(), deps.commandRegistry)
   return { content: [{ type: "text" as const, text: JSON.stringify(answer) }], structuredContent: answer }
 }

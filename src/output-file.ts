@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { type FileHandle, link, open, unlink } from "node:fs/promises"
-import { isCliError } from "@wirecat/cli-base"
-import { checkCancelled, ZoomError } from "./errors.js"
+import { CliError, isCliError } from "@wirecat/cli-base"
+import { checkCancelled } from "./errors.js"
 
 export const writeExportFile = async (
   path: string,
@@ -45,7 +45,7 @@ export const writeExportFile = async (
   if (!failed) return
   if (isCliError(failure)) throw failure
   const code = typeof failure === "object" && failure !== null && "code" in failure ? failure.code : undefined
-  throw new ZoomError(
+  throw new CliError(
     code === "EEXIST"
       ? "validation_error"
       : code === "EACCES" || code === "EPERM"

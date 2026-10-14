@@ -1,7 +1,8 @@
+import { CliError } from "@wirecat/cli-base"
 import type { MeetingPreparationReader } from "@wirecat/cli-core/cli"
 import type { MeetingProviderScope } from "@wirecat/cli-core/meetings"
 import { validateMeetingPreparationRequest } from "@wirecat/cli-core/services"
-import { checkCancelled, ZoomError } from "./errors.js"
+import { checkCancelled } from "./errors.js"
 import type { RemoteOptions } from "./remote-http.js"
 import { zoomMeetingPath } from "./remote-meeting-id.js"
 import { createZoomUpcomingMeetingReader, type ZoomUpcomingCredentials } from "./upcoming-meetings.js"
@@ -37,7 +38,7 @@ export const createZoomPreparationReader =
       checkCancelled(request.signal)
       const binding = connection.meetingPreparation
       if (binding?.scope.provider !== "zoom")
-        throw new ZoomError("configuration_error", "meeting preparation is unavailable for this account")
+        throw new CliError("configuration_error", "meeting preparation is unavailable for this account")
       const upcoming = createZoomUpcomingMeetingReader(
         binding.scope.account,
         credentials,

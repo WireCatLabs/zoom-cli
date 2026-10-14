@@ -132,9 +132,7 @@ it("CLI prepares the selected series with cited local context and closes before 
   })
   expect(item.meetings).toHaveLength(1)
   expect(f.connectStore).toHaveBeenCalledOnce()
-  expect(f.connectStore).toHaveBeenCalledWith(
-    expect.objectContaining({ capability: "meeting-preparation", intent: "read" }),
-  )
+  expect(f.connectStore).toHaveBeenCalledWith(expect.objectContaining({ intent: "read" }))
   expect(f.network).toHaveBeenCalledOnce()
   expect(f.errors).toEqual([])
   expect(f.output.join("")).not.toContain("invented-access")

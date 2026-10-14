@@ -1,7 +1,7 @@
 import { mkdtemp, readdir, readFile, stat, symlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { planRecordingArchiveSchedule } from "@wirecat/cli-core/meetings"
+import { planRecordingArchiveSchedule, type RecordingCatalog } from "@wirecat/cli-core/meetings"
 import { expect, it, vi } from "vitest"
 import {
   createRecordingScheduleService,
@@ -145,12 +145,24 @@ it("delegates one manual run to durable shared synchronization with captured sco
     expect(value.capture.profile).toBe("AliceExample")
     expect(value.capture.clientId).toBe("example-public-client")
     return {
-      list: async (range: { from: string; to: string }) => {
-        expect(range).toMatchObject({ from: "2026-10-01", to: "2026-10-11" })
-        return [
-          { id: "123456", uuid: "example-occurrence", title: "Alice Example planning", startedAt: null, assets: [] },
-        ]
-      },
+      catalog: (account: string): RecordingCatalog => ({
+        provider: "zoom",
+        list: async (range) => {
+          expect(range).toMatchObject({ account, from: "2026-10-01", to: "2026-10-11" })
+          return {
+            items: [
+              {
+                id: "123456",
+                externalId: "example-occurrence",
+                title: "Alice Example planning",
+                startedAt: null,
+                assets: [],
+              },
+            ],
+            nextCursor: null,
+          }
+        },
+      }),
       download: async () => ({
         uuid: "example-occurrence",
         manifestPath: join(root, "manifest.json"),

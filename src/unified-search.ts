@@ -1,5 +1,7 @@
+import { CliError } from "@wirecat/cli-base"
+import { itemOf } from "@wirecat/cli-core/cli"
 import type { SearchAllIncludingMeetingsFound, SearchAllIncludingMeetingsRequest } from "@wirecat/cli-core/services"
-import { checkCancelled, ZoomError } from "./errors.js"
+import { checkCancelled } from "./errors.js"
 
 export type UnifiedSearchRequest = Pick<
   SearchAllIncludingMeetingsRequest,
@@ -27,7 +29,7 @@ export const validateUnifiedSearch = (input: UnifiedSearchRequest, meetingsOnly 
     (meetingsOnly && (only.length !== 1 || only[0] !== "meetings")) ||
     (input.exact !== undefined && typeof input.exact !== "boolean")
   )
-    throw new ZoomError(
+    throw new CliError(
       "validation_error",
       "expected nonempty search text, supported resources and bounds from 1 through 1000",
     )
@@ -50,7 +52,7 @@ export const validateUnifiedSearch = (input: UnifiedSearchRequest, meetingsOnly 
       !Number.isSafeInteger(cursor.hitOffset) ||
       cursor.hitOffset < 0
     )
-      throw new ZoomError(
+      throw new CliError(
         "validation_error",
         "meeting continuation requires a source-only cursor bound to its account and query",
       )
@@ -73,17 +75,17 @@ export const runUnifiedSearch = async (search: UnifiedSearch, input: UnifiedSear
   return result
 }
 
-export const unifiedSearchAnswer = (result: SearchAllIncludingMeetingsFound) => ({
-  item: result,
-  meta: {
-    complete: result.skipped.length === 0,
-    ...(result.skipped.length
-      ? {
-          issues: result.skipped.map((issue) => ({
-            code: issue.code,
-            source: "source" in issue ? issue.source : issue.resource,
-          })),
-        }
-      : {}),
-  },
-})
+export const unifiedSearchAnswer = (result: SearchAllIncludingMeetingsFound) =>
+  itemOf(result, {
+    meta: {
+      complete: result.skipped.length === 0,
+      ...(result.skipped.length
+        ? {
+            issues: result.skipped.map((issue) => ({
+              code: issue.code,
+              source: issue.source ?? issue.resource,
+            })),
+          }
+        : {}),
+    },
+  })

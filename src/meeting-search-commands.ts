@@ -1,5 +1,6 @@
+import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { LOCAL_READ } from "@wirecat/cli-core/cli"
+import { type Body, itemOf, LOCAL_READ } from "@wirecat/cli-core/cli"
 import { meetingHitsList } from "@wirecat/cli-core/meetings"
 import {
   createMeetingSearchCommand,
@@ -12,7 +13,6 @@ import {
 import type { Command } from "commander"
 import type { ArchiveTranscriptService } from "./archive-commands.js"
 import type { ArchiveTranscriptMatch } from "./archive-transcripts.js"
-import { ZoomError } from "./errors.js"
 import { bytes } from "./execution.js"
 import { type MeetingSemanticCapabilities, validateMeetingSemantic } from "./meeting-semantic-commands.js"
 
@@ -64,12 +64,12 @@ const FLAG = {
 } satisfies Partial<Record<keyof SearchOptions, string>>
 const refuse = (options: SearchOptions, keys: readonly (keyof typeof FLAG)[], mode: string) => {
   const given = keys.filter((key) => options[key] !== undefined).map((key) => FLAG[key])
-  if (given.length) throw new ZoomError("validation_error", `${given.join(", ")} do not apply ${mode}`)
+  if (given.length) throw new CliError("validation_error", `${given.join(", ")} do not apply ${mode}`)
 }
 const chunkCursor = (cursor: string | undefined): number | undefined => {
   if (cursor === undefined) return undefined
   if (!/^[1-9]\d*$/.test(cursor) || !Number.isSafeInteger(Number(cursor)))
-    throw new ZoomError("validation_error", "--cursor by meaning takes the previous page's next_cursor")
+    throw new CliError("validation_error", "--cursor by meaning takes the previous page's next_cursor")
   return Number(cursor)
 }
 
@@ -100,10 +100,10 @@ export const addMeetingSearchCommands = (
     archive: ArchiveTranscriptService["search"]
     offline: () => boolean
     signal: () => AbortSignal | undefined
-    output: (value: unknown) => void
+    output: (body: Body) => void
   },
 ): void => {
-  const execute = async (query: string, request: MeetingHitSearchOptions, options: SearchOptions) => {
+  const execute = async (query: string, request: MeetingHitSearchOptions, options: SearchOptions): Promise<Body> => {
     if (options.model !== undefined) {
       refuse(options, [...STORE_FILTERS, "maxReadBytes"], "to a search by meaning")
       const meaning = {
@@ -120,9 +120,9 @@ export const addMeetingSearchCommands = (
       }
       validateMeetingSemantic(query, meaning)
       if (meaning.baseUrl !== undefined && deps.offline())
-        throw new ZoomError("configuration_error", "remote embeddings require network access; remove --offline")
+        throw new CliError("configuration_error", "remote embeddings require network access; remove --offline")
       const found = (await (await deps.meaning()).search(query, meaning)) as { nextChunkId?: number }
-      return { ...found, nextCursor: found.nextChunkId === undefined ? null : String(found.nextChunkId) }
+      return itemOf({ ...found, nextCursor: found.nextChunkId === undefined ? null : String(found.nextChunkId) })
     }
     refuse(options, ["baseUrl", "dims", "maxChunks", "maxRows", "maxTextBytes"], "without --model")
     return meetingHitsList(
@@ -161,7 +161,10 @@ export const addMeetingSearchCommands = (
     .option("--limit <n>", "how many hits, 1 through 1000 (default 100)", bytes)
     .action(async (directory: string, words: string[], options: { limit?: number }) => {
       const found = await deps.archive(directory, words.join(" "), { limit: options.limit, signal: deps.signal() })
-      deps.output({ ...found, items: found.items.map(recordingHit(directory)) })
+      deps.output({
+        items: found.items.map(recordingHit(directory)),
+        page: { mode: "page", limit: found.limit, has_more: found.hasMore },
+      })
     })
   annotate(recordings, {
     origin: "handwritten",

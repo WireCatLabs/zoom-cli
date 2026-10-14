@@ -2,10 +2,11 @@ import { createHash, randomUUID } from "node:crypto"
 import { type FileHandle, link, lstat, mkdir, open, readdir, realpath, rename, rmdir, unlink } from "node:fs/promises"
 import { hostname } from "node:os"
 import { join } from "node:path"
+import { CliError, isCliError } from "@wirecat/cli-base"
 import { retryableStatus, statusToCode } from "@wirecat/cli-base/http"
-import { RecordingTransferError, type RecordingTransferSource, transferRecording } from "@wirecat/cli-core/meetings"
-import { checkCancelled, string, ZoomError } from "./errors.js"
-import { openOrdinaryFile, syncDirectory } from "./ordinary-file.js"
+import { openOrdinaryFile, syncDirectory } from "@wirecat/cli-core/files"
+import { type RecordingTransferSource, transferRecording } from "@wirecat/cli-core/meetings"
+import { checkCancelled, string } from "./errors.js"
 import { RecordingPartialStore } from "./recording-partial-store.js"
 import { readRecordingPromotion, writeRecordingPromotion } from "./recording-promotion-store.js"
 import type { RecordingAsset, RecordingMeeting } from "./recordings.js"
@@ -13,7 +14,7 @@ import { operationSignal, type ZoomRemote } from "./remote-http.js"
 
 export interface DownloadOptions {
   destination: string
-  account?: string
+  account: string
   resume?: boolean
   fileIds?: string[]
   signal?: AbortSignal
@@ -27,26 +28,23 @@ export const validateDownloadOptions = (options: DownloadOptions): number => {
     !Number.isSafeInteger(maxBytes) ||
     maxBytes <= 0
   )
-    throw new ZoomError("validation_error", "archive destination and positive download limit are required")
+    throw new CliError("validation_error", "archive destination and positive download limit are required")
   if (options.resume !== undefined && typeof options.resume !== "boolean")
-    throw new ZoomError("validation_error", "recording resume must be a boolean")
+    throw new CliError("validation_error", "recording resume must be a boolean")
   if (
-    options.account !== undefined &&
-    (typeof options.account !== "string" ||
-      !options.account.trim() ||
-      /[\0\r\n]/.test(options.account) ||
-      options.account.length > 1000)
+    typeof options.account !== "string" ||
+    !options.account.trim() ||
+    /[\0\r\n]/.test(options.account) ||
+    options.account.length > 1000
   )
-    throw new ZoomError("validation_error", "recording account scope must be a nonempty identifier")
-  if (options.resume && !options.account)
-    throw new ZoomError("validation_error", "resuming recordings requires an explicit account scope")
+    throw new CliError("validation_error", "recording account scope must be a nonempty identifier")
   if (
     options.fileIds !== undefined &&
     (!Array.isArray(options.fileIds) ||
       options.fileIds.length === 0 ||
       options.fileIds.some((id) => typeof id !== "string" || !id.trim()))
   )
-    throw new ZoomError("validation_error", "recording selection must contain nonempty file ids")
+    throw new CliError("validation_error", "recording selection must contain nonempty file ids")
   return maxBytes
 }
 export interface ArchivedFile {
@@ -138,11 +136,11 @@ export const inspectArchiveLocks = async (
   let names: string[]
   try {
     if ((await lstat(folder)).isSymbolicLink())
-      throw new ZoomError("validation_error", "archive lock directory must not be a symlink")
+      throw new CliError("validation_error", "archive lock directory must not be a symlink")
     names = await readdir(folder)
   } catch (error) {
     if (missing(error)) return []
-    throw new ZoomError("configuration_error", "archive lock directory could not be read")
+    throw new CliError("configuration_error", "archive lock directory could not be read")
   }
   const result: ArchiveLockInfo[] = []
   for (const name of names.sort()) {
@@ -177,7 +175,7 @@ export const recoverArchiveLocks = async (
         await unlink(path)
         removed.push(lock.name)
       } catch (error) {
-        if (!missing(error)) throw new ZoomError("configuration_error", "stale archive lock could not be removed")
+        if (!missing(error)) throw new CliError("configuration_error", "stale archive lock could not be removed")
       }
     }
   return { locks, removed }
@@ -186,7 +184,7 @@ const acquireArchiveLock = async (root: string): Promise<string> => {
   const folder = join(root, locksFolder)
   await mkdir(folder, { recursive: true })
   if ((await lstat(folder)).isSymbolicLink())
-    throw new ZoomError("validation_error", "archive lock directory must not be a symlink")
+    throw new CliError("validation_error", "archive lock directory must not be a symlink")
   // A lock whose process on this machine is gone is taken over; foreign and unreadable ones still need `locks recover`.
   await recoverArchiveLocks(root, { apply: true })
   const owner: LockOwner = { version: 1, pid: process.pid, host: hostname(), nonce: randomUUID() }
@@ -199,10 +197,10 @@ const acquireArchiveLock = async (root: string): Promise<string> => {
     await file.close()
     const locks = await inspectArchiveLocks(root)
     if (locks.some((lock) => lock.name !== name))
-      throw new ZoomError("validation_error", "archive is locked; inspect or recover stale local locks")
+      throw new CliError("validation_error", "archive is locked; inspect or recover stale local locks")
     try {
       await lstat(join(root, ".zoom-archive.lock"))
-      throw new ZoomError("validation_error", "archive has an unrecognized legacy lock")
+      throw new CliError("validation_error", "archive has an unrecognized legacy lock")
     } catch (error) {
       if (!missing(error)) throw error
     }
@@ -235,7 +233,7 @@ const fingerprint = async (
       checkCancelled(signal)
       size += chunk.length
       if (maxBytes !== undefined && size > maxBytes)
-        throw new ZoomError("validation_error", "recording exceeds its verified recovery size")
+        throw new CliError("validation_error", "recording exceeds its verified recovery size")
       hash.update(chunk)
     }
     return { size, sha256: hash.digest("hex") }
@@ -351,7 +349,7 @@ const readManifest = async (path: string, signal?: AbortSignal): Promise<Archive
     }
   } catch {
     checkCancelled(signal)
-    throw new ZoomError("validation_error", "archive manifest is invalid")
+    throw new CliError("validation_error", "archive manifest is invalid")
   } finally {
     await file.close()
   }
@@ -377,7 +375,7 @@ const targetUrl = (input: string, base?: URL): URL => {
   try {
     target = new URL(input, base)
   } catch {
-    throw new ZoomError("invalid_response", "Zoom returned an unexpected recording download host")
+    throw new CliError("invalid_response", "Zoom returned an unexpected recording download host")
   }
   if (
     target.protocol !== "https:" ||
@@ -386,10 +384,10 @@ const targetUrl = (input: string, base?: URL): URL => {
     (target.port && target.port !== "443") ||
     !/(^|\.)zoom\.(us|com)$/.test(target.hostname)
   )
-    throw new ZoomError("invalid_response", "Zoom returned an unexpected recording download host")
+    throw new CliError("invalid_response", "Zoom returned an unexpected recording download host")
   return target
 }
-class DownloadFailure extends ZoomError {
+class DownloadFailure extends CliError {
   constructor(readonly response: Response) {
     super(statusToCode(response.status), `Recording download failed (HTTP ${response.status})`)
   }
@@ -418,13 +416,13 @@ const transferSource = (
         })
       } catch {
         checkCancelled(signal)
-        throw new ZoomError("network_error", "Recording download could not be completed")
+        throw new CliError("network_error", "Recording download could not be completed")
       }
       if (![301, 302, 303, 307, 308].includes(response.status)) break
       const location = response.headers.get("location")
       await response.body?.cancel()
       if (!location || redirects >= 5)
-        throw new ZoomError("invalid_response", "Zoom returned invalid recording redirects")
+        throw new CliError("invalid_response", "Zoom returned invalid recording redirects")
       target = targetUrl(location, target)
     }
     if (![200, 206, 416].includes(response.status)) {
@@ -440,7 +438,7 @@ const transferSource = (
         ![null, "identity"].includes(response.headers.get("content-encoding")))
     ) {
       await response.body?.cancel()
-      throw new ZoomError("invalid_response", "Zoom returned an unexpected recording body")
+      throw new CliError("invalid_response", "Zoom returned an unexpected recording body")
     }
     const reader = response.body?.getReader()
     const abortReader = () => {
@@ -462,7 +460,7 @@ const transferSource = (
               chunk = await reader.read()
             } catch {
               checkCancelled(signal)
-              throw new ZoomError("network_error", "Recording download could not be completed")
+              throw new CliError("network_error", "Recording download could not be completed")
             }
             checkCancelled(signal)
             if (chunk.done) return
@@ -488,7 +486,7 @@ export const archiveRecording = async (
   checkCancelled(signal)
   const maxBytes = validateDownloadOptions(options)
   if (options.fileIds?.some((id) => !meeting.assets.some((asset) => asset.id === id)))
-    throw new ZoomError("validation_error", "requested recording file was not found")
+    throw new CliError("validation_error", "requested recording file was not found")
   let lock: string | undefined
   let root = ""
   try {
@@ -539,18 +537,18 @@ export const archiveRecording = async (
           existing.size !== local.size ||
           existing.sha256 !== local.sha256
         )
-          throw new ZoomError("validation_error", "existing recording has changed; choose a new archive destination")
+          throw new CliError("validation_error", "existing recording has changed; choose a new archive destination")
         if (!unchanged) await remember(existing.path, existing.sha256)
         report.skipped.push(existing)
         continue
       }
       const locator = {
         provider: "zoom",
-        account: options.account ?? "default",
+        account: options.account,
         occurrenceId: meeting.uuid,
         assetId: asset.id,
       }
-      const persistent = options.resume ?? Boolean(options.account)
+      const persistent = options.resume ?? true
       const storage = new RecordingPartialStore(root, locator, signal, persistent, maxBytes)
       const promotionMeeting = {
         id: meeting.id,
@@ -577,7 +575,7 @@ export const archiveRecording = async (
       if (present) {
         const intent = persistent ? await readRecordingPromotion(root, locator, promotionMeeting, metadata) : null
         if (!intent || intent.file.size > maxBytes)
-          throw new ZoomError(
+          throw new CliError(
             "validation_error",
             "recording path already exists without a verified manifest or scoped recovery record",
           )
@@ -589,10 +587,10 @@ export const archiveRecording = async (
           completed.validator !== intent.validator ||
           (completed.total !== null && completed.total !== intent.file.size)
         )
-          throw new ZoomError("validation_error", "recording recovery checkpoint does not prove this completed asset")
+          throw new CliError("validation_error", "recording recovery checkpoint does not prove this completed asset")
         const local = await fingerprint(join(root, path), signal, intent.file.size)
         if (local.size !== intent.file.size || local.sha256 !== intent.file.sha256)
-          throw new ZoomError("validation_error", "recording recovery final checksum does not match")
+          throw new CliError("validation_error", "recording recovery final checksum does not match")
         manifest.files.push(intent.file)
         await writeManifest(root, manifest)
         await unlink(storage.path)
@@ -611,7 +609,7 @@ export const archiveRecording = async (
           )
           entry = { ...metadata, size: transferred.size, sha256: transferred.sha256 }
           if (asset.size !== null && entry.size !== asset.size)
-            throw new ZoomError("invalid_response", "recording download size does not match Zoom metadata")
+            throw new CliError("invalid_response", "recording download size does not match Zoom metadata")
           checkCancelled(signal)
           if (persistent && storage.completed)
             await writeRecordingPromotion(root, locator, promotionMeeting, entry, storage.completed)
@@ -624,7 +622,7 @@ export const archiveRecording = async (
           const retryable =
             error instanceof DownloadFailure
               ? retryableStatus(error.response.status)
-              : error instanceof ZoomError && error.code === "network_error"
+              : isCliError(error) && error.code === "network_error"
           if (
             attempt >= 2 ||
             !retryable ||
@@ -633,7 +631,7 @@ export const archiveRecording = async (
             throw error
         }
       }
-      if (!entry) throw new ZoomError("invalid_response", "recording transfer did not produce a verified receipt")
+      if (!entry) throw new CliError("invalid_response", "recording transfer did not produce a verified receipt")
       manifest.files.push(entry)
       await writeManifest(root, manifest)
       await unlink(temp)
@@ -645,9 +643,8 @@ export const archiveRecording = async (
     return report
   } catch (error) {
     checkCancelled(signal)
-    if (error instanceof ZoomError) throw error
-    if (error instanceof RecordingTransferError) throw new ZoomError(error.code, error.message)
-    throw new ZoomError("provider_error", "archive operation could not be completed")
+    if (isCliError(error)) throw error
+    throw new CliError("provider_error", "archive operation could not be completed")
   } finally {
     if (root && !lock) await rmdir(join(root, locksFolder)).catch(() => undefined)
     if (lock) {
@@ -673,8 +670,8 @@ export const inspectArchive = async (
     return manifests
   } catch (error) {
     checkCancelled(options.signal)
-    if (error instanceof ZoomError) throw error
-    throw new ZoomError("configuration_error", "archive destination could not be read")
+    if (isCliError(error)) throw error
+    throw new CliError("configuration_error", "archive destination could not be read")
   }
 }
 export const verifyArchive = async (

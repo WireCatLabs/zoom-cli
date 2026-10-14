@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto"
 import { createServer } from "node:http"
-import { checkCancelled, ZoomError } from "./errors.js"
+import { CliError } from "@wirecat/cli-base"
+import { checkCancelled } from "./errors.js"
 import type { TokenManager } from "./tokens.js"
 
 export const REDIRECT = "https://wirecat.dev/zoom-callback"
@@ -28,7 +29,7 @@ export const login = async (options: LoginOptions) => {
     try {
       checkCancelled(options.signal)
     } catch (error) {
-      fail(error instanceof Error ? error : new ZoomError("cancelled", "command cancelled"))
+      fail(error instanceof Error ? error : new CliError("cancelled", "command cancelled"))
     }
   }
   options.signal?.addEventListener("abort", onAbort, { once: true })
@@ -47,10 +48,10 @@ export const login = async (options: LoginOptions) => {
     const code = query.searchParams.get("code")
     response.end("zm: received, you can close this tab")
     if (code) accept(code)
-    else fail(new ZoomError("authentication_error", "Zoom login was not approved"))
+    else fail(new CliError("authentication_error", "Zoom login was not approved"))
   })
   const timer = setTimeout(
-    () => fail(new ZoomError("authentication_error", "Zoom login timed out")),
+    () => fail(new CliError("authentication_error", "Zoom login timed out")),
     options.timeoutMs ?? 300000,
   )
   try {
@@ -60,7 +61,7 @@ export const login = async (options: LoginOptions) => {
     })
     const address = server.address()
     if (!address || typeof address === "string")
-      throw new ZoomError("configuration_error", "could not start the local login listener")
+      throw new CliError("configuration_error", "could not start the local login listener")
     state = `${address.port}.${randomBytes(24).toString("base64url")}`
     const authorize = new URL("https://zoom.us/oauth/authorize")
     authorize.search = new URLSearchParams({
@@ -76,7 +77,7 @@ export const login = async (options: LoginOptions) => {
     const pastePromise = options.readPaste?.(controller.signal).then((text) => {
       const query = new URLSearchParams(text.includes("?") ? text.slice(text.indexOf("?") + 1) : text)
       if (query.get("state") !== state || !query.get("code"))
-        throw new ZoomError("authentication_error", "pasted login must contain the matching code and state")
+        throw new CliError("authentication_error", "pasted login must contain the matching code and state")
       return query.get("code") ?? ""
     })
     // Paste remains available if the browser cannot start or the callback cannot reach loopback.
@@ -84,7 +85,7 @@ export const login = async (options: LoginOptions) => {
       .then(() => options.openBrowser(authorize.toString()))
       .catch(() => {
         if (!options.readPaste)
-          fail(new ZoomError("configuration_error", "could not open the browser; retry with --browser <program>"))
+          fail(new CliError("configuration_error", "could not open the browser; retry with --browser <program>"))
       })
     const code = await (pastePromise ? Promise.race([codePromise, pastePromise]) : codePromise)
     controller.abort()

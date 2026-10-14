@@ -65,7 +65,6 @@ const read = createZoomPreparationReader({
       profile: "AliceExample",
       externalId: key.account,
       intent: "read",
-      capability: "meeting-preparation",
     })
     return {
       ...connection,

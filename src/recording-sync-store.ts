@@ -2,34 +2,34 @@ import { randomUUID } from "node:crypto"
 import { lstat, mkdir, open, rename, rmdir, unlink } from "node:fs/promises"
 import { hostname } from "node:os"
 import { dirname, join, resolve } from "node:path"
+import { CliError } from "@wirecat/cli-base"
+import { openOrdinaryFile } from "@wirecat/cli-core/files"
 import {
   parseRecordingSyncCheckpoint,
   type RecordingSyncCheckpoint,
   type RecordingSyncCheckpointStore,
   type RecordingSyncLease,
 } from "@wirecat/cli-core/meetings"
-import { ZoomError } from "./errors.js"
-import { openOrdinaryFile } from "./ordinary-file.js"
 
 const maxBytes = 8 * 1024 ** 2
 const ownerByteLimit = 32 * 1024
 const code = (error: unknown): string | undefined => (error as NodeJS.ErrnoException)?.code
 const conflict = (message: string): never => {
-  throw new ZoomError("configuration_error", message)
+  throw new CliError("configuration_error", message)
 }
 const boundedJson = async (path: string, limit: number): Promise<unknown> => {
   const file = await openOrdinaryFile(path)
   try {
     const size = (await file.stat()).size
-    if (size > limit) throw new ZoomError("validation_error", "archive checkpoint exceeds its byte limit")
+    if (size > limit) throw new CliError("validation_error", "archive checkpoint exceeds its byte limit")
     const content = Buffer.alloc(size + 1)
     const { bytesRead } = await file.read(content, 0, content.length, 0)
     if (bytesRead !== size || bytesRead > limit)
-      throw new ZoomError("validation_error", "archive checkpoint changed while reading")
+      throw new CliError("validation_error", "archive checkpoint changed while reading")
     try {
       return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(content.subarray(0, bytesRead)))
     } catch {
-      throw new ZoomError("validation_error", "archive checkpoint contains invalid JSON")
+      throw new CliError("validation_error", "archive checkpoint contains invalid JSON")
     }
   } finally {
     await file.close()
@@ -70,7 +70,7 @@ const alive = (pid: number): boolean => {
 }
 export function fileRecordingSyncCheckpointStore(path: string): RecordingSyncCheckpointStore {
   if (typeof path !== "string" || !path.trim())
-    throw new ZoomError("validation_error", "archive checkpoint path is required")
+    throw new CliError("validation_error", "archive checkpoint path is required")
   const checkpointPath = resolve(path)
   const lockPath = `${checkpointPath}.lock`
   const marker = join(lockPath, "owner.json")
@@ -101,7 +101,7 @@ export function fileRecordingSyncCheckpointStore(path: string): RecordingSyncChe
   return {
     async acquire(jobId): Promise<RecordingSyncLease> {
       if (typeof jobId !== "string" || !jobId.trim() || jobId.length > 4096)
-        throw new ZoomError("validation_error", "archive checkpoint job id is required")
+        throw new CliError("validation_error", "archive checkpoint job id is required")
       await mkdir(dirname(checkpointPath), { recursive: true, mode: 0o700 })
       try {
         await mkdir(lockPath, { mode: 0o700 })
@@ -160,7 +160,7 @@ export function fileRecordingSyncCheckpointStore(path: string): RecordingSyncChe
         return conflict("archive checkpoint revision changed")
       const content = JSON.stringify(state)
       if (Buffer.byteLength(content) > maxBytes)
-        throw new ZoomError("validation_error", "archive checkpoint exceeds its byte limit")
+        throw new CliError("validation_error", "archive checkpoint exceeds its byte limit")
       const temporary = `${checkpointPath}.${token}.tmp`
       const file = await open(temporary, "wx", 0o600)
       try {

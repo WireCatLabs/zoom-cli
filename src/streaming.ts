@@ -1,6 +1,6 @@
 import type { Writable } from "node:stream"
-import { createOutputBuffer } from "@wirecat/cli-base"
-import { checkCancelled, ZoomError } from "./errors.js"
+import { CliError, createOutputBuffer } from "@wirecat/cli-base"
+import { checkCancelled } from "./errors.js"
 
 /** Await kernel-facing stdout backpressure before advancing another ingestion/download cycle. */
 export const writeStream = (stream: Writable, text: string, signal: AbortSignal): Promise<void> => {
@@ -13,7 +13,7 @@ export const writeStream = (stream: Writable, text: string, signal: AbortSignal)
     let drained = false
     let callbackFailed = false
     let errorObserved = false
-    const outputError = () => new ZoomError("configuration_error", "could not write command output")
+    const outputError = () => new CliError("configuration_error", "could not write command output")
     const removeGuard = () => stream.removeListener("error", failed)
     const done = (error?: Error) => {
       if (settled) return

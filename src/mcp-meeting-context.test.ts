@@ -1,8 +1,9 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js"
+import { snakeKeys } from "@wirecat/cli-core/cli"
 import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { expect, it, vi } from "vitest"
-import { snakeKeys } from "./keys.js"
+import { fakeConnection } from "../scripts/testing/connection.js"
 import { createMeetingMcpServer } from "./mcp-server.js"
 import { createMeetingContextCapabilities } from "./meeting-context.js"
 
@@ -21,22 +22,25 @@ it("discovers opt-in context without IO, rejects account overrides, and closes b
   }
   const context = createMeetingContextCapabilities(
     personStore,
-    { meetingMetadata: vi.fn(), transcriptMetadata: vi.fn(), transcripts: vi.fn(), transcriptRows: vi.fn() },
+    { meetingMetadata: vi.fn(), transcriptMetadata: vi.fn(), transcripts: vi.fn(), transcriptRows: vi.fn() } as never,
     3,
-    async () => ({
-      parseMeetingReference: (text) => ({
-        type: "meeting" as const,
-        accountId: Number(text.slice(8).split("/")[0]),
-        meetingId: 15,
-      }),
-      canonicalMeetingReference: (text) => text,
-      readMeetingEvidence: read,
-      personMeetingContext: read,
-      proposeMeetingTask: proposal,
-    }),
+    async () =>
+      ({
+        parseMeetingReference: (text: string) => ({
+          type: "meeting" as const,
+          accountId: Number(text.slice(8).split("/")[0]),
+          meetingId: 15,
+        }),
+        canonicalMeetingReference: (text: string) => text,
+        readMeetingEvidence: read,
+        personMeetingContext: read,
+        proposeMeetingTask: proposal,
+      }) as never,
   )
   const close = vi.fn(async () => {})
-  const connect = vi.fn(async () => ({ store: memoryMeetingStore(), accountId: 3, meetingContext: context, close }))
+  const connect = vi.fn(async () =>
+    fakeConnection({ store: memoryMeetingStore(), accountId: 3, meetingContext: context, close }),
+  )
   const server = createMeetingMcpServer({ connectStore: connect, includeMeetingContext: true })
   const [left, right] = InMemoryTransport.createLinkedPair()
   await server.connect(right)
@@ -90,12 +94,9 @@ it("exposes semantic queries only with a server-selected model and never exposes
   const search = vi.fn(async () => report)
   const generate = vi.fn()
   const close = vi.fn(async () => {})
-  const connect = vi.fn(async () => ({
-    store: memoryMeetingStore(),
-    accountId: 3,
-    meetingSemantic: { search, generate },
-    close,
-  }))
+  const connect = vi.fn(async () =>
+    fakeConnection({ store: memoryMeetingStore(), accountId: 3, meetingSemantic: { search, generate }, close }),
+  )
   const selectedModel = { model: "installed-example" }
   const server = createMeetingMcpServer({ connectStore: connect, semanticModel: selectedModel })
   selectedModel.model = "changed-example"

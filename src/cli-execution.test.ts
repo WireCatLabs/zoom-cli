@@ -2,11 +2,12 @@ import { access, mkdtemp, readFile, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { CliError, memoryKeyring } from "@wirecat/cli-base"
+import { snakeKeys } from "@wirecat/cli-core/cli"
 import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { describe, expect, it, vi } from "vitest"
 import { readAnswer, readJsonlPage } from "../scripts/testing/answers.js"
-import { setConfig } from "./config.js"
-import { snakeKeys } from "./keys.js"
+import { fakeConnection } from "../scripts/testing/connection.js"
+import { profileAccountKey, setConfig } from "./config.js"
 import { writeExportFile } from "./output-file.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
@@ -61,6 +62,9 @@ const archive = {
   downloaded: [],
   skipped: [],
   unavailable: [],
+}
+const catalog = () => {
+  throw new Error("unexpected catalog")
 }
 
 describe("command execution controls", () => {
@@ -137,14 +141,15 @@ describe("command execution controls", () => {
       settled = true
       return []
     }
-    deps.connectStore = async () => ({
-      store,
-      accountId: 1,
-      close: async () => {
-        expect(settled).toBe(true)
-        closed++
-      },
-    })
+    deps.connectStore = async () =>
+      fakeConnection({
+        store,
+        accountId: 1,
+        close: async () => {
+          expect(settled).toBe(true)
+          closed++
+        },
+      })
     const pending = run(["--json", "meetings", "list"], deps)
     await started
     controller.abort()
@@ -200,7 +205,8 @@ describe("command execution controls", () => {
     expect(durations).toEqual([2000, 30000])
     expect(Object.keys(value(stdout))).toContain("authentication")
     setConfig(deps.configPath, "zoom.clientId", "example-client")
-    deps.recordings = { list: async () => [], show: async () => meeting, download: async () => archive }
+    setConfig(deps.configPath, "account.profile", "example-profile")
+    deps.recordings = { list: async () => [], show: async () => meeting, download: async () => archive, catalog }
     expect(await run(["recordings", "download", "example", "--destination", "invented"], deps)).toBe(0)
     expect(durations.at(-1)).toBe(3600000)
     deps.openBrowser = async (url) => {
@@ -218,10 +224,11 @@ describe("archive and explicit remote command wiring", () => {
   it("lists/shows/downloads recording metadata with explicit options and no database", async () => {
     const { deps, stdout } = await setup()
     setConfig(deps.configPath, "zoom.clientId", "example-client")
+    setConfig(deps.configPath, "account.profile", "example-profile")
     const list = vi.fn(async () => [meeting])
     const show = vi.fn(async () => meeting)
     const download = vi.fn(async () => archive)
-    deps.recordings = { list, show, download }
+    deps.recordings = { list, show, download, catalog }
     deps.connectStore = async () => {
       throw new Error("unexpected database")
     }
@@ -258,7 +265,12 @@ describe("archive and explicit remote command wiring", () => {
     ).toBe(0)
     expect(download).toHaveBeenCalledWith(
       "example-occurrence",
-      expect.objectContaining({ destination: "invented", fileIds: ["first", "second"], maxBytes: 100 }),
+      expect.objectContaining({
+        destination: "invented",
+        fileIds: ["first", "second"],
+        maxBytes: 100,
+        account: profileAccountKey("example-profile"),
+      }),
     )
     expect(
       await run(["recordings", "download", "example", "--destination", "invented", "--max-bytes", "0"], deps),
