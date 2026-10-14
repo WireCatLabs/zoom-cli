@@ -30,7 +30,7 @@ separate index step. All query words must match, through literal prefixes or sto
 configuration adds English, Russian and Spanish word stems; a store can disable or customize it. The query is
 plain words, with no operators. `--meeting-id`, `--event-id`, `--series-id`, `--since-time` and `--until-time`
 narrow the selected account. The opaque cursor belongs to that account, query and filters; it can continue
-inside a large transcript. JSONL preserves the complete page, including `page.cursor`, `next` and any `missing` index information. Hits include the cited `ref`,
+inside a large transcript. JSON provides `page.next_cursor`, `next` and any `missing` index information. JSONL emits hit records followed by an end record with the page and completeness. Hits include the cited `ref`,
 meeting reference `meeting`, `excerpt` and `offset_ms`; expand a cue with `meetings passage`.
 
 ## Search by meaning or in an archive
@@ -80,13 +80,14 @@ account, using `identity_id`, `person_id`, `event_id`, `series_id`, `project`, `
 It uses literal Unicode matching; it does not translate names or infer that two people are the same.
 Use `--limit` (default 50), `--scan-limit` (default 1000) and `--max-read-bytes` (default 1048576)
 to bound matching observations, inspected observations and stored name/email bytes per call.
-The answer keeps `item.page.has_more`, `item.page.cursor`, coverage and page-local identity ambiguity, including in JSONL.
+The JSON answer keeps `item.page.has_more`, `item.page.next_cursor`, coverage and page-local identity ambiguity. JSONL keeps that report in the item record’s `data`, followed by an end record.
 Follow the report's `item.next` step or repeat the same query with `--cursor`. An empty page can still have continuation.
 Distinct identity IDs are candidates to review, never automatic person links. Archive completeness remains unknown.
 
 `meetings list` filters metadata with a query, for example
 `zm meetings list 'started_at:[2026-09-12 TO 2026-10-12]' --json`.
-It returns `items`, `page` and optional `next` steps in JSON and JSONL. Use `--page` to continue.
+JSON returns `items`, `page` and optional `next` steps. JSONL emits each meeting in an item record,
+then an end record with the page and completeness. Use `--page` to continue.
 The date query replaces the former list-only `--since-time` and `--until-time` flags;
 those flags remain available on transcript search and ingestion commands. `search all` uses the shared search
 service and searches only meetings by default:
@@ -102,8 +103,8 @@ Broader search requires explicit `--only messages,mail,notes,meetings`. Message 
 selected local account; mail reads include stored email accounts; notes are global to the shared
 store. Meeting matching uses word prefixes; unsupported meeting syntax or exact queries are reported
 as skipped. A meetings-only continuation uses the returned `item.meetings.next_cursor` as
-`--meeting-cursor '<json>'`, bound to its account and query. JSONL emits one complete report,
-retaining skips, coverage and cursors.
+`--meeting-cursor '<json>'`, bound to its account and query. JSONL emits the report in one item record, retaining skips, coverage and cursors, followed by an end
+record. Skipped sources set `complete` to false and appear in `issues`; search still exits zero.
 
 ## Read evidence
 
@@ -195,7 +196,7 @@ after ingestion when new passages need indexing. Word reads default to 4 MiB and
 `--max-read-bytes` and `--limit` change those budgets. Catalog resolution has a separate 1 MiB
 budget and at most 32 names. Excess vocabulary fails visibly. Archive/index completeness stays unknown.
 
-Continue with the top-level `next` step even if `item.hits` is empty. The cursor is at `item.page.cursor`. Its arguments repeat the project,
+Continue with the top-level `next` step even if `item.hits` is empty. The cursor is at `item.page.next_cursor`. Its arguments repeat the project,
 selection, cursor and budgets. Within-name pages finish before the next alias begins. Relative
 dates are frozen to absolute bounds in the returned query; use that query with `--cursor` so a
 later day does not shift your selection. Changed vocabulary or selection can invalidate the cursor.

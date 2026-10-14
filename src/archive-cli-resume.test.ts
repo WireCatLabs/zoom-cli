@@ -4,7 +4,7 @@ import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
 import { planRecordingArchiveSchedule } from "@wirecat/cli-core/meetings"
 import { expect, it, vi } from "vitest"
-import { readAnswer } from "../scripts/testing/answers.js"
+import { readReceipt } from "../scripts/testing/answers.js"
 import { profileAccountKey, setConfig } from "./config.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
 import { fileRecordingScheduleStore } from "./recording-schedule-store.js"
@@ -175,7 +175,7 @@ it("uses paged account-bound discovery and an explicit durable checkpoint with r
     meeting.uuid,
     expect.objectContaining({ resume: true, account: profileAccountKey("AliceExample"), maxBytes: 1024 }),
   )
-  expect(readAnswer(output.at(-1) ?? "{}")).toMatchObject({
+  expect(readReceipt(output.at(-1) ?? "{}")).toMatchObject({
     availability: "unknown",
     checkpoint_revision: expect.any(Number),
   })
@@ -332,7 +332,7 @@ it("previews native schedules offline without persisting jobs, units or opening 
       deps,
     ),
   ).toBe(0)
-  expect(readAnswer(output.at(-1) ?? "{}")).toMatchObject({
+  expect(readReceipt(output.at(-1) ?? "{}")).toMatchObject({
     applied: false,
     timer_state: "not_checked",
     job: { capture: { profile: "AliceExample", client_id: "example-client" } },
@@ -364,5 +364,5 @@ it("gives scheduled archive runs a download deadline and streams completed recei
     })
   expect(await run(["recordings", "schedule", "run", "a".repeat(64), "--jsonl"], deps)).toBe(0)
   expect(deadlines).toEqual([3600000])
-  expect(output.map((text) => readAnswer(text).meeting.uuid)).toEqual([meeting.uuid])
+  expect(output.map((text) => readReceipt(text).meeting.uuid)).toEqual([meeting.uuid])
 })

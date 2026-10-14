@@ -75,7 +75,7 @@ describe("read-only SDK meeting server", () => {
         const shared = JSON.parse(JSON.stringify(expected.structuredContent))
         if (name === "meeting_people") {
           expect(body.items).toEqual(snakeKeys(shared.items))
-          expect(body.page).toEqual({ limit: Math.max(1, shared.limit), has_more: false })
+          expect(body.page).toEqual({ mode: "page", limit: Math.max(1, shared.limit), has_more: false })
         } else if ("item" in shared) expect(body).toEqual(shared.item)
         else if ("items" in shared) {
           const { meta: _meta, ...withoutMeta } = packet

@@ -6,6 +6,7 @@ import {
   createRenderer,
   errorObjectOf,
   errorRecordOf,
+  exitCodeOfAnswer,
   exitCodeOfError,
   fieldsOf,
   isCliError,
@@ -14,7 +15,8 @@ import {
   renderError,
   type SleepLike,
 } from "@wirecat/cli-base"
-import { failureContext } from "@wirecat/cli-core"
+import { metaOf } from "@wirecat/cli-base/commands"
+import { jsonlRecords, listOf } from "@wirecat/cli-core/cli"
 import {
   importFiles,
   listed,
@@ -29,6 +31,8 @@ import {
 import { addMeetingCommands, addMeetingPassageCommand } from "@wirecat/cli-core/meetings/cli"
 import { Command, CommanderError } from "commander"
 import { addZoomSkillCommands } from "./agent-skill.js"
+import { createAnswerRenderer } from "./answer-output.js"
+import { hostFailureContext } from "./answer-policy.js"
 import { meetingAnswer } from "./answers.js"
 import { ZoomApiSource } from "./api.js"
 import {
@@ -139,6 +143,7 @@ export interface ProgramDeps {
   sleep?: SleepLike
   serveMcp?: (options: {
     signal: AbortSignal
+    commandRegistry: Command
     maxResultBytes?: number
     includeUnifiedSearch?: boolean
     includeMeetingContext?: boolean
@@ -165,41 +170,8 @@ const unavailableStore: MeetingStore = {
   cursor: unavailable,
   setCursor: unavailable,
 }
-const render = (
-  value: unknown,
-  format: "json" | "jsonl" | "text",
-  deps: ProgramDeps,
-  fields?: readonly string[],
-  preserveEnvelope = false,
-  providerKeys = false,
-  seal?: () => import("@wirecat/cli-base/standards").Meta,
-): string => {
-  if (!providerKeys) value = snakeKeys(value)
-  if (seal) value = meetingAnswer(value, seal())
-  if (fields) {
-    if (seal && value && typeof value === "object" && "item" in value)
-      value = { ...value, item: projectFields(value.item, fields) }
-    else value = projectFields(value, fields)
-  }
-  const chunks: string[] = []
-  const renderer = createRenderer({
-    format: format === "text" ? (deps.outputIsTTY ? "pretty" : "json") : format,
-    color: false,
-    streams: { data: (text) => chunks.push(`${text}\n`), diagnostic: deps.diagnostic },
-  })
-  if (
-    !preserveEnvelope &&
-    !seal &&
-    format === "jsonl" &&
-    typeof value === "object" &&
-    value !== null &&
-    "items" in value &&
-    Array.isArray(value.items)
-  )
-    renderer.stream(value.items)
-  else renderer.result(value)
-  return chunks.join("")
-}
+const answerExitCodes = new WeakMap<Command, number>()
+
 export const createProgram = (deps: ProgramDeps): Command => {
   let config: ReturnType<typeof readConfig> | undefined
   const getConfig = () => (config ??= readConfig(deps.configPath))
@@ -268,6 +240,13 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .option("--debug", "on a failure, its whole record — cause and stack — in place of the short line")
     .exitOverride()
     .configureOutput({ writeOut: deps.data, writeErr: deps.diagnostic, outputError: () => {} })
+  const render = createAnswerRenderer(program, (meta) => {
+    const action = execution?.action
+    answerExitCodes.set(
+      program,
+      Math.max(answerExitCodes.get(program) ?? 0, exitCodeOfAnswer(meta, action ? metaOf(action).partial : false)),
+    )
+  })
   const api = () => {
     if (program.opts().offline)
       throw new ZoomError("configuration_error", "the command requires network access; remove --offline")
@@ -338,6 +317,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
       ),
     )
   const outputItems = async (values: AsyncIterable<unknown>) => {
+    const meta = execution?.meta
+    if (!meta) throw new ZoomError("configuration_error", "execution metadata is unavailable")
     const format = program.opts().jsonl ? "jsonl" : program.opts().json || !deps.outputIsTTY ? "json" : "text"
     const metadata: Partial<ReturnType<typeof listed>> = listed([])
     delete metadata.items
@@ -350,15 +331,28 @@ export const createProgram = (deps: ProgramDeps): Command => {
       if (format === "json") {
         if (count) buffer(",")
         buffer(render(projected, "json", deps).trimEnd())
+      } else if (format === "jsonl") {
+        const packet = meetingAnswer(projected, meta())
+        buffer(`${JSON.stringify(jsonlRecords(packet)[0])}\n`)
       } else buffer(render(projected, format, deps, undefined, true, false, execution?.meta))
       count++
     }
     metadata.limit = count
     if (format === "json")
       buffer(
-        `],"page":${JSON.stringify({ limit: Math.max(1, count), has_more: false })},"meta":${JSON.stringify(execution?.meta())}}\n`,
+        `],"page":${JSON.stringify({ mode: "page", limit: Math.max(1, count), has_more: false })},"meta":${JSON.stringify(execution?.meta())}}\n`,
       )
-    else if (format === "text") buffer(render(count ? metadata : listed([]), "text", deps))
+    else if (format === "jsonl") {
+      const packet = meetingAnswer(
+        listOf("meetings import", { items: [], limit: Math.max(1, count), has_more: false }),
+        meta(),
+      )
+      buffer(
+        `${jsonlRecords(packet)
+          .map((record) => JSON.stringify(record))
+          .join("\n")}\n`,
+      )
+    } else if (format === "text") buffer(render(count ? metadata : listed([]), "text", deps))
   }
   const cfg = program.command("config").description("local Zoom configuration")
   cfg
@@ -840,6 +834,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
         if (options.semantic && options.baseUrl !== undefined && opts.offline)
           throw new ZoomError("configuration_error", "remote embeddings require network access; remove --offline")
         await deps.serveMcp({
+          commandRegistry: program,
           signal: signal() as AbortSignal,
           maxResultBytes: program.opts().maxOutputBytes,
           ...(options.unifiedSearch ? { includeUnifiedSearch: true } : {}),
@@ -1065,6 +1060,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     if (parsing) throw new ZoomError("validation_error", "concurrent command parsing is unavailable")
     resetCliOptions(program)
     parsing = true
+    answerExitCodes.set(program, 0)
     config = undefined
     activeSource = undefined
     execution = undefined
@@ -1124,7 +1120,7 @@ export const run = async (args: string[], deps: ProgramDeps): Promise<number> =>
   const program = createProgram(deps)
   try {
     await program.parseAsync(args, { from: "user" })
-    return 0
+    return answerExitCodes.get(program) ?? 0
   } catch (error) {
     if (
       typeof error === "object" &&
@@ -1141,7 +1137,14 @@ export const run = async (args: string[], deps: ProgramDeps): Promise<number> =>
         : error instanceof CommanderError
           ? new ZoomError("validation_error", "command failed; use --help for usage")
           : error
-    return reportFailure(failure, args, deps, commandPath(program, args))
+    const selected = commandSelection(program, args)
+    return reportFailure(
+      failure,
+      args,
+      deps,
+      selected.path,
+      hostFailureContext(program, metaOf(selected.action).effects),
+    )
   }
 }
 
@@ -1150,11 +1153,12 @@ export const reportFailure = (
   args: readonly string[],
   deps: Pick<ProgramDeps, "diagnostic" | "outputIsTTY">,
   command = "zm",
+  context: import("@wirecat/cli-base").FailureContext = hostFailureContext(),
 ): number => {
   const end = args.indexOf("--")
   const flags = args.slice(0, end < 0 ? undefined : end)
   const machine = flags.some((word) => word === "--json" || word === "--jsonl")
-  const object = errorObjectOf(failure, failureContext())
+  const object = errorObjectOf(failure, context)
   const record = flags.includes("--debug")
     ? errorRecordOf(failure, object, { command, service: "zm", version: VERSION })
     : undefined
@@ -1163,7 +1167,7 @@ export const reportFailure = (
   return exitCodeOfError(object)
 }
 
-const commandPath = (program: Command, args: readonly string[]): string => {
+const commandSelection = (program: Command, args: readonly string[]) => {
   const words: string[] = []
   let current = program
   for (const word of args) {
@@ -1174,5 +1178,5 @@ const commandPath = (program: Command, args: readonly string[]): string => {
     words.push(word)
     current = next
   }
-  return words.length ? words.join(" ") : "zm"
+  return { path: words.length ? words.join(" ") : "zm", action: current }
 }

@@ -284,7 +284,7 @@ More: [managing Zoom meetings][docs/remote-meetings.md] · [Zoom on wirecat.dev]
 
 ## Output, limits and deadlines
 
-`--json` prints one value and `--jsonl` one item per line; piped output defaults to JSON and errors
+`--json` prints one answer envelope; `--jsonl` prints typed item records and a final end record; piped output defaults to JSON and errors
 go to stderr. `--fields id,title` trims results, `--offline` refuses the network, and output is
 capped at 4 MiB unless `--max-output-bytes` says otherwise. Default deadlines are 30 seconds for
 reads, five minutes for login and one hour for downloads, sync and verification; `--timeout 5m`

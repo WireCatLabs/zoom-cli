@@ -1,4 +1,5 @@
 import { annotate } from "@wirecat/cli-base/commands"
+import { LOCAL_READ } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { ZoomError } from "./errors.js"
 import { bytes } from "./execution.js"
@@ -23,7 +24,7 @@ export const addMeetingContextCommands = (
   const meetings = program.commands.find((command) => command.name() === "meetings")
   if (!meetings) throw new ZoomError("configuration_error", "meeting command group is unavailable")
   const label = (command: Command, example: string) =>
-    annotate(command, { origin: "handwritten", mutates: false, examples: [example] })
+    annotate(command, { origin: "handwritten", effects: LOCAL_READ, examples: [example] })
   const limits = (command: Command) =>
     command
       .option("--cues <n>", "how many transcript lines, 1 through 1000", bytes)

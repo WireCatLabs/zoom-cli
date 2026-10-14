@@ -250,7 +250,7 @@ export const installedMeetingIntegration = async ({
       ),
     )
     hits.push(...page.items)
-    cursor = page.page.cursor
+    cursor = page.page.next_cursor
     firstCursor ??= cursor
   } while (cursor)
   assert.equal(hits.length, 9)
@@ -282,7 +282,7 @@ export const installedMeetingIntegration = async ({
     assert.equal(typeof answer.meta.run_id, "string")
     assert.equal(Number.isInteger(answer.meta.duration_ms), true)
     projectHits.push(...answer.item.hits)
-    projectCursor = answer.item.page.cursor
+    projectCursor = answer.item.page.next_cursor
     if (projectCursor) assert.equal(answer.next[0].args.project, "RES")
     if (++projectPages > 16) throw Error("unbounded installed project evidence")
   } while (projectCursor)

@@ -1,4 +1,5 @@
 import { annotate } from "@wirecat/cli-base/commands"
+import { LOCAL_READ } from "@wirecat/cli-core/cli"
 import { meetingHitsList } from "@wirecat/cli-core/meetings"
 import {
   createMeetingSearchCommand,
@@ -162,7 +163,7 @@ export const addMeetingSearchCommands = (
     .option("--max-bytes <bytes>", "with --archive: largest transcript file to read (default 8 MiB)", bytes)
   annotate(command, {
     origin: "handwritten",
-    mutates: false,
+    effects: LOCAL_READ,
     examples: [
       'zm search meetings "example plan" --since-time 2026-09-01 --json',
       'zm search meetings "example plan" --model e5-small --json',

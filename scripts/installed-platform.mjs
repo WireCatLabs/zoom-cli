@@ -115,7 +115,12 @@ const invoke = (args, status = 0, extra = {}) => {
   checks.push({ args, status })
   return result
 }
-const { itemEnvelopeSchema, listEnvelopeSchema } = require("@wirecat/cli-base/standards")
+const {
+  itemEnvelopeSchema,
+  listEnvelopeSchema,
+  jsonlItemSchema,
+  jsonlEndSchema,
+} = require("@wirecat/cli-base/standards")
 const v = require("valibot")
 const envelope = v.union([itemEnvelopeSchema(v.unknown()), listEnvelopeSchema(v.unknown())])
 const answer = (text) => {
@@ -123,6 +128,16 @@ const answer = (text) => {
   if (Object.hasOwn(packet, "commands")) return packet
   v.parse(envelope, packet)
   return Object.hasOwn(packet, "item") ? packet.item : packet
+}
+const jsonl = (text) => {
+  const records = text
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line))
+  assert.equal(records.at(-1).type, "end")
+  for (const record of records) v.parse(record.type === "item" ? jsonlItemSchema(v.unknown()) : jsonlEndSchema, record)
+  assert.equal(records.filter((record) => record.type === "end").length, 1)
+  return records.filter((record) => record.type === "item").map((record) => record.data)
 }
 const json = (...args) => answer(invoke(["--json", ...args]).stdout)
 assert.equal(invoke(["--version"]).stdout.trim(), expectedVersion)
@@ -371,9 +386,18 @@ assert.equal(people.coverage.archive_completeness, "unknown")
 assert.equal(people.page.limit, 1)
 assert.equal(people.page.has_more, true)
 assert.equal(people.next[0].step, "page.next")
-const peopleJsonl = invoke(["meetings", "people", "Alice", "--limit", "1", "--cursor", people.page.cursor, "--jsonl"])
-assert.equal(peopleJsonl.stdout.trim().split("\n").length, 1)
-const peopleContinuation = answer(peopleJsonl.stdout)
+const peopleJsonl = invoke([
+  "meetings",
+  "people",
+  "Alice",
+  "--limit",
+  "1",
+  "--cursor",
+  people.page.next_cursor,
+  "--jsonl",
+])
+assert.equal(peopleJsonl.stdout.trim().split("\n").length, 2)
+const [peopleContinuation] = jsonl(peopleJsonl.stdout)
 assert.ok(peopleContinuation.items.every((item) => String(item.meeting_id) !== foreignMeetingId))
 assert.equal(typeof peopleContinuation.page.has_more, "boolean")
 const { Client } = await import(pathToFileURL(require.resolve("@modelcontextprotocol/sdk/client/index.js")).href)

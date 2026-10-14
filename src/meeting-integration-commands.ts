@@ -1,4 +1,5 @@
 import { annotate } from "@wirecat/cli-base/commands"
+import { LOCAL_READ, LOCAL_WRITE } from "@wirecat/cli-core/cli"
 import { validateMeetingContextChange } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
 import { ZoomError } from "./errors.js"
@@ -23,8 +24,7 @@ export const addMeetingIntegrationCommands = (
   const label = (command: Command, example: string, mutates = false) =>
     annotate(command, {
       origin: "handwritten",
-      mutates,
-      ...(mutates ? { local: true } : {}),
+      effects: mutates ? LOCAL_WRITE : LOCAL_READ,
       examples: [example],
     })
   const guards = (command: Command) =>

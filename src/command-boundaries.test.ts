@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
 import { fakeMeetingSource, memoryMeetingStore, sampleEvent, sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { expect, it } from "vitest"
+import { readJsonl } from "../scripts/testing/answers.js"
 import { snakeKeys } from "./keys.js"
 import { type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
@@ -27,6 +28,7 @@ const setup = async () => {
   const invoke = async (args: string[]) => {
     output.length = 0
     expect(await run(args, deps)).toBe(0)
+    if (args.includes("--jsonl")) readJsonl(output.join(""))
     return output
       .join("")
       .trim()
@@ -63,16 +65,22 @@ it("keeps CLI paging, calendar filters and participant reads scoped to the selec
       "--jsonl",
     ]),
   ).toMatchObject([
-    { items: [{ id: String(first.meeting.id), provider: "memory" }], page: { limit: 1, has_more: false } },
+    { type: "item", data: { id: String(first.meeting.id), provider: "memory" } },
+    { type: "end", complete: true, page: { mode: "page", limit: 1, has_more: false } },
   ])
   expect((await invoke(["meetings", "people", "Alice", "--json"]))[0].items).toHaveLength(2)
-  expect((await invoke(["meetings", "people", "Alice", "--jsonl"]))[0].items).toHaveLength(2)
+  expect(
+    (await invoke(["meetings", "people", "Alice", "--jsonl"])).filter((record) => record.type === "item"),
+  ).toHaveLength(2)
   expect((await invoke(["events", "list", "--json"]))[0].items).toEqual([snakeKeys(event)])
-  expect(await invoke(["events", "list", "--jsonl"])).toMatchObject([{ items: [snakeKeys(event)] }])
+  expect(await invoke(["events", "list", "--jsonl"])).toMatchObject([
+    { type: "item", data: snakeKeys(event) },
+    { type: "end", complete: true },
+  ])
   expect(await store.meeting(first.meeting.id)).toEqual(before)
 })
 
-it("exports an explicitly selected historical revision and preserves JSONL item envelopes", async () => {
+it("exports an explicitly selected historical revision and preserves typed JSONL records", async () => {
   const { store, invoke } = await setup()
   const original = await store.saveMeeting(sampleMeeting())
   const corrected = sampleMeeting()
@@ -81,9 +89,9 @@ it("exports an explicitly selected historical revision and preserves JSONL item 
   await store.saveMeeting(corrected)
   const id = String(original.meeting.id)
   expect((await invoke(["meetings", "show", id, "--json"]))[0].item.transcripts).toHaveLength(1)
-  expect((await invoke(["meetings", "show", id, "--jsonl"]))[0].item.id).toBe(String(original.meeting.id))
-  expect(await invoke(["meetings", "transcript", id, "--jsonl"])).toHaveLength(1)
-  expect(await invoke(["meetings", "summary", id, "--jsonl"])).toHaveLength(1)
+  expect((await invoke(["meetings", "show", id, "--jsonl"]))[0].data.id).toBe(String(original.meeting.id))
+  expect(await invoke(["meetings", "transcript", id, "--jsonl"])).toHaveLength(2)
+  expect(await invoke(["meetings", "summary", id, "--jsonl"])).toHaveLength(2)
   const exported = await invoke([
     "meetings",
     "export",
@@ -94,8 +102,8 @@ it("exports an explicitly selected historical revision and preserves JSONL item 
     "vtt",
     "--jsonl",
   ])
-  expect(exported[0].item.content).toContain("Ship the example plan.")
-  expect(exported[0].item.content).not.toContain("Corrected")
+  expect(exported[0].data.content).toContain("Ship the example plan.")
+  expect(exported[0].data.content).not.toContain("Corrected")
 })
 
 it("passes explicit lookback into shared ingestion and emits a single acknowledgement per JSONL import", async () => {
@@ -108,7 +116,7 @@ it("passes explicit lookback into shared ingestion and emits a single acknowledg
     },
   })
   await store.setCursor(1, "2026-10-10T00:00:00.000Z", 3000)
-  expect(await invoke(["meetings", "sync", "--lookback-days", "2", "--jsonl"])).toHaveLength(1)
+  expect(await invoke(["meetings", "sync", "--lookback-days", "2", "--jsonl"])).toHaveLength(2)
   expect(boundaries).toEqual(["2026-10-08T00:00:00.000Z"])
   deps.readFiles = async () => [
     {
@@ -116,6 +124,6 @@ it("passes explicit lookback into shared ingestion and emits a single acknowledg
       content: "WEBVTT\n\n00:00.000 --> 00:01.000\nAlice Example: Invented import\n",
     },
   ]
-  expect(await invoke(["meetings", "import", "invented-folder", "--jsonl"])).toHaveLength(1)
+  expect(await invoke(["meetings", "import", "invented-folder", "--jsonl"])).toHaveLength(2)
   expect(await store.meetings({ accountId: 1 })).toHaveLength(1)
 })

@@ -9,11 +9,13 @@ import {
   metaOf,
 } from "@wirecat/cli-base/commands"
 import { formatSuggestions, suggest } from "@wirecat/cli-base/completion"
+import { LOCAL_READ, NO_EFFECTS } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
+import { commandEffects } from "./command-effects.js"
 import { ZoomError } from "./errors.js"
 import { VERSION } from "./version.js"
 
-const CONTRACT = 2
+const CONTRACT = 3
 
 export interface StandardCommandsDeps {
   output: (value: unknown) => void
@@ -35,10 +37,10 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
         const commands = scoped ? [scoped.command] : all
         if (!program.opts().json && !program.opts().jsonl) {
           deps.discovery(
-            flatten(commands).map(({ usage, summary, description, mutates }) => ({
+            flatten(commands).map(({ usage, summary, description, effects }) => ({
               command: usage,
               description: summary ?? description,
-              writes: mutates ? "yes" : "",
+              writes: effects?.remote === "write" || effects?.local === "write" ? "yes" : "",
             })),
           )
           return
@@ -56,7 +58,7 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
           exit_codes,
         })
       }),
-    { mutates: false, examples: ["zm commands --json"] },
+    { effects: LOCAL_READ, examples: ["zm commands --json"] },
   )
   annotate(
     program
@@ -72,14 +74,14 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
         if (program.opts().json || program.opts().jsonl) deps.output({ items: suggestions })
         else deps.raw(`${formatSuggestions(suggestions)}\n`)
       }),
-    { mutates: false, examples: ["zm complete -- meetings s"] },
+    { effects: LOCAL_READ, examples: ["zm complete -- meetings s"] },
   )
   annotate(
     program
       .command("doctor")
       .description("check local runtime and public config without a login or database")
       .action(() => deps.output(deps.doctor())),
-    { mutates: false, examples: ["zm doctor --json"] },
+    { effects: LOCAL_READ, examples: ["zm doctor --json"] },
   )
   const session = program.command("session").description("the saved Zoom login, separate from local data profiles")
   annotate(
@@ -88,7 +90,7 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
       .description("show cached login state; remote verification is explicit")
       .option("--check", "verify the session with Zoom")
       .action(async (options: { check?: boolean }) => deps.output(await deps.sessionStatus(options.check === true))),
-    { mutates: false, examples: ["zm session status --json", "zm session status --check --json"] },
+    { effects: LOCAL_READ, examples: ["zm session status --json", "zm session status --check --json"] },
   )
 }
 
@@ -99,16 +101,16 @@ export const annotateMeetingCommands = (program: Command): void => {
       const found = command.commands.find((child) => child.name() === part)
       if (found) command = found
     }
-    if (command.commands.length) continue
+    if (command.commands.length) {
+      annotate(command, { effects: NO_EFFECTS })
+      continue
+    }
     const path = item.path.join(" ")
-    const knownLocal = ["config set", "session start", "meetings sync", "meetings import", "meetings export"].includes(
-      path,
-    )
-    const mutates = knownLocal || metaOf(command).mutates === true
+    const effects = commandEffects(command) ?? metaOf(command).effects
+    if (!effects) throw new ZoomError("configuration_error", `command effects are missing: ${path}`)
     annotate(command, {
       origin: "handwritten",
-      mutates,
-      ...(knownLocal ? { local: true } : {}),
+      effects,
       ...(item.examples ? {} : { examples: [exampleFor(path)] }),
     })
   }
@@ -148,7 +150,6 @@ const projectDiscovery = (commands: readonly CommandInfo[], fields: readonly str
     path: command.path,
     name: command.name,
     origin: command.origin,
-    mutates: command.mutates,
-    local: command.local,
+    effects: command.effects,
     commands: projectDiscovery(command.commands, fields),
   }))

@@ -88,7 +88,8 @@ Stored `meetings` commands use local database ids; `remote-meetings` uses Zoom's
 ## Output for scripts and agents
 
 Use `--json` for one complete answer. A single result has `item`; a list has `items` and
-`page` (`limit`, `has_more`, optional `cursor`). Both carry `meta.run_id` and `meta.duration_ms`,
+`page` (`mode`, `limit`, `has_more`, optional `next_cursor`). Both carry `meta.run_id`,
+`meta.duration_ms` and `meta.complete`,
 with optional `next` steps and `missing` information. Result keys use snake_case.
 
 Detailed reports, including participant discovery, evidence, semantic search and unified search,
@@ -97,8 +98,18 @@ returns standard hit items with `ref`, `meeting`, `excerpt` and `offset_ms`. Mee
 `item`; transcripts and summaries use `items`. Details count current transcripts; use
 `meetings transcript <meeting> --history` to read retained older revisions.
 
-`--jsonl` preserves each complete answer per line, including streaming acknowledgements. Command
-discovery is the shared contract-2 document; help, version and shell completion retain their protocols.
+`--jsonl` emits typed records: each result is `{"type":"item","data":...}`, followed by an
+`{"type":"end","complete":true,"page":...}` record. Empty lists still emit the end record.
+Reports stay together inside one item record; each streaming acknowledgement has its own end record.
+Read `complete` and optional `issues` on the end record. Use `--json` when you need the full
+answer's `next`, `missing` and execution metadata. Command discovery is the shared contract-3
+document with separate `effects.remote` and `effects.local` declarations; help, version and shell
+completion retain their protocols.
+
+A skipped source makes `meta.complete` false and adds a source issue. `search all` accepts partial
+results and exits zero; inspect its skips before treating the result as complete. Other partial
+answers exit with the first issue's error code after printing the available result. A bounded page
+with more results is ordinary pagination, rather than a source failure.
 Errors go to stderr. Use `--quiet`
 to suppress non-error diagnostics. Piped output defaults to JSON; terminal output uses the shared
 human-readable renderer. Completion emits its shell protocol unless JSON is requested.

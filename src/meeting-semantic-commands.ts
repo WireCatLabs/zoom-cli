@@ -1,4 +1,5 @@
 import { annotate } from "@wirecat/cli-base/commands"
+import { LOCAL_WRITE } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { ZoomError } from "./errors.js"
 import { bytes } from "./execution.js"
@@ -128,6 +129,6 @@ export const addMeetingEmbeddingCommand = (
         if (options.yes) await deps.receipt(result)
         else deps.output(result)
       }),
-    { origin: "handwritten", mutates: true, local: true, examples: ["zm meetings embeddings --model e5-small --json"] },
+    { origin: "handwritten", effects: LOCAL_WRITE, examples: ["zm meetings embeddings --model e5-small --json"] },
   )
 }

@@ -4,7 +4,7 @@ import { join } from "node:path"
 import { CliError, memoryKeyring } from "@wirecat/cli-base"
 import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { describe, expect, it, vi } from "vitest"
-import { readAnswer } from "../scripts/testing/answers.js"
+import { readAnswer, readJsonlPage } from "../scripts/testing/answers.js"
 import { setConfig } from "./config.js"
 import { snakeKeys } from "./keys.js"
 import { writeExportFile } from "./output-file.js"
@@ -71,8 +71,7 @@ describe("command execution controls", () => {
     expect(value(stdout).commands[0]).toMatchObject({
       name: "download",
       path: ["recordings", "download"],
-      mutates: true,
-      local: true,
+      effects: { remote: "read", local: "write" },
     })
     expect(value(stdout).commands[0].usage).toContain("<meeting>")
     expect(value(stdout).commands[0]).not.toHaveProperty("description")
@@ -234,7 +233,7 @@ describe("archive and explicit remote command wiring", () => {
     expect(
       await run(["--jsonl", "recordings", "list", "--since-time", "2026-10-01", "--until-time", "2026-10-10"], deps),
     ).toBe(0)
-    expect(readAnswer(stdout.at(-1) ?? "{}").items[0].uuid).toBe(meeting.uuid)
+    expect(readJsonlPage(stdout.at(-1) ?? "{}").items[0].uuid).toBe(meeting.uuid)
     expect(await run(["--json", "recordings", "show", "example-occurrence"], deps)).toBe(0)
     expect(show).toHaveBeenCalledWith(
       "example-occurrence",

@@ -1,4 +1,5 @@
 import { annotate } from "@wirecat/cli-base/commands"
+import { LOCAL_WRITE } from "@wirecat/cli-core/cli"
 import { speechModel } from "@wirecat/cli-core/speech"
 import type { Command } from "commander"
 import { ZoomError } from "./errors.js"
@@ -67,8 +68,7 @@ export const addLocalTranscriptionCommands = (
       ),
     {
       origin: "handwritten",
-      mutates: true,
-      local: true,
+      effects: LOCAL_WRITE,
       examples: ["zm meetings transcribe meeting:3/12 ./AliceExample.wav --model parakeet-v3 --json"],
     },
   )

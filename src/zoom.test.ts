@@ -6,7 +6,7 @@ import { brokenKeyring, memoryKeyring } from "@wirecat/cli-base"
 import { importFiles, pull } from "@wirecat/cli-core/meetings"
 import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { describe, expect, it } from "vitest"
-import { readAnswer } from "../scripts/testing/answers.js"
+import { readAnswer, readJsonl } from "../scripts/testing/answers.js"
 import { encodeUuid, ZoomApiSource } from "./api.js"
 import { readConfig, setConfig } from "./config.js"
 import { number, object, string } from "./errors.js"
@@ -440,7 +440,7 @@ describe("zm", () => {
     expect(await run(["meetings", "import", "example-folder", "--json"], deps)).toBe(0)
     expect(readAnswer(stdout[0] ?? "{}")).toMatchObject({ meetings: 1 })
     expect(await run(["--jsonl", "meetings", "list"], deps)).toBe(0)
-    expect(readAnswer(stdout[1] ?? "{}")).toHaveProperty("items.0.title")
+    expect(readJsonl(stdout[1] ?? "")[0]).toHaveProperty("title")
     expect(await run(["import", "example-folder"], deps)).toBe(2)
     expect(await run(["--help"], deps)).toBe(0)
     expect(await run(["--version"], deps)).toBe(0)
