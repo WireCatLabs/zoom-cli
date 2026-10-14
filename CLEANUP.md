@@ -9,3 +9,4 @@
 - 2026-10-14: `~/.cache/zoom-meeting-passages-release-2026-10-14` — clean main checkout for the reviewed 0.9.0 release; retain for the owner's cleanup batch.
 
 - 2026-10-14: `.worktrees/bounded-participants`, branch `feat/bounded-participants` — retained participant pagination and SDK compatibility checkout; remove in the owner-approved cleanup batch.
+- 2026-10-14: `~/.cache/cli-core-participant-release-2026-10-14`, `/tmp/core-participant-ci-artifact-2026-10-14` and `/tmp/zoom-participant-before-artifact-*` — retained clean SDK release checkout, exact CI artifact and dependency-manifest backups; remove in the owner's approved cleanup batch.
