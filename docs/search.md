@@ -4,6 +4,8 @@ Find what was said in your stored meetings, read the exact passage with a refere
 what you discussed with a person, link meetings to events and people, and preview a follow-up task
 tied to its source.
 
+<a id="search-stored-meetings" />
+
 ## Start with a question
 
 ```text prompt

@@ -16,6 +16,8 @@ The examples below use `e5-small` for a local model. Confirm it is installed bef
 batch; its name alone does not install it. Local and remote results need the same model/dimensions
 as their stored vectors to be comparable.
 
+<a id="explicit-meeting-vectors" />
+
 ## Search by meaning
 
 Choose an already installed local model, or explicitly select a remote endpoint and dimensions:

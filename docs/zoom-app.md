@@ -124,6 +124,8 @@ Archiving does not require meeting write permissions. Changes preview by default
 one request. See [recording archives](archive.md#archive-cloud-recordings) or
 [meeting management](remote-meetings.md) after granting the corresponding permissions.
 
+<a id="before-your-first-zm-pull" />
+
 ## Before your first `zm meetings sync`
 
 A transcript must have been generated and retained in Zoom. In your Zoom web settings, find
