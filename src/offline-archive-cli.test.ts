@@ -108,37 +108,34 @@ it("projects archive fields, supports finite JSONL and preserves true search pag
   expect(item.cues).toHaveLength(2)
   expect(item).not.toHaveProperty("asset")
   output.length = 0
-  expect(
-    await run(
-      [
-        "search",
-        "meetings",
-        "PLAN",
-        "--archive",
-        directory,
-        "--uuid",
-        uuid,
-        "--file-ids",
-        "example-first",
-        "--max-bytes",
-        "4096",
-        "--limit",
-        "1",
-        "--json",
-      ],
-      deps,
-    ),
-  ).toBe(0)
+  expect(await run(["search", "recordings", directory, "PLAN", "--limit", "1", "--json"], deps)).toBe(0)
+  expect(latest(output)).toMatchObject({ page: { limit: 1, has_more: true } })
+  expect(latest(output).items).toEqual([
+    {
+      kind: "meeting",
+      ref: "recording:example-first/0",
+      provider: "zoom",
+      account: directory,
+      title: "Example archive",
+      timestamp: null,
+      excerpt: "Café [Plan]",
+      sender_name: "Alice Example",
+      offset_ms: 0,
+    },
+  ])
+  output.length = 0
+  expect(await run(["search", "recordings", directory, "Cafe\u0301", "--json=ref,excerpt"], deps)).toBe(0)
   expect(latest(output)).toMatchObject({
-    page: { limit: 1, has_more: true },
-    items: [{ text: "Café [Plan]", position: 0 }],
+    page: { has_more: false },
+    items: [{ ref: "recording:example-first/0", excerpt: "Café [Plan]" }],
   })
+  expect(Object.keys(latest(output).items[0])).toEqual(["ref", "excerpt"])
   output.length = 0
-  expect(await run(["search", "meetings", "Cafe\u0301", "--archive", directory, "--json"], deps)).toBe(0)
-  expect(latest(output)).toMatchObject({ page: { has_more: false }, items: [{ text: "Café [Plan]" }] })
-  output.length = 0
-  expect(await run(["search", "meetings", "not present", "--archive", directory, "--json"], deps)).toBe(0)
+  expect(await run(["search", "recordings", directory, "not", "present", "--json"], deps)).toBe(0)
   expect(latest(output)).toMatchObject({ items: [], page: { has_more: false } })
+  output.length = 0
+  expect(await run(["search", "recordings", directory, "plan", "--json=text,position"], deps)).toBe(2)
+  expect(output).toEqual([])
 })
 
 it("reports corruption, byte bounds and unknown selectors without emitting partial finite output", async () => {
@@ -157,15 +154,14 @@ it("reports corruption, byte bounds and unknown selectors without emitting parti
   expect(await run(["recordings", "archive", "transcript", directory, "--jsonl"], deps)).toBe(2)
   expect(output).toEqual([])
   output.length = 0
-  expect(await run(["search", "meetings", "plan", "--archive", directory, "--limit", "1001", "--json"], deps)).toBe(2)
+  expect(await run(["search", "recordings", directory, "plan", "--limit", "1001", "--json"], deps)).toBe(2)
   expect(output).toEqual([])
   for (const flags of [
-    ["--since-time", "2026-10-01"],
-    ["--event-id", "1"],
-    ["--model", "e5-small"],
-    ["--cursor", "1"],
+    ["--archive", directory],
+    ["--uuid", "example-occurrence"],
+    ["--max-bytes", "4096"],
   ])
-    expect(await run(["search", "meetings", "plan", "--archive", directory, ...flags, "--json"], deps)).toBe(2)
+    expect(await run(["search", "meetings", "plan", ...flags, "--json"], deps)).toBe(2)
   expect(output).toEqual([])
 })
 

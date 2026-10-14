@@ -920,7 +920,7 @@ zm search all <query> [options]
 
 ### `zm search meetings`
 
-find words in stored meetings, by meaning with --model, or in an archive folder
+find words in stored meetings, or by meaning with --model
 
 **Changes local data.**
 
@@ -953,10 +953,23 @@ zm search meetings <query> [options]
 | `--max-chunks <n>` | by meaning: most stored passages to compare. |
 | `--max-rows <n>` | by meaning: most transcript lines to read, 1 through 100000. |
 | `--max-text-bytes <bytes>` | by meaning: most transcript text to read (default 4 MiB). |
-| `--archive <directory>` | search the transcripts of this archive folder, before any import. |
-| `--uuid <uuid>` | with --archive: only this occurrence UUID. |
-| `--file-ids <ids>` | with --archive: only these comma-separated transcript asset ids. |
-| `--max-bytes <bytes>` | with --archive: largest transcript file to read (default 8 MiB). |
+
+### `zm search recordings`
+
+find words in the transcripts of a downloaded archive folder, before any import
+
+```sh
+zm search recordings <directory> <query> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `directory` | required | archive folder. |
+| `query` | required | words to find as one phrase, ignoring case. |
+
+| Option | What it does |
+|---|---|
+| `--limit <n>` | how many hits, 1 through 1000 (default 100). |
 
 ## Exit codes
 

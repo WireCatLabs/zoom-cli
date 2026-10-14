@@ -207,7 +207,7 @@ More: [the local archive][docs/archive.md] · [Zoom on wirecat.dev][wirecat/en/d
 ```sh
 zm recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --destination ./zoom-archive --jsonl
 zm recordings archive check ./zoom-archive --offline --json
-zm search meetings "example plan" --archive ./zoom-archive --offline --json
+zm search recordings ./zoom-archive "example plan" --offline --json
 ```
 
 Sync covers up to ten years in monthly requests and downloads serially, streaming to disk. Each

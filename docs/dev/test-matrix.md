@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**236 ✅ · 1 ⛔ · 0 ❌** — 52 commands, 185 options.
+**234 ✅ · 1 ⛔ · 0 ❌** — 53 commands, 182 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -234,10 +234,8 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `search meetings` | `--max-chunks` | ✅ |  |
 | `search meetings` | `--max-rows` | ✅ |  |
 | `search meetings` | `--max-text-bytes` | ✅ |  |
-| `search meetings` | `--archive` | ✅ |  |
-| `search meetings` | `--uuid` | ✅ |  |
-| `search meetings` | `--file-ids` | ✅ |  |
-| `search meetings` | `--max-bytes` | ✅ |  |
+| `search recordings` |  | ✅ |  |
+| `search recordings` | `--limit` | ✅ |  |
 | *global* | `--version` | ⛔ | Installed-package acceptance checks the actual bin version; Commander exits before preAction tracing. |
 | *global* | `--json` | ✅ |  |
 | *global* | `--jsonl` | ✅ |  |
