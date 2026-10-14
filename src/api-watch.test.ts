@@ -5,6 +5,7 @@ import { CliError, memoryKeyring } from "@wirecat/cli-base"
 import { fakeMeetingSource, memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { expect, it, vi } from "vitest"
 import { readReceipt } from "../scripts/testing/answers.js"
+import { fakeConnection } from "../scripts/testing/connection.js"
 import { readConfig, setConfig } from "./config.js"
 import { type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
@@ -78,7 +79,7 @@ it("resolves a configured files folder and keeps its profile/timezone bound desp
     folders: string[] = []
   deps.connectStore = async (request) => {
     profiles.push(request.profile)
-    return { store, accountId: 1, close: async () => {} }
+    return fakeConnection({ store, accountId: 1, close: async () => {} })
   }
   deps.readFiles = async (folder) => {
     folders.push(folder)
@@ -133,13 +134,13 @@ it("uses shared cursor lookback to discover a late API transcript with fresh sou
   deps.connectStore = async (request) => {
     profiles.push(request.profile)
     order.push("open")
-    return {
+    return fakeConnection({
       store,
       accountId: 1,
       close: async () => {
         order.push("close")
       },
-    }
+    })
   }
   deps.fetch = async (input, init) => {
     expect(init?.signal).toBeInstanceOf(AbortSignal)
@@ -234,7 +235,7 @@ it("closes an interrupted API cycle without advancing its cursor or issuing late
   const store = memoryMeetingStore()
   await store.setCursor(1, "2026-10-10T00:00:00Z", 0)
   const close = vi.fn(async () => {})
-  deps.connectStore = async () => ({ store, accountId: 1, close })
+  deps.connectStore = async () => fakeConnection({ store, accountId: 1, close })
   const transcript = vi.fn(async () => {
     controller.abort(new CliError("cancelled", "example interrupted"))
     return []
@@ -252,7 +253,9 @@ it("rejects mismatched OAuth configuration before opening a store and preserves 
   const { deps, controller } = await setup()
   setConfig(deps.configPath, "zoom.clientId", "different-example-client")
   setConfig(deps.configPath, "account.profile", "example-profile")
-  const connect = vi.fn(async () => ({ store: memoryMeetingStore(), accountId: 1, close: async () => {} }))
+  const connect = vi.fn(async () =>
+    fakeConnection({ store: memoryMeetingStore(), accountId: 1, close: async () => {} }),
+  )
   deps.connectStore = connect
   expect(await run(["watch", "api", "--jsonl"], deps)).toBe(3)
   expect(connect).not.toHaveBeenCalled()
@@ -306,7 +309,7 @@ it("does not acknowledge an uncertain or cancelled cursor write and always close
   setConfig(deps.configPath, "account.profile", "example-profile")
   const store = memoryMeetingStore()
   const close = vi.fn(async () => {})
-  deps.connectStore = async () => ({ store, accountId: 1, close })
+  deps.connectStore = async () => fakeConnection({ store, accountId: 1, close })
   deps.source = fakeMeetingSource({ meetings: async () => [] })
   const setter = vi.spyOn(store, "setCursor").mockImplementation(async () => {
     controller.abort(new CliError("cancelled", "example cursor cancelled"))

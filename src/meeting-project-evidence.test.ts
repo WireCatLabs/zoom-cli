@@ -248,21 +248,9 @@ it("refuses malformed CLI selectors before connection and drops buffered success
   expect(f.output).toEqual([])
 })
 
-it("MCP closes missing capabilities, cancellations and cleanup failures without returning success", async () => {
+it("MCP closes cancellations and cleanup failures without returning success", async () => {
   const f = await fixture()
   const signal = new AbortController()
-  expect(
-    await readProjectEvidenceTool(
-      {
-        connectStore: async () => {
-          const connection = await f.connect()
-          return { ...connection, meetingProjectEvidence: undefined }
-        },
-      },
-      { project: "RES" },
-      signal.signal,
-    ),
-  ).toMatchObject({ isError: true })
   const before = f.close.mock.calls.length
   expect(
     await readProjectEvidenceTool(
@@ -303,35 +291,6 @@ it("MCP closes missing capabilities, cancellations and cleanup failures without 
       new AbortController().signal,
     ),
   ).toMatchObject({ isError: true })
-})
-
-it("supports an injected account-bound CLI reader and refuses an unavailable legacy connector", async () => {
-  const f = await fixture()
-  const unavailable = vi.fn(async () => {
-    throw Error("unexpected connector fallback")
-  })
-  f.deps.connectStore = unavailable
-  f.deps.meetingProjectEvidence = async (project, request) => {
-    const connection = await f.connect()
-    try {
-      if (!connection.meetingProjectEvidence) throw Error("missing invented read")
-      return await connection.meetingProjectEvidence(project, request)
-    } finally {
-      await connection.close()
-    }
-  }
-  expect(await run(["meetings", "projects", "evidence", "RES", "--json"], f.deps)).toBe(0)
-  expect(unavailable).not.toHaveBeenCalled()
-  expect(validator(JSON.parse(f.output.join(""))).valid).toBe(true)
-  f.output.length = 0
-  f.deps.meetingProjectEvidence = undefined
-  const close = vi.fn(async () => {})
-  const connection = await f.connect()
-  await connection.close()
-  f.deps.connectStore = async () => ({ ...connection, meetingProjectEvidence: undefined, close })
-  expect(await run(["meetings", "projects", "evidence", "RES", "--json"], f.deps)).toBe(3)
-  expect(f.output).toEqual([])
-  expect(close).toHaveBeenCalledOnce()
 })
 
 it("MCP rejects an invalid host account before reading and bounds the complete successful envelope", async () => {

@@ -1,7 +1,7 @@
+import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
 import { LOCAL_WRITE } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
-import { ZoomError } from "./errors.js"
 import { bytes } from "./execution.js"
 
 export interface MeetingModelOptions {
@@ -36,17 +36,17 @@ const bounded = (value: number | undefined, maximum: number) =>
   value === undefined || (Number.isSafeInteger(value) && value > 0 && value <= maximum)
 export const validateMeetingModel = (options: MeetingModelOptions): void => {
   if (typeof options.model !== "string" || !options.model.trim() || options.model.length > 1000)
-    throw new ZoomError("validation_error", "select an explicit embedding model")
+    throw new CliError("validation_error", "select an explicit embedding model")
   if (options.baseUrl === undefined) {
     if (options.dims !== undefined)
-      throw new ZoomError("validation_error", "dimensions require an explicit remote base URL")
+      throw new CliError("validation_error", "dimensions require an explicit remote base URL")
     return
   }
   let url: URL
   try {
     url = new URL(options.baseUrl)
   } catch {
-    throw new ZoomError("validation_error", "embedding base URL must be an HTTP or HTTPS URL")
+    throw new CliError("validation_error", "embedding base URL must be an HTTP or HTTPS URL")
   }
   if (
     !["http:", "https:"].includes(url.protocol) ||
@@ -58,7 +58,7 @@ export const validateMeetingModel = (options: MeetingModelOptions): void => {
     options.dims === undefined ||
     !bounded(options.dims, 8192)
   )
-    throw new ZoomError(
+    throw new CliError(
       "validation_error",
       "remote embeddings require an HTTP base URL without credentials and explicit dimensions",
     )
@@ -75,7 +75,7 @@ export const validateMeetingSemantic = (query: string, options: MeetingSemanticO
     !bounded(options.maxRows, 100000) ||
     !bounded(options.maxTextBytes, 64 * 1024 * 1024)
   )
-    throw new ZoomError(
+    throw new CliError(
       "validation_error",
       "meeting semantic search requires a nonempty bounded query and positive limits",
     )
@@ -89,7 +89,7 @@ export const validateMeetingEmbeddings = (options: MeetingEmbeddingOptions): voi
     !bounded(options.maxTextBytes, 64 * 1024 * 1024) ||
     (options.afterHash !== undefined && !/^[a-f0-9]{64}$/.test(options.afterHash))
   )
-    throw new ZoomError("validation_error", "meeting embedding generation requires valid bounded limits and cursors")
+    throw new CliError("validation_error", "meeting embedding generation requires valid bounded limits and cursors")
 }
 export const addMeetingEmbeddingCommand = (
   program: Command,
@@ -102,7 +102,7 @@ export const addMeetingEmbeddingCommand = (
   },
 ): void => {
   const meetings = program.commands.find((command) => command.name() === "meetings")
-  if (!meetings) throw new ZoomError("configuration_error", "meeting command group is unavailable")
+  if (!meetings) throw new CliError("configuration_error", "meeting command group is unavailable")
   const model = (command: Command) =>
     command
       .requiredOption("--model <model>", "embedding model: an installed local one, or one served at --base-url")
@@ -123,7 +123,7 @@ export const addMeetingEmbeddingCommand = (
       .action(async (options: MeetingEmbeddingOptions) => {
         validateMeetingEmbeddings(options)
         if (options.baseUrl !== undefined && deps.offline())
-          throw new ZoomError("configuration_error", "remote embeddings require network access; remove --offline")
+          throw new CliError("configuration_error", "remote embeddings require network access; remove --offline")
         const api = await deps.capabilities()
         const result = await api.generate({ ...options, signal: deps.signal() })
         if (options.yes) await deps.receipt(result)

@@ -1,15 +1,16 @@
 import { mkdtemp } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { memoryKeyring } from "@wirecat/cli-base"
+import { CliError, memoryKeyring } from "@wirecat/cli-base"
 import { parseMeetingReference } from "@wirecat/cli-core"
 import { createMeetingContext, type MeetingMediaDescriptor, transcribeMeeting } from "@wirecat/cli-core/meetings"
 import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { expect, it, vi } from "vitest"
 import { readAnswer, readJsonlPage, readReceipt } from "../scripts/testing/answers.js"
-import { ZoomError } from "./errors.js"
+import { fakeConnection } from "../scripts/testing/connection.js"
+import { setConfig } from "./config.js"
 import type { LocalTranscriptionOptions } from "./local-transcription.js"
-import { type ProgramDeps, run } from "./program.js"
+import { type ProgramDeps, run, type StoreConnection } from "./program.js"
 import { TokenManager } from "./tokens.js"
 
 const setup = async () => {
@@ -19,7 +20,10 @@ const setup = async () => {
   const fail = async () => {
     throw new Error("unexpected external access")
   }
-  const connect = vi.fn(fail)
+  const parts: Partial<StoreConnection> = {}
+  const connect = vi.fn(async () =>
+    fakeConnection({ store: {} as never, accountId: 1, close: async () => {}, ...parts }),
+  )
   const deps: ProgramDeps = {
     configPath: join(directory, "config.json"),
     tokens: new TokenManager({ clientId: "example-client", service: "example", keyring: memoryKeyring(), fetch: fail }),
@@ -34,14 +38,15 @@ const setup = async () => {
     actions: ["event.link", "person.link"],
     apply: writes,
   })
-  deps.meetingIntegration = {
+  setConfig(deps.configPath, "account.profile", "AliceExample")
+  parts.meetingIntegration = {
     change: async (reference, change, options) => {
       const parsed = parseMeetingReference(reference)
-      if (parsed.accountId !== 1) throw new ZoomError("not_found", "unavailable for the selected account")
+      if (parsed.accountId !== 1) throw new CliError("not_found", "unavailable for the selected account")
       return context.change(parsed.meetingId, change, options)
     },
   }
-  return { deps, output, errors, writes, connect }
+  return { deps, output, errors, writes, connect, parts }
 }
 const latest = (rows: string[]) => {
   const text = rows.at(-1) ?? "{}"
@@ -130,9 +135,9 @@ it("rejects malformed links before connecting and refuses foreign meeting scope"
     ["link", "meeting:1/1", "--participant-id", "1", "--person", "1", "--target-accounts", "0"],
   ])
     expect(await run(["meetings", ...args, "--yes", "--json"], deps)).toBe(2)
+  expect(connect).not.toHaveBeenCalled()
   expect(await run(["meetings", "update", "meeting:2/1", "--event-id", "1", "--yes", "--json"], deps)).toBe(6)
   expect(writes).not.toHaveBeenCalled()
-  expect(connect).not.toHaveBeenCalled()
 })
 
 it("preserves an acknowledged link receipt when cancellation follows commit", async () => {
@@ -167,7 +172,7 @@ it("preserves an acknowledged link receipt when cancellation follows commit", as
 })
 
 it("keeps bounded search cursors and coverage in JSONL and forwards typed date/budget filters", async () => {
-  const { deps, output, connect } = await setup()
+  const { output, deps, parts } = await setup()
   const search = vi.fn(async () => ({
     items: [
       {
@@ -188,7 +193,7 @@ it("keeps bounded search cursors and coverage in JSONL and forwards typed date/b
       indexCompleteness: "unknown" as const,
     },
   }))
-  deps.meetingSearch = search
+  parts.meetingSearch = search
   expect(
     await run(
       [
@@ -247,15 +252,14 @@ it("keeps bounded search cursors and coverage in JSONL and forwards typed date/b
   )
   expect(await run(["search", "meetings", "example", "--topic", "costs", "--json"], deps)).toBe(0)
   expect(search).toHaveBeenLastCalledWith("example", expect.objectContaining({ topic: "costs" }))
-  expect(connect).not.toHaveBeenCalled()
 })
 
 it("rejects impossible search dates, oversized bounds and opaque cursor tampering before lookup", async () => {
-  const { deps, connect } = await setup()
+  const { deps, connect, parts } = await setup()
   const search = vi.fn(async () => {
     throw new Error("unexpected search")
   })
-  deps.meetingSearch = search
+  parts.meetingSearch = search
   for (const flags of [
     ["--limit", "0"],
     ["--limit", "1001"],
@@ -285,7 +289,7 @@ it("retains memo as the shared note, tag and memory interface in command discove
 })
 
 it("mounts bounded local transcription with explicit model, guarded preview and a long deadline", async () => {
-  const { deps, output } = await setup()
+  const { deps, output, parts } = await setup()
   const store = memoryMeetingStore()
   const saved = await store.saveMeeting(sampleMeeting())
   const media: MeetingMediaDescriptor = {
@@ -320,7 +324,7 @@ it("mounts bounded local transcription with explicit model, guarded preview and 
       options,
     ),
   )
-  deps.meetingTranscription = { transcribe }
+  parts.meetingTranscription = { transcribe }
   const deadlines: number[] = []
   deps.sleep = async (ms, signal) =>
     new Promise((_resolve, reject) => {

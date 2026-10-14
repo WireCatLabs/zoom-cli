@@ -1,8 +1,8 @@
+import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
 import { LOCAL_WRITE } from "@wirecat/cli-core/cli"
 import { speechModel } from "@wirecat/cli-core/speech"
 import type { Command } from "commander"
-import { ZoomError } from "./errors.js"
 import { bytes, duration } from "./execution.js"
 import {
   compactLocalTranscriptionReceipt,
@@ -21,7 +21,7 @@ export const addLocalTranscriptionCommands = (
   },
 ): void => {
   const meetings = program.commands.find((command) => command.name() === "meetings")
-  if (!meetings) throw new ZoomError("configuration_error", "meeting command group is unavailable")
+  if (!meetings) throw new CliError("configuration_error", "meeting command group is unavailable")
   annotate(
     meetings
       .command("transcribe")
@@ -59,7 +59,7 @@ export const addLocalTranscriptionCommands = (
           })
           speechModel(request.model)
           if (typeof file !== "string" || !file.trim() || file.includes("\0"))
-            throw new ZoomError("validation_error", "local audio file is required")
+            throw new CliError("validation_error", "local audio file is required")
           const capabilities = await deps.capabilities()
           const receipt = await capabilities.transcribe(reference, file, request)
           if (receipt.applied) await deps.receipt(compactLocalTranscriptionReceipt(receipt))

@@ -23,8 +23,6 @@ export const readProjectEvidenceTool = async (
         request.signal?.throwIfAborted()
         if (!Number.isSafeInteger(connection.accountId) || connection.accountId < 1)
           throw new CliError("configuration_error", "selected meeting account is unavailable")
-        if (!connection.meetingProjectEvidence)
-          throw new CliError("configuration_error", "project evidence capability is unavailable")
         return connection.meetingProjectEvidence(project, request)
       },
       input,

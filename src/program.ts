@@ -1,7 +1,7 @@
 import { homedir } from "node:os"
 import { dirname, join } from "node:path"
 import {
-  type CliError,
+  CliError,
   createDeadline,
   createRenderer,
   errorObjectOf,
@@ -19,12 +19,10 @@ import { checkJson, jsonlRecords, listOf } from "@wirecat/cli-core/cli"
 import {
   importFiles,
   listed,
-  MeetingError,
   type MeetingProjectDiscoveryReader,
   type MeetingSource,
   type MeetingStore,
   type MeetingTranscriptReceiptStore,
-  type MeetingTranscriptStore,
   pull,
 } from "@wirecat/cli-core/meetings"
 import { addMeetingCommands, addMeetingPassageCommand } from "@wirecat/cli-core/meetings/cli"
@@ -45,7 +43,7 @@ import { applyArchiveImport, preflightArchiveImport } from "./archive-import.js"
 import { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
 import { addStandardCommands, annotateMeetingCommands } from "./commands.js"
 import { profileAccountKey, readConfig, setConfig, type ZoomConfig } from "./config.js"
-import { checkCancelled, ZoomError } from "./errors.js"
+import { checkCancelled } from "./errors.js"
 import { bytes, duration, type ExecutionState, resetCliOptions, startExecution } from "./execution.js"
 import { FilesSource, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { addIngestionSearchCommands } from "./ingestion-search-commands.js"
@@ -90,21 +88,19 @@ export interface StoreConnection {
   store: MeetingStore
   accountId: number
   close: () => Promise<void>
-  appendTranscripts?: MeetingTranscriptStore["appendTranscripts"]
-  appendTranscriptsWithReceipt?: MeetingTranscriptReceiptStore["appendTranscriptsWithReceipt"]
-  meetingIntegration?: MeetingIntegrationCapabilities
-  meetingSearch?: MeetingHitSearch
-  meetingProjectEvidence?: MeetingProjectDiscoveryReader
-  meetingTranscription?: LocalTranscriptionCapabilities
-  unifiedSearch?: UnifiedSearch
-  meetingContext?: MeetingContextCapabilities
-  meetingSemantic?: MeetingSemanticCapabilities
+  appendTranscriptsWithReceipt: MeetingTranscriptReceiptStore["appendTranscriptsWithReceipt"]
+  meetingIntegration: MeetingIntegrationCapabilities
+  meetingSearch: MeetingHitSearch
+  meetingProjectEvidence: MeetingProjectDiscoveryReader
+  meetingTranscription: LocalTranscriptionCapabilities
+  unifiedSearch: UnifiedSearch
+  meetingContext: MeetingContextCapabilities
+  meetingSemantic: MeetingSemanticCapabilities
 }
 export interface StoreConnectRequest {
   profile: string
   externalId: string
   intent: "read" | "ingestion"
-  capability?: "transcript-append" | "meeting-integration" | "meeting-search" | "meeting-project-evidence"
 }
 export interface ProgramDeps {
   configPath: string
@@ -113,14 +109,6 @@ export interface ProgramDeps {
   store?: MeetingStore
   accountId?: number
   connectStore?: (request: StoreConnectRequest) => Promise<StoreConnection>
-  transcriptStore?: Partial<MeetingTranscriptStore & MeetingTranscriptReceiptStore>
-  unifiedSearch?: UnifiedSearch
-  meetingContext?: MeetingContextCapabilities
-  meetingSemantic?: MeetingSemanticCapabilities
-  meetingIntegration?: MeetingIntegrationCapabilities
-  meetingSearch?: MeetingHitSearch
-  meetingProjectEvidence?: MeetingProjectDiscoveryReader
-  meetingTranscription?: LocalTranscriptionCapabilities
   source?: MeetingSource
   recordings?: RecordingsService
   recordingSchedule?: RecordingScheduleService
@@ -152,7 +140,7 @@ export interface ProgramDeps {
   streamData?: (text: string, signal: AbortSignal) => Promise<void>
 }
 const unavailable = async (): Promise<never> => {
-  throw new ZoomError("configuration_error", "the shared SQLite meeting store is not available yet")
+  throw new CliError("configuration_error", "the shared SQLite meeting store is not available yet")
 }
 const unavailableStore: MeetingStore = {
   saveMeeting: unavailable,
@@ -175,7 +163,7 @@ const answerExitCodes = new WeakMap<Command, number>()
 export const createProgram = (deps: ProgramDeps): Command => {
   let config: ReturnType<typeof readConfig> | undefined
   const getConfig = () => (config ??= readConfig(deps.configPath))
-  let connection: StoreConnection | undefined
+  let connecting: Promise<StoreConnection> | undefined
   let parsing = false
   let execution: ExecutionState | undefined
   let fields: string[] | undefined
@@ -187,7 +175,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     (input, init) => {
       checkCancelled(signal())
       if (program.opts().offline)
-        throw new ZoomError("configuration_error", "the command requires network access; remove --offline")
+        throw new CliError("configuration_error", "the command requires network access; remove --offline")
       const operation = signal()
       return fetcher(input, {
         ...init,
@@ -196,7 +184,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     }
   const tokens = () => (activeTokens ??= deps.tokens.withSignal(signal(), fetchWithSignal(deps.tokens.options.fetch)))
   const buffer = (text: string) => {
-    if (!execution) throw new ZoomError("configuration_error", "command execution is not initialized")
+    if (!execution) throw new CliError("configuration_error", "command execution is not initialized")
     execution.output.data(text)
   }
   const guardedStore = (store: MeetingStore): MeetingStore =>
@@ -217,9 +205,22 @@ export const createProgram = (deps: ProgramDeps): Command => {
   let selectedAccountId = deps.accountId
   const requireAccount = (): number => {
     if (!Number.isSafeInteger(selectedAccountId) || !selectedAccountId || selectedAccountId < 1)
-      throw new ZoomError("configuration_error", "the selected meeting account is unavailable")
+      throw new CliError("configuration_error", "the selected meeting account is unavailable")
     return selectedAccountId
   }
+  const openStore = async (intent: StoreConnectRequest["intent"]): Promise<StoreConnection> => {
+    if (!deps.connectStore) return unavailable()
+    const profile = getConfig().accountProfile
+    if (!profile)
+      throw new CliError("configuration_error", "select a local profile with zm config set account.profile <label>")
+    try {
+      return await deps.connectStore({ profile, externalId: profileAccountKey(profile), intent })
+    } catch (error) {
+      if (isCliError(error)) throw error
+      throw new CliError("configuration_error", "could not open the shared meeting store")
+    }
+  }
+  const connected = (intent: StoreConnectRequest["intent"] = "read") => (connecting ??= openStore(intent))
   const program = new Command()
     .name("zm")
     .version(VERSION)
@@ -248,13 +249,13 @@ export const createProgram = (deps: ProgramDeps): Command => {
   })
   const api = () => {
     if (program.opts().offline)
-      throw new ZoomError("configuration_error", "the command requires network access; remove --offline")
+      throw new CliError("configuration_error", "the command requires network access; remove --offline")
     if (!getConfig().clientId)
-      throw new ZoomError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
+      throw new CliError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
   }
   program.hook("preAction", async (_root, action) => {
     const opts = action.optsWithGlobals()
-    if (opts.json && opts.jsonl) throw new ZoomError("validation_error", "choose --json or --jsonl")
+    if (opts.json && opts.jsonl) throw new CliError("validation_error", "choose --json or --jsonl")
     checkJson(action, { json: opts.json === true, ...(fields ? { fields: fields.join(",") } : {}) }, false)
     execution = startExecution(action, { signal: deps.signal, sleep: deps.sleep, now: deps.now })
     checkCancelled(signal())
@@ -283,21 +284,9 @@ export const createProgram = (deps: ProgramDeps): Command => {
     const config = getConfig()
     const ingestion = family.name() === "meetings" && ["sync", "import"].includes(action.name())
     if (opts.offline && ingestion && action.name() !== "import" && config.source === "api" && !deps.source)
-      throw new ZoomError("configuration_error", "API sync requires network access; remove --offline")
+      throw new CliError("configuration_error", "API sync requires network access; remove --offline")
     if (!selectedStore) {
-      if (!deps.connectStore) return unavailable()
-      if (!config.accountProfile)
-        throw new ZoomError("configuration_error", "select a local profile with zm config set account.profile <label>")
-      try {
-        connection = await deps.connectStore({
-          profile: config.accountProfile,
-          externalId: profileAccountKey(config.accountProfile),
-          intent: ingestion ? "ingestion" : "read",
-        })
-      } catch (error) {
-        if (error instanceof ZoomError || error instanceof MeetingError) throw error
-        throw new ZoomError("configuration_error", "could not open the shared meeting store")
-      }
+      const connection = await connected(ingestion ? "ingestion" : "read")
       selectedStore = connection.store
       selectedAccountId = connection.accountId
     }
@@ -317,7 +306,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     )
   const outputItems = async (values: AsyncIterable<unknown>) => {
     const meta = execution?.meta
-    if (!meta) throw new ZoomError("configuration_error", "execution metadata is unavailable")
+    if (!meta) throw new CliError("configuration_error", "execution metadata is unavailable")
     const format = program.opts().jsonl ? "jsonl" : program.opts().json || !deps.outputIsTTY ? "json" : "text"
     const metadata: Partial<ReturnType<typeof listed>> = listed([])
     delete metadata.items
@@ -374,7 +363,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     activeSource ??= (async () => {
       const config = getConfig()
       if (config.source === "api") return new ZoomApiSource(tokens(), fetchWithSignal(deps.fetch))
-      if (!config.filesFolder) throw new ZoomError("configuration_error", "set files.folder before pulling from files")
+      if (!config.filesFolder) throw new CliError("configuration_error", "set files.folder before pulling from files")
       return new FilesSource(await (deps.readFiles ?? readDownloadedFiles)(config.filesFolder), config.filesTimezone)
     })()
     return activeSource
@@ -468,7 +457,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
         return { configured: false, state: "not_configured", dataProfile: config.accountProfile, verified: false }
       if (check) {
         if (program.opts().offline)
-          throw new ZoomError("configuration_error", "session verification requires network access; remove --offline")
+          throw new CliError("configuration_error", "session verification requires network access; remove --offline")
         api()
         return {
           configured: true,
@@ -491,7 +480,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     },
   })
   const session = program.commands.find((command) => command.name() === "session")
-  if (!session) throw new ZoomError("configuration_error", "session command group is unavailable")
+  if (!session) throw new CliError("configuration_error", "session command group is unavailable")
   session
     .command("start")
     .description("log in to Zoom through your browser")
@@ -499,9 +488,9 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .action(async (opts: { browser?: string }) => {
       const config = getConfig()
       if (!config.clientId)
-        throw new ZoomError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
+        throw new CliError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
       const globals = program.opts()
-      if (globals.offline) throw new ZoomError("configuration_error", "login requires network access; remove --offline")
+      if (globals.offline) throw new CliError("configuration_error", "login requires network access; remove --offline")
       const headless =
         deps.interactive === false ||
         Boolean(deps.env?.CI) ||
@@ -509,7 +498,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
           (globals.json || globals.jsonl || deps.outputIsTTY === false) &&
           !globals.interactive)
       if (globals.input === false || headless)
-        throw new ZoomError("configuration_error", "login requires browser approval; remove --no-input")
+        throw new CliError("configuration_error", "login requires browser approval; remove --no-input")
       output(
         await login({
           tokens: tokens(),
@@ -563,25 +552,25 @@ export const createProgram = (deps: ProgramDeps): Command => {
       }
       if (source === "files") {
         if (flags.sinceTime !== undefined || flags.lookbackDays !== undefined)
-          throw new ZoomError("validation_error", "--since-time and --lookback-days apply only to API watching")
+          throw new CliError("validation_error", "--since-time and --lookback-days apply only to API watching")
         if (!plan.folder?.trim())
-          throw new ZoomError("configuration_error", "set files.folder or provide a folder for file watching")
+          throw new CliError("configuration_error", "set files.folder or provide a folder for file watching")
       } else {
-        if (folder !== undefined) throw new ZoomError("validation_error", "API watching does not accept a folder")
+        if (folder !== undefined) throw new CliError("validation_error", "API watching does not accept a folder")
         if (program.opts().offline)
-          throw new ZoomError("configuration_error", "API watching requires network access; remove --offline")
+          throw new CliError("configuration_error", "API watching requires network access; remove --offline")
         if (!deps.source) {
           if (!config.clientId)
-            throw new ZoomError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
+            throw new CliError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
           if (tokens().options.clientId !== config.clientId)
-            throw new ZoomError(
+            throw new CliError(
               "configuration_error",
               "the OAuth client changed before watch started; retry with matching configuration",
             )
         }
       }
       if (!deps.store && !config.accountProfile)
-        throw new ZoomError("configuration_error", "select a local profile with zm config set account.profile <label>")
+        throw new CliError("configuration_error", "select a local profile with zm config set account.profile <label>")
       watchConfig = config
       watchSince = plan.since
       return plan
@@ -589,33 +578,16 @@ export const createProgram = (deps: ProgramDeps): Command => {
     ingest: async (plan, operation) => {
       checkCancelled(operation)
       const config = watchConfig
-      if (!config) throw new ZoomError("configuration_error", "watch configuration is unavailable")
+      if (!config) throw new CliError("configuration_error", "watch configuration is unavailable")
       let cycle: StoreConnection | undefined
       let failure: unknown
       let result: Awaited<ReturnType<typeof importFiles>> | undefined
       try {
-        if (!deps.store) {
-          if (!deps.connectStore) return unavailable()
-          if (!config.accountProfile)
-            throw new ZoomError(
-              "configuration_error",
-              "select a local profile with zm config set account.profile <label>",
-            )
-          try {
-            cycle = await deps.connectStore({
-              profile: config.accountProfile,
-              externalId: profileAccountKey(config.accountProfile),
-              intent: "ingestion",
-            })
-          } catch (error) {
-            if (isCliError(error)) throw error
-            throw new ZoomError("configuration_error", "could not open the shared meeting store")
-          }
-        }
+        if (!deps.store) cycle = await openStore("ingestion")
         checkCancelled(operation)
         const accountId = cycle?.accountId ?? deps.accountId
         if (!Number.isSafeInteger(accountId) || !accountId || accountId < 1)
-          throw new ZoomError("configuration_error", "the selected meeting account is unavailable")
+          throw new CliError("configuration_error", "the selected meeting account is unavailable")
         const store = guardedStore(cycle?.store ?? deps.store ?? unavailableStore)
         if (plan.source === "files") {
           const files = validateDownloadedFiles(
@@ -687,7 +659,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
           try {
             await cycle.close()
           } catch {
-            failure ??= new ZoomError("configuration_error", "could not close the shared meeting store")
+            failure ??= new CliError("configuration_error", "could not close the shared meeting store")
           }
         }
       }
@@ -742,7 +714,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
               selected.accountProfile !== job.capture.profile ||
               selected.clientId !== job.capture.clientId
             )
-              throw new ZoomError(
+              throw new CliError(
                 "configuration_error",
                 "archive schedule requires its saved profile and Zoom client id; select those settings before running",
               )
@@ -767,12 +739,12 @@ export const createProgram = (deps: ProgramDeps): Command => {
     capture: () => {
       const selected = getConfig()
       if (!selected.accountProfile || !selected.clientId)
-        throw new ZoomError(
+        throw new CliError(
           "configuration_error",
           "archive schedules require a configured local profile and Zoom client id",
         )
       if (!deps.recordingScheduleTarget)
-        throw new ZoomError("configuration_error", "archive scheduler requires an explicit runtime and CLI path")
+        throw new CliError("configuration_error", "archive scheduler requires an explicit runtime and CLI path")
       return {
         profile: selected.accountProfile,
         clientId: selected.clientId,
@@ -821,14 +793,14 @@ export const createProgram = (deps: ProgramDeps): Command => {
       }) => {
         const opts = program.opts()
         if (opts.json || opts.jsonl || fields)
-          throw new ZoomError("validation_error", "MCP stdio controls its own output; omit --json and --jsonl")
-        if (!deps.serveMcp) throw new ZoomError("configuration_error", "the MCP server adapter is not available")
+          throw new CliError("validation_error", "MCP stdio controls its own output; omit --json and --jsonl")
+        if (!deps.serveMcp) throw new CliError("configuration_error", "the MCP server adapter is not available")
         if (options.semantic)
           validateMeetingModel({ model: options.model ?? "", baseUrl: options.baseUrl, dims: options.dims })
         else if (options.model !== undefined || options.baseUrl !== undefined || options.dims !== undefined)
-          throw new ZoomError("validation_error", "MCP model options require --semantic")
+          throw new CliError("validation_error", "MCP model options require --semantic")
         if (options.semantic && options.baseUrl !== undefined && opts.offline)
-          throw new ZoomError("configuration_error", "remote embeddings require network access; remove --offline")
+          throw new CliError("configuration_error", "remote embeddings require network access; remove --offline")
         await deps.serveMcp({
           commandRegistry: program,
           signal: signal() as AbortSignal,
@@ -860,62 +832,16 @@ export const createProgram = (deps: ProgramDeps): Command => {
     preflight: preflightArchiveImport,
     apply: async function* (plan) {
       if (plan.occurrences === 0) return
-      let store = deps.transcriptStore
-      let accountId = selectedAccountId
-      if (!store) {
-        const config = getConfig()
-        if (!config.accountProfile || !deps.connectStore)
-          throw new ZoomError("configuration_error", "select a local profile with an available transcript append store")
-        connection = await deps.connectStore({
-          profile: config.accountProfile,
-          externalId: profileAccountKey(config.accountProfile),
-          intent: "ingestion",
-          capability: "transcript-append",
-        })
-        accountId = connection.accountId
-        if (!connection.appendTranscripts && !connection.appendTranscriptsWithReceipt)
-          throw new ZoomError("configuration_error", "the installed meeting store does not support transcript append")
-        store = {
-          appendTranscripts: connection.appendTranscripts,
-          appendTranscriptsWithReceipt: connection.appendTranscriptsWithReceipt,
-        }
-      }
-      for await (const item of applyArchiveImport(plan, store, {
-        accountId: accountId ?? 0,
+      const connection = await connected("ingestion")
+      for await (const item of applyArchiveImport(plan, connection, {
+        accountId: connection.accountId,
         now: deps.now?.(),
         signal: signal(),
       }))
         yield item
     },
-    search: async (request) => {
-      if (deps.unifiedSearch) return runUnifiedSearch(deps.unifiedSearch, request)
-      const config = getConfig()
-      if (!config.accountProfile || !deps.connectStore)
-        throw new ZoomError("configuration_error", "select a stored local profile for unified search")
-      connection = await deps.connectStore({
-        profile: config.accountProfile,
-        externalId: profileAccountKey(config.accountProfile),
-        intent: "read",
-      })
-      if (!connection.unifiedSearch)
-        throw new ZoomError("configuration_error", "unified search is unavailable in this store connector")
-      return runUnifiedSearch(connection.unifiedSearch, request)
-    },
+    search: async (request) => runUnifiedSearch((await connected()).unifiedSearch, request),
   })
-  const integrationConnection = async (
-    capability: "meeting-integration" | "meeting-search" | "meeting-project-evidence",
-  ) => {
-    const config = getConfig()
-    if (!config.accountProfile || !deps.connectStore)
-      throw new ZoomError("configuration_error", "select a stored local profile for meeting integration")
-    connection = await deps.connectStore({
-      profile: config.accountProfile,
-      externalId: profileAccountKey(config.accountProfile),
-      intent: "read",
-      capability,
-    })
-    return connection
-  }
   const integrationOutput = (value: unknown) =>
     buffer(
       render(
@@ -929,8 +855,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
       ),
     )
   addProjectEvidenceCommand(program, {
-    read: deps.meetingProjectEvidence,
-    connect: () => integrationConnection("meeting-project-evidence"),
+    read: async (project, request) => (await connected()).meetingProjectEvidence(project, request),
     signal,
     now: deps.now,
     output: integrationOutput,
@@ -939,48 +864,15 @@ export const createProgram = (deps: ProgramDeps): Command => {
     signal,
     output: integrationOutput,
     receipt,
-    integration: async () => {
-      if (deps.meetingIntegration) return deps.meetingIntegration
-      const connected = await integrationConnection("meeting-integration")
-      if (!connected.meetingIntegration)
-        throw new ZoomError("configuration_error", "meeting integration is unavailable in this store connector")
-      return connected.meetingIntegration
-    },
+    integration: async () => (await connected()).meetingIntegration,
   })
   addLocalTranscriptionCommands(program, {
     signal,
     output: integrationOutput,
     receipt,
-    capabilities: async () => {
-      if (deps.meetingTranscription) return deps.meetingTranscription
-      const config = getConfig()
-      if (!config.accountProfile || !deps.connectStore)
-        throw new ZoomError("configuration_error", "select a stored local profile for transcription")
-      connection = await deps.connectStore({
-        profile: config.accountProfile,
-        externalId: profileAccountKey(config.accountProfile),
-        intent: "read",
-        capability: "transcript-append",
-      })
-      if (!connection.meetingTranscription)
-        throw new ZoomError("configuration_error", "local transcription is unavailable in this store connector")
-      return connection.meetingTranscription
-    },
+    capabilities: async () => (await connected()).meetingTranscription,
   })
-  const meetingContext = async () => {
-    if (deps.meetingContext) return deps.meetingContext
-    const config = getConfig()
-    if (!config.accountProfile || !deps.connectStore)
-      throw new ZoomError("configuration_error", "select a stored local profile for meeting context")
-    connection = await deps.connectStore({
-      profile: config.accountProfile,
-      externalId: profileAccountKey(config.accountProfile),
-      intent: "read",
-    })
-    if (!connection.meetingContext)
-      throw new ZoomError("configuration_error", "meeting context is unavailable in this store connector")
-    return connection.meetingContext
-  }
+  const meetingContext = async () => (await connected()).meetingContext
   addMeetingContextCommands(program, {
     signal,
     output: (value) =>
@@ -1001,11 +893,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
     signal,
     read: async (reference, options) => {
       if (fields && options.format !== "json")
-        throw new ZoomError("validation_error", "passage field selection requires --json or --format json")
-      const context = await meetingContext()
-      if (!context.passage)
-        throw new ZoomError("configuration_error", "meeting passage is unavailable in this store connector")
-      return context.passage(reference, options)
+        throw new CliError("validation_error", "passage field selection requires --json or --format json")
+      return (await meetingContext()).passage(reference, options)
     },
     output: (result, format) => {
       if (format === "json")
@@ -1015,31 +904,12 @@ export const createProgram = (deps: ProgramDeps): Command => {
       else buffer(result.content)
     },
   })
-  const meetingSemantic = async () => {
-    if (deps.meetingSemantic) return deps.meetingSemantic
-    const config = getConfig()
-    if (!config.accountProfile || !deps.connectStore)
-      throw new ZoomError("configuration_error", "select a stored local profile for meeting vectors")
-    connection = await deps.connectStore({
-      profile: config.accountProfile,
-      externalId: profileAccountKey(config.accountProfile),
-      intent: "read",
-    })
-    if (!connection.meetingSemantic)
-      throw new ZoomError("configuration_error", "meeting vector capabilities are unavailable in this store connector")
-    return connection.meetingSemantic
-  }
+  const meetingSemantic = async () => (await connected()).meetingSemantic
   addMeetingSearchCommands(program, {
     signal,
     offline: () => Boolean(program.opts().offline),
     output: integrationOutput,
-    words: async () => {
-      if (deps.meetingSearch) return deps.meetingSearch
-      const connected = await integrationConnection("meeting-search")
-      if (!connected.meetingSearch)
-        throw new ZoomError("configuration_error", "meeting search is unavailable in this store connector")
-      return connected.meetingSearch
-    },
+    words: async () => (await connected()).meetingSearch,
     meaning: meetingSemantic,
     archive: (deps.archiveTranscripts ?? { search: searchArchiveTranscripts }).search,
   })
@@ -1053,7 +923,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
   annotateMeetingCommands(program)
   const parseAsync = program.parseAsync.bind(program)
   program.parseAsync = async (...args) => {
-    if (parsing) throw new ZoomError("validation_error", "concurrent command parsing is unavailable")
+    if (parsing) throw new CliError("validation_error", "concurrent command parsing is unavailable")
     resetCliOptions(program)
     parsing = true
     answerExitCodes.set(program, 0)
@@ -1078,17 +948,17 @@ export const createProgram = (deps: ProgramDeps): Command => {
       failed = true
       failure = error
     } finally {
-      if (connection) {
-        const closing = connection
-        connection = undefined
+      if (connecting) {
+        const closing = connecting
+        connecting = undefined
         selectedStore = deps.store
         selectedAccountId = deps.accountId
         try {
-          await closing.close()
+          await (await closing.catch(() => undefined))?.close()
         } catch {
           if (!failed) {
             failed = true
-            failure = new ZoomError("configuration_error", "could not close the shared meeting store")
+            failure = new CliError("configuration_error", "could not close the shared meeting store")
           }
         }
       }
@@ -1130,9 +1000,9 @@ export const run = async (args: string[], deps: ProgramDeps): Promise<number> =>
     const failure = isCliError(error)
       ? error
       : unknownOutcome
-        ? new ZoomError("outcome_unknown", "operation outcome is unknown; verify stored state before retrying")
+        ? new CliError("outcome_unknown", "operation outcome is unknown; verify stored state before retrying")
         : error instanceof CommanderError
-          ? new ZoomError("validation_error", "command failed; use --help for usage")
+          ? new CliError("validation_error", "command failed; use --help for usage")
           : error
     const selected = commandSelection(program, args)
     return reportFailure(

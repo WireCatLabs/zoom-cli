@@ -1,10 +1,17 @@
 import { mkdtemp, readFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import type { RecordingCatalog } from "@wirecat/cli-core/meetings"
 import { expect, it, vi } from "vitest"
 import { inspectArchive, verifyArchive } from "./recording-archive.js"
 import { type ArchiveSyncReceipt, syncRecordingArchive } from "./recording-sync.js"
-import { type ArchiveReport, type DownloadOptions, type RecordingMeeting, ZoomRecordings } from "./recordings.js"
+import {
+  type ArchiveReport,
+  type DownloadOptions,
+  type RecordingMeeting,
+  type RecordingRange,
+  ZoomRecordings,
+} from "./recordings.js"
 import * as remoteHttp from "./remote-http.js"
 
 const handles = vi.hoisted(() => ({ tracking: false, active: 0, maximum: 0 }))
@@ -56,7 +63,26 @@ const collect = async (iterable: AsyncIterable<ArchiveSyncReceipt>) => {
   for await (const item of iterable) result.push(item)
   return result
 }
-const options = { from: "2026-01-15", to: "2026-03-10", destination: "example-archive" }
+const options = {
+  from: "2026-01-15",
+  to: "2026-03-10",
+  destination: "example-archive",
+  account: "example-account",
+  resume: false,
+}
+const fake = (source: {
+  list: (range: RecordingRange) => Promise<RecordingMeeting[]>
+  download: (id: string, options: DownloadOptions) => Promise<ArchiveReport>
+}) => ({
+  download: source.download,
+  catalog: (): RecordingCatalog => ({
+    provider: "zoom",
+    list: async (range) => ({
+      items: (await source.list(range)).map(({ uuid, ...item }) => ({ ...item, externalId: uuid })),
+      nextCursor: null,
+    }),
+  }),
+})
 
 it("chunks nonoverlapping inclusive calendar windows across leap years and year boundaries", async () => {
   for (const [from, to, expected] of [
@@ -96,7 +122,7 @@ it("chunks nonoverlapping inclusive calendar windows across leap years and year 
         throw new Error("unexpected download")
       },
     }
-    expect(await collect(syncRecordingArchive(source, { ...options, from, to }))).toEqual([])
+    expect(await collect(syncRecordingArchive(fake(source), { ...options, from, to }))).toEqual([])
     expect(windows).toEqual(expected)
   }
 })
@@ -121,18 +147,20 @@ it("validates dates, ten-calendar-year bounds and destination/limits before any 
     { maxBytes: 1.5 },
     { maxBytes: Number.POSITIVE_INFINITY },
   ])
-    await expect(syncRecordingArchive(source, { ...options, ...change }).next()).rejects.toMatchObject({
+    await expect(syncRecordingArchive(fake(source), { ...options, ...change }).next()).rejects.toMatchObject({
       code: "validation_error",
     })
   expect(calls).toBe(0)
-  expect(await collect(syncRecordingArchive(source, { ...options, to: "2036-01-15" }))).toEqual([])
+  expect(await collect(syncRecordingArchive(fake(source), { ...options, to: "2036-01-15" }))).toEqual([])
   expect(calls).toBe(121)
   await expect(
-    syncRecordingArchive(source, { ...options, from: "2024-02-29", to: "2034-03-01" }).next(),
+    syncRecordingArchive(fake(source), { ...options, from: "2024-02-29", to: "2034-03-01" }).next(),
   ).rejects.toThrow(/ten calendar years/)
-  expect(await collect(syncRecordingArchive(source, { ...options, from: "2024-02-29", to: "2034-02-28" }))).toEqual([])
+  expect(
+    await collect(syncRecordingArchive(fake(source), { ...options, from: "2024-02-29", to: "2034-02-28" })),
+  ).toEqual([])
   await expect(
-    syncRecordingArchive(source, { ...options, from: "0001-01-01", to: "0011-01-02" }).next(),
+    syncRecordingArchive(fake(source), { ...options, from: "0001-01-01", to: "0011-01-02" }).next(),
   ).rejects.toThrow(/ten calendar years/)
 })
 it("deduplicates UUIDs across months and yields completed serial receipts with consumer backpressure", async () => {
@@ -147,7 +175,13 @@ it("deduplicates UUIDs across months and yields completed serial receipts with c
       return [meeting(), meeting(`example-${range.from}`)]
     },
     download: async (id: string, download: { destination: string; signal?: AbortSignal; maxBytes?: number }) => {
-      expect(download).toEqual({ destination: options.destination, signal, maxBytes: 10 })
+      expect(download).toEqual({
+        destination: options.destination,
+        signal,
+        maxBytes: 10,
+        resume: false,
+        account: options.account,
+      })
       maximum = Math.max(maximum, ++active)
       calls.push(`download ${id}`)
       await Promise.resolve()
@@ -155,7 +189,7 @@ it("deduplicates UUIDs across months and yields completed serial receipts with c
       return report(id)
     },
   }
-  const sync = syncRecordingArchive(source, { ...options, signal, maxBytes: 10 })
+  const sync = syncRecordingArchive(fake(source), { ...options, signal, maxBytes: 10 })
   expect((await sync.next()).value?.meeting.uuid).toBe("example-occurrence")
   expect(calls).toEqual(["list 2026-01-15", "download example-occurrence"])
   const remainder = await collect(sync)
@@ -177,19 +211,19 @@ it("preserves completed receipts when a later occurrence fails and never retries
       return report()
     },
   }
-  const sync = syncRecordingArchive(source, options)
+  const sync = syncRecordingArchive(fake(source), options)
   expect((await sync.next()).value?.archive).toEqual(report())
   await expect(sync.next()).rejects.toBe(failure)
   expect(calls).toBe(2)
   const discovery = new Error("Example discovery failure")
   await expect(
     syncRecordingArchive(
-      {
+      fake({
         list: async () => {
           throw discovery
         },
         download: source.download,
-      },
+      }),
       options,
     ).next(),
   ).rejects.toBe(discovery)
@@ -205,7 +239,7 @@ it("cancels before further discovery/downloads and preserves a completed late re
       throw new Error("unexpected download")
     },
   }
-  await expect(syncRecordingArchive(never, { ...options, signal: abort.signal }).next()).rejects.toMatchObject({
+  await expect(syncRecordingArchive(fake(never), { ...options, signal: abort.signal }).next()).rejects.toMatchObject({
     code: "cancelled",
   })
   const during = new AbortController()
@@ -220,7 +254,7 @@ it("cancels before further discovery/downloads and preserves a completed late re
       return report()
     },
   }
-  await expect(syncRecordingArchive(source, { ...options, signal: during.signal }).next()).rejects.toMatchObject({
+  await expect(syncRecordingArchive(fake(source), { ...options, signal: during.signal }).next()).rejects.toMatchObject({
     code: "cancelled",
   })
   expect(downloads).toBe(0)
@@ -236,7 +270,7 @@ it("cancels before further discovery/downloads and preserves a completed late re
       return report()
     },
   }
-  const sync = syncRecordingArchive(finished, { ...options, signal: late.signal })
+  const sync = syncRecordingArchive(fake(finished), { ...options, signal: late.signal })
   expect((await sync.next()).value?.archive).toEqual(report())
   await expect(sync.next()).rejects.toMatchObject({ code: "cancelled" })
   expect(lists).toBe(1)
@@ -321,7 +355,9 @@ it("preflights every download option before reading tokens or requesting recordi
     { destination: "example", fileIds: [""] },
     { destination: "example", fileIds: [3] },
   ])
-    await expect(source.download("example", options as unknown as DownloadOptions)).rejects.toMatchObject({
+    await expect(
+      source.download("example", { account: "example-account", ...options } as unknown as DownloadOptions),
+    ).rejects.toMatchObject({
       code: "validation_error",
     })
   expect(tokens).toBe(0)
@@ -359,7 +395,8 @@ it("bounds local manifest reads and verification hashes to one open handle", asy
       )
     return new Response("hello")
   })
-  for (const id of ["example-one", "example-two", "example-three"]) await recordings.download(id, { destination })
+  for (const id of ["example-one", "example-two", "example-three"])
+    await recordings.download(id, { destination, account: "example-account", resume: false })
   handles.active = 0
   handles.maximum = 0
   handles.tracking = true
@@ -417,14 +454,14 @@ it("resumes verified archive acknowledgements with an explicit account and durab
     account: "AliceExample",
     now: () => 1000,
   }
-  const first = await collect(syncRecordingArchive(source, opts))
+  const first = await collect(syncRecordingArchive(fake(source), opts))
   expect(first).toMatchObject([{ availability: "unknown", checkpointRevision: 2, meeting: { uuid: item.uuid } }])
-  expect(await collect(syncRecordingArchive(source, opts))).toEqual([])
+  expect(await collect(syncRecordingArchive(fake(source), opts))).toEqual([])
   expect(calls).toEqual([{ destination, signal: expect.any(AbortSignal), resume: true, account: "AliceExample" }])
-  await expect(collect(syncRecordingArchive(source, { ...opts, account: "BobSample" }))).rejects.toMatchObject({
+  await expect(collect(syncRecordingArchive(fake(source), { ...opts, account: "BobSample" }))).rejects.toMatchObject({
     code: "configuration_error",
   })
-  await expect(collect(syncRecordingArchive(source, { ...opts, maxBytes: 12 }))).rejects.toMatchObject({
+  await expect(collect(syncRecordingArchive(fake(source), { ...opts, maxBytes: 12 }))).rejects.toMatchObject({
     code: "configuration_error",
   })
 })
@@ -438,11 +475,11 @@ it("validates checkpoint selection before remote discovery and snapshots options
     download: async () => report(),
   }
   for (const change of [
-    { resume: true },
+    { resume: true, account: "" },
     { checkpointPath: "example.json" },
     { resume: true, account: "AliceExample", checkpointPath: " " },
   ])
-    await expect(collect(syncRecordingArchive(source, { ...options, ...change }))).rejects.toMatchObject({
+    await expect(collect(syncRecordingArchive(fake(source), { ...options, ...change }))).rejects.toMatchObject({
       code: "validation_error",
     })
   expect(calls).toBe(0)
@@ -459,7 +496,7 @@ it("validates checkpoint selection before remote discovery and snapshots options
       return report()
     },
   }
-  await collect(syncRecordingArchive(changed, opts))
+  await collect(syncRecordingArchive(fake(changed), opts))
   expect(captured).toEqual([destination])
 })
 it("uses the scoped one-page catalog adapter without materializing the entire provider range", async () => {
@@ -512,7 +549,7 @@ it("preserves a derived operation timeout when the shared workflow observes canc
   }
   const derived = vi.spyOn(remoteHttp, "operationSignal").mockReturnValue(timeout.signal)
   try {
-    await expect(collect(syncRecordingArchive(source, options))).rejects.toMatchObject({ code: "timeout" })
+    await expect(collect(syncRecordingArchive(fake(source), options))).rejects.toMatchObject({ code: "timeout" })
   } finally {
     derived.mockRestore()
   }

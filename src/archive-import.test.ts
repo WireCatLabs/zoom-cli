@@ -4,13 +4,13 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { Writable } from "node:stream"
 import { CliError, memoryKeyring } from "@wirecat/cli-base"
-import type { MeetingTranscriptReceiptStore } from "@wirecat/cli-core/meetings"
+import type { MeetingTranscriptReceiptStore, MeetingTranscriptStore } from "@wirecat/cli-core/meetings"
 import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { expect, it, vi } from "vitest"
 import { readReceipt } from "../scripts/testing/answers.js"
+import { fakeConnection } from "../scripts/testing/connection.js"
 import { applyArchiveImport, preflightArchiveImport } from "./archive-import.js"
 import { setConfig } from "./config.js"
-import { ZoomError } from "./errors.js"
 import { type ProgramDeps, run } from "./program.js"
 import { writeStream } from "./streaming.js"
 import { TokenManager } from "./tokens.js"
@@ -65,13 +65,24 @@ const archiveFixture = async (
   )
   return { root, uuid, paths }
 }
+const receipting = (append: MeetingTranscriptStore["appendTranscripts"]): MeetingTranscriptReceiptStore => ({
+  appendTranscriptsWithReceipt: async (input) => ({
+    meeting: await append(input),
+    created: false,
+    insertedTranscripts: input.transcripts.length,
+    replayedTranscripts: 0,
+    supersededTranscripts: 0,
+  }),
+})
+const memoryReceipts = (store: ReturnType<typeof memoryMeetingStore>) =>
+  receipting((input) => store.appendTranscripts(input))
 const collect = async <T>(values: AsyncIterable<T>): Promise<T[]> => {
   const rows: T[] = []
   for await (const row of values) rows.push(row)
   return rows
 }
 
-it("forwards transaction counts from the exact append port without a legacy second write", async () => {
+it("forwards transaction counts from the append port", async () => {
   const { root, uuid } = await archiveFixture()
   const details = await memoryMeetingStore().saveMeeting(sampleMeeting())
   const exact = vi.fn<MeetingTranscriptReceiptStore["appendTranscriptsWithReceipt"]>().mockResolvedValue({
@@ -81,16 +92,10 @@ it("forwards transaction counts from the exact append port without a legacy seco
     replayedTranscripts: 0,
     supersededTranscripts: 1,
   })
-  const legacy = vi.fn(async () => {
-    throw new Error("unexpected legacy append")
-  })
   const receipts = await collect(
     applyArchiveImport(
       await preflightArchiveImport(root),
-      {
-        appendTranscriptsWithReceipt: exact,
-        appendTranscripts: legacy,
-      },
+      { appendTranscriptsWithReceipt: exact },
       { accountId: 1, now: 5000 },
     ),
   )
@@ -105,22 +110,17 @@ it("forwards transaction counts from the exact append port without a legacy seco
     },
   ])
   expect(exact).toHaveBeenCalledTimes(1)
-  expect(legacy).not.toHaveBeenCalled()
   exact.mockResolvedValueOnce(undefined as never)
   await expect(
     collect(
       applyArchiveImport(
         await preflightArchiveImport(root),
-        {
-          appendTranscriptsWithReceipt: exact,
-          appendTranscripts: legacy,
-        },
+        { appendTranscriptsWithReceipt: exact },
         { accountId: 1, now: 6000 },
       ),
     ),
   ).rejects.toMatchObject({ code: "outcome_unknown" })
   expect(exact).toHaveBeenCalledTimes(2)
-  expect(legacy).not.toHaveBeenCalled()
 })
 
 it("rejects invalid exact counts and keeps account scope fixed across occurrence acknowledgements", async () => {
@@ -159,7 +159,6 @@ it("requires an exact input count acknowledgement and preserves typed timeout/ca
   const { root } = await archiveFixture()
   const details = await memoryMeetingStore().saveMeeting(sampleMeeting())
   const plan = await preflightArchiveImport(root)
-  const legacy = vi.fn(async () => details)
   const exact = vi.fn<MeetingTranscriptReceiptStore["appendTranscriptsWithReceipt"]>().mockResolvedValue({
     meeting: details,
     created: false,
@@ -168,15 +167,8 @@ it("requires an exact input count acknowledgement and preserves typed timeout/ca
     supersededTranscripts: 0,
   })
   await expect(
-    collect(
-      applyArchiveImport(
-        plan,
-        { appendTranscriptsWithReceipt: exact, appendTranscripts: legacy },
-        { accountId: 1, now: 5000 },
-      ),
-    ),
+    collect(applyArchiveImport(plan, { appendTranscriptsWithReceipt: exact }, { accountId: 1, now: 5000 })),
   ).rejects.toMatchObject({ code: "outcome_unknown" })
-  expect(legacy).not.toHaveBeenCalled()
   for (const code of ["timeout", "cancelled"] as const) {
     const error = new CliError(code, "Example operation interrupted")
     exact.mockRejectedValueOnce(error)
@@ -223,9 +215,18 @@ it("appends a verified per-occurrence batch and preserves owner metadata, other 
   const append = vi.spyOn(store, "appendTranscripts")
   const plan = await preflightArchiveImport(root)
   expect(plan.verifiedAssets).toBe(2)
-  const receipts = await collect(applyArchiveImport(plan, store, { accountId: 1, now: 5000 }))
+  const receipts = await collect(applyArchiveImport(plan, memoryReceipts(store), { accountId: 1, now: 5000 }))
   expect(receipts).toEqual([
-    { uuid, assetIds: ["example-asset-0", "example-asset-1"], status: "acknowledged", meetingId: original.meeting.id },
+    {
+      uuid,
+      assetIds: ["example-asset-0", "example-asset-1"],
+      status: "acknowledged",
+      meetingId: original.meeting.id,
+      created: false,
+      insertedTranscripts: 2,
+      replayedTranscripts: 0,
+      supersededTranscripts: 0,
+    },
   ])
   expect(append).toHaveBeenCalledOnce()
   const after = await store.meeting(original.meeting.id)
@@ -245,15 +246,18 @@ it("appends a verified per-occurrence batch and preserves owner metadata, other 
   })
   expect(after?.transcripts[1]?.transcript.externalCreatedAt).toBeNull()
   expect(await store.cursor(1)).toBe("example-owner-cursor")
-  expect(await collect(applyArchiveImport(plan, store, { accountId: 1, now: 6000 }))).toEqual(receipts)
+  expect(await collect(applyArchiveImport(plan, memoryReceipts(store), { accountId: 1, now: 6000 }))).toEqual(receipts)
   expect(await store.meeting(original.meeting.id)).toEqual(after)
 })
 
-it("uses real starts for creation and reports missing or deleted targets without fabricated counts", async () => {
+it("uses real starts for creation and reports missing or deleted targets", async () => {
   const available = await archiveFixture()
   const store = memoryMeetingStore()
   const receipts = await collect(
-    applyArchiveImport(await preflightArchiveImport(available.root), store, { accountId: 1, now: 5000 }),
+    applyArchiveImport(await preflightArchiveImport(available.root), memoryReceipts(store), {
+      accountId: 1,
+      now: 5000,
+    }),
   )
   const saved = await store.meeting(receipts[0]?.meetingId ?? 0)
   expect(saved?.meeting.startedAt).toBe(Date.parse("2026-10-10T15:30:00.000Z"))
@@ -261,14 +265,18 @@ it("uses real starts for creation and reports missing or deleted targets without
   expect(saved?.participants).toEqual([])
   const missing = await archiveFixture({ uuid: "example-missing", startedAt: null })
   expect(
-    await collect(applyArchiveImport(await preflightArchiveImport(missing.root), store, { accountId: 1 })),
+    await collect(
+      applyArchiveImport(await preflightArchiveImport(missing.root), memoryReceipts(store), { accountId: 1 }),
+    ),
   ).toMatchObject([{ status: "unavailable", reason: "missing_or_deleted" }])
   expect(await store.meetings()).toHaveLength(1)
   const removed = sampleMeeting()
   removed.meeting.deletedAt = 5000
   await store.saveMeeting(removed)
   expect(
-    await collect(applyArchiveImport(await preflightArchiveImport(available.root), store, { accountId: 1 })),
+    await collect(
+      applyArchiveImport(await preflightArchiveImport(available.root), memoryReceipts(store), { accountId: 1 }),
+    ),
   ).toMatchObject([{ status: "unavailable" }])
   expect((await store.meeting(saved?.meeting.id ?? 0))?.meeting.deletedAt).toBe(5000)
 })
@@ -278,10 +286,11 @@ it("permits startless append to an existing target and never reactivates a histo
   const initial = await store.saveMeeting(sampleMeeting())
   const first = await archiveFixture({ startedAt: null })
   const old = await preflightArchiveImport(first.root)
-  await collect(applyArchiveImport(old, store, { accountId: 1, now: 5000 }))
+  const receipts = memoryReceipts(store)
+  await collect(applyArchiveImport(old, receipts, { accountId: 1, now: 5000 }))
   await archiveFixture({ root: first.root, startedAt: null, text: "Corrected example plan" })
-  await collect(applyArchiveImport(await preflightArchiveImport(first.root), store, { accountId: 1, now: 6000 }))
-  await collect(applyArchiveImport(old, store, { accountId: 1, now: 7000 }))
+  await collect(applyArchiveImport(await preflightArchiveImport(first.root), receipts, { accountId: 1, now: 6000 }))
+  await collect(applyArchiveImport(old, receipts, { accountId: 1, now: 7000 }))
   expect((await store.meeting(initial.meeting.id))?.transcripts).toHaveLength(3)
   expect(await store.search("Original")).toEqual([])
   expect(await store.search("Corrected")).toHaveLength(1)
@@ -309,19 +318,18 @@ it("preserves an acknowledged receipt on late cancellation and starts no next ap
     controller.abort()
     return result
   })
-  const run = applyArchiveImport(
-    await preflightArchiveImport(first.root),
-    { appendTranscripts: append },
-    { accountId: 1, signal: controller.signal },
-  )
+  const run = applyArchiveImport(await preflightArchiveImport(first.root), receipting(append), {
+    accountId: 1,
+    signal: controller.signal,
+  })
   expect((await run.next()).value).toMatchObject({ status: "acknowledged" })
   await expect(run.next()).rejects.toMatchObject({ code: "cancelled" })
   expect(append).toHaveBeenCalledOnce()
 })
 
-it("validates opaque plans, capabilities and account bounds and sanitizes append failures", async () => {
+it("validates opaque plans and account bounds and sanitizes append failures", async () => {
   const { root } = await archiveFixture()
-  const store = memoryMeetingStore()
+  const store = memoryReceipts(memoryMeetingStore())
   await expect(
     collect(applyArchiveImport({ verifiedAssets: 0, occurrences: 0, totalBytes: 0 }, store, { accountId: 1 })),
   ).rejects.toMatchObject({ code: "validation_error" })
@@ -329,15 +337,12 @@ it("validates opaque plans, capabilities and account bounds and sanitizes append
   await expect(collect(applyArchiveImport(plan, store, { accountId: 0 }))).rejects.toMatchObject({
     code: "validation_error",
   })
-  await expect(collect(applyArchiveImport(plan, {} as typeof store, { accountId: 1 }))).rejects.toMatchObject({
-    code: "configuration_error",
-  })
   await expect(
     collect(
       applyArchiveImport(
         plan,
         {
-          appendTranscripts: async () => {
+          appendTranscriptsWithReceipt: async () => {
             throw new Error("example private database path")
           },
         },
@@ -352,12 +357,9 @@ it("CLI preflights later corruption and aggregate bounds before opening or regis
   const { deps, output } = await cli()
   setConfig(deps.configPath, "account.profile", "example")
   const store = memoryMeetingStore()
-  const connect = vi.fn(async () => ({
-    store,
-    accountId: 1,
-    appendTranscripts: store.appendTranscripts,
-    close: async () => {},
-  }))
+  const connect = vi.fn(async () =>
+    fakeConnection({ store, accountId: 1, ...memoryReceipts(store), close: async () => {} }),
+  )
   deps.connectStore = connect
   expect(await run(["recordings", "archive", "import", root, "--max-total-bytes", "1", "--json"], deps)).toBe(2)
   await writeFile(paths[1] ?? "", "Example corrupted later asset")
@@ -373,16 +375,15 @@ it("CLI closes finite imports before output and streams acknowledged receipts wi
   const store = memoryMeetingStore()
   const order: string[] = []
   deps.connectStore = vi.fn(async (request) => {
-    expect(request.capability).toBe("transcript-append")
     expect(request.intent).toBe("ingestion")
-    return {
+    return fakeConnection({
       store,
       accountId: 1,
-      appendTranscripts: store.appendTranscripts,
+      ...memoryReceipts(store),
       close: async () => {
         order.push("close")
       },
-    }
+    })
   })
   deps.data = (text) => {
     order.push("output")
@@ -424,19 +425,16 @@ it("CLI closes finite imports before output and streams acknowledged receipts wi
   expect(await store.meetings()).toHaveLength(1)
 })
 
-it("CLI leaves empty archives disconnected and rejects missing append connectors without stdout", async () => {
+it("CLI leaves empty archives disconnected and refuses an import without a selected profile", async () => {
   const empty = await archiveFixture({ assets: 0 })
   const { deps, output } = await cli()
   expect(await run(["recordings", "archive", "import", empty.root, "--json"], deps)).toBe(0)
   expect(readReceipt(output.join("")).items).toEqual([])
   output.length = 0
   const { root } = await archiveFixture()
+  deps.connectStore = vi.fn()
   expect(await run(["recordings", "archive", "import", root, "--json"], deps)).toBe(3)
-  setConfig(deps.configPath, "account.profile", "example")
-  const close = vi.fn(async () => {})
-  deps.connectStore = async () => ({ store: memoryMeetingStore(), accountId: 1, close })
-  expect(await run(["recordings", "archive", "import", root, "--json"], deps)).toBe(3)
-  expect(close).toHaveBeenCalledOnce()
+  expect(deps.connectStore).not.toHaveBeenCalled()
   expect(output).toEqual([])
 })
 
@@ -454,7 +452,7 @@ it("CLI preserves one acknowledged JSONL receipt after append cancellation and c
     controller.abort()
     return details
   })
-  deps.connectStore = async () => ({ store, accountId: 1, appendTranscripts: append, close })
+  deps.connectStore = async () => fakeConnection({ store, accountId: 1, ...receipting(append), close })
   const stdout = new Writable({
     write(chunk, _encoding, done) {
       output.push(String(chunk))
@@ -473,26 +471,27 @@ it("preserves uncertain append outcomes over cancellation in library and CLI, wi
   const controller = new AbortController()
   const append = vi.fn(async () => {
     controller.abort()
-    throw new ZoomError("outcome_unknown", "example ambiguous transaction")
+    throw new CliError("outcome_unknown", "example ambiguous transaction")
   })
   const plan = await preflightArchiveImport(root)
   await expect(
-    collect(applyArchiveImport(plan, { appendTranscripts: append }, { accountId: 1, signal: controller.signal })),
+    collect(applyArchiveImport(plan, receipting(append), { accountId: 1, signal: controller.signal })),
   ).rejects.toMatchObject({ code: "outcome_unknown" })
   const { deps, output, errors } = await cli()
   const cancellation = new AbortController()
   deps.signal = cancellation.signal
   setConfig(deps.configPath, "account.profile", "example")
   const close = vi.fn(async () => {})
-  deps.connectStore = async () => ({
-    store: memoryMeetingStore(),
-    accountId: 1,
-    appendTranscripts: async () => {
-      cancellation.abort()
-      throw new ZoomError("outcome_unknown", "example ambiguous transaction")
-    },
-    close,
-  })
+  deps.connectStore = async () =>
+    fakeConnection({
+      store: memoryMeetingStore(),
+      accountId: 1,
+      appendTranscriptsWithReceipt: async () => {
+        cancellation.abort()
+        throw new CliError("outcome_unknown", "example ambiguous transaction")
+      },
+      close,
+    })
   expect(await run(["recordings", "archive", "import", root, "--jsonl"], deps)).toBe(14)
   expect(output).toEqual([])
   expect(JSON.parse(errors.join("")).error.code).toBe("outcome_unknown")
@@ -509,7 +508,7 @@ it("rejects a returned meeting from a different account or occurrence before ack
       collect(
         applyArchiveImport(
           plan,
-          { appendTranscripts: async () => ({ ...details, meeting: { ...details.meeting, ...changes } }) },
+          receipting(async () => ({ ...details, meeting: { ...details.meeting, ...changes } })),
           { accountId: 1 },
         ),
       ),

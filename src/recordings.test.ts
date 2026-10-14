@@ -33,6 +33,7 @@ const meeting = (files = [file()], overrides = {}) => ({
   download_access_token: "example-private-token",
   ...overrides,
 })
+const scope = { account: "example-account", resume: false }
 const temp = () => mkdtemp(join(tmpdir(), "zm-test-archive-"))
 const source = (fetcher: typeof fetch) => new ZoomRecordings(tokens(), fetcher, { sleep: async () => {}, now: () => 0 })
 const scripted =
@@ -116,36 +117,43 @@ describe("cloud recordings", () => {
       if (!String(input).includes("api.zoom.us")) downloads++
       return scripted()(input, init)
     })
-    const first = await recordings.download("example", { destination })
+    const first = await recordings.download("example", { ...scope, destination })
     expect(first.downloaded).toHaveLength(1)
     const saved = first.downloaded[0]
     expect(saved?.sha256).toBe(createHash("sha256").update("hello").digest("hex"))
     expect(JSON.stringify(await inspectArchive(destination))).not.toMatch(/signature|download_url|password|token/)
     expect(await verifyArchive(destination)).toMatchObject([{ valid: true }])
-    expect((await recordings.download("example", { destination })).skipped).toHaveLength(1)
+    expect((await recordings.download("example", { ...scope, destination })).skipped).toHaveLength(1)
     expect(downloads).toBe(1)
     expect((await readdir(destination)).some((name) => /\.part|\.lock|\.tmp/.test(name))).toBe(false)
     await writeFile(join(destination, saved?.path ?? ""), "other")
     expect(await verifyArchive(destination)).toMatchObject([{ valid: false }])
-    await expect(recordings.download("example", { destination })).rejects.toThrow(/changed/)
+    await expect(recordings.download("example", { ...scope, destination })).rejects.toThrow(/changed/)
     expect(await readFile(join(destination, saved?.path ?? ""), "utf8")).toBe("other")
   })
   it("reports unavailable assets, validates selection/limits, and rejects orphan or locked destinations", async () => {
     const destination = await temp()
     const pending = source(scripted(meeting([file("example-pending", { status: "processing" })])))
-    expect((await pending.download("example", { destination })).unavailable).toHaveLength(1)
+    expect((await pending.download("example", { ...scope, destination })).unavailable).toHaveLength(1)
     expect(await verifyArchive(destination)).toEqual([])
-    await expect(pending.download("example", { destination, fileIds: ["unknown"] })).rejects.toThrow(/not found/)
-    for (const options of [{ destination: " " }, { destination, maxBytes: 0 }])
+    await expect(pending.download("example", { ...scope, destination, fileIds: ["unknown"] })).rejects.toThrow(
+      /not found/,
+    )
+    for (const options of [
+      { ...scope, destination: " " },
+      { ...scope, destination, maxBytes: 0 },
+    ])
       await expect(pending.download("example", options)).rejects.toThrow(/destination/)
     await writeFile(join(destination, ".zoom-archive.lock"), "example existing lock")
-    await expect(pending.download("example", { destination })).rejects.toThrow(/lock/)
+    await expect(pending.download("example", { ...scope, destination })).rejects.toThrow(/lock/)
     const other = await temp()
-    const report = await source(scripted()).download("example", { destination: other })
+    const report = await source(scripted()).download("example", { ...scope, destination: other })
     const manifest = await readFile(report.manifestPath, "utf8")
     const collision = await temp()
     await writeFile(join(collision, report.downloaded[0]?.path ?? ""), "original")
-    await expect(source(scripted()).download("example", { destination: collision })).rejects.toThrow(/already exists/)
+    await expect(source(scripted()).download("example", { ...scope, destination: collision })).rejects.toThrow(
+      /already exists/,
+    )
     await writeFile(join(collision, report.manifestPath.split("/").at(-1) ?? ""), manifest)
     expect(await verifyArchive(collision)).toMatchObject([{ valid: false }])
   })
@@ -159,6 +167,7 @@ describe("cloud recordings", () => {
     ])
       await expect(
         source(scripted(meeting([file("example", { download_url })]))).download("example", {
+          ...scope,
           destination: await temp(),
         }),
       ).rejects.toThrow(/host/)
@@ -168,7 +177,7 @@ describe("cloud recordings", () => {
         if (String(input).includes("api.zoom.us")) return response(meeting())
         calls++
         return new Response(null, { status: 302, headers: { location: "https://example.com/private" } })
-      }).download("example", { destination: await temp() }),
+      }).download("example", { ...scope, destination: await temp() }),
     ).rejects.toThrow(/host/)
     expect(calls).toBe(1)
     for (const [status, headers] of [
@@ -184,7 +193,7 @@ describe("cloud recordings", () => {
           String(input).includes("api.zoom.us")
             ? response(meeting())
             : new Response("Private example", { status, headers }),
-        ).download("example", { destination }),
+        ).download("example", { ...scope, destination }),
       ).rejects.toMatchObject({ code: status === 403 ? "permission_error" : "invalid_response" })
       expect(await readdir(destination)).toEqual([])
     }
@@ -197,7 +206,7 @@ describe("cloud recordings", () => {
       if (calls === 1) return new Response("Example", { status: 503 })
       return new Response("hello")
     })
-    expect((await recordings.download("example", { destination: await temp() })).downloaded).toHaveLength(1)
+    expect((await recordings.download("example", { ...scope, destination: await temp() })).downloaded).toHaveLength(1)
     expect(calls).toBe(2)
     for (const body of [
       new Response(null),
@@ -209,23 +218,23 @@ describe("cloud recordings", () => {
       await expect(
         source(async (input) => (String(input).includes("api.zoom.us") ? response(meeting()) : body)).download(
           "example",
-          { destination },
+          { ...scope, destination },
         ),
       ).rejects.toMatchObject({ code: "invalid_response" })
       expect(await readdir(destination)).toEqual([])
     }
     await expect(
-      source(scripted()).download("example", { destination: await temp(), maxBytes: 4 }),
+      source(scripted()).download("example", { ...scope, destination: await temp(), maxBytes: 4 }),
     ).rejects.toMatchObject({ code: "validation_error" })
   })
   it("rejects cancellation and malicious or symlinked local manifests/files", async () => {
     const abort = new AbortController()
     abort.abort()
     await expect(
-      source(scripted()).download("example", { destination: await temp(), signal: abort.signal }),
+      source(scripted()).download("example", { ...scope, destination: await temp(), signal: abort.signal }),
     ).rejects.toThrow()
     const destination = await temp()
-    const report = await source(scripted()).download("example", { destination })
+    const report = await source(scripted()).download("example", { ...scope, destination })
     const manifest = JSON.parse(await readFile(report.manifestPath, "utf8"))
     manifest.files[0].path = "../outside.mp4"
     await writeFile(report.manifestPath, JSON.stringify(manifest))
@@ -330,7 +339,7 @@ it("retries interrupted streams with Retry-After and cancels partial output clea
       },
     },
   )
-  expect((await recordings.download("example", { destination })).downloaded).toHaveLength(1)
+  expect((await recordings.download("example", { ...scope, destination })).downloaded).toHaveLength(1)
   expect(attempts).toBe(3)
   expect(delays).toEqual([2000, 500])
   const abort = new AbortController()
@@ -350,7 +359,7 @@ it("retries interrupted streams with Retry-After and cancels partial output clea
       }),
     )
   })
-  await expect(stalled.download("example", { destination: cancelled, signal: abort.signal })).rejects.toThrow(
+  await expect(stalled.download("example", { ...scope, destination: cancelled, signal: abort.signal })).rejects.toThrow(
     /cancelled/,
   )
   expect(cancelledBody).toBe(true)
@@ -361,8 +370,8 @@ it("keeps verified subsets and refuses corrupted, oversized or mismatched manife
   const destination = await temp()
   const body = meeting([file("example-video"), file("example-audio", { file_type: "M4A", file_extension: "M4A" })])
   const recordings = source(scripted(body))
-  const first = await recordings.download("example", { destination, fileIds: ["example-video"] })
-  const next = await recordings.download("example", { destination, fileIds: ["example-audio"] })
+  const first = await recordings.download("example", { ...scope, destination, fileIds: ["example-video"] })
+  const next = await recordings.download("example", { ...scope, destination, fileIds: ["example-audio"] })
   expect(first.downloaded).toHaveLength(1)
   expect(next.downloaded).toHaveLength(1)
   expect((await inspectArchive(destination))[0]?.files).toHaveLength(2)
@@ -390,14 +399,14 @@ it("keeps verified subsets and refuses corrupted, oversized or mismatched manife
   }
   await writeFile(first.manifestPath, JSON.stringify(original))
   await expect(
-    source(scripted(meeting([file("example-video", { file_size: 6 })]))).download("example", { destination }),
+    source(scripted(meeting([file("example-video", { file_size: 6 })]))).download("example", { ...scope, destination }),
   ).rejects.toThrow(/changed/)
   const mismatched = await temp()
   const copy = { ...original, meeting: { ...original.meeting, uuid: "other-example-occurrence" } }
   await writeFile(join(mismatched, name), JSON.stringify(copy))
   await expect(inspectArchive(mismatched)).rejects.toThrow(/manifest/)
   const normal = await temp()
-  const asset = await source(scripted()).download("example", { destination: normal })
+  const asset = await source(scripted()).download("example", { ...scope, destination: normal })
   const unsafe = await temp()
   await writeFile(join(unsafe, name), await readFile(asset.manifestPath, "utf8"))
   await symlink(join(normal, asset.downloaded[0]?.path ?? ""), join(unsafe, asset.downloaded[0]?.path ?? ""))
@@ -420,13 +429,15 @@ it("stores supported JSON assets while rejecting JSON error bodies as video", as
       ? response(body)
       : new Response("{}", { headers: { "content-type": "application/json" } }),
   )
-  expect((await recordings.download("example", { destination: await temp() })).downloaded[0]?.path).toMatch(/\.json$/)
+  expect((await recordings.download("example", { ...scope, destination: await temp() })).downloaded[0]?.path).toMatch(
+    /\.json$/,
+  )
   await expect(
     source(async (input) =>
       String(input).includes("api.zoom.us")
         ? response(meeting())
         : new Response("{}", { headers: { "content-type": "application/json" } }),
-    ).download("example", { destination: await temp() }),
+    ).download("example", { ...scope, destination: await temp() }),
   ).rejects.toThrow(/body/)
 })
 
@@ -461,13 +472,13 @@ it("previews and repairs only unique stale local locks without removing active, 
     "foreign",
     "unrecognized",
   ])
-  await expect(source(scripted()).download("example", { destination })).rejects.toThrow(/locked/)
+  await expect(source(scripted()).download("example", { ...scope, destination })).rejects.toThrow(/locked/)
   expect(await readFile(join(folder, active.name), "utf8")).toBe(JSON.stringify(active.content))
   const clean = await temp()
   await mkdir(join(clean, ".zoom-archive-locks"))
   await writeFile(join(clean, ".zoom-archive-locks", stale.name), JSON.stringify(stale.content))
   await recoverArchiveLocks(clean, { apply: true })
-  expect((await source(scripted()).download("example", { destination: clean })).downloaded).toHaveLength(1)
+  expect((await source(scripted()).download("example", { ...scope, destination: clean })).downloaded).toHaveLength(1)
   expect(await inspectArchiveLocks(clean)).toEqual([])
 })
 
@@ -482,24 +493,24 @@ it("takes over a lock left by a dead process on this machine without a manual re
     join(destination, ".zoom-archive-locks", `${deadPid}-${nonce}.json`),
     JSON.stringify({ version: 1, pid: deadPid, host: hostname(), nonce }),
   )
-  expect((await source(scripted()).download("example", { destination })).downloaded).toHaveLength(1)
+  expect((await source(scripted()).download("example", { ...scope, destination })).downloaded).toHaveLength(1)
   expect(await inspectArchiveLocks(destination)).toEqual([])
 })
 
 it("remembers verified files so a rerun rehashes only files whose size or time changed", async () => {
   const destination = await temp()
-  const first = await source(scripted()).download("example", { destination })
+  const first = await source(scripted()).download("example", { ...scope, destination })
   const path = first.downloaded[0]?.path as string
   const verified = JSON.parse(await readFile(join(destination, ".zoom-verified.json"), "utf8"))
   expect(Object.keys(verified.files)).toEqual([path])
-  expect((await source(scripted()).download("example", { destination })).skipped).toHaveLength(1)
+  expect((await source(scripted()).download("example", { ...scope, destination })).skipped).toHaveLength(1)
   await writeFile(join(destination, path), "Example tampered bytes")
-  await expect(source(scripted()).download("example", { destination })).rejects.toThrow(/changed/)
+  await expect(source(scripted()).download("example", { ...scope, destination })).rejects.toThrow(/changed/)
 })
 
 it("cancels local inspection, verification and recovery without masking it as corruption", async () => {
   const destination = await temp()
-  await source(scripted()).download("example", { destination })
+  await source(scripted()).download("example", { ...scope, destination })
   const abort = new AbortController()
   abort.abort(new Error("Private example cancel"))
   for (const inspect of [inspectArchive, verifyArchive, inspectArchiveLocks])
@@ -520,7 +531,7 @@ it("interrupts streamed local verification without reporting a cancelled digest 
       ? response(meeting([file("example-large", { file_size: bytes.length })]))
       : new Response(bytes),
   )
-  await recordings.download("example", { destination })
+  await recordings.download("example", { ...scope, destination })
   const abort = new AbortController()
   const verification = verifyArchive(destination, { signal: abort.signal })
   const timer = setTimeout(() => abort.abort(), 2)

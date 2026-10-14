@@ -4,9 +4,10 @@ import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
 import { expect, it, vi } from "vitest"
 import { readReceipt } from "../scripts/testing/answers.js"
+import { fakeConnection } from "../scripts/testing/connection.js"
 import { setConfig } from "./config.js"
 import { snakeKeys } from "./keys.js"
-import { type ProgramDeps, run } from "./program.js"
+import { type ProgramDeps, run, type StoreConnection } from "./program.js"
 import { TokenManager } from "./tokens.js"
 import { runUnifiedSearch, type UnifiedSearchRequest, validateUnifiedSearch } from "./unified-search.js"
 
@@ -50,6 +51,11 @@ const setup = async () => {
   }
   return { deps, output, errors }
 }
+const searchWith = (deps: ProgramDeps, unifiedSearch: StoreConnection["unifiedSearch"]) => {
+  setConfig(deps.configPath, "account.profile", "example")
+  deps.connectStore = async () =>
+    fakeConnection({ store: {} as never, accountId: 3, close: async () => {}, unifiedSearch })
+}
 const found = () => ({ ...result, searched: ["meetings"] as "meetings"[] })
 
 it("defaults to meetings and validates closed source-only cursors before the service", async () => {
@@ -91,7 +97,7 @@ it("defaults to meetings and validates closed source-only cursors before the ser
 it("preserves nullable completeness and explicit cross-resource opt-in in CLI", async () => {
   const { deps, output } = await setup()
   const search = vi.fn(async (_request: UnifiedSearchRequest) => found())
-  deps.unifiedSearch = search
+  searchWith(deps, search)
   expect(await run(["search", "all", "example", "--json"], deps)).toBe(0)
   expect(readReceipt(output.pop() ?? "{}")).toEqual(snakeKeys(found()))
   expect(search.mock.calls[0]?.[0]).toMatchObject({ only: ["meetings"] })
@@ -134,12 +140,9 @@ it("preserves nullable completeness and explicit cross-resource opt-in in CLI", 
 
 it("resolves read intent only after validating query options and closes before finite output", async () => {
   const { deps, output } = await setup()
-  const connect = vi.fn(async () => ({
-    store: {} as never,
-    accountId: 3,
-    unifiedSearch: async () => found(),
-    close: async () => {},
-  }))
+  const connect = vi.fn(async () =>
+    fakeConnection({ store: {} as never, accountId: 3, unifiedSearch: async () => found(), close: async () => {} }),
+  )
   deps.connectStore = connect
   expect(await run(["search", "all", "example", "--limit", "0", "--json"], deps)).toBe(2)
   expect(await run(["search", "all", "example", "--meeting-cursor", "not-json", "--json"], deps)).toBe(2)
@@ -149,10 +152,6 @@ it("resolves read intent only after validating query options and closes before f
   expect(await run(["search", "all", "example", "--json"], deps)).toBe(0)
   expect(connect).toHaveBeenCalledWith({ profile: "example", externalId: "zm-profile:example", intent: "read" })
   expect(output).toHaveLength(1)
-  const close = vi.fn(async () => {})
-  deps.connectStore = async () => ({ store: {} as never, accountId: 3, close })
-  expect(await run(["search", "all", "example", "--json"], deps)).toBe(3)
-  expect(close).toHaveBeenCalledOnce()
 })
 
 it("prevents service work on cancellation and rejects late cancelled results", async () => {
@@ -172,10 +171,10 @@ it("prevents service work on cancellation and rejects late cancelled results", a
 
 it("reports skipped sources as partial in JSON and JSONL while keeping the search partial exit policy", async () => {
   const { deps, output } = await setup()
-  deps.unifiedSearch = async () => ({
+  searchWith(deps, async () => ({
     ...found(),
     skipped: [{ resource: "meetings", code: "network_error", reason: "example source unavailable" }],
-  })
+  }))
   for (const flag of ["--json", "--jsonl"]) {
     output.length = 0
     expect(await run(["search", "all", "example", flag], deps)).toBe(0)

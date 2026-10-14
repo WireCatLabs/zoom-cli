@@ -34,6 +34,10 @@ const setup = async () => {
   }
   const download = vi.fn(async (_id: string, _options: DownloadOptions) => report)
   const list = vi.fn(async () => [meeting])
+  const catalog = vi.fn((_account: string) => ({
+    provider: "zoom",
+    list: async () => ({ items: [], nextCursor: null }),
+  }))
   const deps: ProgramDeps = {
     configPath: join(directory, "config.json"),
     tokens: new TokenManager({ clientId: "example-client", service: "example", keyring: memoryKeyring(), fetch: fail }),
@@ -42,12 +46,12 @@ const setup = async () => {
     connectStore: fail,
     data: (text) => output.push(text),
     diagnostic: (text) => errors.push(text),
-    recordings: { list, show: async () => meeting, download },
+    recordings: { list, show: async () => meeting, download, catalog },
     now: () => Date.parse("2026-10-11T00:00:00Z"),
   }
   setConfig(deps.configPath, "zoom.clientId", "example-client")
   const tokenAccess = vi.spyOn(deps.tokens, "withSignal")
-  return { deps, directory, download, list, tokenAccess, output, errors }
+  return { deps, directory, download, list, catalog, tokenAccess, output, errors }
 }
 
 it("defaults configured profiles to durable downloads and explicitly disables or enables resume", async () => {
@@ -68,13 +72,11 @@ it("defaults configured profiles to durable downloads and explicitly disables or
   expect(tokenAccess).not.toHaveBeenCalled()
 })
 
-it("keeps legacy downloads ephemeral and rejects explicit durable requests before API, tokens or archive state", async () => {
-  const { deps, directory, download, list, tokenAccess, errors } = await setup()
-  expect(await run(["recordings", "download", meeting.uuid, "--destination", "example", "--json"], deps)).toBe(0)
-  expect(download).toHaveBeenLastCalledWith(meeting.uuid, expect.objectContaining({ resume: false }))
-  expect(download.mock.calls[0]?.[1]).not.toHaveProperty("account")
-  download.mockClear()
+it("refuses downloads and syncs without a local profile before API, tokens or archive state", async () => {
+  const { deps, directory, download, list, catalog, tokenAccess, errors } = await setup()
   for (const args of [
+    ["recordings", "download", meeting.uuid, "--destination", join(directory, "untouched"), "--json"],
+    ["recordings", "download", meeting.uuid, "--destination", join(directory, "untouched"), "--no-resume", "--json"],
     ["recordings", "download", meeting.uuid, "--destination", join(directory, "untouched"), "--resume", "--json"],
     [
       "recordings",
@@ -107,6 +109,7 @@ it("keeps legacy downloads ephemeral and rejects explicit durable requests befor
   }
   expect(download).not.toHaveBeenCalled()
   expect(list).not.toHaveBeenCalled()
+  expect(catalog).not.toHaveBeenCalled()
   expect(tokenAccess).not.toHaveBeenCalled()
   await expect(access(join(directory, "untouched"))).rejects.toMatchObject({ code: "ENOENT" })
   await expect(access(join(directory, "untouched-checkpoint"))).rejects.toMatchObject({ code: "ENOENT" })

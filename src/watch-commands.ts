@@ -1,8 +1,8 @@
+import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
 import { LOCAL_WRITE } from "@wirecat/cli-core/cli"
 import { type RunReport, type WatchSleep, watchMeetingIngestion } from "@wirecat/cli-core/meetings"
 import { Argument, type Command } from "commander"
-import { ZoomError } from "./errors.js"
 import { duration } from "./execution.js"
 
 export type WatchTarget = "api" | "files"
@@ -28,7 +28,7 @@ export interface WatchCommandDeps {
 }
 const days = (value: string): number => {
   if (!/^\d+$/.test(value) || Number(value) > 31)
-    throw new ZoomError("validation_error", "lookback days must be an integer from 0 through 31")
+    throw new CliError("validation_error", "lookback days must be an integer from 0 through 31")
   return Number(value)
 }
 const since = (value: string): string => {
@@ -40,7 +40,7 @@ const since = (value: string): string => {
     !Number.isFinite(dayTime) ||
     new Date(dayTime).toISOString().slice(0, 10) !== day
   )
-    throw new ZoomError("validation_error", "--since-time must be a real ISO 8601 time with a time zone")
+    throw new CliError("validation_error", "--since-time must be a real ISO 8601 time with a time zone")
   return value
 }
 export const addWatchCommand = (program: Command, deps: WatchCommandDeps): void => {
@@ -54,10 +54,10 @@ export const addWatchCommand = (program: Command, deps: WatchCommandDeps): void 
     .option("--interval <duration>", "delay after each completed receipt (1s through 24h)", duration, 10000)
     .action(async (target: WatchTarget | undefined, folder: string | undefined, options: WatchFlags) => {
       if (!program.opts().jsonl && !deps.outputIsTTY)
-        throw new ZoomError("validation_error", "headless watch requires --jsonl")
-      if (program.opts().json) throw new ZoomError("validation_error", "watch streams receipts; use --jsonl")
+        throw new CliError("validation_error", "headless watch requires --jsonl")
+      if (program.opts().json) throw new CliError("validation_error", "watch streams receipts; use --jsonl")
       if (options.interval < 1000 || options.interval > 86400000)
-        throw new ZoomError("validation_error", "watch interval must be from 1s through 24h")
+        throw new CliError("validation_error", "watch interval must be from 1s through 24h")
       const plan = deps.prepare(target, folder, options)
       for await (const report of watchMeetingIngestion((signal) => deps.ingest(plan, signal), {
         signal: deps.signal(),

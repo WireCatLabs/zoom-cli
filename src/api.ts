@@ -1,3 +1,4 @@
+import { CliError, isCliError } from "@wirecat/cli-base"
 import { statusToCode } from "@wirecat/cli-base/http"
 import {
   type JsonValue,
@@ -7,7 +8,7 @@ import {
   type SourceParticipant,
   type SummaryContent,
 } from "@wirecat/cli-core/meetings"
-import { number, object, string, ZoomError } from "./errors.js"
+import { number, object, string } from "./errors.js"
 import { type RemoteOptions, ZoomRemote } from "./remote-http.js"
 import type { TokenManager } from "./tokens.js"
 
@@ -34,12 +35,12 @@ const time = (value: unknown): number | null => {
   const text = string(value)
   if (text === null) return null
   const result = Date.parse(text)
-  if (!Number.isFinite(result)) throw new ZoomError("invalid_response", "Zoom returned an invalid timestamp")
+  if (!Number.isFinite(result)) throw new CliError("invalid_response", "Zoom returned an invalid timestamp")
   return result
 }
 const requiredString = (value: unknown): string => {
   const text = string(value)
-  if (text === null) throw new ZoomError("invalid_response", "Zoom response is missing a required field")
+  if (text === null) throw new CliError("invalid_response", "Zoom response is missing a required field")
   return text
 }
 export class ZoomApiSource implements MeetingSource {
@@ -66,17 +67,17 @@ export class ZoomApiSource implements MeetingSource {
     do {
       const query = new URLSearchParams({ page_size: "100", ...(next ? { next_page_token: next } : {}) })
       const body = await this.request(`${path}${path.includes("?") ? "&" : "?"}${query}`, scope)
-      if (!body || !Array.isArray(body[key])) throw new ZoomError("invalid_response", "Zoom returned an invalid list")
+      if (!body || !Array.isArray(body[key])) throw new CliError("invalid_response", "Zoom returned an invalid list")
       rows.push(...body[key].map(object))
       next = string(body.next_page_token) ?? ""
-      if (next && seen.has(next)) throw new ZoomError("invalid_response", "Zoom repeated a pagination token")
+      if (next && seen.has(next)) throw new CliError("invalid_response", "Zoom repeated a pagination token")
       seen.add(next)
     } while (next)
     return rows
   }
   async meetings(since: string): Promise<SourceMeeting[]> {
     const lower = Date.parse(since)
-    if (!Number.isFinite(lower)) throw new ZoomError("validation_error", "expected an ISO since timestamp")
+    if (!Number.isFinite(lower)) throw new CliError("validation_error", "expected an ISO since timestamp")
     const series = await this.pages(
       "/users/me/meetings?type=previous_meetings",
       "meetings",
@@ -86,7 +87,7 @@ export class ZoomApiSource implements MeetingSource {
     const seen = new Set<string>()
     for (const row of series) {
       if (!(string(row.id) !== null || (typeof row.id === "number" && Number.isSafeInteger(row.id) && row.id > 0)))
-        throw new ZoomError("invalid_response", "Zoom meeting is missing its series id")
+        throw new CliError("invalid_response", "Zoom meeting is missing its series id")
       const seriesId = String(row.id)
       const recurring = row.type === 3 || row.type === 8
       let instances: Record<string, unknown>[] = [row]
@@ -96,13 +97,13 @@ export class ZoomApiSource implements MeetingSource {
           "meeting:read:list_past_instances",
         )
         if (!body || !Array.isArray(body.meetings))
-          throw new ZoomError("invalid_response", "Zoom returned invalid occurrences")
+          throw new CliError("invalid_response", "Zoom returned invalid occurrences")
         instances = body.meetings.map(object)
       }
       for (const instance of instances) {
         const startedAt = time(instance.start_time)
         const id = requiredString(instance.uuid)
-        if (startedAt === null) throw new ZoomError("invalid_response", "Zoom occurrence is missing its start time")
+        if (startedAt === null) throw new CliError("invalid_response", "Zoom occurrence is missing its start time")
         if (startedAt < lower || seen.has(id)) continue
         seen.add(id)
         const rawDuration = recurring ? null : number(row.duration)
@@ -225,7 +226,7 @@ export class ZoomApiSource implements MeetingSource {
       try {
         target = new URL(value, base)
       } catch {
-        throw new ZoomError("invalid_response", "Zoom returned an unexpected transcript download host")
+        throw new CliError("invalid_response", "Zoom returned an unexpected transcript download host")
       }
       if (
         target.protocol !== "https:" ||
@@ -234,7 +235,7 @@ export class ZoomApiSource implements MeetingSource {
         (target.port && target.port !== "443") ||
         !/(^|\.)zoom\.(us|com)$/.test(target.hostname)
       )
-        throw new ZoomError("invalid_response", "Zoom returned an unexpected transcript download host")
+        throw new CliError("invalid_response", "Zoom returned an unexpected transcript download host")
       return target
     }
     let target = validateTarget(requiredString(body.download_url))
@@ -250,21 +251,21 @@ export class ZoomApiSource implements MeetingSource {
           redirect: "manual",
         })
       } catch {
-        throw new ZoomError("provider_error", "Transcript download could not be completed")
+        throw new CliError("provider_error", "Transcript download could not be completed")
       }
       if ([301, 302, 303, 307, 308].includes(response.status)) {
         const location = response.headers.get("location")
         await response.body?.cancel()
         if (!location || redirects >= 5)
-          throw new ZoomError("invalid_response", "Zoom returned invalid transcript redirects")
+          throw new CliError("invalid_response", "Zoom returned invalid transcript redirects")
         target = validateTarget(location, target)
         continue
       }
       if (!response.ok)
-        throw new ZoomError(statusToCode(response.status), `Transcript download failed (HTTP ${response.status})`)
+        throw new CliError(statusToCode(response.status), `Transcript download failed (HTTP ${response.status})`)
       const maxBytes = TRANSCRIPT_MAX_BYTES
       const reader = response.body?.getReader()
-      if (!reader) throw new ZoomError("invalid_response", "Zoom returned an invalid transcript")
+      if (!reader) throw new CliError("invalid_response", "Zoom returned an invalid transcript")
       const chunks: Uint8Array[] = []
       let size = 0
       try {
@@ -274,13 +275,13 @@ export class ZoomApiSource implements MeetingSource {
           size += value.byteLength
           if (size > maxBytes) {
             await reader.cancel()
-            throw new ZoomError("invalid_response", "Zoom transcript exceeds the download size limit")
+            throw new CliError("invalid_response", "Zoom transcript exceeds the download size limit")
           }
           chunks.push(value)
         }
       } catch (error) {
-        if (error instanceof ZoomError) throw error
-        throw new ZoomError("provider_error", "Transcript download could not be completed")
+        if (isCliError(error)) throw error
+        throw new CliError("provider_error", "Transcript download could not be completed")
       }
       const bytes = new Uint8Array(size)
       let offset = 0
@@ -292,7 +293,7 @@ export class ZoomApiSource implements MeetingSource {
       try {
         return parseVtt(content)
       } catch {
-        throw new ZoomError("invalid_response", "Zoom returned an invalid transcript")
+        throw new CliError("invalid_response", "Zoom returned an invalid transcript")
       }
     }
   }

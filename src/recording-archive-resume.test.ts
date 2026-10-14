@@ -2,7 +2,13 @@ import { mkdtemp, readdir, readFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, expect, it } from "vitest"
-import { archiveRecording, inspectArchive, validateDownloadOptions, verifyArchive } from "./recording-archive.js"
+import {
+  archiveRecording,
+  type DownloadOptions,
+  inspectArchive,
+  validateDownloadOptions,
+  verifyArchive,
+} from "./recording-archive.js"
 import type { RecordingMeeting } from "./recordings.js"
 import { ZoomRemote } from "./remote-http.js"
 
@@ -156,7 +162,7 @@ describe("durable recording resume adapter", () => {
     ).rejects.toThrow("body")
     expect((await readdir(destination)).filter((name) => name.endsWith(".part"))).toEqual([])
   })
-  it("requires explicit scope for durable resume before auth or filesystem writes", async () => {
+  it("requires an explicit account scope before auth or filesystem writes", async () => {
     let calls = 0
     const destination = join(await root(), "not-created")
     await expect(
@@ -167,13 +173,13 @@ describe("durable recording resume adapter", () => {
         }),
         meeting,
         urls,
-        { destination, resume: true },
+        { destination, resume: true } as DownloadOptions,
       ),
     ).rejects.toThrow("scope")
     expect(calls).toBe(0)
     await expect(readdir(destination)).rejects.toMatchObject({ code: "ENOENT" })
   })
-  it("a legacy unscoped caller never reuses another account's durable prefix", async () => {
+  it("another account never reuses an account's durable prefix", async () => {
     const destination = await root()
     await expect(
       archiveRecording(
@@ -195,16 +201,20 @@ describe("durable recording resume adapter", () => {
       }),
       meeting,
       urls,
-      { destination },
+      { destination, account: "BobSample" },
     )
     expect(result.downloaded[0]?.size).toBe(6)
   })
 })
 
 it("rejects malformed resume and account options before any adapter is used", () => {
-  expect(() => validateDownloadOptions({ destination: "example", resume: "true" as unknown as boolean })).toThrow(
-    "boolean",
-  )
+  expect(() =>
+    validateDownloadOptions({
+      destination: "example",
+      account: "AliceExample",
+      resume: "true" as unknown as boolean,
+    }),
+  ).toThrow("boolean")
   expect(() => validateDownloadOptions({ destination: "example", account: " " })).toThrow("scope")
 })
 

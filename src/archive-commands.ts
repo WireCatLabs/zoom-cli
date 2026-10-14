@@ -1,9 +1,9 @@
+import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
 import { LOCAL_READ, LOCAL_WRITE, REMOTE_WRITE } from "@wirecat/cli-core/cli"
 import { listed, recordingWindows } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
 import type { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
-import { ZoomError } from "./errors.js"
 import { bytes } from "./execution.js"
 import type { inspectArchive, inspectArchiveLocks, recoverArchiveLocks, verifyArchive } from "./recording-archive.js"
 import { validateDownloadOptions } from "./recording-archive.js"
@@ -11,8 +11,7 @@ import { syncRecordingArchive } from "./recording-sync.js"
 import type { ZoomRecordings } from "./recordings.js"
 import type { MeetingChange, MutationOptions, ZoomRemoteMeetings } from "./remote-meetings.js"
 
-export type RecordingsService = Pick<ZoomRecordings, "list" | "show" | "download"> &
-  Partial<Pick<ZoomRecordings, "catalog">>
+export type RecordingsService = Pick<ZoomRecordings, "list" | "show" | "download" | "catalog">
 export type RemoteMeetingsService = Pick<
   ZoomRemoteMeetings,
   "list" | "show" | "invitation" | "create" | "update" | "cancel"
@@ -34,7 +33,7 @@ export interface ArchiveCommandsDeps {
   transcripts: ArchiveTranscriptService
   signal: () => AbortSignal | undefined
   api: () => void
-  account?: () => string | undefined
+  account: () => string | undefined
   output: (value: unknown) => void
   outputItems: (values: AsyncIterable<unknown>) => Promise<void>
   receipt: (value: unknown) => Promise<void>
@@ -49,27 +48,27 @@ const label = (command: Command, example: string, mutation: "none" | "local" | "
   })
 const positive = (text: string): number => {
   const value = bytes(text)
-  if (value === 0) throw new ZoomError("validation_error", "expected a positive number")
+  if (value === 0) throw new CliError("validation_error", "expected a positive number")
   return value
 }
 const discoveryLimit = (text: string): number => {
   const value = positive(text)
-  if (value > 10000) throw new ZoomError("validation_error", "archive discovery limit must be between 1 and 10000")
+  if (value > 10000) throw new CliError("validation_error", "archive discovery limit must be between 1 and 10000")
   return value
 }
 const archiveScope = (deps: ArchiveCommandsDeps, options: { resume?: boolean; checkpoint?: string }) => {
-  const account = deps.account?.()
-  const resume = options.resume ?? (options.checkpoint !== undefined || account !== undefined)
-  if (resume && !account)
-    throw new ZoomError(
+  const account = deps.account()
+  if (!account)
+    throw new CliError(
       "configuration_error",
-      "resumable archives require a local profile; run zm config set account.profile <label>",
+      "recording archives belong to a local profile; run zm config set account.profile <label>",
     )
+  const resume = options.resume ?? true
   if (options.checkpoint !== undefined && !resume)
-    throw new ZoomError("validation_error", "archive checkpoints require resume mode; remove --no-resume")
+    throw new CliError("validation_error", "archive checkpoints require resume mode; remove --no-resume")
   if (options.checkpoint !== undefined && !options.checkpoint.trim())
-    throw new ZoomError("validation_error", "archive checkpoint path must be nonempty")
-  return { ...(account === undefined ? {} : { account }), resume }
+    throw new CliError("validation_error", "archive checkpoint path must be nonempty")
+  return { account, resume }
 }
 const resumable = (command: Command): Command =>
   command
@@ -110,7 +109,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         const to = options.untilTime ?? new Date(deps.now()).toISOString().slice(0, 10)
         const end = Date.parse(`${to}T00:00:00Z`)
         if (!/^\d{4}-\d{2}-\d{2}$/.test(to) || !Number.isFinite(end) || new Date(end).toISOString().slice(0, 10) !== to)
-          throw new ZoomError("validation_error", "--until-time must be a real YYYY-MM-DD date")
+          throw new CliError("validation_error", "--until-time must be a real YYYY-MM-DD date")
         const from = options.sinceTime ?? new Date(end - 30 * 86400000).toISOString().slice(0, 10)
         deps.output(listed(await deps.recordings().list({ from, to, signal: deps.signal() })))
       }),
@@ -143,9 +142,9 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
           maxEntries?: number
         }) => {
           if (!program.opts().jsonl && !deps.outputIsTTY)
-            throw new ZoomError("validation_error", "headless recording sync requires --jsonl")
+            throw new CliError("validation_error", "headless recording sync requires --jsonl")
           if (program.opts().json)
-            throw new ZoomError("validation_error", "recording sync streams receipts; use --jsonl")
+            throw new CliError("validation_error", "recording sync streams receipts; use --jsonl")
           const scope = archiveScope(deps, options)
           recordingWindows(options.sinceTime, options.untilTime)
           if (options.recheckSinceTime !== undefined)

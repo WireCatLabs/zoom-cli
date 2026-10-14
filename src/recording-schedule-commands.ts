@@ -1,8 +1,8 @@
+import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
 import { LOCAL_READ, LOCAL_WRITE } from "@wirecat/cli-core/cli"
 import { listed } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
-import { ZoomError } from "./errors.js"
 import { bytes } from "./execution.js"
 import type {
   RecordingScheduleCapture,
@@ -27,7 +27,7 @@ export const addRecordingScheduleCommands = (
     else deps.output(value)
   }
   const recordings = program.commands.find((command) => command.name() === "recordings")
-  if (!recordings) throw new ZoomError("configuration_error", "recording command group is unavailable")
+  if (!recordings) throw new CliError("configuration_error", "recording command group is unavailable")
   const schedule = recordings.command("schedule").description("local archive jobs and Linux user systemd timers")
   const label = (command: Command, example: string, mutates = false) =>
     annotate(command, { origin: "handwritten", effects: mutates ? LOCAL_WRITE : LOCAL_READ, examples: [example] })
@@ -58,7 +58,7 @@ export const addRecordingScheduleCommands = (
         }) => {
           const offline = deps.offline()
           if (options.yes && !options.dryRun && offline)
-            throw new ZoomError("configuration_error", "archive schedule installation requires online mode")
+            throw new CliError("configuration_error", "archive schedule installation requires online mode")
           const capture = deps.capture()
           const service = deps.service()
           await deliver(
@@ -107,8 +107,8 @@ export const addRecordingScheduleCommands = (
       .argument("<job>", "saved job id")
       .action(async (id: string) => {
         if (program.opts().json || (!program.opts().jsonl && !deps.outputIsTTY))
-          throw new ZoomError("validation_error", "headless archive schedule runs stream receipts; use --jsonl")
-        if (deps.offline()) throw new ZoomError("configuration_error", "archive schedule run requires online mode")
+          throw new CliError("validation_error", "headless archive schedule runs stream receipts; use --jsonl")
+        if (deps.offline()) throw new CliError("configuration_error", "archive schedule run requires online mode")
         for await (const receipt of deps.service().run(id, { offline: deps.offline(), signal: deps.signal() }))
           await deps.receipt(receipt)
       }),

@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto"
 import type { Tool } from "@modelcontextprotocol/sdk/types.js"
+import { CliError } from "@wirecat/cli-base"
 import { errorObjectSchema, jsonSchemaOf, type Meta } from "@wirecat/cli-base/standards"
 import { itemOf, listOf, metaNow, runnable, sealed, answerSchema as sharedAnswerSchema } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import * as v from "valibot"
-import { ZoomError } from "./errors.js"
 import { snakeKeys } from "./keys.js"
 
 export const answerSchema = sharedAnswerSchema()
@@ -19,7 +19,7 @@ export const readMetadata = (now: () => number = Date.now): (() => Meta) => {
 
 /** Seal standard bodies; keep report-specific coverage and cursors together inside one item. */
 export const meetingAnswer = (value: unknown, meta: Meta, registry?: Command) => {
-  if (value === undefined) throw new ZoomError("invalid_response", "command returned no answer")
+  if (value === undefined) throw new CliError("invalid_response", "command returned no answer")
   const data = snakeKeys(value)
   let body: unknown
   if (Array.isArray(data))
@@ -57,7 +57,7 @@ export const meetingAnswer = (value: unknown, meta: Meta, registry?: Command) =>
     else body = sealed(itemOf(data, { meta }))
   } else body = { item: data, meta }
   const answer = v.safeParse(answerSchema, body)
-  if (!answer.success) throw new ZoomError("invalid_response", "command returned an invalid answer envelope")
+  if (!answer.success) throw new CliError("invalid_response", "command returned an invalid answer envelope")
   const packet = answer.output
   if (registry && packet.next) {
     const next = runnable(registry, packet.next)

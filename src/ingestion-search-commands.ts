@@ -1,9 +1,9 @@
+import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
 import { LOCAL_READ, LOCAL_WRITE } from "@wirecat/cli-core/cli"
 import type { MeetingSearchCursor, ResourceWithMeetings } from "@wirecat/cli-core/services"
 import type { Command } from "commander"
 import type { ArchiveImportPlan, applyArchiveImport, preflightArchiveImport } from "./archive-import.js"
-import { ZoomError } from "./errors.js"
 import { bytes } from "./execution.js"
 import { camelKeys } from "./keys.js"
 import { type UnifiedSearch, unifiedSearchAnswer, validateUnifiedSearch } from "./unified-search.js"
@@ -21,14 +21,14 @@ const cursor = (value: string): MeetingSearchCursor => {
   try {
     return camelKeys(JSON.parse(value)) as MeetingSearchCursor
   } catch {
-    throw new ZoomError("validation_error", "meeting cursor must be a JSON object")
+    throw new CliError("validation_error", "meeting cursor must be a JSON object")
   }
 }
 export const addIngestionSearchCommands = (program: Command, deps: Deps): void => {
   const archive = program.commands
     .find((command) => command.name() === "recordings")
     ?.commands.find((command) => command.name() === "archive")
-  if (!archive) throw new ZoomError("configuration_error", "archive command group is unavailable")
+  if (!archive) throw new CliError("configuration_error", "archive command group is unavailable")
   annotate(
     archive
       .command("import")

@@ -6,7 +6,6 @@ import { fileURLToPath } from "node:url"
 import { CliError, catchCrashes, systemKeyring } from "@wirecat/cli-base"
 import { migrateFolders } from "@wirecat/cli-core/background"
 import { profileAccountKey, readConfig } from "../config.js"
-import { ZoomError } from "../errors.js"
 import { loginService, zmPaths } from "../folders.js"
 import { writeExportFile } from "../output-file.js"
 import { reportFailure, run } from "../program.js"
@@ -63,7 +62,7 @@ try {
             profileCaptured = true
           }
           if (!profile)
-            throw new ZoomError(
+            throw new CliError(
               "configuration_error",
               "select a local profile with zm config set account.profile <label>",
             )

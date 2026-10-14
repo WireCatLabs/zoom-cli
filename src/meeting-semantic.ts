@@ -1,6 +1,7 @@
+import { CliError } from "@wirecat/cli-base"
 import type { MeetingEmbedder, ModelChoice } from "@wirecat/cli-core/services"
 import type { MeetingVectors } from "@wirecat/cli-core/store"
-import { checkCancelled, ZoomError } from "./errors.js"
+import { checkCancelled } from "./errors.js"
 import {
   type MeetingEmbeddingOptions,
   type MeetingModelOptions,
@@ -27,7 +28,7 @@ export const createMeetingSemanticCapabilities = (
   options: { env?: NodeJS.ProcessEnv; load?: () => Promise<ProducerSemanticApi> } = {},
 ): MeetingSemanticCapabilities => {
   if (!Number.isSafeInteger(accountId) || accountId < 1)
-    throw new ZoomError("validation_error", "meeting vectors require a selected positive account ID")
+    throw new CliError("validation_error", "meeting vectors require a selected positive account ID")
   const load = options.load ?? loadProducer
   const choice = (api: ProducerSemanticApi, input: MeetingModelOptions): ModelChoice =>
     input.baseUrl === undefined

@@ -1,5 +1,5 @@
+import { CliError } from "@wirecat/cli-base"
 import { createUpcomingMeetingReader } from "@wirecat/cli-core/meetings"
-import { ZoomError } from "./errors.js"
 import { zoomOccurrenceSchedule } from "./occurrence-schedule.js"
 import { type RemoteOptions, ZoomRemote } from "./remote-http.js"
 import { zoomMeetingPath } from "./remote-meeting-id.js"
@@ -16,7 +16,7 @@ export const createZoomUpcomingMeetingReader = (
   options: RemoteOptions = {},
 ) => {
   if (typeof credentials?.withSignal !== "function")
-    throw new ZoomError("configuration_error", "Zoom credential scope is unavailable")
+    throw new CliError("configuration_error", "Zoom credential scope is unavailable")
   const scopedCredentials = credentials.withSignal.bind(credentials)
   const remoteOptions = { ...options }
   return createUpcomingMeetingReader(

@@ -2,6 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js"
 import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { expect, it, vi } from "vitest"
+import { fakeConnection } from "../scripts/testing/connection.js"
 import { createMeetingMcpServer } from "./mcp-server.js"
 import type { UnifiedSearchRequest } from "./unified-search.js"
 
@@ -22,7 +23,9 @@ it("advertises opt-in meeting-only unified search without store access, rejects 
     },
   }))
   const close = vi.fn(async () => {})
-  const connectStore = vi.fn(async () => ({ store: memoryMeetingStore(), accountId: 3, unifiedSearch: search, close }))
+  const connectStore = vi.fn(async () =>
+    fakeConnection({ store: memoryMeetingStore(), accountId: 3, unifiedSearch: search, close }),
+  )
   const server = createMeetingMcpServer({ connectStore, includeUnifiedSearch: true })
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
   await server.connect(serverTransport)
@@ -53,26 +56,6 @@ it("advertises opt-in meeting-only unified search without store access, rejects 
     })
     expect(continuation.isError).not.toBe(true)
     expect(search.mock.calls[1]?.[0]).toMatchObject({ meetingCursor: { meetingOffset: 1 } })
-  } finally {
-    await client.close()
-    await server.close()
-  }
-})
-
-it("reports missing unified service and closes its optional read connection", async () => {
-  const close = vi.fn(async () => {})
-  const server = createMeetingMcpServer({
-    includeUnifiedSearch: true,
-    connectStore: async () => ({ store: memoryMeetingStore(), accountId: 1, close }),
-  })
-  const [a, b] = InMemoryTransport.createLinkedPair()
-  await server.connect(b)
-  const client = new Client({ name: "example-client", version: "1" })
-  await client.connect(a)
-  try {
-    const result = await client.callTool({ name: "search_all", arguments: { query: "example" } })
-    expect(result.structuredContent).toMatchObject({ error: { code: "configuration_error" } })
-    expect(close).toHaveBeenCalledOnce()
   } finally {
     await client.close()
     await server.close()

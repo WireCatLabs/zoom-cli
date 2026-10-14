@@ -11,6 +11,7 @@ import {
 import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { describe, expect, it, vi } from "vitest"
 import { readAnswer } from "../scripts/testing/answers.js"
+import { fakeConnection } from "../scripts/testing/connection.js"
 import { snakeKeys } from "./keys.js"
 import { createMeetingMcpServer, type MeetingMcpOptions, serveMeetingMcp } from "./mcp-server.js"
 
@@ -30,7 +31,7 @@ const fixture = async () => {
   otherInput.meeting.title = "Other invented account"
   const other = await store.saveMeeting(otherInput)
   const close = vi.fn(async () => {})
-  const connectStore = vi.fn(async () => ({ store, accountId: 1, close }))
+  const connectStore = vi.fn(async () => fakeConnection({ store, accountId: 1, close }))
   return { store, selected, other, close, connectStore }
 }
 
@@ -177,16 +178,17 @@ describe("read-only SDK meeting server", () => {
       closing = resolve
     })
     const { client, server } = await connected({
-      connectStore: async () => ({
-        store: data.store,
-        accountId: 1,
-        close: () => {
-          closing()
-          return new Promise<void>((resolve) => {
-            release = resolve
-          })
-        },
-      }),
+      connectStore: async () =>
+        fakeConnection({
+          store: data.store,
+          accountId: 1,
+          close: () => {
+            closing()
+            return new Promise<void>((resolve) => {
+              release = resolve
+            })
+          },
+        }),
     })
     try {
       let answered = false
@@ -340,7 +342,10 @@ describe("read-only SDK meeting server", () => {
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
     let finished = false
     const serving = serveMeetingMcp(
-      { connectStore: async () => ({ store, accountId: 1, close: data.close }), signal: controller.signal },
+      {
+        connectStore: async () => fakeConnection({ store, accountId: 1, close: data.close }),
+        signal: controller.signal,
+      },
       serverTransport,
     ).then(() => {
       finished = true
@@ -438,7 +443,7 @@ describe("read-only SDK meeting server", () => {
       await new Promise<void>((resolve) => {
         release = resolve
       })
-      return { store: data.store, accountId: 1, close: data.close }
+      return fakeConnection({ store: data.store, accountId: 1, close: data.close })
     }
     const { client, server } = await connected({ connectStore, signal: controller.signal })
     try {
@@ -484,7 +489,7 @@ describe("read-only SDK meeting server", () => {
       const { client, server } = await connected({
         connectStore: async () => {
           if (stage === "connect") await wait()
-          return { store: { ...data.store, meetings: read }, accountId: 1, close }
+          return fakeConnection({ store: { ...data.store, meetings: read }, accountId: 1, close })
         },
       })
       try {

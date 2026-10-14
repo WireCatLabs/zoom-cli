@@ -1,10 +1,11 @@
+import { CliError } from "@wirecat/cli-base"
 import type {
   RecordingAsset as CommonRecordingAsset,
   RecordingCatalog,
   RecordingPage,
 } from "@wirecat/cli-core/meetings"
 import { encodeUuid } from "./api.js"
-import { object, string, ZoomError } from "./errors.js"
+import { object, string } from "./errors.js"
 import {
   type ArchiveReport,
   archiveRecording,
@@ -29,20 +30,20 @@ export interface RecordingRange {
 }
 export const required = (value: unknown): string => {
   const text = string(value)
-  if (text === null) throw new ZoomError("invalid_response", "Zoom response is missing a required field")
+  if (text === null) throw new CliError("invalid_response", "Zoom response is missing a required field")
   return text
 }
 const timestamp = (value: unknown): string | null => {
   if (value === undefined || value === null || value === "") return null
   const text = required(value)
-  if (!Number.isFinite(Date.parse(text))) throw new ZoomError("invalid_response", "Zoom returned an invalid timestamp")
+  if (!Number.isFinite(Date.parse(text))) throw new CliError("invalid_response", "Zoom returned an invalid timestamp")
   return new Date(text).toISOString()
 }
 const meeting = (value: unknown): RecordingMeeting => {
   const row = object(value)
   const id = typeof row.id === "number" && Number.isSafeInteger(row.id) ? String(row.id) : required(row.id)
   if (!Array.isArray(row.recording_files))
-    throw new ZoomError("invalid_response", "Zoom returned invalid recording files")
+    throw new CliError("invalid_response", "Zoom returned invalid recording files")
   const all = [
     ...row.recording_files,
     ...(Array.isArray(row.participant_audio_files) ? row.participant_audio_files : []),
@@ -51,7 +52,7 @@ const meeting = (value: unknown): RecordingMeeting => {
   const assets = all.map((value): RecordingAsset => {
     const asset = object(value)
     const id = string(asset.id)
-    if (id !== null && seen.has(id)) throw new ZoomError("invalid_response", "Zoom repeated a recording file id")
+    if (id !== null && seen.has(id)) throw new CliError("invalid_response", "Zoom repeated a recording file id")
     if (id !== null) seen.add(id)
     return {
       id,
@@ -81,12 +82,12 @@ export class ZoomRecordings {
   }
   catalog(account: string): RecordingCatalog {
     if (typeof account !== "string" || !account.trim())
-      throw new ZoomError("validation_error", "recording account is required")
+      throw new CliError("validation_error", "recording account is required")
     return {
       provider: "zoom",
       list: async (options): Promise<RecordingPage> => {
         if (options.account !== account)
-          throw new ZoomError("validation_error", "recording catalog account cannot be overridden")
+          throw new CliError("validation_error", "recording catalog account cannot be overridden")
         const page = await this.listPage(options)
         return {
           items: page.items.map(({ uuid, ...item }) => ({ ...item, externalId: uuid })),
@@ -105,17 +106,17 @@ export class ZoomRecordings {
         !Number.isFinite(instant) ||
         new Date(instant).toISOString().slice(0, 10) !== date
       )
-        throw new ZoomError("validation_error", "recording dates must be valid YYYY-MM-DD dates")
+        throw new CliError("validation_error", "recording dates must be valid YYYY-MM-DD dates")
       return instant
     })
     const difference = (dates[1] ?? 0) - (dates[0] ?? 0)
     if (difference < 0 || difference > 31 * 86400000)
-      throw new ZoomError("validation_error", "recording date range must be ordered and at most one month")
+      throw new CliError("validation_error", "recording date range must be ordered and at most one month")
     if (
       options.cursor !== undefined &&
       (typeof options.cursor !== "string" || !options.cursor.trim() || options.cursor.length > 4096)
     )
-      throw new ZoomError("validation_error", "invalid recording pagination cursor")
+      throw new CliError("validation_error", "invalid recording pagination cursor")
     const signal = operationSignal(options.signal)
     const query = new URLSearchParams({ from: options.from, to: options.to, page_size: "100" })
     if (options.cursor !== undefined) query.set("next_page_token", options.cursor)
@@ -125,7 +126,7 @@ export class ZoomRecordings {
       { signal },
     )
     if (!Array.isArray(body.meetings) || body.meetings.length > 1000)
-      throw new ZoomError("invalid_response", "Zoom returned an invalid recording list")
+      throw new CliError("invalid_response", "Zoom returned an invalid recording list")
     const items = body.meetings.map(meeting)
     if (
       body.next_page_token !== undefined &&
@@ -133,10 +134,10 @@ export class ZoomRecordings {
       body.next_page_token !== "" &&
       (typeof body.next_page_token !== "string" || !body.next_page_token.trim())
     )
-      throw new ZoomError("invalid_response", "Zoom returned an invalid recording pagination cursor")
+      throw new CliError("invalid_response", "Zoom returned an invalid recording pagination cursor")
     const nextCursor = string(body.next_page_token)
     if (nextCursor !== null && nextCursor.length > 4096)
-      throw new ZoomError("invalid_response", "Zoom returned an oversized pagination cursor")
+      throw new CliError("invalid_response", "Zoom returned an oversized pagination cursor")
     return { items, nextCursor }
   }
   async list(options: RecordingRange): Promise<RecordingMeeting[]> {
@@ -144,18 +145,18 @@ export class ZoomRecordings {
     const meetings = new Map<string, RecordingMeeting>()
     let cursor: string | undefined
     for (let pages = 0; ; pages++) {
-      if (pages >= 1000) throw new ZoomError("invalid_response", "recording catalog page limit exceeded")
+      if (pages >= 1000) throw new CliError("invalid_response", "recording catalog page limit exceeded")
       const page = await this.listPage({ ...options, ...(cursor === undefined ? {} : { cursor }) })
       for (const item of page.items) {
         const previous = meetings.get(item.uuid)
         if (previous && JSON.stringify(previous) !== JSON.stringify(item))
-          throw new ZoomError("invalid_response", "Zoom returned conflicting recording occurrences")
+          throw new CliError("invalid_response", "Zoom returned conflicting recording occurrences")
         if (!previous && meetings.size >= 10000)
-          throw new ZoomError("invalid_response", "recording catalog occurrence limit exceeded")
+          throw new CliError("invalid_response", "recording catalog occurrence limit exceeded")
         meetings.set(item.uuid, item)
       }
       if (page.nextCursor === null) return [...meetings.values()]
-      if (cursors.has(page.nextCursor)) throw new ZoomError("invalid_response", "Zoom repeated a pagination token")
+      if (cursors.has(page.nextCursor)) throw new CliError("invalid_response", "Zoom repeated a pagination token")
       cursors.add(page.nextCursor)
       cursor = page.nextCursor
     }
@@ -164,7 +165,7 @@ export class ZoomRecordings {
     id: string,
     signal?: AbortSignal,
   ): Promise<{ meeting: RecordingMeeting; urls: Map<string, string> }> {
-    if (!id.trim()) throw new ZoomError("validation_error", "recording meeting id is required")
+    if (!id.trim()) throw new CliError("validation_error", "recording meeting id is required")
     const body = await this.remote.request(
       `/meetings/${encodeUuid(id)}/recordings`,
       "cloud_recording:read:list_recording_files",

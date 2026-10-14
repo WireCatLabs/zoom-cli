@@ -2,14 +2,15 @@ import { createHash, randomUUID } from "node:crypto"
 import { constants } from "node:fs"
 import { type FileHandle, lstat, open, rename, unlink } from "node:fs/promises"
 import { join } from "node:path"
+import { CliError } from "@wirecat/cli-base"
+import { openOrdinaryFile, syncDirectory } from "@wirecat/cli-core/files"
 import type {
   RecordingAssetLocator,
   RecordingPartial,
   RecordingTransferStorage,
   RecordingTransferWriter,
 } from "@wirecat/cli-core/meetings"
-import { checkCancelled, ZoomError } from "./errors.js"
-import { openOrdinaryFile, syncDirectory } from "./ordinary-file.js"
+import { checkCancelled } from "./errors.js"
 
 const digest = (value: string) => createHash("sha256").update(value).digest("hex")
 const identity = (locator: RecordingAssetLocator) =>
@@ -56,7 +57,7 @@ export class RecordingPartialStore implements RecordingTransferStorage {
   }
   async load(locator: RecordingAssetLocator): Promise<RecordingPartial | null> {
     if (identity(locator) !== identity(this.locator))
-      throw new ZoomError("validation_error", "recording partial scope changed")
+      throw new CliError("validation_error", "recording partial scope changed")
     checkCancelled(this.signal)
     if (!this.persistent) return null
     let metadata: FileHandle
@@ -84,7 +85,7 @@ export class RecordingPartialStore implements RecordingTransferStorage {
       )
         throw new Error("metadata shape")
     } catch {
-      throw new ZoomError("validation_error", "recording partial metadata is invalid")
+      throw new CliError("validation_error", "recording partial metadata is invalid")
     } finally {
       await metadata.close()
     }
@@ -92,7 +93,7 @@ export class RecordingPartialStore implements RecordingTransferStorage {
     try {
       const actual = await fingerprint(file, this.signal, value.offset)
       if (actual.offset !== value.offset || actual.sha256 !== value.sha256)
-        throw new ZoomError("validation_error", "recording partial checksum does not match")
+        throw new CliError("validation_error", "recording partial checksum does not match")
       return value
     } finally {
       await file.close()
@@ -103,7 +104,7 @@ export class RecordingPartialStore implements RecordingTransferStorage {
     options: { resume?: RecordingPartial; validator: string | null; total: number | null },
   ): Promise<RecordingTransferWriter> {
     if (identity(locator) !== identity(this.locator))
-      throw new ZoomError("validation_error", "recording partial scope changed")
+      throw new CliError("validation_error", "recording partial scope changed")
     checkCancelled(this.signal)
     let file: FileHandle
     if (options.resume) {
@@ -119,7 +120,7 @@ export class RecordingPartialStore implements RecordingTransferStorage {
         const after = await lstat(this.path, { bigint: true })
         if (!b.isFile() || !after.isFile() || a.ino !== b.ino || a.dev !== b.dev || after.ino !== a.ino) {
           await file.close()
-          throw new ZoomError("validation_error", "recording partial changed while opening")
+          throw new CliError("validation_error", "recording partial changed while opening")
         }
       } finally {
         await witness.close()
@@ -143,7 +144,7 @@ export class RecordingPartialStore implements RecordingTransferStorage {
     try {
       prefix = await fingerprint(file, this.signal, options.resume?.offset)
       if (options.resume && (prefix.offset !== options.resume.offset || prefix.sha256 !== options.resume.sha256))
-        throw new ZoomError("validation_error", "recording partial changed before append")
+        throw new CliError("validation_error", "recording partial changed before append")
     } catch (error) {
       await file.close()
       throw error
@@ -171,7 +172,7 @@ export class RecordingPartialStore implements RecordingTransferStorage {
       }
       const content = JSON.stringify(value)
       if (Buffer.byteLength(content) > 16384)
-        throw new ZoomError("validation_error", "recording partial metadata exceeds its byte limit")
+        throw new CliError("validation_error", "recording partial metadata exceeds its byte limit")
       const temp = join(this.root, `.zoom-partial-${randomUUID()}.tmp`)
       const metadata = await open(temp, "wx", 0o600)
       try {
@@ -192,7 +193,7 @@ export class RecordingPartialStore implements RecordingTransferStorage {
         let offset = 0
         while (offset < bytes.length) {
           const written = (await file.write(bytes, offset, bytes.length - offset, size + offset)).bytesWritten
-          if (written === 0) throw new ZoomError("configuration_error", "recording partial write did not progress")
+          if (written === 0) throw new CliError("configuration_error", "recording partial write did not progress")
           offset += written
         }
         hash.update(bytes)

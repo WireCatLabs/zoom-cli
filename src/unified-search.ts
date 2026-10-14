@@ -1,5 +1,6 @@
+import { CliError } from "@wirecat/cli-base"
 import type { SearchAllIncludingMeetingsFound, SearchAllIncludingMeetingsRequest } from "@wirecat/cli-core/services"
-import { checkCancelled, ZoomError } from "./errors.js"
+import { checkCancelled } from "./errors.js"
 
 export type UnifiedSearchRequest = Pick<
   SearchAllIncludingMeetingsRequest,
@@ -27,7 +28,7 @@ export const validateUnifiedSearch = (input: UnifiedSearchRequest, meetingsOnly 
     (meetingsOnly && (only.length !== 1 || only[0] !== "meetings")) ||
     (input.exact !== undefined && typeof input.exact !== "boolean")
   )
-    throw new ZoomError(
+    throw new CliError(
       "validation_error",
       "expected nonempty search text, supported resources and bounds from 1 through 1000",
     )
@@ -50,7 +51,7 @@ export const validateUnifiedSearch = (input: UnifiedSearchRequest, meetingsOnly 
       !Number.isSafeInteger(cursor.hitOffset) ||
       cursor.hitOffset < 0
     )
-      throw new ZoomError(
+      throw new CliError(
         "validation_error",
         "meeting continuation requires a source-only cursor bound to its account and query",
       )

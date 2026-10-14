@@ -62,6 +62,9 @@ const setup = async () => {
     configPath: join(root, "missing-config.json"),
     recordings: {
       list: async () => [],
+      catalog: () => {
+        throw new Error("unexpected provider")
+      },
       show: async () => {
         throw new Error("unexpected provider")
       },

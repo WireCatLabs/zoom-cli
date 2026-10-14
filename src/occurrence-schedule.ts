@@ -1,8 +1,9 @@
+import { CliError } from "@wirecat/cli-base"
 import type { MeetingOccurrence, MeetingOccurrenceSchedule } from "@wirecat/cli-core/meetings"
-import { object, ZoomError } from "./errors.js"
+import { object } from "./errors.js"
 
 function invalid(field: string): never {
-  throw new ZoomError("invalid_response", `Zoom meeting ${field} is invalid`)
+  throw new CliError("invalid_response", `Zoom meeting ${field} is invalid`)
 }
 const instant = (value: unknown): number | null => {
   if (value === undefined || value === null) return null

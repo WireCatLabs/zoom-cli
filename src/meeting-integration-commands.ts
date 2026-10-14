@@ -1,8 +1,8 @@
+import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
 import { LOCAL_READ, LOCAL_WRITE } from "@wirecat/cli-core/cli"
 import { validateMeetingContextChange } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
-import { ZoomError } from "./errors.js"
 import { bytes } from "./execution.js"
 import {
   integrationReference,
@@ -20,7 +20,7 @@ export const addMeetingIntegrationCommands = (
   },
 ) => {
   const meetings = program.commands.find((command) => command.name() === "meetings")
-  if (!meetings) throw new ZoomError("configuration_error", "meeting command group is unavailable")
+  if (!meetings) throw new CliError("configuration_error", "meeting command group is unavailable")
   const label = (command: Command, example: string, mutates = false) =>
     annotate(command, {
       origin: "handwritten",
@@ -33,7 +33,7 @@ export const addMeetingIntegrationCommands = (
     const target = integrationReference(reference)
     const change = validateMeetingContextChange(input)
     if (change.action !== "event.link" && change.action !== "person.link")
-      throw new ZoomError("validation_error", "meeting linking supports only explicit event or person changes")
+      throw new CliError("validation_error", "meeting linking supports only explicit event or person changes")
     const result = await (await deps.integration()).change(target.reference, change, {
       apply: options.yes,
       dryRun: options.dryRun,

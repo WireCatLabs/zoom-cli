@@ -1,13 +1,13 @@
 import { createHash } from "node:crypto"
 import { join, resolve } from "node:path"
+import { CliError } from "@wirecat/cli-base"
 import {
-  type RecordingCatalog,
   type RecordingSyncCheckpointStore,
   RecordingSyncError,
   recordingWindows,
   syncRecordingArchive as syncArchive,
 } from "@wirecat/cli-core/meetings"
-import { checkCancelled, ZoomError } from "./errors.js"
+import { checkCancelled } from "./errors.js"
 import { validateDownloadOptions } from "./recording-archive.js"
 import { fileRecordingSyncCheckpointStore } from "./recording-sync-store.js"
 import type { ArchiveReport, DownloadOptions, RecordingMeeting, ZoomRecordings } from "./recordings.js"
@@ -31,7 +31,7 @@ export interface ArchiveSyncReceipt {
   checkpointRevision?: number | null
 }
 export async function* syncRecordingArchive(
-  recordings: Pick<ZoomRecordings, "list" | "download"> & Partial<Pick<ZoomRecordings, "catalog">>,
+  recordings: Pick<ZoomRecordings, "download" | "catalog">,
   input: ArchiveSyncOptions,
 ): AsyncGenerator<ArchiveSyncReceipt, void, void> {
   const options = { ...input }
@@ -41,24 +41,16 @@ export async function* syncRecordingArchive(
     const maxBytes = validateDownloadOptions(options)
     const resume = options.resume === true
     if (!resume && (options.checkpointPath !== undefined || options.checkpointStore !== undefined))
-      throw new ZoomError("validation_error", "archive checkpoints require resume mode")
+      throw new CliError("validation_error", "archive checkpoints require resume mode")
     if (
       options.checkpointPath !== undefined &&
       (typeof options.checkpointPath !== "string" || !options.checkpointPath.trim())
     )
-      throw new ZoomError("validation_error", "archive checkpoint path is required")
-    const account = options.account ?? "legacy-uncheckpointed"
+      throw new CliError("validation_error", "archive checkpoint path is required")
+    const account = options.account
     signal = operationSignal(options.signal)
     checkCancelled(signal)
-    const catalog: RecordingCatalog = recordings.catalog
-      ? recordings.catalog(account)
-      : {
-          provider: "zoom",
-          list: async (range) => ({
-            items: (await recordings.list(range)).map(({ uuid, ...item }) => ({ ...item, externalId: uuid })),
-            nextCursor: null,
-          }),
-        }
+    const catalog = recordings.catalog(account)
     const configKey = createHash("sha256")
       .update(JSON.stringify({ version: 1, destination: resolve(options.destination), maxBytes }))
       .digest("hex")
@@ -85,7 +77,8 @@ export async function* syncRecordingArchive(
           destination: options.destination,
           signal: activeSignal,
           ...(options.maxBytes === undefined ? {} : { maxBytes: options.maxBytes }),
-          ...(resume ? { resume: true, account } : {}),
+          resume,
+          account,
         })
         return { ...archive, externalId: uuid }
       },
@@ -100,10 +93,7 @@ export async function* syncRecordingArchive(
       }
     }
   } catch (error) {
-    if (error instanceof RecordingSyncError) {
-      if (error.code === "cancelled") checkCancelled(signal)
-      throw new ZoomError(error.code, error.message)
-    }
+    if (error instanceof RecordingSyncError && error.code === "cancelled") checkCancelled(signal)
     throw error
   }
 }

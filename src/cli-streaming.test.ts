@@ -3,15 +3,27 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { Writable } from "node:stream"
 import { CliError, memoryKeyring } from "@wirecat/cli-base"
+import type { RecordingCatalog } from "@wirecat/cli-core/meetings"
 import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { expect, it, vi } from "vitest"
 import { readReceipt } from "../scripts/testing/answers.js"
+import { fakeConnection } from "../scripts/testing/connection.js"
 import { setConfig } from "./config.js"
 import { writeExportFile } from "./output-file.js"
 import { type ProgramDeps, run } from "./program.js"
+import type { RecordingMeeting } from "./recordings.js"
 import { emitReceipt, writeStream } from "./streaming.js"
 import { TokenManager } from "./tokens.js"
 
+const catalogOf =
+  (meetings: RecordingMeeting[]) =>
+  (_account: string): RecordingCatalog => ({
+    provider: "zoom",
+    list: async () => ({
+      items: meetings.map(({ uuid, ...item }) => ({ ...item, externalId: uuid })),
+      nextCursor: null,
+    }),
+  })
 const setup = async () => {
   const folder = await mkdtemp(join(tmpdir(), "zm-test-streaming-"))
   const controller = new AbortController()
@@ -86,6 +98,7 @@ it("bounds each receipt and propagates stdout failure without enqueueing another
 it("streams bounded archive sync receipts with consumer backpressure", async () => {
   const { deps, output } = await setup()
   setConfig(deps.configPath, "zoom.clientId", "example")
+  setConfig(deps.configPath, "account.profile", "example-profile")
   let release: (() => void) | undefined
   let writing: (() => void) | undefined
   const queued = new Promise<void>((resolve) => {
@@ -93,7 +106,8 @@ it("streams bounded archive sync receipts with consumer backpressure", async () 
   })
   const downloaded: string[] = []
   deps.recordings = {
-    list: async () => [meeting, { ...meeting, uuid: "example-second" }],
+    list: async () => [],
+    catalog: catalogOf([meeting, { ...meeting, uuid: "example-second" }]),
     show: async () => meeting,
     download: async (uuid, options) => {
       expect(options?.maxBytes).toBe(1024)
@@ -122,6 +136,7 @@ it("streams bounded archive sync receipts with consumer backpressure", async () 
       "example",
       "--max-bytes",
       "1024",
+      "--no-resume",
       "--jsonl",
     ],
     deps,
@@ -137,8 +152,10 @@ it("streams bounded archive sync receipts with consumer backpressure", async () 
 it("keeps completed sync receipts when a later occurrence fails and rejects headless aggregate output", async () => {
   const { deps, output } = await setup()
   setConfig(deps.configPath, "zoom.clientId", "example")
+  setConfig(deps.configPath, "account.profile", "example-profile")
   deps.recordings = {
-    list: async () => [meeting, { ...meeting, uuid: "example-second" }],
+    list: async () => [],
+    catalog: catalogOf([meeting, { ...meeting, uuid: "example-second" }]),
     show: async () => meeting,
     download: async (uuid) => {
       if (uuid !== meeting.uuid) throw new CliError("network_error", "example failure")
@@ -156,6 +173,7 @@ it("keeps completed sync receipts when a later occurrence fails and rejects head
         "2026-10-10",
         "--destination",
         "example",
+        "--no-resume",
         "--jsonl",
       ],
       deps,
@@ -178,13 +196,13 @@ it("rescans watched folders with a fresh closed account connection before each r
   const order: string[] = []
   deps.connectStore = async () => {
     order.push("open")
-    return {
+    return fakeConnection({
       store,
       accountId: 1,
       close: async () => {
         order.push("close")
       },
-    }
+    })
   }
   let cycles = 0
   deps.readFiles = async () => {
@@ -210,17 +228,18 @@ it("closes failed watch connections and emits no successful receipt", async () =
   const { deps, folder, output } = await setup()
   setConfig(deps.configPath, "account.profile", "example-profile")
   const close = vi.fn(async () => {})
-  deps.connectStore = async () => ({ store: memoryMeetingStore(), accountId: 0, close })
+  deps.connectStore = async () => fakeConnection({ store: memoryMeetingStore(), accountId: 0, close })
   expect(await run(["watch", "files", folder, "--jsonl"], deps)).toBe(3)
   expect(close).toHaveBeenCalledOnce()
   expect(output).toEqual([])
-  deps.connectStore = async () => ({
-    store: memoryMeetingStore(),
-    accountId: 1,
-    close: async () => {
-      throw new Error("example close failure")
-    },
-  })
+  deps.connectStore = async () =>
+    fakeConnection({
+      store: memoryMeetingStore(),
+      accountId: 1,
+      close: async () => {
+        throw new Error("example close failure")
+      },
+    })
   deps.readFiles = async () => []
   expect(await run(["watch", "files", folder, "--jsonl"], deps)).toBe(3)
   expect(output).toEqual([])
@@ -242,7 +261,7 @@ it("validates watch profiles and classifies connection failures before reading f
   const close = vi.fn(async () => {
     throw new Error("example close failure")
   })
-  deps.connectStore = async () => ({ store: memoryMeetingStore(), accountId: 1, close })
+  deps.connectStore = async () => fakeConnection({ store: memoryMeetingStore(), accountId: 1, close })
   deps.readFiles = async () => {
     throw new CliError("validation_error", "example invalid folder")
   }
@@ -388,13 +407,15 @@ it("uses published summary/history/export commands and writes exact VTT without 
 it("flushes one completed receipt after late close cancellation through the real stream writer", async () => {
   const { deps, controller, folder, output } = await setup()
   setConfig(deps.configPath, "account.profile", "example-profile")
-  const open = vi.fn(async () => ({
-    store: memoryMeetingStore(),
-    accountId: 1,
-    close: async () => {
-      controller.abort(new CliError("cancelled", "example stopped after completion"))
-    },
-  }))
+  const open = vi.fn(async () =>
+    fakeConnection({
+      store: memoryMeetingStore(),
+      accountId: 1,
+      close: async () => {
+        controller.abort(new CliError("cancelled", "example stopped after completion"))
+      },
+    }),
+  )
   deps.connectStore = open
   deps.readFiles = async () => []
   const stream = new Writable({
@@ -413,13 +434,15 @@ it("flushes one completed receipt after late close cancellation through the real
 it("bounds late completed-receipt flushing when output remains blocked", async () => {
   const { deps, controller, folder } = await setup()
   setConfig(deps.configPath, "account.profile", "example-profile")
-  const open = vi.fn(async () => ({
-    store: memoryMeetingStore(),
-    accountId: 1,
-    close: async () => {
-      controller.abort(new CliError("cancelled", "example completed then stopped"))
-    },
-  }))
+  const open = vi.fn(async () =>
+    fakeConnection({
+      store: memoryMeetingStore(),
+      accountId: 1,
+      close: async () => {
+        controller.abort(new CliError("cancelled", "example completed then stopped"))
+      },
+    }),
+  )
   deps.connectStore = open
   deps.readFiles = async () => []
   let callback: (() => void) | undefined

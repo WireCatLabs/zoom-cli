@@ -1,4 +1,4 @@
-import { projectFields } from "@wirecat/cli-base"
+import { CliError, projectFields } from "@wirecat/cli-base"
 import {
   annotate,
   type CommandInfo,
@@ -12,7 +12,6 @@ import { formatSuggestions, suggest } from "@wirecat/cli-base/completion"
 import { LOCAL_READ, NO_EFFECTS } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { commandEffects } from "./command-effects.js"
-import { ZoomError } from "./errors.js"
 import { VERSION } from "./version.js"
 
 const CONTRACT = 3
@@ -107,7 +106,7 @@ export const annotateMeetingCommands = (program: Command): void => {
     }
     const path = item.path.join(" ")
     const effects = commandEffects(command) ?? metaOf(command).effects
-    if (!effects) throw new ZoomError("configuration_error", `command effects are missing: ${path}`)
+    if (!effects) throw new CliError("configuration_error", `command effects are missing: ${path}`)
     annotate(command, {
       origin: "handwritten",
       effects,
@@ -138,7 +137,7 @@ const scopeOf = (all: readonly CommandInfo[], path: readonly string[]) => {
   for (const word of path) {
     if (command?.options.length) inheritedOptions.push({ path: command.path, options: command.options })
     command = available.find((item) => item.name === word)
-    if (!command) throw new ZoomError("validation_error", "unknown command path; use zm commands --json")
+    if (!command) throw new CliError("validation_error", "unknown command path; use zm commands --json")
     available = command.commands
   }
   return { command: command as CommandInfo, inheritedOptions }

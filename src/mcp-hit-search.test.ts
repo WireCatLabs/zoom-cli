@@ -2,6 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js"
 import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { expect, it, vi } from "vitest"
+import { fakeConnection } from "../scripts/testing/connection.js"
 import { createMeetingMcpServer } from "./mcp-server.js"
 
 it("uses the shared bounded search tool, denies account overrides and closes its connection", async () => {
@@ -17,7 +18,9 @@ it("uses the shared bounded search tool, denies account overrides and closes its
     },
   }))
   const close = vi.fn(async () => {})
-  const connectStore = vi.fn(async () => ({ store: memoryMeetingStore(), accountId: 3, meetingSearch: search, close }))
+  const connectStore = vi.fn(async () =>
+    fakeConnection({ store: memoryMeetingStore(), accountId: 3, meetingSearch: search, close }),
+  )
   const server = createMeetingMcpServer({ connectStore })
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
   await server.connect(serverTransport)
@@ -64,25 +67,6 @@ it("uses the shared bounded search tool, denies account overrides and closes its
       await client.callTool({ name: "search_meetings", arguments: { query: "budget", by_meaning: true } }),
     ).toMatchObject({ isError: true })
     expect(connectStore).toHaveBeenCalledOnce()
-  } finally {
-    await client.close()
-    await server.close()
-  }
-})
-it("reports an unavailable search capability and still closes the connection", async () => {
-  const close = vi.fn(async () => {})
-  const server = createMeetingMcpServer({
-    connectStore: async () => ({ store: memoryMeetingStore(), accountId: 3, close }),
-  })
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
-  await server.connect(serverTransport)
-  const client = new Client({ name: "example-missing-search", version: "1" })
-  await client.connect(clientTransport)
-  try {
-    expect(await client.callTool({ name: "search_meetings", arguments: { query: "budget" } })).toMatchObject({
-      isError: true,
-    })
-    expect(close).toHaveBeenCalledOnce()
   } finally {
     await client.close()
     await server.close()
