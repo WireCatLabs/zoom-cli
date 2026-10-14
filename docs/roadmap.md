@@ -2,15 +2,17 @@
 
 See which meeting workflows you can use today and which need further development. The tool already
 retrieves available hosted data, imports transcripts, backs up recordings and searches cited passages.
-An agent can combine these sources with Memo's projects, notes and people now; the dedicated automatic
-workflows below are planned. Start with [search and evidence](search.md) for the available path.
+`meetings prepare` combines upcoming proof for one selected series with bounded stored context.
+An agent can combine these sources with Memo's projects, notes and people. Start with
+[meeting preparation](usage.md#prepare-for-an-upcoming-meeting) or [search and evidence](search.md).
 
 ## Planned work
 
 - Dedicated reviewed findings intake: an agent proposes cited facts, decisions and project tasks, with
   repeatable intake that avoids duplicate records.
-- A dedicated meeting preparation command: gather earlier occurrences, participant context and linked project
-  evidence into a brief that shows its sources and gaps.
+- Broader meeting preparation: discover candidate series, inspect participant history and project-wide
+  sources, then build a brief with explicit evidence and gaps. The current selected-series command
+  leaves those sources unqueried; it returns stored context without generating a summary.
 - Further shared native archive storage so another meeting provider can reuse partial downloads,
   checkpoints and publication recovery without duplicating Zoom's implementation.
 
