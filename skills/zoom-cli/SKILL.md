@@ -92,7 +92,7 @@ MCP `--meeting-context` option; it cannot select another account.
 
 Use `meetings evidence meeting:<account>/<meeting>[/<transcript>[/<cue-position>]]` for bounded
 stored evidence. Historical transcript references remain stable. Follow returned coverage and
-continuation fields; use `--after` for a cue reference or `--after-transcript-id` for revision scans,
+continuation fields; use `--cursor` for a cue reference or `--after-transcript-id` for revision scans,
 never both. Bound content with `--cues` and `--bytes`, and work with `--max-read-bytes` and
 `--max-transcript-pages`. Do not treat a bounded page as complete history.
 

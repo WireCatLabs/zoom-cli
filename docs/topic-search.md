@@ -54,7 +54,7 @@ can prevent delivery.
 ## Searching
 
 The command builds missing stored vectors first, then embeds the query and ranks the scanned
-candidates for the selected account and model. Continue with `--cursor <nextCursor>`; each page
+candidates for the selected account and model. Continue with `--cursor <next_cursor>`; each page
 ranks its own candidates, rather than extending one global ranking. The report states scan coverage;
 index completeness and archive completeness remain unknown. `--max-rows` and `--max-text-bytes`
 bound transcript reads for generation and search. With MCP's server-configured `by_meaning` option,

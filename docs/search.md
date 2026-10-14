@@ -95,7 +95,7 @@ retaining skips, coverage and cursors.
 Meeting references have the form `meeting:<account>/<meeting>[/<transcript>[/<cue-position>]]`.
 They are restricted to the selected local account. Transcript references retain historical revision
 identity. Evidence bounds both returned content and database reads; resume with its returned cue
-reference using `--after`, or its revision cursor using `--after-transcript-id`. These continuation
+reference using `--cursor`, or its revision cursor using `--after-transcript-id`. These continuation
 options are mutually exclusive. `--max-read-bytes` defaults to 4 MiB per page and
 `--max-transcript-pages` bounds revision scanning, including empty revisions. Follow the returned
 continuation and completeness fields rather than assuming a bounded response is exhaustive.
