@@ -10,7 +10,7 @@ Set a value with `zm config set <key> <value>` and see them all with `zm config 
 
 | Key | Meaning |
 |---|---|
-| `zoom.clientId` | Public Client ID of the [existing or new app](zoom-app.md); unset by default, required for API login |
+| `zoom.client_id` | Public Client ID of the [existing or new app](zoom-app.md); unset by default, required for API login |
 | `account.profile` | [Local label](sessions.md#select-a-local-profile) for stored meetings; unset by default, required for store operations |
 | `source` | Where `meetings sync` and `watch` read from: `api` (default) or `files` |
 | `files.folder` | Transcript folder for file-source pull/watch; unset by default |
@@ -19,7 +19,10 @@ Set a value with `zm config set <key> <value>` and see them all with `zm config 
 Check `zm config show` after editing. Switching `account.profile` does not switch the authenticated
 Zoom user. Changing the client ID selects a different keyring entry, so authorize that app before
 using its API. `ZOOM_CLIENT_ID` is not a runtime setting for the installed `zm` command; use
-`zm config set zoom.clientId` rather than an environment variable copied from a development probe.
+`zm config set zoom.client_id` rather than an environment variable copied from a development probe.
+
+The file stores these settings as `client_id`, `files_folder`, `files_timezone`, `account_profile` and `source`.
+The camelCase names `zoom.clientId`, `clientId`, `filesFolder`, `filesTimezone` and `accountProfile` are still read.
 
 A malformed config still allows `--help` and `--version`; config commands report the error.
 

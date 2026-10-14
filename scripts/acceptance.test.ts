@@ -182,7 +182,13 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
     expect(readAnswer(read.stdout)).toEqual(readAnswer(saved.stdout))
     expect(read.stderr).toBe("")
     const disk = JSON.parse(readFileSync(join(config, "config.json"), "utf8"))
-    expect(Object.keys(disk).sort()).toEqual(["accountProfile", "clientId", "filesFolder", "filesTimezone", "source"])
+    expect(Object.keys(disk).sort()).toEqual([
+      "account_profile",
+      "client_id",
+      "files_folder",
+      "files_timezone",
+      "source",
+    ])
   })
 
   it("discovers the installed MCP tools without a profile or database and exits on EOF", async () => {

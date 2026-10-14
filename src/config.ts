@@ -1,6 +1,8 @@
-import { readFileSync } from "node:fs"
+import { existsSync } from "node:fs"
 import { saveConfigFile } from "@wirecat/cli-base"
-import { object, ZoomError } from "./errors.js"
+import { loadSnakeCaseConfig } from "@wirecat/cli-core/cli"
+import * as v from "valibot"
+import { ZoomError } from "./errors.js"
 
 export interface ZoomConfig {
   clientId: string | null
@@ -12,43 +14,68 @@ export interface ZoomConfig {
 const profilePattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/
 export const profileAccountKey = (profile: string): string => `zm-profile:${profile}`
 
+const ConfigFile = v.object({
+  client_id: v.nullable(
+    v.pipe(
+      v.string(),
+      v.check((id) => id.trim() !== "" && !/\s/.test(id)),
+    ),
+  ),
+  source: v.picklist(["api", "files"]),
+  files_folder: v.nullable(v.string()),
+  files_timezone: v.pipe(
+    v.string(),
+    v.check((zone) => {
+      try {
+        new Intl.DateTimeFormat("en", { timeZone: zone })
+        return true
+      } catch {
+        return false
+      }
+    }),
+  ),
+  account_profile: v.optional(v.nullable(v.pipe(v.string(), v.regex(profilePattern)))),
+})
+
 export const readConfig = (path: string): ZoomConfig => {
-  let text: string
   try {
-    text = readFileSync(path, "utf8")
-  } catch (error) {
-    if (typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT")
-      return { clientId: null, source: "api", filesFolder: null, filesTimezone: "UTC", accountProfile: null }
-    throw new ZoomError("configuration_error", "could not read zm config")
-  }
-  try {
-    const value = object(JSON.parse(text))
-    if (
-      (value.clientId !== null &&
-        (typeof value.clientId !== "string" || !value.clientId.trim() || /\s/.test(value.clientId))) ||
-      (value.source !== "api" && value.source !== "files") ||
-      (value.filesFolder !== null && typeof value.filesFolder !== "string") ||
-      typeof value.filesTimezone !== "string" ||
-      (value.accountProfile !== undefined &&
-        value.accountProfile !== null &&
-        (typeof value.accountProfile !== "string" || !profilePattern.test(value.accountProfile)))
-    )
-      throw new Error("invalid config")
-    new Intl.DateTimeFormat("en", { timeZone: value.filesTimezone })
+    const file = loadSnakeCaseConfig(path, ConfigFile, () => {
+      if (existsSync(path)) throw new Error("unreadable")
+      return {
+        client_id: null,
+        source: "api" as const,
+        files_folder: null,
+        files_timezone: "UTC",
+        account_profile: null,
+      }
+    })
     return {
-      clientId: value.clientId,
-      source: value.source,
-      filesFolder: value.filesFolder,
-      filesTimezone: value.filesTimezone,
-      accountProfile: typeof value.accountProfile === "string" ? value.accountProfile : null,
+      clientId: file.client_id,
+      source: file.source,
+      filesFolder: file.files_folder,
+      filesTimezone: file.files_timezone,
+      accountProfile: file.account_profile ?? null,
     }
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("are the same setting"))
+      throw new ZoomError("configuration_error", error.message)
     throw new ZoomError("configuration_error", "zm config is invalid")
   }
 }
+
+const saveConfig = (path: string, config: ZoomConfig): void =>
+  saveConfigFile(path, {
+    client_id: config.clientId,
+    source: config.source,
+    files_folder: config.filesFolder,
+    files_timezone: config.filesTimezone,
+    account_profile: config.accountProfile,
+  })
+
 export const setConfig = (path: string, key: string, value: string): ZoomConfig => {
   const config = readConfig(path)
   switch (key) {
+    case "zoom.client_id":
     case "zoom.clientId":
       if (!value.trim() || /\s/.test(value))
         throw new ZoomError("validation_error", "client id must not contain whitespace")
@@ -81,6 +108,6 @@ export const setConfig = (path: string, key: string, value: string): ZoomConfig 
     default:
       throw new ZoomError("validation_error", "unknown config key")
   }
-  saveConfigFile(path, config)
+  saveConfig(path, config)
   return config
 }
