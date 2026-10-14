@@ -45,23 +45,24 @@ it("validates watch options and offline policy before any account, keyring or ne
   deps.connectStore = connect
   const load = vi.spyOn(deps.tokens, "load")
   for (const args of [
-    ["--source", "invalid"],
+    ["invalid"],
+    ["./downloads"],
     ["--interval", "500ms"],
     ["--interval", "25h"],
     ["--lookback-days", "32"],
     ["--lookback-days", "1.5"],
     ["--since-time", "2026-02-30T10:00:00Z"],
     ["--since-time", "2026-10-10"],
-    ["--source", "files", "--lookback-days", "0"],
-    ["example", "--since-time", "2026-10-10T10:00:00Z"],
-    ["example", "--source", "api"],
+    ["files", "--lookback-days", "0"],
+    ["files", "example", "--since-time", "2026-10-10T10:00:00Z"],
+    ["api", "example"],
   ])
     expect(await run(["watch", ...args, "--jsonl"], deps)).toBe(2)
   setConfig(deps.configPath, "zoom.clientId", "example-client")
   setConfig(deps.configPath, "account.profile", "example-profile")
-  expect(await run(["watch", "--source", "api", "--offline", "--jsonl"], deps)).toBe(3)
-  expect(await run(["watch", "--source", "files", "--jsonl"], deps)).toBe(3)
-  expect(await run(["watch", "--source", "api"], deps)).toBe(2)
+  expect(await run(["watch", "api", "--offline", "--jsonl"], deps)).toBe(3)
+  expect(await run(["watch", "files", "--jsonl"], deps)).toBe(3)
+  expect(await run(["watch", "api"], deps)).toBe(2)
   expect(connect).not.toHaveBeenCalled()
   expect(load).not.toHaveBeenCalled()
 })
@@ -182,7 +183,7 @@ it("uses shared cursor lookback to discover a late API transcript with fresh sou
       setConfig(deps.configPath, "source", "files")
     }
   }
-  expect(await run(["watch", "--source", "api", "--lookback-days", "2", "--jsonl"], deps)).toBe(130)
+  expect(await run(["watch", "api", "--lookback-days", "2", "--jsonl"], deps)).toBe(130)
   expect(listed).toBe(2)
   expect(profiles).toEqual(["example-first", "example-first"])
   expect(order).toEqual(["open", "close", "receipt", "open", "close", "receipt"])
@@ -216,7 +217,7 @@ it("delegates an injected source without requiring a real client and never overl
     controller.abort(new CliError("cancelled", "example done"))
   }
   const running = run(
-    ["watch", "--source", "api", "--since-time", "2026-10-01T00:00:00.123456+02:00", "--lookback-days", "1", "--jsonl"],
+    ["watch", "api", "--since-time", "2026-10-01T00:00:00.123456+02:00", "--lookback-days", "1", "--jsonl"],
     deps,
   )
   await started
@@ -239,7 +240,7 @@ it("closes an interrupted API cycle without advancing its cursor or issuing late
   })
   const chat = vi.fn(async () => null)
   deps.source = fakeMeetingSource({ transcript, chat })
-  expect(await run(["watch", "--source", "api", "--jsonl"], deps)).toBe(130)
+  expect(await run(["watch", "api", "--jsonl"], deps)).toBe(130)
   expect(close).toHaveBeenCalledOnce()
   expect(chat).not.toHaveBeenCalled()
   expect(await store.cursor(1)).toBe("2026-10-10T00:00:00Z")
@@ -252,7 +253,7 @@ it("rejects mismatched OAuth configuration before opening a store and preserves 
   setConfig(deps.configPath, "account.profile", "example-profile")
   const connect = vi.fn(async () => ({ store: memoryMeetingStore(), accountId: 1, close: async () => {} }))
   deps.connectStore = connect
-  expect(await run(["watch", "--source", "api", "--jsonl"], deps)).toBe(3)
+  expect(await run(["watch", "api", "--jsonl"], deps)).toBe(3)
   expect(connect).not.toHaveBeenCalled()
   deps.source = fakeMeetingSource({
     transcript: async () => {
@@ -260,7 +261,7 @@ it("rejects mismatched OAuth configuration before opening a store and preserves 
       throw new CliError("outcome_unknown", "example uncertain grant")
     },
   })
-  expect(await run(["watch", "--source", "api", "--jsonl"], deps)).toBe(14)
+  expect(await run(["watch", "api", "--jsonl"], deps)).toBe(14)
 })
 
 it("uses an explicit initial bound until an acknowledged cursor advance, then applies cursor lookback", async () => {
@@ -293,10 +294,7 @@ it("uses an explicit initial bound until an acknowledged cursor advance, then ap
     }
   }
   expect(
-    await run(
-      ["watch", "--source", "api", "--since-time", "2026-01-01T00:00:00Z", "--lookback-days", "2", "--jsonl"],
-      deps,
-    ),
+    await run(["watch", "api", "--since-time", "2026-01-01T00:00:00Z", "--lookback-days", "2", "--jsonl"], deps),
   ).toBe(130)
   expect(since).toEqual(["2025-12-30T00:00:00.000Z", "2025-12-30T00:00:00.000Z", "2026-10-09T12:00:00.000Z"])
   expect(await store.cursor(1)).toBe("2026-10-12T12:00:00.000Z")
@@ -313,7 +311,7 @@ it("does not acknowledge an uncertain or cancelled cursor write and always close
     controller.abort(new CliError("cancelled", "example cursor cancelled"))
     throw new CliError("outcome_unknown", "example uncertain cursor")
   })
-  expect(await run(["watch", "--source", "api", "--since-time", "2026-01-01T00:00:00Z", "--jsonl"], deps)).toBe(14)
+  expect(await run(["watch", "api", "--since-time", "2026-01-01T00:00:00Z", "--jsonl"], deps)).toBe(14)
   expect(setter).toHaveBeenCalledOnce()
   expect(close).toHaveBeenCalledOnce()
   expect(output).toEqual([])

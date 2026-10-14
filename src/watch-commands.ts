@@ -1,11 +1,11 @@
 import { annotate } from "@wirecat/cli-base/commands"
 import { type RunReport, type WatchSleep, watchMeetingIngestion } from "@wirecat/cli-core/meetings"
-import { type Command, Option } from "commander"
+import { Argument, type Command } from "commander"
 import { ZoomError } from "./errors.js"
 import { duration } from "./execution.js"
 
+export type WatchTarget = "api" | "files"
 export interface WatchFlags {
-  source?: "api" | "files"
   sinceTime?: string
   lookbackDays?: number
   interval: number
@@ -19,7 +19,7 @@ export interface WatchPlan {
 }
 export interface WatchCommandDeps {
   signal: () => AbortSignal
-  prepare: (folder: string | undefined, flags: WatchFlags) => WatchPlan
+  prepare: (target: WatchTarget | undefined, folder: string | undefined, flags: WatchFlags) => WatchPlan
   ingest: (plan: WatchPlan, signal: AbortSignal) => Promise<RunReport>
   receipt: (report: RunReport) => Promise<void>
   sleep?: WatchSleep
@@ -46,20 +46,18 @@ export const addWatchCommand = (program: Command, deps: WatchCommandDeps): void 
   const command = program
     .command("watch")
     .description("keep fetching new meetings from Zoom, or rescanning a folder, until stopped")
-    .argument("[folder]", "folder of downloaded transcripts; implies --source files")
-    .addOption(
-      new Option("--source <source>", "api or files; otherwise uses configured source").choices(["api", "files"]),
-    )
+    .addArgument(new Argument("[target]", "api or files; otherwise the configured source").choices(["api", "files"]))
+    .argument("[folder]", "with files: folder of downloaded transcripts; otherwise files.folder")
     .option("--since-time <time>", "on the first run, fetch meetings from this ISO 8601 time", since)
     .option("--lookback-days <days>", "API cursor overlap for late transcripts (0 through 31)", days)
     .option("--interval <duration>", "delay after each completed receipt (1s through 24h)", duration, 10000)
-    .action(async (folder: string | undefined, options: WatchFlags) => {
+    .action(async (target: WatchTarget | undefined, folder: string | undefined, options: WatchFlags) => {
       if (!program.opts().jsonl && !deps.outputIsTTY)
         throw new ZoomError("validation_error", "headless watch requires --jsonl")
       if (program.opts().json) throw new ZoomError("validation_error", "watch streams receipts; use --jsonl")
       if (options.interval < 1000 || options.interval > 86400000)
         throw new ZoomError("validation_error", "watch interval must be from 1s through 24h")
-      const plan = deps.prepare(folder, options)
+      const plan = deps.prepare(target, folder, options)
       for await (const report of watchMeetingIngestion((signal) => deps.ingest(plan, signal), {
         signal: deps.signal(),
         intervalMs: plan.intervalMs,
@@ -71,6 +69,6 @@ export const addWatchCommand = (program: Command, deps: WatchCommandDeps): void 
     origin: "handwritten",
     mutates: true,
     local: true,
-    examples: ["zm watch ./downloads --interval 10s --jsonl", "zm watch --source api --lookback-days 2 --jsonl"],
+    examples: ["zm watch files ./downloads --interval 10s --jsonl", "zm watch api --lookback-days 2 --jsonl"],
   })
 }

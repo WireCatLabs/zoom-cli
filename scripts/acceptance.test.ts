@@ -349,7 +349,7 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
       join(folder, "2026-10-11_1530_watch-example.vtt"),
       "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nAlice Example: Watched example\n",
     )
-    const child = spawn(executable, ["watch", folder, "--interval", "10s", "--jsonl"], {
+    const child = spawn(executable, ["watch", "files", folder, "--interval", "10s", "--jsonl"], {
       cwd: install,
       env: environment(),
       stdio: ["pipe", "pipe", "pipe"],

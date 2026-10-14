@@ -59,14 +59,14 @@ local profile before import or pull. Reads require existing profile data; they d
 transcripts. File imports preserve the API pull cursor. Serialize ingestion for the same account.
 Local profile labels group stored data and do not select a different OAuth account.
 
-`zm watch <folder> --jsonl` rescans legacy transcript files in the foreground; each cycle closes its
+`zm watch files <folder> --jsonl` rescans legacy transcript files in the foreground; each cycle closes its
 connection before emitting a receipt. Stop with Ctrl-C. Fully completed late receipts have at most
 one second to flush; cancellation never starts another cycle. Hashed cloud archive VTT assets use
 `recordings archive import`, separately from legacy folder import.
 
-Use `zm watch --source api --lookback-days 7 --jsonl` for repeated online pulls that revisit late
-transcripts. Without a folder or explicit source, watch uses the configured source; files can use
-the configured folder. `--since-time` and `--lookback-days` apply only to API watching. Configuration is
+Use `zm watch api --lookback-days 7 --jsonl` for repeated online pulls that revisit late
+transcripts. Without `api` or `files`, watch uses the configured source; `files` without a folder
+uses the configured folder. `--since-time` and `--lookback-days` apply only to API watching. Configuration is
 captured before the first cycle, so restart to change profiles or source settings.
 `--since-time` is the initial bound until a cursor write succeeds; later cycles use cursor plus overlap.
 The selected overlap also subtracts from the initial bound.

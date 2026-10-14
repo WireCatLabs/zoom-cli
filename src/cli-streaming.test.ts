@@ -199,10 +199,10 @@ it("rescans watched folders with a fresh closed account connection before each r
     if (cycles === 2) controller.abort(new CliError("cancelled", "example watch stopped"))
     expect(signal).toBeInstanceOf(AbortSignal)
   }
-  expect(await run(["watch", folder, "--interval", "1s", "--jsonl"], deps)).toBe(130)
+  expect(await run(["watch", "files", folder, "--interval", "1s", "--jsonl"], deps)).toBe(130)
   expect(order).toEqual(["open", "read", "close", "receipt", "open", "read", "close", "receipt"])
   expect(output).toHaveLength(2)
-  expect(await run(["watch", folder], { ...deps, signal: undefined })).toBe(2)
+  expect(await run(["watch", "files", folder], { ...deps, signal: undefined })).toBe(2)
 })
 
 it("closes failed watch connections and emits no successful receipt", async () => {
@@ -210,7 +210,7 @@ it("closes failed watch connections and emits no successful receipt", async () =
   setConfig(deps.configPath, "account.profile", "example-profile")
   const close = vi.fn(async () => {})
   deps.connectStore = async () => ({ store: memoryMeetingStore(), accountId: 0, close })
-  expect(await run(["watch", folder, "--jsonl"], deps)).toBe(3)
+  expect(await run(["watch", "files", folder, "--jsonl"], deps)).toBe(3)
   expect(close).toHaveBeenCalledOnce()
   expect(output).toEqual([])
   deps.connectStore = async () => ({
@@ -221,23 +221,23 @@ it("closes failed watch connections and emits no successful receipt", async () =
     },
   })
   deps.readFiles = async () => []
-  expect(await run(["watch", folder, "--jsonl"], deps)).toBe(3)
+  expect(await run(["watch", "files", folder, "--jsonl"], deps)).toBe(3)
   expect(output).toEqual([])
 })
 
 it("validates watch profiles and classifies connection failures before reading files", async () => {
   const { deps, folder, output } = await setup()
-  expect(await run(["watch", folder, "--jsonl"], deps)).toBe(3)
+  expect(await run(["watch", "files", folder, "--jsonl"], deps)).toBe(3)
   deps.connectStore = async () => {
     throw new Error("example private database cause")
   }
-  expect(await run(["watch", folder, "--jsonl"], deps)).toBe(3)
+  expect(await run(["watch", "files", folder, "--jsonl"], deps)).toBe(3)
   setConfig(deps.configPath, "account.profile", "example-profile")
-  expect(await run(["watch", folder, "--jsonl"], deps)).toBe(3)
+  expect(await run(["watch", "files", folder, "--jsonl"], deps)).toBe(3)
   deps.connectStore = async () => {
     throw new CliError("permission_error", "example permission")
   }
-  expect(await run(["watch", folder, "--jsonl"], deps)).toBe(5)
+  expect(await run(["watch", "files", folder, "--jsonl"], deps)).toBe(5)
   const close = vi.fn(async () => {
     throw new Error("example close failure")
   })
@@ -245,14 +245,14 @@ it("validates watch profiles and classifies connection failures before reading f
   deps.readFiles = async () => {
     throw new CliError("validation_error", "example invalid folder")
   }
-  expect(await run(["watch", folder, "--jsonl"], deps)).toBe(2)
+  expect(await run(["watch", "files", folder, "--jsonl"], deps)).toBe(2)
   expect(close).toHaveBeenCalledOnce()
   expect(output).toEqual([])
 })
 
 it("rejects aggregate JSON for continuous streams and sanitizes a synchronous writable failure", async () => {
   const { deps, folder } = await setup()
-  expect(await run(["watch", folder, "--json"], { ...deps, outputIsTTY: true })).toBe(2)
+  expect(await run(["watch", "files", folder, "--json"], { ...deps, outputIsTTY: true })).toBe(2)
   expect(
     await run(
       [
@@ -334,7 +334,7 @@ it("rescans real downloaded files so corrections replace current search while pr
     if (receipts === 1) await writeFile(path, content("Corrected example"))
     else controller.abort(new CliError("cancelled", "example watch complete"))
   }
-  expect(await run(["watch", folder, "--jsonl"], deps)).toBe(130)
+  expect(await run(["watch", "files", folder, "--jsonl"], deps)).toBe(130)
   expect(receipts).toBe(2)
   expect(await store.search("Original", { accountId: 1 })).toEqual([])
   expect(await store.search("Corrected", { accountId: 1 })).toHaveLength(1)
@@ -403,7 +403,7 @@ it("flushes one completed receipt after late close cancellation through the real
     },
   })
   deps.streamData = (text, signal) => writeStream(stream, text, signal)
-  expect(await run(["watch", folder, "--jsonl"], deps)).toBe(130)
+  expect(await run(["watch", "files", folder, "--jsonl"], deps)).toBe(130)
   expect(output).toHaveLength(1)
   expect(JSON.parse(output[0] ?? "{}").meetings).toBe(0)
   expect(open).toHaveBeenCalledOnce()
@@ -429,7 +429,7 @@ it("bounds late completed-receipt flushing when output remains blocked", async (
     },
   })
   deps.streamData = (text, signal) => writeStream(stream, text, signal)
-  expect(await run(["watch", folder, "--jsonl"], deps)).toBe(130)
+  expect(await run(["watch", "files", folder, "--jsonl"], deps)).toBe(130)
   expect(open).toHaveBeenCalledOnce()
   expect(stream.listenerCount("drain")).toBe(0)
   callback?.()
