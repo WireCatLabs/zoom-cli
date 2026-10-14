@@ -203,6 +203,29 @@ zm meetings import <folder> [options]
 | `--json` | one JSON value. |
 | `--jsonl` | one JSON object per item. |
 
+### `zm meetings projects`
+
+project-name evidence in stored meetings
+
+#### `zm meetings projects evidence`
+
+find cited project-name and alias evidence in the local meeting index; does not refresh it or confirm membership
+
+```sh
+zm meetings projects evidence <project> [query] [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `project` | required | existing project name, key or explicit alias. |
+| `query` | optional | exact ID fields and a UTC started_at range, joined by AND. |
+
+| Option | What it does |
+|---|---|
+| `--limit <n>` | hits in one name page, 1 through 1000 (default 100). |
+| `--cursor <cursor>` | continue with the same project and frozen selection from next. |
+| `--max-read-bytes <bytes>` | word-read byte budget, at most 67108864 (default 4194304). |
+
 ### `zm meetings update`
 
 preview linking a stored meeting to an event; --yes applies it
@@ -919,7 +942,7 @@ zm search meetings <query> [options]
 | `--since-time <time>` | meetings starting at or after this ISO 8601 date or time. |
 | `--until-time <time>` | meetings starting at or before this ISO 8601 date or time. |
 | `--limit <n>` | how many hits, 1 through 1000 (default 100). |
-| `--cursor <cursor>` | continue from the previous page's nextCursor, with the same query and filters. |
+| `--cursor <cursor>` | continue from the previous page's page.cursor, with the same query and filters. |
 | `--max-read-bytes <bytes>` | most stored bytes to read, 1 through 67108864 (default 4194304). |
 | `--model <model>` | search by meaning with this embedding model, building missing vectors first. |
 | `--base-url <url>` | remote embedding service for --model; OpenAI reads OPENAI_API_KEY. |

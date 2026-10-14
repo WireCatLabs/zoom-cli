@@ -1,5 +1,7 @@
 # Cleanup awaiting owner confirmation
 
+- 2026-10-14: `.worktrees/bounded-participants`, branch `feat/project-evidence`, and its retained `project-evidence preview dependencies` stash — synthetic SDK consumer work; replace file dependencies with registry pins before publication, retain artifacts until approved cleanup.
+
 - 2026-10-14: `.worktrees/meeting-evidence-contract-fix`, branch `docs/zoom-start-here` — isolated published-command-compatible onboarding rewrite; retain until owner-approved cleanup.
 
 - `/tmp/zm-test-*` — invented test config and transcript folders retained by the test suite; 2026-10-10.

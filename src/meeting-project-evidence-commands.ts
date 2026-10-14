@@ -25,4 +25,4 @@ export const addProjectEvidenceCommand = (
       if (!read) throw new ZoomError("configuration_error", "project evidence is unavailable in this store connector")
       return read(project, request)
     },
-  })
+  }).summary("find project-name and alias evidence in the existing local meeting index")

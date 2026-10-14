@@ -411,7 +411,10 @@ try {
   const secondResult = await client.callTool({ name: "meetings_list", arguments: {} })
   assert.notEqual(secondResult.isError, true)
   const secondScope = secondResult.structuredContent ?? JSON.parse(secondResult.content[0].text)
-  assert.deepEqual(secondScope, firstScope, "an initialized MCP account cannot change through config edits")
+  assert.deepEqual(secondScope.items, firstScope.items, "an initialized MCP account cannot change through config edits")
+  assert.deepEqual(secondScope.page, firstScope.page)
+  assert.equal(typeof firstScope.meta.run_id, "string")
+  assert.notEqual(secondScope.meta.run_id, firstScope.meta.run_id)
   const frozenProject = await client.callTool({
     name: "meeting_project_evidence",
     arguments: { project: "RES", limit: 2 },

@@ -72,7 +72,7 @@ captured before the first cycle, so restart to change profiles or source setting
 `--since-time` is the initial bound until a cursor write succeeds; later cycles use cursor plus overlap.
 The selected overlap also subtracts from the initial bound.
 
-`zm serve --mcp` provides seven read-only stored meeting tools. Discovery opens no database; reads
+`zm serve --mcp` provides eight read-only stored meeting tools. Discovery opens no database; reads
 use the selected account. MCP uses its own framing, so omit JSON/JSONL/field-selection flags. `--meeting-context` adds four
 read-only context tools; `--unified-search` adds one meetings-only shared search tool;
 `--semantic --model <model>` lets `search_meetings` rank existing vectors with `by_meaning`. Remote model selection also requires
@@ -158,4 +158,20 @@ List-only `--since-time` and `--until-time` have become query fields; transcript
 
 ## Bounded context-filtered search
 
-Use `search meetings <query>` with `--since-time`/`--until-time` and optionally `--identity-id`, `--person-id`, `--event-id`, `--series-id`, `--project`, `--tag` or `--topic`. It indexes newly stored meetings before reading; there is no separate index step. Identity IDs come from observed participant results; person IDs follow explicit identity links. Filters select meetings, never attribute cue speech. Project names, keys and aliases resolve existing vocabulary and require confirmed membership; labels require explicit meeting taggings. Do not silently infer membership from matching words or merge similar participant names. Missing or ambiguous names fail. Inspect pending indexing and unknown archive coverage even for empty pages. `search_meetings` exposes the same selected-account MCP read.
+Use `search meetings <query>` with `--since-time`/`--until-time` and optionally `--identity-id`, `--person-id`, `--event-id`, `--series-id`, `--project`, `--tag` or `--topic`. It indexes newly stored meetings before reading; there is no separate index step. Identity IDs come from observed participant results; person IDs follow explicit identity links. Filters select meetings, never attribute cue speech. Project names, keys and aliases resolve existing vocabulary and require confirmed membership; labels require explicit meeting taggings. Do not silently infer membership from matching words or merge similar participant names. Missing or ambiguous names fail. Word hits use the standard cited entity and page.cursor; next/retry retains query, selectors and read budgets. Inspect missing index work and do not infer complete archive coverage from an empty page. `search_meetings` exposes the same selected-account MCP read.
+
+
+## Project word evidence before membership
+
+Use `meetings projects evidence <project> [query...]` for an existing canonical name, key or explicit
+alias from the shared vocabulary. Query fields are `meeting_id`, `identity_id`, `person_id`,
+`tag_id`, `event_id`, `series_id` and UTC `started_at`, joined by AND. No project-membership
+filter applies. One call reads one name page from the existing word index; it does not index.
+
+The item retains canonical project, matched term, cited hits, selection, budgets, page and unknown
+coverage. Follow the complete next arguments through empty pages. Relative dates become absolute
+in the next query; repeat that query with the cursor. Vocabulary or selection changes require a
+restart. Refs may repeat between names. Treat unconfirmed-word-evidence as candidate evidence,
+open its passage and propose associations only after reviewing it. Never create aliases, tags,
+people or membership from a word match. MCP `meeting_project_evidence` has equivalent arguments
+and fixes the account in the server; its strict schema includes host run metadata and errors.

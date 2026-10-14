@@ -25,8 +25,8 @@ the default is both. Installation is explicit and does not run when a command st
 
 ## The MCP server
 
-`zm serve --mcp` uses MCP's stdio protocol and serves seven read-only tools: meeting list/show,
-transcripts, summaries, exports, filtered text search and participant search. Tool discovery does not open a
+`zm serve --mcp` uses MCP's stdio protocol and serves eight read-only tools: meeting list/show,
+transcripts, summaries, exports, filtered text search, participant search and project-name evidence. Tool discovery does not open a
 database. Each read uses the selected local account and closes its connection before the response;
 a caller cannot override the account. File exports and remote mutations are not exposed as tools.
 
@@ -56,6 +56,20 @@ and `page.next` step preserve continuation even when no observation matches the 
 `identity_id` identifies an observed identity; repeated names never establish person links.
 `meetings_list` takes a metadata `query` (for example `started_at:[2026-09-12 TO 2026-10-12]`)
 instead of its former `since` and `until` arguments, and returns the shared meeting entity/list envelope.
+
+`meeting_show` returns one `item`; transcript and summary reads return `items` and `page`.
+Word search returns cited `meeting_hit` items with `excerpt`, `offset_ms`, `page.cursor` and
+continuation steps retaining every selector. The host adds run metadata to these envelopes.
+Current transcript references are shown by default; request `history: true` to read retained versions.
+
+`meeting_project_evidence` resolves an existing project name, key or explicit alias and reads one
+bounded name page from the current local word index, without refreshing it or confirming membership.
+It accepts `project`, optional `query`, `limit`, `cursor` and `max_read_bytes`. The same
+[selection fields](search.md#find-a-project-before-linking-it) work in CLI and MCP. Its item keeps
+the project, matched name, cited hits, frozen selection, limits, page and unknown coverage.
+Continue through empty pages using the returned next arguments. The declared output schema covers
+the complete item envelope with run metadata and the standard error object. Invalid query semantics
+fail before opening a connection; failed cleanup never returns a successful answer.
 
 ## Try the connection
 

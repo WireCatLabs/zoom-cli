@@ -42,6 +42,12 @@ export const readMetadata = (now: () => number = Date.now): (() => Meta) => {
   const runId = randomUUID()
   return () => ({ run_id: runId, duration_ms: Math.max(0, Math.round(now() - started)) })
 }
+export const withReadMetadata = <T>(value: T, meta: () => Meta): T => {
+  if (value === null || typeof value !== "object") return value
+  const answer =
+    "item" in value || ("items" in value && "page" in value && value.page !== null && typeof value.page === "object")
+  return answer ? { ...value, meta: meta() } : value
+}
 export interface ExecutionState {
   deadline: Deadline
   output: OutputBuffer

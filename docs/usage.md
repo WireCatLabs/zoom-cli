@@ -58,6 +58,7 @@ does not import that transcript into the meeting database until you request arch
 | `meetings summary <meeting>` | read stored summaries |
 | `meetings export <meeting> --format markdown\|vtt` | export stored meeting content |
 | `search meetings <query>`, `meetings people <query>` | find stored text, indexing new meetings first, or participants |
+| `meetings projects evidence <project> [query...]` | discover cited canonical/key/alias word matches before confirming membership |
 | `meetings update <reference>`, `meetings link <reference>` | preview or apply owner-selected stored links |
 | `meetings transcribe <meeting> <file> --model <model>` | preview or locally recognize a WAV file into an independent transcript |
 | `meetings passage <reference>`, `meetings evidence <reference>`, `meetings context <person>` | read bounded evidence or identity-linked person context |
@@ -87,13 +88,19 @@ Stored `meetings` commands use local database ids; `remote-meetings` uses Zoom's
 ## Output for scripts and agents
 
 Use `--json` for one JSON value. `--jsonl` streams ordinary items one per line; stored meeting lists
-and bounded participant pages keep one complete envelope per line so continuation and coverage survive. Errors go to stderr. Use `--quiet`
+and bounded participant/project pages keep one complete envelope per line so continuation and coverage survive. Errors go to stderr. Use `--quiet`
 to suppress non-error diagnostics. Piped output defaults to JSON; terminal output uses the shared
 human-readable renderer. Completion emits its shell protocol unless JSON is requested.
 
 Use `--fields id,title` to select result fields. `--offline` refuses network requests. Finite commands
 buffer successful output until resource cleanup completes, with a default output limit of 4 MiB;
 `--max-output-bytes 0` removes that limit.
+
+Meeting show returns `item`; transcript and summary reads return `items` with `page`. Show lists
+current transcript references and counts; use `meetings transcript --history` for retained versions.
+Word-search hits use `ref`, `meeting`, `excerpt` and `offset_ms`, with continuation in `page.cursor`.
+Standard meeting envelopes include run metadata. Project discovery keeps its complete context in
+one item; see [project evidence](search.md#find-a-project-before-linking-it) before creating links.
 
 ## Deadlines and cancellation
 

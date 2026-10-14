@@ -42,7 +42,7 @@ import { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-tran
 import { addStandardCommands, annotateMeetingCommands } from "./commands.js"
 import { profileAccountKey, readConfig, setConfig, type ZoomConfig } from "./config.js"
 import { checkCancelled, ZoomError } from "./errors.js"
-import { bytes, duration, type ExecutionState, resetCliOptions, startExecution } from "./execution.js"
+import { bytes, duration, type ExecutionState, resetCliOptions, startExecution, withReadMetadata } from "./execution.js"
 import { FilesSource, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { addIngestionSearchCommands } from "./ingestion-search-commands.js"
 import { snakeKeys } from "./keys.js"
@@ -410,6 +410,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     },
     now: deps.now,
     write: (value, format) => {
+      if (execution) value = withReadMetadata(value, execution.meta)
       const paged = typeof value === "object" && value !== null && "page" in value && typeof value.page === "object"
       buffer(render(value, format, deps, fields, paged, true))
     },
@@ -886,8 +887,10 @@ export const createProgram = (deps: ProgramDeps): Command => {
     })
     return connection
   }
-  const integrationOutput = (value: unknown) =>
+  const integrationOutput = (value: unknown) => {
+    if (execution) value = withReadMetadata(value, execution.meta)
     buffer(render(value, program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text", deps, fields, true))
+  }
   addProjectEvidenceCommand(program, {
     read: deps.meetingProjectEvidence,
     connect: () => integrationConnection("meeting-project-evidence"),

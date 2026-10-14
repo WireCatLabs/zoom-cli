@@ -5,6 +5,14 @@
 recording transfer, archive synchronization, schedule planning and commands.
 This package contains Zoom-specific login and sources; it contains no SQL.
 
+Follow the shared [modularity standard](https://github.com/WireCatLabs/cli-base/blob/main/docs/dev/MODULARITY.md)
+and [Core boundaries](https://github.com/WireCatLabs/cli-core/blob/main/docs/dev/ARCHITECTURE.md#responsibility-and-dependency-boundaries).
+Project vocabulary, query validation, cursor binding and answer schemas live in Core.
+`meeting-project-evidence-commands.ts` and `meeting-project-evidence-mcp.ts` bind that use case to
+the selected account and host execution. CLI/MCP share execution metadata; stores close before
+output, including on errors. The existing large composition root adds wiring only; new policy
+belongs in those modules or Core rather than more inline handlers.
+
 | Module | Responsibility |
 |---|---|
 | [tokens.ts](../../src/tokens.ts) | keyring-only token storage, public-client exchange and refresh |

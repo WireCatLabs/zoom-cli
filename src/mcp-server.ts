@@ -17,6 +17,7 @@ import {
 } from "@wirecat/cli-core/meetings/mcp"
 import type { MeetingSearchCursor } from "@wirecat/cli-core/services"
 import { ZoomError } from "./errors.js"
+import { readMetadata, withReadMetadata } from "./execution.js"
 import { camelKeys, snakeKeys } from "./keys.js"
 import {
   type MeetingTaskKind,
@@ -199,6 +200,7 @@ const buildServer = (options: MeetingMcpOptions) => {
       const result = await readProjectEvidenceTool(options, args, signal)
       return cancelled() ? failure("cancelled", "meeting read was cancelled") : bounded(result)
     }
+    const meta = readMetadata(options.now)
     let connection: StoreConnection
     try {
       connection = await options.connectStore()
@@ -359,6 +361,11 @@ const buildServer = (options: MeetingMcpOptions) => {
       }
     }
     if (cancelled()) return failure("cancelled", "meeting read was cancelled")
+    if (!result.isError) {
+      const structured = withReadMetadata(result.structuredContent, meta)
+      if (structured !== result.structuredContent)
+        result = { content: [{ type: "text", text: JSON.stringify(structured) }], structuredContent: structured }
+    }
     return bounded(result)
   }
   server.setRequestHandler(CallToolRequestSchema, (request, extra) => {

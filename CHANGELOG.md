@@ -2,7 +2,17 @@
 
 ## Unreleased
 
+### Added
+
+- `meetings projects evidence <project> [query...]` and read-only MCP `meeting_project_evidence` discover cited word matches for an existing project's canonical name, key and explicit aliases. One bounded name page preserves matched-name provenance, scope, limits, unknown coverage and continuation, including empty pages. Relative dates freeze in the next query; reads do not index, create records or confirm membership.
+
+### Changed — may break callers
+
+- Meeting show now answers `{item}` with current transcript references; use transcript `--history` for retained revisions. Transcript/summary reads and word search use standard list envelopes with run metadata. Word hits use `ref`, `meeting`, `excerpt` and `offset_ms`, with continuation at `page.cursor`. Update scripts reading the older top-level fields. Meaning and archive sources keep their documented report contracts.
+
 ### Fixed
+
+- Word-search continuation retains its original query, selectors and byte budget; pending-index retry restarts the same selection without a stale cursor. Shared error registries preserve their reasons and allowed details, and MCP server instructions carry shared saving guidance.
 
 - Installation now offers agent-assisted setup, existing/new Zoom app paths, Windows command launchers and a first cited transcript check. The entry page identifies itself as the starting point.
 

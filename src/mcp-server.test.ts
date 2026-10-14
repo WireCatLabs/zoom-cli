@@ -67,7 +67,16 @@ describe("read-only SDK meeting server", () => {
       ] as const
       for (const [name, args] of inputs) {
         const expected = await callMeetingTool(data.store, name, { ...args, account_id: 1 })
-        expect(await client.callTool({ name, arguments: args })).toEqual(expected)
+        const actual = await client.callTool({ name, arguments: args })
+        if (["meetings_list", "meeting_show", "meeting_transcript", "meeting_summary"].includes(name)) {
+          const structured = actual.structuredContent
+          if (!structured || typeof structured !== "object") throw new Error("expected a structured meeting answer")
+          const meta = "meta" in structured ? structured.meta : undefined
+          const body = Object.fromEntries(Object.entries(structured).filter(([key]) => key !== "meta"))
+          expect(body).toEqual(expected.structuredContent)
+          expect(meta).toMatchObject({ run_id: expect.any(String), duration_ms: expect.any(Number) })
+          expect(actual.content).toEqual([{ type: "text", text: JSON.stringify(actual.structuredContent) }])
+        } else expect(actual).toEqual(expected)
         expect(data.close).toHaveBeenCalledTimes(data.connectStore.mock.calls.length)
       }
       expect(data.connectStore).toHaveBeenCalledTimes(6)
