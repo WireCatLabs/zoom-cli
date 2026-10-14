@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- The Zoom app guide starts with links to using an existing app or creating your own.
 - Installation now offers agent-assisted setup, existing/new Zoom app paths, Windows command launchers and a first cited transcript check. The entry page identifies itself as the starting point.
 
 ## 0.10.0 — 14.10.2026
