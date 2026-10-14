@@ -187,6 +187,8 @@ const acquireArchiveLock = async (root: string): Promise<string> => {
   await mkdir(folder, { recursive: true })
   if ((await lstat(folder)).isSymbolicLink())
     throw new ZoomError("validation_error", "archive lock directory must not be a symlink")
+  // A lock whose process on this machine is gone is taken over; foreign and unreadable ones still need `locks recover`.
+  await recoverArchiveLocks(root, { apply: true })
   const owner: LockOwner = { version: 1, pid: process.pid, host: hostname(), nonce: randomUUID() }
   const name = `${owner.pid}-${owner.nonce}.json`
   const path = join(folder, name)
@@ -239,6 +241,40 @@ const fingerprint = async (
     return { size, sha256: hash.digest("hex") }
   } finally {
     await file.close()
+  }
+}
+/** Size, mtime and checksum seen for each archived file, so a rerun hashes only files that changed since. */
+interface Verified {
+  version: 1
+  files: Record<string, { size: number; mtimeMs: number; sha256: string }>
+}
+const verifiedName = ".zoom-verified.json"
+const readVerified = async (root: string): Promise<Verified> => {
+  try {
+    const file = await localFile(join(root, verifiedName))
+    try {
+      const value = JSON.parse(await file.readFile("utf8")) as Verified
+      if (value.version === 1 && typeof value.files === "object" && value.files !== null) return value
+    } finally {
+      await file.close()
+    }
+  } catch {}
+  return { version: 1, files: {} }
+}
+const writeVerified = async (root: string, verified: Verified) => {
+  const temp = join(root, `.zoom-verified-${randomUUID()}.tmp`)
+  try {
+    await open(temp, "wx", 0o600).then(async (file) => {
+      try {
+        await file.writeFile(JSON.stringify(verified))
+      } finally {
+        await file.close()
+      }
+    })
+    await rename(temp, join(root, verifiedName))
+  } catch {
+    // Only a cache: losing it costs one rehash on the next run.
+    await unlink(temp).catch(() => undefined)
   }
 }
 const onlyKeys = (value: object, keys: string[]) => Object.keys(value).every((key) => keys.includes(key))
@@ -467,6 +503,13 @@ export const archiveRecording = async (
       files: [],
     }
     const report: ArchiveReport = { uuid: meeting.uuid, manifestPath, downloaded: [], skipped: [], unavailable: [] }
+    const verified = await readVerified(root)
+    let verifiedChanged = false
+    const remember = async (path: string, sha256: string) => {
+      const stat = await lstat(join(root, path))
+      verified.files[path] = { size: stat.size, mtimeMs: stat.mtimeMs, sha256 }
+      verifiedChanged = true
+    }
     for (const asset of meeting.assets) {
       checkCancelled(signal)
       if (options.fileIds && (asset.id === null || !options.fileIds.includes(asset.id))) continue
@@ -477,7 +520,17 @@ export const archiveRecording = async (
       const path = filename(meeting.uuid, asset)
       const existing = manifest.files.find((file) => file.id === asset.id)
       if (existing) {
-        const local = await fingerprint(join(root, existing.path), signal)
+        const seen = verified.files[existing.path]
+        const stat = await lstat(join(root, existing.path)).catch(() => undefined)
+        const unchanged =
+          seen !== undefined &&
+          stat?.isFile() === true &&
+          seen.size === stat.size &&
+          seen.mtimeMs === stat.mtimeMs &&
+          seen.sha256 === existing.sha256
+        const local = unchanged
+          ? { size: seen.size, sha256: seen.sha256 }
+          : await fingerprint(join(root, existing.path), signal)
         if (
           existing.path !== path ||
           existing.remoteSize !== asset.size ||
@@ -487,6 +540,7 @@ export const archiveRecording = async (
           existing.sha256 !== local.sha256
         )
           throw new ZoomError("validation_error", "existing recording has changed; choose a new archive destination")
+        if (!unchanged) await remember(existing.path, existing.sha256)
         report.skipped.push(existing)
         continue
       }
@@ -583,9 +637,11 @@ export const archiveRecording = async (
       manifest.files.push(entry)
       await writeManifest(root, manifest)
       await unlink(temp)
+      await remember(entry.path, entry.sha256)
       report.downloaded.push(entry)
     }
     if (!previous) await writeManifest(root, manifest)
+    if (verifiedChanged) await writeVerified(root, verified)
     return report
   } catch (error) {
     checkCancelled(signal)

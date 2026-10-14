@@ -471,6 +471,32 @@ it("previews and repairs only unique stale local locks without removing active, 
   expect(await inspectArchiveLocks(clean)).toEqual([])
 })
 
+it("takes over a lock left by a dead process on this machine without a manual recover", async () => {
+  const destination = await temp()
+  await mkdir(join(destination, ".zoom-archive-locks"))
+  const deadPid = Number(
+    spawnSync(process.execPath, ["-e", "process.stdout.write(String(process.pid))"], { encoding: "utf8" }).stdout,
+  )
+  const nonce = randomUUID()
+  await writeFile(
+    join(destination, ".zoom-archive-locks", `${deadPid}-${nonce}.json`),
+    JSON.stringify({ version: 1, pid: deadPid, host: hostname(), nonce }),
+  )
+  expect((await source(scripted()).download("example", { destination })).downloaded).toHaveLength(1)
+  expect(await inspectArchiveLocks(destination)).toEqual([])
+})
+
+it("remembers verified files so a rerun rehashes only files whose size or time changed", async () => {
+  const destination = await temp()
+  const first = await source(scripted()).download("example", { destination })
+  const path = first.downloaded[0]?.path as string
+  const verified = JSON.parse(await readFile(join(destination, ".zoom-verified.json"), "utf8"))
+  expect(Object.keys(verified.files)).toEqual([path])
+  expect((await source(scripted()).download("example", { destination })).skipped).toHaveLength(1)
+  await writeFile(join(destination, path), "Example tampered bytes")
+  await expect(source(scripted()).download("example", { destination })).rejects.toThrow(/changed/)
+})
+
 it("cancels local inspection, verification and recovery without masking it as corruption", async () => {
   const destination = await temp()
   await source(scripted()).download("example", { destination })
