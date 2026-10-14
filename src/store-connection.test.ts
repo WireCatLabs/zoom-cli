@@ -240,3 +240,18 @@ describe("persistent account connector", () => {
     expect(store.saveAccount).not.toHaveBeenCalled()
   })
 })
+
+it("refuses preparation through an older store instead of reading unbounded history", async () => {
+  const store = fixture()
+  const connection = await createStoreConnector({ openStore: async () => store })({
+    ...request,
+    capability: "meeting-preparation",
+  })
+  const upcoming = vi.fn(async () => {
+    throw new Error("unexpected remote dispatch")
+  })
+  await expect(connection.meetingPreparation?.create(upcoming)).rejects.toMatchObject({ code: "configuration_error" })
+  expect(upcoming).not.toHaveBeenCalled()
+  await connection.close()
+  expect(store.close).toHaveBeenCalledOnce()
+})

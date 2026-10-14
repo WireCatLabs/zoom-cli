@@ -296,3 +296,55 @@ it("the public reader validates before credentials and closes on cancellation du
   expect(read).not.toHaveBeenCalled()
   expect(f.network).not.toHaveBeenCalled()
 })
+
+it("refuses absent profile bindings and foreign providers without dispatching", async () => {
+  const f = await fixture()
+  for (const binding of [undefined, { scope: { provider: "other", account: "example" }, create: vi.fn() }]) {
+    const close = vi.fn(async () => {})
+    const reader = createZoomPreparationReader({
+      credentials: () => f.tokens,
+      fetch: f.network,
+      connect: async () => ({ meetingPreparation: binding, close }),
+    })
+    await expect(reader("123", { after: now, until: now + 1000, historyAfter: now - 1000 })).rejects.toMatchObject({
+      code: "configuration_error",
+    })
+    expect(close).toHaveBeenCalledOnce()
+  }
+  const missing = await readPreparationTool(
+    { ...f.mcp, preparation: undefined },
+    { series_id: "123" },
+    new AbortController().signal,
+  )
+  expect(missing).toMatchObject({ isError: true })
+  expect(JSON.stringify(missing)).toContain("configuration_error")
+  expect(f.connectStore).not.toHaveBeenCalled()
+  expect(f.network).not.toHaveBeenCalled()
+})
+
+it("requires a stored profile and refuses MCP output modes and offline remote embeddings", async () => {
+  const f = await fixture()
+  const serveMcp = vi.fn(async () => {})
+  expect(await run(["meetings", "prepare", "123", "--json"], { ...f.deps, connectStore: undefined })).not.toBe(0)
+  expect(await run(["serve", "--mcp", "--json=id"], { ...f.deps, serveMcp })).toBe(2)
+  expect(
+    await run(
+      [
+        "serve",
+        "--mcp",
+        "--semantic",
+        "--model",
+        "example",
+        "--base-url",
+        "http://localhost:1234",
+        "--dims",
+        "3",
+        "--offline",
+      ],
+      { ...f.deps, serveMcp },
+    ),
+  ).not.toBe(0)
+  expect(serveMcp).not.toHaveBeenCalled()
+  expect(f.connectStore).not.toHaveBeenCalled()
+  expect(f.network).not.toHaveBeenCalled()
+})
