@@ -103,7 +103,7 @@ Replace `<public-client-id>` with your app's Public Client ID, without angle bra
 commands one at a time in an ordinary terminal. Leave it open while approving in the browser:
 
 ```sh
-zm config set zoom.clientId <public-client-id>
+zm config set zoom.client_id <public-client-id>
 zm config set source api
 zm session start
 ```

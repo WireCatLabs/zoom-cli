@@ -167,7 +167,7 @@ invoke(
 )
 assert.equal(existsSync(missingProfileArchive), false)
 json("config", "set", "account.profile", "invented-platform")
-json("config", "set", "zoom.clientId", "example-public-client")
+json("config", "set", "zoom.client_id", "example-public-client")
 const scheduleArchive = join(sandbox, "scheduled-archive")
 const schedulePreview = json(
   "recordings",
