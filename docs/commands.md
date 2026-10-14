@@ -340,7 +340,7 @@ zm meetings passage <reference> [options]
 |---|---|
 | `--before-n <n>` | preceding cues (default 3). |
 | `--after-n <n>` | following cues (default 3); at most 999 surrounding cues in total. |
-| `--bytes <n>` | cue JSON byte budget (default 65536); the anchor must fit. |
+| `--bytes <bytes>` | cue JSON byte budget (default 65536); the anchor must fit. |
 | `--max-read-bytes <bytes>` | stored text byte budget (default 4194304); boundary probes read metadata only. |
 | `--expected-fingerprint <hash>` | reject a changed anchor using its previously read cue fingerprint. |
 | `--format <format>` | compact text, Markdown or structured JSON. One of: `text`, `markdown`, `json`. Default: `text`. |

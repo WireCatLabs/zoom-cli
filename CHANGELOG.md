@@ -4,7 +4,7 @@
 
 ### Changed — may break callers
 
-- **Runs on `@wirecat/cli-core` 0.263.0** (cli-messaging renamed) **and `@wirecat/cli-base` 0.26.0.**
+- **Runs on `@wirecat/cli-core` 0.264.0** (cli-messaging renamed) **and `@wirecat/cli-base` 0.27.1.**
 - **Every key zm writes itself is snake_case**, on stdout and in its own MCP results: `config show`
   (`account_profile`, `client_id`, `files_folder`, `files_timezone`), `doctor` and `session status`
   (`data_profile`, `expires_at`), `session start` (`logged_in`), recordings, archives and schedules (`manifest_path`, `timer_state`,
