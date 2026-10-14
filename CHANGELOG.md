@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Existing links to first-sync setup, stored meeting search and explicit vector preparation keep working after the command renames.
+
 ## 0.9.0 — 14.10.2026
 
 ### Changed — may break callers
