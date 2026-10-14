@@ -283,7 +283,9 @@ export const createProgram = (deps: ProgramDeps): Command => {
         "search",
       ].includes(family.name()) ||
       (family.name() === "meetings" &&
-        ["evidence", "context", "task-proposal", "embeddings", "update", "link", "transcribe"].includes(action.name()))
+        ["passage", "evidence", "context", "task-proposal", "embeddings", "update", "link", "transcribe"].includes(
+          action.name(),
+        ))
     )
       return
     const config = getConfig()

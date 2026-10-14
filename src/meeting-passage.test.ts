@@ -46,7 +46,9 @@ const setup = async () => {
   const output: string[] = []
   const connect = createStoreConnector({ path: f.path, env: f.env })
   const close = vi.fn()
+  const opened = vi.fn()
   const connectStore: ProgramDeps["connectStore"] = async (request) => {
+    opened()
     const connection = await connect(request)
     return {
       ...connection,
@@ -69,7 +71,7 @@ const setup = async () => {
     diagnostic: () => {},
   }
   setConfig(deps.configPath, "account.profile", "AliceExample")
-  return { ...f, deps, output, close, network, connectStore }
+  return { ...f, deps, output, close, opened, network, connectStore }
 }
 it("opens published search-hit context as Markdown or structured JSON and closes before output", async () => {
   const f = await setup()
@@ -85,6 +87,8 @@ it("opens published search-hit context as Markdown or structured JSON and closes
   ).toBe(0)
   expect(f.output.join("")).toContain("Alice Example proposed a launch")
   expect(f.output.join("")).toContain(`\`${f.reference}\``)
+  expect(f.opened).toHaveBeenCalledOnce()
+  expect(f.close).toHaveBeenCalledOnce()
   f.output.length = 0
   expect(
     await run(
@@ -114,9 +118,11 @@ it("opens published search-hit context as Markdown or structured JSON and closes
   expect(JSON.parse(f.output.join(""))).toMatchObject({ kind: "meeting_context", coverage: { included: 3 } })
   f.output.length = 0
   f.network.mockClear()
+  f.opened.mockClear()
   expect(await run(["meetings", "passage", f.reference, "--before-n", "-1"], f.deps)).not.toBe(0)
   expect(f.output).toEqual([])
   expect(f.network).not.toHaveBeenCalled()
+  expect(f.opened).not.toHaveBeenCalled()
 })
 it("serves the same cited context through opt-in MCP and rejects account injection before connection", async () => {
   const f = await setup()
