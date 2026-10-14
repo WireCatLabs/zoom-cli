@@ -77,8 +77,8 @@ completed files survive later failures, but incomplete transfers restart, not HT
 `recover`; recovery previews stale local dead-process locks, and `--yes` removes only authorized ones.
 
 `search recordings <dir> '<words>'` and `recordings archive transcript <dir>` verify VTT
-before reading and need no login/store. Archive search is literal and case-insensitive and returns shared search hits. `page.has_more`
-requires a larger limit or narrower query; no cursor. Transcript reads support `--uuid`/`--file-ids`.
+before reading and need no login/store. Archive search is literal and case-insensitive and returns shared
+search hits. `page.has_more` requires a larger limit or narrower query; no cursor. Transcript reads support `--uuid`/`--file-ids`.
 Archive reads do not import. `recordings archive import <dir> --offline --jsonl` validates the entire
 selection before atomic per-occurrence appends. Byte limits bound both files and total input.
 Unknown start times require an existing occurrence; corrected revisions and pull cursors are preserved.
