@@ -51,8 +51,8 @@ bounds each tool result, with zero meaning unlimited. Select a profile and impor
 before reading tools; discovery is available without stored data.
 
 `meeting_people` searches saved participant names/emails within the server-selected account.
-Use `limit`, `scan_limit`, `max_read_bytes` and `cursor` for bounded reads. The standard `page`
-and `page.next` step preserve continuation even when no observation matches the current scan page.
+Use `limit`, `scan_limit`, `max_read_bytes` and `cursor` for bounded reads. The report's `item.page`
+and `item.next` step preserve continuation even when no observation matches the current scan page.
 `identity_id` identifies an observed identity; repeated names never establish person links.
 `meetings_list` takes a metadata `query` (for example `started_at:[2026-09-12 TO 2026-10-12]`)
 instead of its former `since` and `until` arguments, and returns the shared meeting entity/list envelope.
