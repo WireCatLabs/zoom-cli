@@ -32,7 +32,7 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [meeting-semantic.ts](../../src/meeting-semantic.ts) | explicit model selection and public vector/model service adaptation |
 | [store-connection.ts](../../src/store-connection.ts) | lazy public shared-store/account adapter, without SQL |
 | [mcp-server.ts](../../src/mcp-server.ts) | official SDK transport and shared read-only meeting tools |
-| [answers.ts](../../src/answers.ts), [answer-output.ts](../../src/answer-output.ts) | host execution metadata, validated shared envelopes and buffered output |
+| [answer-output.ts](../../src/answer-output.ts), [answers.ts](../../src/answers.ts) | commands answer with cli-core `itemOf`/`listOf` bodies printed by `renderAnswer`; `bodyOf` adapts the plain values cli-core meeting commands and MCP tools return; run metadata and MCP envelopes |
 | [command-effects.ts](../../src/command-effects.ts), [answer-policy.ts](../../src/answer-policy.ts) | Zoom effect declarations bound to shared retry and next-step policies |
 | [streaming.ts](../../src/streaming.ts), [watch-commands.ts](../../src/watch-commands.ts) | bounded receipts, writable completion and serial API or folder ingestion |
 

@@ -1,8 +1,8 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { LOCAL_READ, LOCAL_WRITE } from "@wirecat/cli-core/cli"
-import { listed } from "@wirecat/cli-core/meetings"
+import { type Body, itemOf, LOCAL_READ, LOCAL_WRITE } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
+import { wholeList } from "./answer-output.js"
 import { bytes } from "./execution.js"
 import type {
   RecordingScheduleCapture,
@@ -17,14 +17,14 @@ export const addRecordingScheduleCommands = (
     capture: () => RecordingScheduleCapture
     offline: () => boolean
     signal: () => AbortSignal | undefined
-    output: (value: unknown) => void
-    receipt: (value: unknown) => Promise<void>
+    output: (body: Body) => void
+    receipt: (body: Body) => Promise<void>
     outputIsTTY?: boolean
   },
 ): void => {
   const deliver = async (value: RecordingScheduleReceipt) => {
-    if (value.applied) await deps.receipt(value)
-    else deps.output(value)
+    if (value.applied) await deps.receipt(itemOf(value))
+    else deps.output(itemOf(value))
   }
   const recordings = program.commands.find((command) => command.name() === "recordings")
   if (!recordings) throw new CliError("configuration_error", "recording command group is unavailable")
@@ -86,7 +86,7 @@ export const addRecordingScheduleCommands = (
       .command("list")
       .description("list saved local jobs; live timer state is not checked")
       .action(async () => {
-        deps.output(listed(await deps.service().list({ signal: deps.signal() })))
+        deps.output(wholeList("recordings schedule list", await deps.service().list({ signal: deps.signal() })))
       }),
     "zm recordings schedule list --offline --json",
   )
@@ -96,7 +96,7 @@ export const addRecordingScheduleCommands = (
       .description("show one saved local job and its captured settings")
       .argument("<job>", "saved job id")
       .action(async (id: string) => {
-        deps.output(await deps.service().show(id, { signal: deps.signal() }))
+        deps.output(itemOf(await deps.service().show(id, { signal: deps.signal() })))
       }),
     "zm recordings schedule show example-job --offline --json",
   )
@@ -110,7 +110,7 @@ export const addRecordingScheduleCommands = (
           throw new CliError("validation_error", "headless archive schedule runs stream receipts; use --jsonl")
         if (deps.offline()) throw new CliError("configuration_error", "archive schedule run requires online mode")
         for await (const receipt of deps.service().run(id, { offline: deps.offline(), signal: deps.signal() }))
-          await deps.receipt(receipt)
+          await deps.receipt(itemOf(receipt))
       }),
     "zm recordings schedule run example-job --jsonl",
     true,

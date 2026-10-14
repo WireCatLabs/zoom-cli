@@ -115,21 +115,6 @@
           }
         }
       }
-    },
-    {
-      "includes": ["src/program.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 1182
-              }
-            }
-          }
-        }
-      }
     }
   ]
 }

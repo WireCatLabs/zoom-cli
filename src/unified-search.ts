@@ -1,4 +1,5 @@
 import { CliError } from "@wirecat/cli-base"
+import { itemOf } from "@wirecat/cli-core/cli"
 import type { SearchAllIncludingMeetingsFound, SearchAllIncludingMeetingsRequest } from "@wirecat/cli-core/services"
 import { checkCancelled } from "./errors.js"
 
@@ -74,17 +75,17 @@ export const runUnifiedSearch = async (search: UnifiedSearch, input: UnifiedSear
   return result
 }
 
-export const unifiedSearchAnswer = (result: SearchAllIncludingMeetingsFound) => ({
-  item: result,
-  meta: {
-    complete: result.skipped.length === 0,
-    ...(result.skipped.length
-      ? {
-          issues: result.skipped.map((issue) => ({
-            code: issue.code,
-            source: "source" in issue ? issue.source : issue.resource,
-          })),
-        }
-      : {}),
-  },
-})
+export const unifiedSearchAnswer = (result: SearchAllIncludingMeetingsFound) =>
+  itemOf(result, {
+    meta: {
+      complete: result.skipped.length === 0,
+      ...(result.skipped.length
+        ? {
+            issues: result.skipped.map((issue) => ({
+              code: issue.code,
+              source: issue.source ?? issue.resource,
+            })),
+          }
+        : {}),
+    },
+  })

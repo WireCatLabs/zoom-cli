@@ -1,6 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { LOCAL_WRITE } from "@wirecat/cli-core/cli"
+import { type Body, itemOf, LOCAL_WRITE } from "@wirecat/cli-core/cli"
 import { speechModel } from "@wirecat/cli-core/speech"
 import type { Command } from "commander"
 import { bytes, duration } from "./execution.js"
@@ -16,8 +16,8 @@ export const addLocalTranscriptionCommands = (
   deps: {
     capabilities: () => Promise<LocalTranscriptionCapabilities>
     signal: () => AbortSignal | undefined
-    output: (value: unknown) => void
-    receipt: (value: unknown) => Promise<void>
+    output: (body: Body) => void
+    receipt: (body: Body) => Promise<void>
   },
 ): void => {
   const meetings = program.commands.find((command) => command.name() === "meetings")
@@ -62,8 +62,8 @@ export const addLocalTranscriptionCommands = (
             throw new CliError("validation_error", "local audio file is required")
           const capabilities = await deps.capabilities()
           const receipt = await capabilities.transcribe(reference, file, request)
-          if (receipt.applied) await deps.receipt(compactLocalTranscriptionReceipt(receipt))
-          else deps.output(receipt)
+          if (receipt.applied) await deps.receipt(itemOf(compactLocalTranscriptionReceipt(receipt)))
+          else deps.output(itemOf(receipt))
         },
       ),
     {

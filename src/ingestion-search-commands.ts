@@ -1,6 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { LOCAL_READ, LOCAL_WRITE } from "@wirecat/cli-core/cli"
+import { type Body, itemOf, LOCAL_READ, LOCAL_WRITE } from "@wirecat/cli-core/cli"
 import type { MeetingSearchCursor, ResourceWithMeetings } from "@wirecat/cli-core/services"
 import type { Command } from "commander"
 import type { ArchiveImportPlan, applyArchiveImport, preflightArchiveImport } from "./archive-import.js"
@@ -12,9 +12,9 @@ interface Deps {
   preflight: typeof preflightArchiveImport
   apply: (plan: ArchiveImportPlan) => ReturnType<typeof applyArchiveImport>
   signal: () => AbortSignal | undefined
-  output: (value: unknown) => void
+  output: (body: Body) => void
   outputItems: (items: AsyncIterable<unknown>) => Promise<void>
-  receipt: (value: unknown) => Promise<void>
+  receipt: (body: Body) => Promise<void>
   search: UnifiedSearch
 }
 const cursor = (value: string): MeetingSearchCursor => {
@@ -56,7 +56,7 @@ export const addIngestionSearchCommands = (program: Command, deps: Deps): void =
           })
           const receipts = deps.apply(plan)
           if (program.opts().jsonl) {
-            for await (const receipt of receipts) await deps.receipt(receipt)
+            for await (const receipt of receipts) await deps.receipt(itemOf(receipt))
           } else await deps.outputItems(receipts)
         },
       ),

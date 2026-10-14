@@ -1,6 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { LOCAL_READ, LOCAL_WRITE } from "@wirecat/cli-core/cli"
+import { type Body, itemOf, LOCAL_READ, LOCAL_WRITE } from "@wirecat/cli-core/cli"
 import { validateMeetingContextChange } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
 import { bytes } from "./execution.js"
@@ -15,8 +15,8 @@ export const addMeetingIntegrationCommands = (
   deps: {
     integration: () => Promise<MeetingIntegrationCapabilities>
     signal: () => AbortSignal | undefined
-    output: (value: unknown) => void
-    receipt: (value: unknown) => Promise<void>
+    output: (body: Body) => void
+    receipt: (body: Body) => Promise<void>
   },
 ) => {
   const meetings = program.commands.find((command) => command.name() === "meetings")
@@ -39,8 +39,8 @@ export const addMeetingIntegrationCommands = (
       dryRun: options.dryRun,
       signal: deps.signal(),
     })
-    if (result.applied) await deps.receipt(result)
-    else deps.output(result)
+    if (result.applied) await deps.receipt(itemOf(result))
+    else deps.output(itemOf(result))
   }
   const nullableId = (value: string): number | "none" => (value === "none" ? "none" : bytes(value))
   label(

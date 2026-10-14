@@ -1,8 +1,9 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { LOCAL_READ, LOCAL_WRITE, REMOTE_WRITE } from "@wirecat/cli-core/cli"
-import { listed, recordingWindows } from "@wirecat/cli-core/meetings"
+import { type Body, itemOf, LOCAL_READ, LOCAL_WRITE, REMOTE_WRITE } from "@wirecat/cli-core/cli"
+import { recordingWindows } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
+import { wholeList } from "./answer-output.js"
 import type { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
 import { bytes } from "./execution.js"
 import type { inspectArchive, inspectArchiveLocks, recoverArchiveLocks, verifyArchive } from "./recording-archive.js"
@@ -34,9 +35,9 @@ export interface ArchiveCommandsDeps {
   signal: () => AbortSignal | undefined
   api: () => void
   account: () => string | undefined
-  output: (value: unknown) => void
+  output: (body: Body) => void
   outputItems: (values: AsyncIterable<unknown>) => Promise<void>
-  receipt: (value: unknown) => Promise<void>
+  receipt: (body: Body) => Promise<void>
   outputIsTTY?: boolean
   now: () => number
 }
@@ -111,7 +112,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         if (!/^\d{4}-\d{2}-\d{2}$/.test(to) || !Number.isFinite(end) || new Date(end).toISOString().slice(0, 10) !== to)
           throw new CliError("validation_error", "--until-time must be a real YYYY-MM-DD date")
         const from = options.sinceTime ?? new Date(end - 30 * 86400000).toISOString().slice(0, 10)
-        deps.output(listed(await deps.recordings().list({ from, to, signal: deps.signal() })))
+        deps.output(wholeList("recordings list", await deps.recordings().list({ from, to, signal: deps.signal() })))
       }),
     "zm recordings list --since-time 2026-10-01 --until-time 2026-10-10 --json",
   )
@@ -164,7 +165,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
             now: deps.now,
             signal: deps.signal(),
           }))
-            await deps.receipt(receipt)
+            await deps.receipt(itemOf(receipt))
         },
       ),
     "zm recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --destination ./archive --jsonl",
@@ -177,7 +178,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
       .argument("<meeting>", "meeting id or occurrence UUID")
       .action(async (id: string) => {
         deps.api()
-        deps.output(await deps.recordings().show(id, { signal: deps.signal() }))
+        deps.output(itemOf(await deps.recordings().show(id, { signal: deps.signal() })))
       }),
     "zm recordings show example-occurrence --json",
   )
@@ -201,7 +202,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         }
         validateDownloadOptions(request)
         deps.api()
-        deps.output(await deps.recordings().download(id, request))
+        deps.output(itemOf(await deps.recordings().download(id, request)))
       },
     ),
     "zm recordings download example-occurrence --destination ./zoom-archive --json",
@@ -236,7 +237,9 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
       .description("show what a local archive holds, from its transfer records")
       .argument("<directory>", "archive folder")
       .action(async (directory: string) =>
-        deps.output(listed(await deps.archive.inspect(directory, { signal: deps.signal() }))),
+        deps.output(
+          wholeList("recordings archive inspect", await deps.archive.inspect(directory, { signal: deps.signal() })),
+        ),
       ),
     "zm recordings archive show ./zoom-archive --json",
   )
@@ -246,7 +249,9 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
       .description("check the size and checksum of every file in a local archive")
       .argument("<directory>", "archive folder")
       .action(async (directory: string) =>
-        deps.output(listed(await deps.archive.verify(directory, { signal: deps.signal() }))),
+        deps.output(
+          wholeList("recordings archive verify", await deps.archive.verify(directory, { signal: deps.signal() })),
+        ),
       ),
     "zm recordings archive check ./zoom-archive --json",
   )
@@ -256,7 +261,9 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
       .description("list the locks on a local archive: active, stale or another machine's")
       .argument("<directory>", "archive folder")
       .action(async (directory: string) =>
-        deps.output(listed(await deps.archive.locks(directory, { signal: deps.signal() }))),
+        deps.output(
+          wholeList("recordings archive locks", await deps.archive.locks(directory, { signal: deps.signal() })),
+        ),
       ),
     "zm recordings archive locks ./zoom-archive --json",
   )
@@ -269,10 +276,12 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
       .option("--dry-run", "preview only, including when --yes is present")
       .action(async (directory: string, options: { yes?: boolean; dryRun?: boolean }) =>
         deps.output(
-          await deps.archive.recover(directory, {
-            apply: options.yes === true && !options.dryRun,
-            signal: deps.signal(),
-          }),
+          itemOf(
+            await deps.archive.recover(directory, {
+              apply: options.yes === true && !options.dryRun,
+              signal: deps.signal(),
+            }),
+          ),
         ),
       ),
     "zm recordings archive recover ./zoom-archive --dry-run --json",
@@ -288,7 +297,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
       .description("list upcoming meetings")
       .action(async () => {
         deps.api()
-        deps.output(listed(await deps.remoteMeetings().list({ signal: deps.signal() })))
+        deps.output(wholeList("remote-meetings list", await deps.remoteMeetings().list({ signal: deps.signal() })))
       }),
     "zm remote-meetings list --json",
   )
@@ -299,7 +308,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
       .argument("<meeting>", "positive numeric Zoom meeting id")
       .action(async (id: string) => {
         deps.api()
-        deps.output(await deps.remoteMeetings().show(id, { signal: deps.signal() }))
+        deps.output(itemOf(await deps.remoteMeetings().show(id, { signal: deps.signal() })))
       }),
     "zm remote-meetings show 123456789 --json",
   )
@@ -310,14 +319,14 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
       .argument("<meeting>", "positive numeric Zoom meeting id")
       .action(async (id: string) => {
         deps.api()
-        deps.output(await deps.remoteMeetings().invitation(id, { signal: deps.signal() }))
+        deps.output(itemOf(await deps.remoteMeetings().invitation(id, { signal: deps.signal() })))
       }),
     "zm remote-meetings invitation 123456789 --json",
   )
   label(
     changes(remote.command("create").description("preview a meeting creation; --yes performs it once")).action(
       async (options: ChangeOptions & MutationOptions & { yes?: boolean }) =>
-        deps.output(await deps.remoteMeetings().create(change(options), mutation(options, deps))),
+        deps.output(itemOf(await deps.remoteMeetings().create(change(options), mutation(options, deps)))),
     ),
     'zm remote-meetings create --title "Example planning" --start-time 2026-10-10T15:30:00Z --dry-run --json',
     "remote",
@@ -329,7 +338,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         .description("preview a meeting update; --yes performs it once")
         .argument("<meeting>", "positive numeric Zoom meeting id"),
     ).action(async (id: string, options: ChangeOptions & MutationOptions & { yes?: boolean }) =>
-      deps.output(await deps.remoteMeetings().update(id, change(options), mutation(options, deps))),
+      deps.output(itemOf(await deps.remoteMeetings().update(id, change(options), mutation(options, deps)))),
     ),
     'zm remote-meetings update 123456789 --title "Example planning" --dry-run --json',
     "remote",
@@ -343,7 +352,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
       .option("--yes", "apply cancellation once instead of previewing")
       .option("--dry-run", "preview only, including when --yes is present")
       .action(async (id: string, options: MutationOptions & { yes?: boolean }) =>
-        deps.output(await deps.remoteMeetings().cancel(id, mutation(options, deps))),
+        deps.output(itemOf(await deps.remoteMeetings().cancel(id, mutation(options, deps)))),
       ),
     "zm remote-meetings cancel 123456789 --dry-run --json",
     "remote",

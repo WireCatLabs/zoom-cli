@@ -3,10 +3,10 @@ import { dirname, join } from "node:path"
 import {
   CliError,
   createDeadline,
+  createOutputBuffer,
   createRenderer,
   errorObjectOf,
   errorRecordOf,
-  exitCodeOfAnswer,
   exitCodeOfError,
   isCliError,
   projectFields,
@@ -15,10 +15,9 @@ import {
   type SleepLike,
 } from "@wirecat/cli-base"
 import { metaOf } from "@wirecat/cli-base/commands"
-import { checkJson, jsonlRecords, listOf } from "@wirecat/cli-core/cli"
+import { type Body, checkJson, itemOf, snakeKeys } from "@wirecat/cli-core/cli"
 import {
   importFiles,
-  listed,
   type MeetingProjectDiscoveryReader,
   type MeetingSource,
   type MeetingStore,
@@ -28,9 +27,8 @@ import {
 import { addMeetingCommands, addMeetingPassageCommand } from "@wirecat/cli-core/meetings/cli"
 import { Command, CommanderError } from "commander"
 import { addZoomSkillCommands } from "./agent-skill.js"
-import { createAnswerRenderer } from "./answer-output.js"
+import { type AnswerFormat, bodyOf, renderBody, wholeList } from "./answer-output.js"
 import { hostFailureContext } from "./answer-policy.js"
-import { meetingAnswer } from "./answers.js"
 import { ZoomApiSource } from "./api.js"
 import {
   type ArchiveService,
@@ -48,7 +46,6 @@ import { bytes, duration, type ExecutionState, resetCliOptions, startExecution }
 import { FilesSource, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { addIngestionSearchCommands } from "./ingestion-search-commands.js"
 import { liftJsonFields } from "./json-fields.js"
-import { snakeKeys } from "./keys.js"
 import type { LocalTranscriptionCapabilities } from "./local-transcription.js"
 import { addLocalTranscriptionCommands } from "./local-transcription-commands.js"
 import { login } from "./login.js"
@@ -240,13 +237,20 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .option("--debug", "on a failure, its whole record — cause and stack — in place of the short line")
     .exitOverride()
     .configureOutput({ writeOut: deps.data, writeErr: deps.diagnostic, outputError: () => {} })
-  const render = createAnswerRenderer(program, (meta) => {
-    const action = execution?.action
-    answerExitCodes.set(
-      program,
-      Math.max(answerExitCodes.get(program) ?? 0, exitCodeOfAnswer(meta, action ? metaOf(action).partial : false)),
-    )
-  })
+  const formatOf = (): AnswerFormat =>
+    program.opts().jsonl ? "jsonl" : program.opts().json || !deps.outputIsTTY ? "json" : "pretty"
+  const rendered = (body: Body, format = formatOf()) => {
+    if (!execution) throw new CliError("configuration_error", "command execution is not initialized")
+    const answer = renderBody(execution.action, body, {
+      format,
+      meta: execution.meta(),
+      fields,
+      quiet: Boolean(program.opts().quiet),
+      diagnostic: deps.diagnostic,
+    })
+    answerExitCodes.set(program, Math.max(answerExitCodes.get(program) ?? 0, answer.exitCode))
+    return answer.text
+  }
   const api = () => {
     if (program.opts().offline)
       throw new CliError("configuration_error", "the command requires network access; remove --offline")
@@ -259,30 +263,9 @@ export const createProgram = (deps: ProgramDeps): Command => {
     checkJson(action, { json: opts.json === true, ...(fields ? { fields: fields.join(",") } : {}) }, false)
     execution = startExecution(action, { signal: deps.signal, sleep: deps.sleep, now: deps.now })
     checkCancelled(signal())
-    let family = action
-    while (family.parent && family.parent !== program) family = family.parent
-    if (
-      [
-        "commands",
-        "complete",
-        "doctor",
-        "config",
-        "session",
-        "recordings",
-        "remote-meetings",
-        "serve",
-        "skill",
-        "watch",
-        "search",
-      ].includes(family.name()) ||
-      (family.name() === "meetings" &&
-        ["passage", "evidence", "context", "task-proposal", "embeddings", "update", "link", "transcribe"].includes(
-          action.name(),
-        ))
-    )
-      return
+    if (!storeCommands.has(action)) return
     const config = getConfig()
-    const ingestion = family.name() === "meetings" && ["sync", "import"].includes(action.name())
+    const ingestion = action.parent?.name() === "meetings" && ["sync", "import"].includes(action.name())
     if (opts.offline && ingestion && action.name() !== "import" && config.source === "api" && !deps.source)
       throw new CliError("configuration_error", "API sync requires network access; remove --offline")
     if (!selectedStore) {
@@ -292,62 +275,25 @@ export const createProgram = (deps: ProgramDeps): Command => {
     }
     requireAccount()
   })
-  const output = (value: unknown) =>
-    buffer(
-      render(
-        value,
-        program.opts().json ? "json" : program.opts().jsonl ? "jsonl" : "text",
-        deps,
-        fields,
-        true,
-        false,
-        execution?.meta,
-      ),
-    )
+  const output = (body: Body) => buffer(rendered(body))
   const outputItems = async (values: AsyncIterable<unknown>) => {
-    const meta = execution?.meta
-    if (!meta) throw new CliError("configuration_error", "execution metadata is unavailable")
-    const format = program.opts().jsonl ? "jsonl" : program.opts().json || !deps.outputIsTTY ? "json" : "text"
-    const metadata: Partial<ReturnType<typeof listed>> = listed([])
-    delete metadata.items
-    let count = 0
-    if (format === "json") buffer('{"items":[')
+    const items: unknown[] = []
+    // Fails on the row that crosses --max-output-bytes, so a long iterator stops reading there.
+    const measured = createOutputBuffer({ maxOutputBytes: program.opts().maxOutputBytes })
     for await (const value of values) {
       checkCancelled(signal())
       const item = snakeKeys(value)
-      const projected = fields ? (projectFields(listed([item]), fields) as { items: unknown[] }).items[0] : item
-      if (format === "json") {
-        if (count) buffer(",")
-        buffer(render(projected, "json", deps).trimEnd())
-      } else if (format === "jsonl") {
-        const packet = meetingAnswer(projected, meta())
-        buffer(`${JSON.stringify(jsonlRecords(packet)[0])}\n`)
-      } else buffer(render(projected, format, deps, undefined, true, false, execution?.meta))
-      count++
+      measured.data(JSON.stringify(fields ? projectFields(item, fields) : item))
+      items.push(item)
     }
-    metadata.limit = count
-    if (format === "json")
-      buffer(
-        `],"page":${JSON.stringify({ mode: "page", limit: Math.max(1, count), has_more: false })},"meta":${JSON.stringify(execution?.meta())}}\n`,
-      )
-    else if (format === "jsonl") {
-      const packet = meetingAnswer(
-        listOf("meetings import", { items: [], limit: Math.max(1, count), has_more: false }),
-        meta(),
-      )
-      buffer(
-        `${jsonlRecords(packet)
-          .map((record) => JSON.stringify(record))
-          .join("\n")}\n`,
-      )
-    } else if (format === "text") buffer(render(count ? metadata : listed([]), "text", deps))
+    output(wholeList("list", items))
   }
   const cfg = program.command("config").description("local Zoom configuration")
   cfg
     .command("show")
     .description("show local configuration")
     .action(() => {
-      output(getConfig())
+      output(itemOf(getConfig()))
     })
   cfg
     .command("set")
@@ -355,7 +301,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .argument("<key>", "setting name, such as account.profile")
     .argument("<value>", "new value")
     .action((key: string, value: string) => {
-      output(setConfig(deps.configPath, key, value))
+      output(itemOf(setConfig(deps.configPath, key, value)))
     })
   let activeSource: Promise<MeetingSource> | undefined
   const getSource = (): Promise<MeetingSource> => {
@@ -412,10 +358,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
       )
     },
     now: deps.now,
-    write: (value, format) => {
-      const paged = typeof value === "object" && value !== null && "page" in value && typeof value.page === "object"
-      buffer(render(value, format, deps, fields, paged, true, execution?.meta))
-    },
+    write: (value) => output(bodyOf(value)),
     writeFile: deps.writeFile
       ? async (path, content) => {
           checkCancelled(signal())
@@ -424,20 +367,20 @@ export const createProgram = (deps: ProgramDeps): Command => {
         }
       : undefined,
   }
+  const before = new Set(program.commands)
   addMeetingCommands(program, meetingCommands)
+  const leaves = (command: Command): Command[] =>
+    command.commands.length ? command.commands.flatMap(leaves) : [command]
+  // The meeting reads cli-core mounts read the store opened before their action; zoom's own commands open it lazily.
+  const storeCommands = new Set(program.commands.filter((group) => !before.has(group)).flatMap(leaves))
   addStandardCommands(program, {
     output,
     discovery: (value) =>
-      buffer(
-        render(
-          value,
-          program.opts().json ? "json" : program.opts().jsonl ? "jsonl" : "text",
-          deps,
-          undefined,
-          false,
-          true,
-        ),
-      ),
+      createRenderer({
+        format: formatOf(),
+        color: false,
+        streams: { data: (text) => buffer(`${text}\n`), diagnostic: deps.diagnostic },
+      }).result(value),
     fields: () => fields,
     raw: buffer,
     doctor: () => {
@@ -500,30 +443,24 @@ export const createProgram = (deps: ProgramDeps): Command => {
       if (globals.input === false || headless)
         throw new CliError("configuration_error", "login requires browser approval; remove --no-input")
       output(
-        await login({
-          tokens: tokens(),
-          signal: signal(),
-          openBrowser: (url) => deps.openBrowser(url, opts.browser),
-          readPaste: deps.readPaste,
-          showUrl: (url) => {
-            if (!program.opts().quiet) deps.diagnostic(`Open this URL to approve Zoom login:\n${url}\n`)
-          },
-        }),
+        itemOf(
+          await login({
+            tokens: tokens(),
+            signal: signal(),
+            openBrowser: (url) => deps.openBrowser(url, opts.browser),
+            readPaste: deps.readPaste,
+            showUrl: (url) => {
+              if (!program.opts().quiet) deps.diagnostic(`Open this URL to approve Zoom login:\n${url}\n`)
+            },
+          }),
+        ),
       )
     })
   let watchConfig: ZoomConfig | undefined
   let watchSince: string | undefined
   const watchSleep = deps.sleep
-  const receipt = async (value: unknown) => {
-    const text = render(
-      value,
-      program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text",
-      deps,
-      fields,
-      true,
-      false,
-      execution?.meta,
-    )
+  const receipt = async (body: Body) => {
+    const text = rendered(body)
     const operation = signal() as AbortSignal
     const grace = operation.aborted ? createDeadline({ timeoutMs: 1000 }) : undefined
     try {
@@ -761,13 +698,17 @@ export const createProgram = (deps: ProgramDeps): Command => {
   })
   addZoomSkillCommands(program, () => {
     const renderer = createRenderer({
-      format: program.opts().json ? "json" : program.opts().jsonl ? "jsonl" : deps.outputIsTTY ? "pretty" : "json",
+      format: formatOf(),
       color: false,
       quiet: Boolean(program.opts().quiet),
       streams: { data: buffer, diagnostic: deps.diagnostic },
     })
     return {
-      renderer: { ...renderer, result: output, stream: (items) => output({ items: [...items] }) },
+      renderer: {
+        ...renderer,
+        result: (value) => output(bodyOf(value)),
+        stream: (items) => output(wholeList("skill", [...items])),
+      },
       streams: { data: (text) => buffer(`${text}\n`), diagnostic: deps.diagnostic },
       env: deps.env,
     }
@@ -815,18 +756,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     )
   addIngestionSearchCommands(program, {
     signal,
-    output: (value) =>
-      buffer(
-        render(
-          value,
-          program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text",
-          deps,
-          fields,
-          true,
-          false,
-          execution?.meta,
-        ),
-      ),
+    output,
     outputItems,
     receipt,
     preflight: preflightArchiveImport,
@@ -842,51 +772,28 @@ export const createProgram = (deps: ProgramDeps): Command => {
     },
     search: async (request) => runUnifiedSearch((await connected()).unifiedSearch, request),
   })
-  const integrationOutput = (value: unknown) =>
-    buffer(
-      render(
-        value,
-        program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text",
-        deps,
-        fields,
-        true,
-        false,
-        execution?.meta,
-      ),
-    )
   addProjectEvidenceCommand(program, {
     read: async (project, request) => (await connected()).meetingProjectEvidence(project, request),
     signal,
     now: deps.now,
-    output: integrationOutput,
+    output: (value) => output(bodyOf(value)),
   })
   addMeetingIntegrationCommands(program, {
     signal,
-    output: integrationOutput,
+    output,
     receipt,
     integration: async () => (await connected()).meetingIntegration,
   })
   addLocalTranscriptionCommands(program, {
     signal,
-    output: integrationOutput,
+    output,
     receipt,
     capabilities: async () => (await connected()).meetingTranscription,
   })
   const meetingContext = async () => (await connected()).meetingContext
   addMeetingContextCommands(program, {
     signal,
-    output: (value) =>
-      buffer(
-        render(
-          value,
-          program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text",
-          deps,
-          fields,
-          true,
-          false,
-          execution?.meta,
-        ),
-      ),
+    output,
     context: meetingContext,
   })
   addMeetingPassageCommand(program, {
@@ -897,10 +804,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
       return (await meetingContext()).passage(reference, options)
     },
     output: (result, format) => {
-      if (format === "json")
-        buffer(
-          render(result.packet, program.opts().jsonl ? "jsonl" : "json", deps, fields, true, false, execution?.meta),
-        )
+      if (format === "json") buffer(rendered(bodyOf(result.packet), program.opts().jsonl ? "jsonl" : "json"))
       else buffer(result.content)
     },
   })
@@ -908,7 +812,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
   addMeetingSearchCommands(program, {
     signal,
     offline: () => Boolean(program.opts().offline),
-    output: integrationOutput,
+    output,
     words: async () => (await connected()).meetingSearch,
     meaning: meetingSemantic,
     archive: (deps.archiveTranscripts ?? { search: searchArchiveTranscripts }).search,
@@ -917,7 +821,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     signal,
     offline: () => Boolean(program.opts().offline),
     receipt,
-    output: integrationOutput,
+    output,
     capabilities: meetingSemantic,
   })
   annotateMeetingCommands(program)

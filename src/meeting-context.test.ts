@@ -3,11 +3,11 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { Writable } from "node:stream"
 import { memoryKeyring } from "@wirecat/cli-base"
+import { snakeKeys } from "@wirecat/cli-core/cli"
 import { expect, it, vi } from "vitest"
 import { readReceipt } from "../scripts/testing/answers.js"
 import { fakeConnection } from "../scripts/testing/connection.js"
 import { setConfig } from "./config.js"
-import { snakeKeys } from "./keys.js"
 import {
   createMeetingContextCapabilities,
   validateEvidenceOptions,

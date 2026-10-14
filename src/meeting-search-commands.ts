@@ -1,6 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { LOCAL_READ } from "@wirecat/cli-core/cli"
+import { type Body, itemOf, LOCAL_READ } from "@wirecat/cli-core/cli"
 import { meetingHitsList } from "@wirecat/cli-core/meetings"
 import {
   createMeetingSearchCommand,
@@ -100,10 +100,10 @@ export const addMeetingSearchCommands = (
     archive: ArchiveTranscriptService["search"]
     offline: () => boolean
     signal: () => AbortSignal | undefined
-    output: (value: unknown) => void
+    output: (body: Body) => void
   },
 ): void => {
-  const execute = async (query: string, request: MeetingHitSearchOptions, options: SearchOptions) => {
+  const execute = async (query: string, request: MeetingHitSearchOptions, options: SearchOptions): Promise<Body> => {
     if (options.model !== undefined) {
       refuse(options, [...STORE_FILTERS, "maxReadBytes"], "to a search by meaning")
       const meaning = {
@@ -122,7 +122,7 @@ export const addMeetingSearchCommands = (
       if (meaning.baseUrl !== undefined && deps.offline())
         throw new CliError("configuration_error", "remote embeddings require network access; remove --offline")
       const found = (await (await deps.meaning()).search(query, meaning)) as { nextChunkId?: number }
-      return { ...found, nextCursor: found.nextChunkId === undefined ? null : String(found.nextChunkId) }
+      return itemOf({ ...found, nextCursor: found.nextChunkId === undefined ? null : String(found.nextChunkId) })
     }
     refuse(options, ["baseUrl", "dims", "maxChunks", "maxRows", "maxTextBytes"], "without --model")
     return meetingHitsList(
@@ -161,7 +161,10 @@ export const addMeetingSearchCommands = (
     .option("--limit <n>", "how many hits, 1 through 1000 (default 100)", bytes)
     .action(async (directory: string, words: string[], options: { limit?: number }) => {
       const found = await deps.archive(directory, words.join(" "), { limit: options.limit, signal: deps.signal() })
-      deps.output({ ...found, items: found.items.map(recordingHit(directory)) })
+      deps.output({
+        items: found.items.map(recordingHit(directory)),
+        page: { mode: "page", limit: found.limit, has_more: found.hasMore },
+      })
     })
   annotate(recordings, {
     origin: "handwritten",

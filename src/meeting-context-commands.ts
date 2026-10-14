@@ -1,7 +1,8 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { LOCAL_READ } from "@wirecat/cli-core/cli"
+import { type Body, itemOf, LOCAL_READ } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
+import { bodyOf } from "./answer-output.js"
 import { bytes } from "./execution.js"
 import {
   type EvidenceOptions,
@@ -18,7 +19,7 @@ export const addMeetingContextCommands = (
   deps: {
     context: () => Promise<MeetingContextCapabilities>
     signal: () => AbortSignal | undefined
-    output: (value: unknown) => void
+    output: (body: Body) => void
   },
 ) => {
   const meetings = program.commands.find((command) => command.name() === "meetings")
@@ -45,15 +46,17 @@ export const addMeetingContextCommands = (
         validateEvidenceOptions(options)
         const context = await deps.context()
         deps.output(
-          await context.evidence(reference, {
-            cues: options.cues,
-            bytes: options.bytes,
-            after: options.after,
-            afterTranscriptId: options.afterTranscriptId,
-            maxReadBytes: options.maxReadBytes,
-            maxTranscriptPages: options.maxTranscriptPages,
-            signal: deps.signal(),
-          }),
+          bodyOf(
+            await context.evidence(reference, {
+              cues: options.cues,
+              bytes: options.bytes,
+              after: options.after,
+              afterTranscriptId: options.afterTranscriptId,
+              maxReadBytes: options.maxReadBytes,
+              maxTranscriptPages: options.maxTranscriptPages,
+              signal: deps.signal(),
+            }),
+          ),
         )
       }),
     "zm meetings evidence meeting:3/15 --json",
@@ -82,14 +85,16 @@ export const addMeetingContextCommands = (
           validatePersonContext(person, options)
           const context = await deps.context()
           deps.output(
-            await context.personContext(person, {
-              meetings: options.meetings,
-              cues: options.cues,
-              bytes: options.bytes,
-              scanLimit: options.scanLimit,
-              since: options.since,
-              signal: deps.signal(),
-            }),
+            bodyOf(
+              await context.personContext(person, {
+                meetings: options.meetings,
+                cues: options.cues,
+                bytes: options.bytes,
+                scanLimit: options.scanLimit,
+                since: options.since,
+                signal: deps.signal(),
+              }),
+            ),
           )
         },
       ),
@@ -106,7 +111,7 @@ export const addMeetingContextCommands = (
         const context = await deps.context()
         const proposal = await context.taskProposal(reference, kind, deps.signal())
         validateTaskProposal(proposal)
-        deps.output(proposal)
+        deps.output(itemOf(proposal))
       }),
     "zm meetings task-proposal meeting:3/15/20/0 --type promise --json",
   )

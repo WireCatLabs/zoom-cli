@@ -1,6 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { LOCAL_WRITE } from "@wirecat/cli-core/cli"
+import { type Body, itemOf, LOCAL_WRITE } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { bytes } from "./execution.js"
 
@@ -97,8 +97,8 @@ export const addMeetingEmbeddingCommand = (
     capabilities: () => Promise<MeetingSemanticCapabilities>
     signal: () => AbortSignal | undefined
     offline: () => boolean
-    output: (value: unknown) => void
-    receipt: (value: unknown) => Promise<void>
+    output: (body: Body) => void
+    receipt: (body: Body) => Promise<void>
   },
 ): void => {
   const meetings = program.commands.find((command) => command.name() === "meetings")
@@ -126,8 +126,8 @@ export const addMeetingEmbeddingCommand = (
           throw new CliError("configuration_error", "remote embeddings require network access; remove --offline")
         const api = await deps.capabilities()
         const result = await api.generate({ ...options, signal: deps.signal() })
-        if (options.yes) await deps.receipt(result)
-        else deps.output(result)
+        if (options.yes) await deps.receipt(itemOf(result))
+        else deps.output(itemOf(result))
       }),
     { origin: "handwritten", effects: LOCAL_WRITE, examples: ["zm meetings embeddings --model e5-small --json"] },
   )

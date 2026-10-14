@@ -2,6 +2,7 @@ import { PassThrough } from "node:stream"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
+import { snakeKeys } from "@wirecat/cli-core/cli"
 import {
   callMeetingTool,
   meetingProjectEvidenceTool,
@@ -12,7 +13,6 @@ import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-core/meetings/te
 import { describe, expect, it, vi } from "vitest"
 import { readAnswer } from "../scripts/testing/answers.js"
 import { fakeConnection } from "../scripts/testing/connection.js"
-import { snakeKeys } from "./keys.js"
 import { createMeetingMcpServer, type MeetingMcpOptions, serveMeetingMcp } from "./mcp-server.js"
 
 const connected = async (options: MeetingMcpOptions) => {

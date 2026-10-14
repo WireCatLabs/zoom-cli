@@ -1,9 +1,9 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js"
+import { snakeKeys } from "@wirecat/cli-core/cli"
 import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { expect, it, vi } from "vitest"
 import { fakeConnection } from "../scripts/testing/connection.js"
-import { snakeKeys } from "./keys.js"
 import { createMeetingMcpServer } from "./mcp-server.js"
 import { createMeetingContextCapabilities } from "./meeting-context.js"
 

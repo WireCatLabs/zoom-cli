@@ -4,7 +4,7 @@ import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js"
 import { CallToolRequestSchema, ListToolsRequestSchema, type Tool } from "@modelcontextprotocol/sdk/types.js"
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv"
 import { CliError, type ErrorCode, errorObjectOf, isCliError, mcpErrorResult } from "@wirecat/cli-base"
-import { LOCAL_READ } from "@wirecat/cli-core/cli"
+import { LOCAL_READ, snakeKeys } from "@wirecat/cli-core/cli"
 import { type MeetingStore, SAVE_INSTRUCTION } from "@wirecat/cli-core/meetings"
 import {
   callMeetingPassageTool,
@@ -18,8 +18,8 @@ import {
 import type { MeetingSearchCursor } from "@wirecat/cli-core/services"
 import type { Command } from "commander"
 import { hostFailureContext } from "./answer-policy.js"
-import { meetingAnswer, readMetadata, toolAnswerSchema } from "./answers.js"
-import { camelKeys, snakeKeys } from "./keys.js"
+import { readMetadata, toolAnswer, toolAnswerSchema } from "./answers.js"
+import { camelKeys } from "./keys.js"
 import {
   type MeetingTaskKind,
   validateEvidenceOptions,
@@ -366,7 +366,7 @@ const buildServer = (options: MeetingMcpOptions) => {
     if (cancelled()) return failure("cancelled", "meeting read was cancelled")
     if (!result.isError) {
       try {
-        const answer = meetingAnswer(result.structuredContent, meta(), options.commandRegistry)
+        const answer = toolAnswer(result.structuredContent, meta(), options.commandRegistry)
         result = { content: [{ type: "text", text: JSON.stringify(answer) }], structuredContent: answer }
       } catch (error) {
         result = mcpErrorResult(errorObjectOf(error, hostFailureContext(undefined, LOCAL_READ)))

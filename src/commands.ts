@@ -9,15 +9,16 @@ import {
   metaOf,
 } from "@wirecat/cli-base/commands"
 import { formatSuggestions, suggest } from "@wirecat/cli-base/completion"
-import { LOCAL_READ, NO_EFFECTS } from "@wirecat/cli-core/cli"
+import { type Body, itemOf, LOCAL_READ, NO_EFFECTS } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
+import { wholeList } from "./answer-output.js"
 import { commandEffects } from "./command-effects.js"
 import { VERSION } from "./version.js"
 
 const CONTRACT = 3
 
 export interface StandardCommandsDeps {
-  output: (value: unknown) => void
+  output: (body: Body) => void
   discovery: (value: unknown) => void
   fields: () => readonly string[] | undefined
   raw: (text: string) => void
@@ -70,7 +71,7 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
           globalOptions: describeOptions(program),
           words,
         })
-        if (program.opts().json || program.opts().jsonl) deps.output({ items: suggestions })
+        if (program.opts().json || program.opts().jsonl) deps.output(wholeList("complete", suggestions))
         else deps.raw(`${formatSuggestions(suggestions)}\n`)
       }),
     { effects: LOCAL_READ, examples: ["zm complete -- meetings s"] },
@@ -79,7 +80,7 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
     program
       .command("doctor")
       .description("check local runtime and public config without a login or database")
-      .action(() => deps.output(deps.doctor())),
+      .action(() => deps.output(itemOf(deps.doctor()))),
     { effects: LOCAL_READ, examples: ["zm doctor --json"] },
   )
   const session = program.command("session").description("the saved Zoom login, separate from local data profiles")
@@ -88,7 +89,9 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
       .command("status")
       .description("show cached login state; remote verification is explicit")
       .option("--check", "verify the session with Zoom")
-      .action(async (options: { check?: boolean }) => deps.output(await deps.sessionStatus(options.check === true))),
+      .action(async (options: { check?: boolean }) =>
+        deps.output(itemOf(await deps.sessionStatus(options.check === true))),
+      ),
     { effects: LOCAL_READ, examples: ["zm session status --json", "zm session status --check --json"] },
   )
 }

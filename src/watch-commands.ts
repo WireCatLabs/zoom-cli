@@ -1,6 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { LOCAL_WRITE } from "@wirecat/cli-core/cli"
+import { type Body, itemOf, LOCAL_WRITE } from "@wirecat/cli-core/cli"
 import { type RunReport, type WatchSleep, watchMeetingIngestion } from "@wirecat/cli-core/meetings"
 import { Argument, type Command } from "commander"
 import { duration } from "./execution.js"
@@ -22,7 +22,7 @@ export interface WatchCommandDeps {
   signal: () => AbortSignal
   prepare: (target: WatchTarget | undefined, folder: string | undefined, flags: WatchFlags) => WatchPlan
   ingest: (plan: WatchPlan, signal: AbortSignal) => Promise<RunReport>
-  receipt: (report: RunReport) => Promise<void>
+  receipt: (body: Body) => Promise<void>
   sleep?: WatchSleep
   outputIsTTY?: boolean
 }
@@ -64,7 +64,7 @@ export const addWatchCommand = (program: Command, deps: WatchCommandDeps): void 
         intervalMs: plan.intervalMs,
         sleep: deps.sleep,
       }))
-        await deps.receipt(report)
+        await deps.receipt(itemOf(report))
     })
   annotate(command, {
     origin: "handwritten",
