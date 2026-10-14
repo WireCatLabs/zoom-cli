@@ -14,6 +14,7 @@ import {
   renderError,
   type SleepLike,
 } from "@wirecat/cli-base"
+import { failureContext } from "@wirecat/cli-core"
 import {
   importFiles,
   listed,
@@ -27,6 +28,7 @@ import {
 import { addMeetingCommands, addMeetingPassageCommand } from "@wirecat/cli-core/meetings/cli"
 import { Command, CommanderError } from "commander"
 import { addZoomSkillCommands } from "./agent-skill.js"
+import { meetingAnswer } from "./answers.js"
 import { ZoomApiSource } from "./api.js"
 import {
   type ArchiveService,
@@ -166,9 +168,15 @@ const render = (
   fields?: readonly string[],
   preserveEnvelope = false,
   providerKeys = false,
+  seal?: () => import("@wirecat/cli-base/standards").Meta,
 ): string => {
   if (!providerKeys) value = snakeKeys(value)
-  if (fields) value = projectFields(value, fields)
+  if (seal) value = meetingAnswer(value, seal())
+  if (fields) {
+    if (seal && value && typeof value === "object" && "item" in value)
+      value = { ...value, item: projectFields(value.item, fields) }
+    else value = projectFields(value, fields)
+  }
   const chunks: string[] = []
   const renderer = createRenderer({
     format: format === "text" ? (deps.outputIsTTY ? "pretty" : "json") : format,
@@ -177,6 +185,7 @@ const render = (
   })
   if (
     !preserveEnvelope &&
+    !seal &&
     format === "jsonl" &&
     typeof value === "object" &&
     value !== null &&
@@ -265,7 +274,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     const opts = action.optsWithGlobals()
     if (opts.json && opts.jsonl) throw new ZoomError("validation_error", "choose --json or --jsonl")
     fields = opts.fields === undefined ? undefined : fieldsOf(opts.fields)
-    execution = startExecution(action, { signal: deps.signal, sleep: deps.sleep })
+    execution = startExecution(action, { signal: deps.signal, sleep: deps.sleep, now: deps.now })
     checkCancelled(signal())
     let family = action
     while (family.parent && family.parent !== program) family = family.parent
@@ -313,7 +322,17 @@ export const createProgram = (deps: ProgramDeps): Command => {
     requireAccount()
   })
   const output = (value: unknown) =>
-    buffer(render(value, program.opts().json ? "json" : program.opts().jsonl ? "jsonl" : "text", deps, fields))
+    buffer(
+      render(
+        value,
+        program.opts().json ? "json" : program.opts().jsonl ? "jsonl" : "text",
+        deps,
+        fields,
+        true,
+        false,
+        execution?.meta,
+      ),
+    )
   const outputItems = async (values: AsyncIterable<unknown>) => {
     const format = program.opts().jsonl ? "jsonl" : program.opts().json || !deps.outputIsTTY ? "json" : "text"
     const metadata: Partial<ReturnType<typeof listed>> = listed([])
@@ -327,11 +346,14 @@ export const createProgram = (deps: ProgramDeps): Command => {
       if (format === "json") {
         if (count) buffer(",")
         buffer(render(projected, "json", deps).trimEnd())
-      } else buffer(render(projected, format, deps))
+      } else buffer(render(projected, format, deps, undefined, true, false, execution?.meta))
       count++
     }
     metadata.limit = count
-    if (format === "json") buffer(`],${JSON.stringify(snakeKeys(metadata)).slice(1)}\n`)
+    if (format === "json")
+      buffer(
+        `],"page":${JSON.stringify({ limit: Math.max(1, count), has_more: false })},"meta":${JSON.stringify(execution?.meta())}}\n`,
+      )
     else if (format === "text") buffer(render(count ? metadata : listed([]), "text", deps))
   }
   const cfg = program.command("config").description("local Zoom configuration")
@@ -406,7 +428,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     now: deps.now,
     write: (value, format) => {
       const paged = typeof value === "object" && value !== null && "page" in value && typeof value.page === "object"
-      buffer(render(value, format, deps, fields, paged, true))
+      buffer(render(value, format, deps, fields, paged, true, execution?.meta))
     },
     writeFile: deps.writeFile
       ? async (path, content) => {
@@ -507,7 +529,15 @@ export const createProgram = (deps: ProgramDeps): Command => {
   let watchSince: string | undefined
   const watchSleep = deps.sleep
   const receipt = async (value: unknown) => {
-    const text = render(value, program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text", deps, fields)
+    const text = render(
+      value,
+      program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text",
+      deps,
+      fields,
+      true,
+      false,
+      execution?.meta,
+    )
     const operation = signal() as AbortSignal
     const grace = operation.aborted ? createDeadline({ timeoutMs: 1000 }) : undefined
     try {
@@ -819,7 +849,17 @@ export const createProgram = (deps: ProgramDeps): Command => {
   addIngestionSearchCommands(program, {
     signal,
     output: (value) =>
-      buffer(render(value, program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text", deps, fields, true)),
+      buffer(
+        render(
+          value,
+          program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text",
+          deps,
+          fields,
+          true,
+          false,
+          execution?.meta,
+        ),
+      ),
     outputItems,
     receipt,
     preflight: preflightArchiveImport,
@@ -880,7 +920,17 @@ export const createProgram = (deps: ProgramDeps): Command => {
     return connection
   }
   const integrationOutput = (value: unknown) =>
-    buffer(render(value, program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text", deps, fields, true))
+    buffer(
+      render(
+        value,
+        program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text",
+        deps,
+        fields,
+        true,
+        false,
+        execution?.meta,
+      ),
+    )
   addMeetingIntegrationCommands(program, {
     signal,
     output: integrationOutput,
@@ -930,7 +980,17 @@ export const createProgram = (deps: ProgramDeps): Command => {
   addMeetingContextCommands(program, {
     signal,
     output: (value) =>
-      buffer(render(value, program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text", deps, fields, true)),
+      buffer(
+        render(
+          value,
+          program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text",
+          deps,
+          fields,
+          true,
+          false,
+          execution?.meta,
+        ),
+      ),
     context: meetingContext,
   })
   addMeetingPassageCommand(program, {
@@ -944,7 +1004,10 @@ export const createProgram = (deps: ProgramDeps): Command => {
       return context.passage(reference, options)
     },
     output: (result, format) => {
-      if (format === "json") buffer(render(result.packet, program.opts().jsonl ? "jsonl" : "json", deps, fields, true))
+      if (format === "json")
+        buffer(
+          render(result.packet, program.opts().jsonl ? "jsonl" : "json", deps, fields, true, false, execution?.meta),
+        )
       else buffer(result.content)
     },
   })
@@ -1078,7 +1141,7 @@ export const reportFailure = (
   const end = args.indexOf("--")
   const flags = args.slice(0, end < 0 ? undefined : end)
   const machine = flags.some((word) => word === "--json" || word === "--jsonl")
-  const object = errorObjectOf(failure)
+  const object = errorObjectOf(failure, failureContext())
   const record = flags.includes("--debug")
     ? errorRecordOf(failure, object, { command, service: "zm", version: VERSION })
     : undefined

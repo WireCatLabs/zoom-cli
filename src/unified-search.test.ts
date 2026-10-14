@@ -3,6 +3,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
 import { expect, it, vi } from "vitest"
+import { readAnswer } from "../scripts/testing/answers.js"
 import { setConfig } from "./config.js"
 import { snakeKeys } from "./keys.js"
 import { type ProgramDeps, run } from "./program.js"
@@ -92,7 +93,7 @@ it("preserves nullable completeness and explicit cross-resource opt-in in CLI", 
   const search = vi.fn(async (_request: UnifiedSearchRequest) => found())
   deps.unifiedSearch = search
   expect(await run(["search", "all", "example", "--json"], deps)).toBe(0)
-  expect(JSON.parse(output.pop() ?? "{}")).toEqual(snakeKeys(found()))
+  expect(readAnswer(output.pop() ?? "{}")).toEqual(snakeKeys(found()))
   expect(search.mock.calls[0]?.[0]).toMatchObject({ only: ["meetings"] })
   expect(
     await run(
@@ -128,7 +129,7 @@ it("preserves nullable completeness and explicit cross-resource opt-in in CLI", 
   output.length = 0
   expect(await run(["search", "all", "example", "--jsonl"], deps)).toBe(0)
   expect(output.join("").trim().split("\n")).toHaveLength(1)
-  expect(JSON.parse(output.join(""))).toEqual(snakeKeys(found()))
+  expect(readAnswer(output.join(""))).toEqual(snakeKeys(found()))
 })
 
 it("resolves read intent only after validating query options and closes before finite output", async () => {

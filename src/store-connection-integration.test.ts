@@ -201,8 +201,12 @@ it("mounts real durable connector capabilities and rejects absent local profiles
     if (command === search) {
       const found = JSON.parse(output.at(-1) ?? "{}")
       expect(found.items.length).toBeGreaterThan(0)
-      expect(found.items.every((hit: { meeting_id: number }) => hit.meeting_id === value.meeting.meeting.id)).toBe(true)
-      expect(found.coverage.indexing).toBe("ready")
+      expect(
+        found.items.every(
+          (hit: { meeting: string }) => hit.meeting === `meeting:${value.accountId}/${value.meeting.meeting.id}`,
+        ),
+      ).toBe(true)
+      expect(found.missing).toBeUndefined()
     }
   }
   expect(connections).toBe(3)

@@ -32,7 +32,7 @@ it("advertises opt-in meeting-only unified search without store access, rejects 
     expect((await client.listTools()).tools.some((tool) => tool.name === "search_all")).toBe(true)
     expect(connectStore).not.toHaveBeenCalled()
     const result = await client.callTool({ name: "search_all", arguments: { query: "example", limit: 10 } })
-    expect(result.structuredContent).toMatchObject({ has_more: null, meetings: { complete: false } })
+    expect(result.structuredContent).toMatchObject({ item: { has_more: null, meetings: { complete: false } } })
     expect(search.mock.calls[0]?.[0]).toMatchObject({ only: ["meetings"], text: "example", limit: 10 })
     expect(close).toHaveBeenCalledOnce()
     for (const override of [

@@ -30,7 +30,8 @@ separate index step. All query words must match, through literal prefixes or sto
 configuration adds English, Russian and Spanish word stems; a store can disable or customize it. The query is
 plain words, with no operators. `--meeting-id`, `--event-id`, `--series-id`, `--since-time` and `--until-time`
 narrow the selected account. The opaque cursor belongs to that account, query and filters; it can continue
-inside a large transcript. JSONL preserves the complete page, including `next_cursor` and `coverage`.
+inside a large transcript. JSONL preserves the complete page, including `page.cursor`, `next` and any `missing` index information. Hits include the cited `ref`,
+meeting reference `meeting`, `excerpt` and `offset_ms`; expand a cue with `meetings passage`.
 
 ## Search by meaning or in an archive
 
@@ -79,8 +80,8 @@ account, using `identity_id`, `person_id`, `event_id`, `series_id`, `project`, `
 It uses literal Unicode matching; it does not translate names or infer that two people are the same.
 Use `--limit` (default 50), `--scan-limit` (default 1000) and `--max-read-bytes` (default 1048576)
 to bound matching observations, inspected observations and stored name/email bytes per call.
-The answer keeps `page.has_more`, `page.cursor`, coverage and page-local identity ambiguity, including in JSONL.
-Follow the `page.next` step or repeat the same query with `--cursor`. An empty page can still have continuation.
+The answer keeps `item.page.has_more`, `item.page.cursor`, coverage and page-local identity ambiguity, including in JSONL.
+Follow the report's `item.next` step or repeat the same query with `--cursor`. An empty page can still have continuation.
 Distinct identity IDs are candidates to review, never automatic person links. Archive completeness remains unknown.
 
 `meetings list` filters metadata with a query, for example
@@ -100,7 +101,7 @@ zm meetings task-proposal meeting:3/15/20/0 --type promise --json
 Broader search requires explicit `--only messages,mail,notes,meetings`. Message reads use the
 selected local account; mail reads include stored email accounts; notes are global to the shared
 store. Meeting matching uses word prefixes; unsupported meeting syntax or exact queries are reported
-as skipped. A meetings-only continuation uses the returned `meetings.next_cursor` as
+as skipped. A meetings-only continuation uses the returned `item.meetings.next_cursor` as
 `--meeting-cursor '<json>'`, bound to its account and query. JSONL emits one complete report,
 retaining skips, coverage and cursors.
 
@@ -187,8 +188,8 @@ zm search meetings "RES" --identity-id 12 --since-time 2026-09-14 --until-time 2
 Inspect all participant pages and choose the intended `identity_id`; do not select a person solely
 because the display name matches. Use aliases already recorded in the shared vocabulary or supplied
 by the owner. Current commands do not expand project aliases into transcript-word searches automatically.
-Repeat word searches for those aliases without `--project`, and follow each search's `next_cursor`
-while `has_more` is true. Keep the same participant and date bounds on continuation.
+Repeat word searches for those aliases without `--project`, and follow each search's `page.cursor` or `next` step
+while `page.has_more` is true. Keep the same participant and date bounds on continuation.
 
 For each relevant retained cue `ref`, open `zm meetings passage <ref> --format markdown`.
 The passage keeps timestamps, source references, revision and coverage, so an agent can write a

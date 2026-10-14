@@ -241,21 +241,22 @@ export const installedMeetingIntegration = async ({
       ...contextFilters,
       ...(cursor ? ["--cursor", cursor] : []),
     )
-    assert.deepEqual(page.coverage, {
-      archive_completeness: "unknown",
-      current_revisions: true,
-      indexing: "ready",
-      index_completeness: "unknown",
-    })
-    assert.ok(page.items.every((hit) => hit.meeting_id === target.meetingId))
+    assert.equal(page.missing, undefined)
+    assert.ok(page.next?.[0]?.args.query === query || !page.page.has_more)
+    assert.ok(
+      page.items.every(
+        (hit) => hit.meeting === `meeting:${target.accountId}/${target.meetingId}` && hit.ref.startsWith("meeting:"),
+      ),
+    )
     hits.push(...page.items)
-    cursor = page.next_cursor
+    cursor = page.page.cursor
     firstCursor ??= cursor
   } while (cursor)
   assert.equal(hits.length, 9)
   const topicHits = json("search", "meetings", "needle", "--topic", "costs", "--project", "RES")
   assert.equal(topicHits.items.length, 9)
-  assert.equal(topicHits.selection[1].name, "budget")
+  assert.deepEqual(topicHits.items, json("search", "meetings", "needle", "--topic", "budget", "--project", "RES").items)
+  invoke(["--json", "search", "meetings", "needle", "--topic", "missing-invented-topic", "--project", "RES"], 6)
   assert.equal(new Set(hits.map((hit) => hit.id)).size, 9)
   assert.ok(firstCursor)
   invoke(

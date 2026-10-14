@@ -51,8 +51,10 @@
       "stream": "stdout",
       "kind": "json",
       "json": {
-        "account_profile": "contract",
-        "files_timezone": "UTC"
+        "item": {
+          "account_profile": "contract",
+          "files_timezone": "UTC"
+        }
       }
     },
     {

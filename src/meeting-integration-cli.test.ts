@@ -6,6 +6,7 @@ import { parseMeetingReference } from "@wirecat/cli-core"
 import { createMeetingContext, type MeetingMediaDescriptor, transcribeMeeting } from "@wirecat/cli-core/meetings"
 import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { expect, it, vi } from "vitest"
+import { readAnswer } from "../scripts/testing/answers.js"
 import { ZoomError } from "./errors.js"
 import type { LocalTranscriptionOptions } from "./local-transcription.js"
 import { type ProgramDeps, run } from "./program.js"
@@ -42,7 +43,11 @@ const setup = async () => {
   }
   return { deps, output, errors, writes, connect }
 }
-const latest = (rows: string[]) => JSON.parse(rows.at(-1) ?? "{}")
+const latest = (rows: string[]) => {
+  const text = rows.at(-1) ?? "{}"
+  const packet = JSON.parse(text)
+  return "error" in packet || "commands" in packet ? packet : readAnswer(text)
+}
 
 it("previews links and applies owner-selected event and participant links once", async () => {
   const { deps, output, writes } = await setup()
@@ -157,7 +162,16 @@ it("preserves an acknowledged link receipt when cancellation follows commit", as
 it("keeps bounded search cursors and coverage in JSONL and forwards typed date/budget filters", async () => {
   const { deps, output, connect } = await setup()
   const search = vi.fn(async () => ({
-    items: [{ meetingId: 1, scope: "transcript" as const, id: 1, text: "Alice Example plan", startMs: 0 }],
+    items: [
+      {
+        ref: "meeting:1/1/1/0",
+        meetingId: 1,
+        scope: "transcript" as const,
+        id: 1,
+        text: "Alice Example plan",
+        startMs: 0,
+      },
+    ],
     hasMore: true,
     nextCursor: "example_next",
     coverage: {
@@ -204,9 +218,8 @@ it("keeps bounded search cursors and coverage in JSONL and forwards typed date/b
     ),
   ).toBe(0)
   expect(latest(output)).toMatchObject({
-    has_more: true,
-    next_cursor: "example_next",
-    coverage: { archive_completeness: "unknown" },
+    items: [{ ref: "meeting:1/1/1/0", meeting: "meeting:1/1", offset_ms: 0, excerpt: "Alice Example plan" }],
+    page: { has_more: true, cursor: "example_next" },
   })
   expect(search).toHaveBeenCalledWith(
     "example plan",

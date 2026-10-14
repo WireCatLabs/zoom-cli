@@ -73,6 +73,15 @@ cannot launch the command, use `where.exe zm` on Windows or `command -v zm` on L
 and put that executable's full path in the entry. A remote web chat cannot run this local command
 unless it has a supported connection to your machine.
 
+## Answer format
+
+Successful tool replies use the same item/list envelopes as the CLI, with snake_case keys and
+`meta.run_id` / `meta.duration_ms`. Detailed context, participant and semantic reports are inside
+`item`; standard meeting, transcript, summary and word-hit lists use `items` and `page`.
+Text content and structured content contain the same complete answer. Every tool advertises
+a strict success/error output schema. Unknown arguments are rejected in the handler before a
+store opens, with `validation_error` naming the field. The server selects the account.
+
 ## Optional tools
 
 Optional flags add tools without changing the defaults: `--meeting-context` adds cited passages, evidence, person

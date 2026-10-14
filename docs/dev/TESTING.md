@@ -5,6 +5,17 @@ use cli-base's memory keyring and the meetings module's memory store. OAuth test
 with invented codes; they do not open a browser or connect to Zoom. Token refresh verifies that no
 client secret or authorization header is sent.
 
+Every build, test and product CLI invocation uses fresh temporary state on the same command line:
+
+```sh
+T=$(mktemp -d -p /var/tmp) && HOME=$T MESSAGING_STORE=$T/store WIRECAT_STATE_DIR=$T/state pnpm test
+```
+
+Never run a branch build against the owner's database, keyring or model directory. Domain assertions
+use `scripts/testing/answers.ts` to validate the full public envelope against Base schemas before
+reading its payload. MCP tests use real SDK clients and strict advertised output schemas. Installed
+platform proofs validate every product answer and keep helper/embedding-fixture JSON separate.
+
 Integration cases exercise command import and transcript search, grouped participant sessions,
 API occurrence ids, missing scopes, corrected/idempotent imports, time zones and daylight-saving
 ambiguity. Temporary config and transcript fixtures live under `/tmp/zm-test-*`; they contain only

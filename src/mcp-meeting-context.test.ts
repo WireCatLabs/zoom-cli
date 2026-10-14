@@ -61,11 +61,11 @@ it("discovers opt-in context without IO, rejects account overrides, and closes b
     expect(read).not.toHaveBeenCalled()
     expect(close).toHaveBeenCalledOnce()
     expect(await client.callTool({ name: "meeting_evidence", arguments: { reference: "meeting:3/15" } })).toMatchObject(
-      { structuredContent: { source: "meeting:3/15", coverage: { complete: false } } },
+      { structuredContent: { item: { source: "meeting:3/15", coverage: { complete: false } } } },
     )
     expect(close).toHaveBeenCalledTimes(2)
     expect(await client.callTool({ name: "person_meeting_context", arguments: { person: "person:7" } })).toMatchObject({
-      structuredContent: { coverage: { complete: false } },
+      structuredContent: { item: { coverage: { complete: false } } },
     })
     expect(read).toHaveBeenLastCalledWith(
       expect.objectContaining({ involvements: personStore.involvements }),
@@ -77,7 +77,7 @@ it("discovers opt-in context without IO, rejects account overrides, and closes b
         name: "meeting_task_proposal",
         arguments: { reference: "meeting:3/15", kind: "promise" },
       }),
-    ).toMatchObject({ structuredContent: { applied: false, persistence: "proposal-only" } })
+    ).toMatchObject({ structuredContent: { item: { applied: false, persistence: "proposal-only" } } })
     expect(close).toHaveBeenCalledTimes(4)
   } finally {
     await client.close()
@@ -126,7 +126,7 @@ it("exposes semantic queries only with a server-selected model and never exposes
         name: "search_meetings",
         arguments: { query: "example", by_meaning: true, cursor: "4" },
       }),
-    ).toMatchObject({ structuredContent: snakeKeys({ ...report, nextCursor: "12" }) })
+    ).toMatchObject({ structuredContent: { item: snakeKeys({ ...report, nextCursor: "12" }) } })
     expect(search).toHaveBeenCalledWith("example", expect.not.objectContaining({ buildMissing: true }))
     expect(search).toHaveBeenCalledWith(
       "example",

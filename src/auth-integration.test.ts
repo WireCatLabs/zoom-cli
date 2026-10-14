@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
 import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { describe, expect, it } from "vitest"
+import { readAnswer } from "../scripts/testing/answers.js"
 import { setConfig } from "./config.js"
 import { login } from "./login.js"
 import { type ProgramDeps, run } from "./program.js"
@@ -295,7 +296,7 @@ it("preflights every normalized import key before saving and deduplicates identi
   expect(JSON.parse(stderr[0] ?? "{}").error.code).toBe("validation_error")
   files[1] = { name: "2026-10-10_1530_cafe\u0301.vtt", content }
   expect(await run(["--json", "meetings", "import", "example-folder"], deps)).toBe(0)
-  expect(JSON.parse(stdout[0] ?? "{}")).toMatchObject({ meetings: 1 })
+  expect(readAnswer(stdout[0] ?? "{}")).toMatchObject({ meetings: 1 })
   expect(await deps.store.meetings()).toHaveLength(1)
 })
 
@@ -320,7 +321,7 @@ it("connects lazily once with read intent and closes direct program parsing", as
   await program.parseAsync(["--json", "meetings", "list"], { from: "user" })
   expect(opened).toBe(1)
   expect(closed).toBe(1)
-  expect(JSON.parse(stdout[0] ?? "{}").items).toEqual([])
+  expect(readAnswer(stdout[0] ?? "{}").items).toEqual([])
   await program.parseAsync(["--json", "meetings", "list"], { from: "user" })
   expect(opened).toBe(2)
   expect(closed).toBe(2)
@@ -452,7 +453,7 @@ it("closes after source and rejected-save errors and sanitizes connector failure
     throw new Error("example rejected save")
   }
   expect(await run(["meetings", "import", "example-folder"], deps)).toBe(0)
-  expect(JSON.parse(stdout.at(-1) ?? "{}").warnings).toHaveLength(1)
+  expect(readAnswer(stdout.at(-1) ?? "{}").warnings).toHaveLength(1)
   expect(closes).toBe(2)
   deps.connectStore = async () => {
     throw new Error("private database path")

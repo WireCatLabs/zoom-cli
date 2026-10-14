@@ -5,6 +5,8 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { callMeetingTool, meetingSearchTool, meetingTools } from "@wirecat/cli-core/meetings/mcp"
 import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { describe, expect, it, vi } from "vitest"
+import { readAnswer } from "../scripts/testing/answers.js"
+import { snakeKeys } from "./keys.js"
 import { createMeetingMcpServer, type MeetingMcpOptions, serveMeetingMcp } from "./mcp-server.js"
 
 const connected = async (options: MeetingMcpOptions) => {
@@ -60,7 +62,19 @@ describe("read-only SDK meeting server", () => {
       ] as const
       for (const [name, args] of inputs) {
         const expected = await callMeetingTool(data.store, name, { ...args, account_id: 1 })
-        expect(await client.callTool({ name, arguments: args })).toEqual(expected)
+        const actual = await client.callTool({ name, arguments: args })
+        const packet = JSON.parse(JSON.stringify(actual.structuredContent))
+        const body = readAnswer(JSON.stringify(packet))
+        const shared = JSON.parse(JSON.stringify(expected.structuredContent))
+        if (name === "meeting_people") {
+          expect(body.items).toEqual(snakeKeys(shared.items))
+          expect(body.page).toEqual({ limit: Math.max(1, shared.limit), has_more: false })
+        } else if ("item" in shared) expect(body).toEqual(shared.item)
+        else if ("items" in shared) {
+          const { meta: _meta, ...withoutMeta } = packet
+          expect(withoutMeta).toEqual(shared)
+        } else expect(body).toEqual(snakeKeys(shared))
+        expect(actual.content).toEqual([{ type: "text", text: JSON.stringify(actual.structuredContent) }])
         expect(data.close).toHaveBeenCalledTimes(data.connectStore.mock.calls.length)
       }
       expect(data.connectStore).toHaveBeenCalledTimes(6)
@@ -87,6 +101,17 @@ describe("read-only SDK meeting server", () => {
         { name: "pull", arguments: {} },
       ])
         expect(await client.callTool(request)).toMatchObject({ isError: true })
+      for (const [field, args] of [
+        ["extra", { extra: "invented" }],
+        ["account_id", { account_id: 2 }],
+        ["limit", { limit: "invalid" }],
+      ] as const) {
+        const refused = await client.callTool({ name: "meetings_list", arguments: args })
+        expect(refused).toMatchObject({
+          isError: true,
+          structuredContent: { error: { code: "validation_error", message: expect.stringContaining(field) } },
+        })
+      }
       expect(data.connectStore).not.toHaveBeenCalled()
     } finally {
       await client.close()

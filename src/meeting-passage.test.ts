@@ -7,6 +7,7 @@ import { memoryKeyring } from "@wirecat/cli-base"
 import { sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { openStore } from "@wirecat/cli-core/store"
 import { expect, it, vi } from "vitest"
+import { readAnswer } from "../scripts/testing/answers.js"
 import { setConfig } from "./config.js"
 import { createMeetingMcpServer } from "./mcp-server.js"
 import { type ProgramDeps, run } from "./program.js"
@@ -96,7 +97,7 @@ it("opens published search-hit context as Markdown or structured JSON and closes
       f.deps,
     ),
   ).toBe(0)
-  const packet = JSON.parse(f.output.join(""))
+  const packet = readAnswer(f.output.join(""))
   expect(packet).toMatchObject({
     kind: "meeting_context",
     target_ref: f.reference,
@@ -115,7 +116,7 @@ it("opens published search-hit context as Markdown or structured JSON and closes
   expect(await run(["meetings", "passage", f.reference, "--fields", "target_ref"], f.deps)).not.toBe(0)
   expect(f.output).toEqual([])
   expect(await run(["meetings", "passage", f.reference, "--jsonl"], f.deps)).toBe(0)
-  expect(JSON.parse(f.output.join(""))).toMatchObject({ kind: "meeting_context", coverage: { included: 3 } })
+  expect(readAnswer(f.output.join(""))).toMatchObject({ kind: "meeting_context", coverage: { included: 3 } })
   f.output.length = 0
   f.network.mockClear()
   f.opened.mockClear()
@@ -150,7 +151,9 @@ it("serves the same cited context through opt-in MCP and rejects account injecti
       name: "meeting_passage",
       arguments: { reference: f.reference, before: 1, after: 1, format: "markdown" },
     })
-    expect(result).toMatchObject({ structuredContent: { target_ref: f.reference, coverage: { included: 3 } } })
+    expect(result).toMatchObject({
+      structuredContent: { item: { target_ref: f.reference, coverage: { included: 3 } } },
+    })
     expect(JSON.stringify(result.content)).toContain("Bob Sample agreed to review")
     expect(f.close).toHaveBeenCalledOnce()
     const foreign = f.reference.replace(/^meeting:\d+\//, "meeting:999/")

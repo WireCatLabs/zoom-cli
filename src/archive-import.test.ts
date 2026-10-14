@@ -7,6 +7,7 @@ import { CliError, memoryKeyring } from "@wirecat/cli-base"
 import type { MeetingTranscriptReceiptStore } from "@wirecat/cli-core/meetings"
 import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { expect, it, vi } from "vitest"
+import { readAnswer } from "../scripts/testing/answers.js"
 import { applyArchiveImport, preflightArchiveImport } from "./archive-import.js"
 import { setConfig } from "./config.js"
 import { ZoomError } from "./errors.js"
@@ -413,10 +414,10 @@ it("CLI closes finite imports before output and streams acknowledged receipts wi
   expect(imported?.transcripts[0]?.transcript.source).toBe(`zoom-archive:vtt:${hash("example-asset-1")}`)
   expect(order[0]).toBe("close")
   expect(order.slice(1).every((step) => step === "output")).toBe(true)
-  expect(JSON.parse(output.join("")).items[0].status).toBe("acknowledged")
+  expect(readAnswer(output.join("")).items[0].status).toBe("acknowledged")
   const stream: unknown[] = []
   deps.streamData = async (text) => {
-    stream.push(JSON.parse(text))
+    stream.push(readAnswer(text))
   }
   expect(await run(["recordings", "archive", "import", root, "--jsonl"], deps)).toBe(0)
   expect(stream).toMatchObject([{ status: "acknowledged" }])
@@ -427,7 +428,7 @@ it("CLI leaves empty archives disconnected and rejects missing append connectors
   const empty = await archiveFixture({ assets: 0 })
   const { deps, output } = await cli()
   expect(await run(["recordings", "archive", "import", empty.root, "--json"], deps)).toBe(0)
-  expect(JSON.parse(output.join("")).items).toEqual([])
+  expect(readAnswer(output.join("")).items).toEqual([])
   output.length = 0
   const { root } = await archiveFixture()
   expect(await run(["recordings", "archive", "import", root, "--json"], deps)).toBe(3)
@@ -462,7 +463,7 @@ it("CLI preserves one acknowledged JSONL receipt after append cancellation and c
   })
   deps.streamData = (text, signal) => writeStream(stdout, text, signal)
   expect(await run(["recordings", "archive", "import", first.root, "--jsonl"], deps)).toBe(130)
-  expect(JSON.parse(output.join("")).status).toBe("acknowledged")
+  expect(readAnswer(output.join("")).status).toBe("acknowledged")
   expect(append).toHaveBeenCalledOnce()
   expect(close).toHaveBeenCalledOnce()
 })

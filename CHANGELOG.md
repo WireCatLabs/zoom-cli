@@ -1,9 +1,15 @@
 # Changelog
 
-## Unreleased
+## 0.11.0 — 14.10.2026
+
+### Changed — may break callers
+
+- Uses shared SDK `@wirecat/cli-core` 0.268.0. Command discovery declares contract 2. Successful CLI/MCP replies use snake_case item/list envelopes with execution metadata; JSONL retains complete packets. Detailed reports and streaming acknowledgements are under `item`.
+- Meeting details use `item` and count current transcripts; transcript/summary reads use `items`. Word hits carry cited `ref`, `meeting`, `excerpt` and `offset_ms`, with standard scoped continuation.
 
 ### Fixed
 
+- MCP rejects unknown/invalid arguments in its handler, names the field before opening a store, declares strict success/error schemas and preserves shared error reasons/details.
 - The Zoom app guide starts with links to using an existing app or creating your own.
 - Installation now offers agent-assisted setup, existing/new Zoom app paths, Windows command launchers and a first cited transcript check. The entry page identifies itself as the starting point.
 

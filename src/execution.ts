@@ -1,5 +1,7 @@
 import { createDeadline, createOutputBuffer, type Deadline, type OutputBuffer, type SleepLike } from "@wirecat/cli-base"
+import type { Meta } from "@wirecat/cli-base/standards"
 import type { Command } from "commander"
+import { readMetadata } from "./answers.js"
 import { ZoomError } from "./errors.js"
 
 export const duration = (text: string): number => {
@@ -33,14 +35,17 @@ export const commandDeadline = (action: Command): number | undefined => {
 export interface ExecutionOptions {
   signal?: AbortSignal
   sleep?: SleepLike
+  now?: () => number
 }
 export interface ExecutionState {
   deadline: Deadline
   output: OutputBuffer
+  meta: () => Meta
 }
 export const startExecution = (action: Command, options: ExecutionOptions): ExecutionState => {
   const flags = action.optsWithGlobals()
   return {
+    meta: readMetadata(options.now),
     deadline: createDeadline({
       timeoutMs: flags.timeout ?? commandDeadline(action),
       signal: options.signal,

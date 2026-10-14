@@ -6,6 +6,7 @@ import { brokenKeyring, memoryKeyring } from "@wirecat/cli-base"
 import { importFiles, pull } from "@wirecat/cli-core/meetings"
 import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { describe, expect, it } from "vitest"
+import { readAnswer } from "../scripts/testing/answers.js"
 import { encodeUuid, ZoomApiSource } from "./api.js"
 import { readConfig, setConfig } from "./config.js"
 import { number, object, string } from "./errors.js"
@@ -417,7 +418,7 @@ describe("zm", () => {
     expect(readConfig(deps.configPath).clientId).toBeNull()
     expect(await run(["config", "set", "zoom.clientId", "example-client"], deps)).toBe(0)
     expect(await run(["--json", "config", "show"], deps)).toBe(0)
-    expect(JSON.parse(stdout[1] ?? "{}")).toHaveProperty("client_id", "example-client")
+    expect(readAnswer(stdout[1] ?? "{}")).toHaveProperty("client_id", "example-client")
     setConfig(deps.configPath, "files.timezone", "Europe/Madrid")
     setConfig(deps.configPath, "source", "files")
     setConfig(deps.configPath, "files.folder", "example-folder")
@@ -437,9 +438,9 @@ describe("zm", () => {
   it("imports a folder through the real command and lists its meeting in memory", async () => {
     const { deps, stdout } = await programSetup()
     expect(await run(["meetings", "import", "example-folder", "--json"], deps)).toBe(0)
-    expect(JSON.parse(stdout[0] ?? "{}")).toMatchObject({ meetings: 1 })
+    expect(readAnswer(stdout[0] ?? "{}")).toMatchObject({ meetings: 1 })
     expect(await run(["--jsonl", "meetings", "list"], deps)).toBe(0)
-    expect(JSON.parse(stdout[1] ?? "{}")).toHaveProperty("items.0.title")
+    expect(readAnswer(stdout[1] ?? "{}")).toHaveProperty("items.0.title")
     expect(await run(["import", "example-folder"], deps)).toBe(2)
     expect(await run(["--help"], deps)).toBe(0)
     expect(await run(["--version"], deps)).toBe(0)
@@ -451,7 +452,7 @@ describe("zm", () => {
     expect(await run(["meetings", "sync"], deps)).toBe(3)
     setConfig(deps.configPath, "files.folder", "example-folder")
     expect(await run(["meetings", "sync", "--since-time", "2026-10-01", "--json"], deps)).toBe(0)
-    expect(JSON.parse(stdout[0] ?? "{}")).toMatchObject({ meetings: 1 })
+    expect(readAnswer(stdout[0] ?? "{}")).toMatchObject({ meetings: 1 })
     const missing = await programSetup({ store: undefined })
     expect(await run(["meetings", "import", "example-folder"], missing.deps)).toBe(3)
     expect(await run(["meetings", "show", "1"], missing.deps)).toBe(3)
@@ -471,7 +472,7 @@ describe("zm", () => {
     })
     setConfig(setup.deps.configPath, "zoom.clientId", "example-client")
     expect(await run(["--json", "session", "start", "--browser", "example-browser"], setup.deps)).toBe(0)
-    expect(JSON.parse(setup.stdout[0] ?? "{}")).toEqual({ logged_in: true, scopes })
+    expect(readAnswer(setup.stdout[0] ?? "{}")).toEqual({ logged_in: true, scopes })
     expect(setup.stdout.join("")).not.toContain("example-access")
   })
 })

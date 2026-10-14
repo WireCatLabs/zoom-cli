@@ -115,7 +115,16 @@ const invoke = (args, status = 0, extra = {}) => {
   checks.push({ args, status })
   return result
 }
-const json = (...args) => JSON.parse(invoke(["--json", ...args]).stdout)
+const { itemEnvelopeSchema, listEnvelopeSchema } = require("@wirecat/cli-base/standards")
+const v = require("valibot")
+const envelope = v.union([itemEnvelopeSchema(v.unknown()), listEnvelopeSchema(v.unknown())])
+const answer = (text) => {
+  const packet = JSON.parse(text)
+  if (Object.hasOwn(packet, "commands")) return packet
+  v.parse(envelope, packet)
+  return Object.hasOwn(packet, "item") ? packet.item : packet
+}
+const json = (...args) => answer(invoke(["--json", ...args]).stdout)
 assert.equal(invoke(["--version"]).stdout.trim(), expectedVersion)
 invoke(["--help"])
 json("commands")
@@ -225,7 +234,8 @@ assert.equal(typeof meetings[0].id, "string")
 const meetingId = String(meetings[0].id)
 writeFileSync(vtt, original.replace("Original", "Corrected"))
 json("meetings", "import", folder)
-assert.equal(json("meetings", "show", meetingId).transcripts.length, 2)
+assert.equal(json("meetings", "show", meetingId).transcripts.length, 1)
+assert.equal(json("meetings", "transcript", meetingId, "--history").items.length, 2)
 assert.equal(json("search", "meetings", "Original").items.length, 0)
 assert.equal(json("search", "meetings", "Corrected").items.length, 1)
 assert.equal(json("meetings", "transcript", meetingId).items.length, 1)
@@ -326,10 +336,16 @@ assert.equal(correctedReceipt.inserted_transcripts, 1)
 assert.equal(correctedReceipt.replayed_transcripts, 0)
 assert.equal(correctedReceipt.superseded_transcripts, 1)
 json("recordings", "archive", "import", archive)
-assert.equal(json("meetings", "show", archivedMeetingId).transcripts.length, 2)
+assert.equal(json("meetings", "show", archivedMeetingId).transcripts.length, 1)
+assert.equal(json("meetings", "transcript", archivedMeetingId, "--history").items.length, 2)
 assert.equal(json("search", "meetings", "Original").items.length, 0)
 assert.equal(json("search", "meetings", "Revised archive").items.length, 1)
-assert.equal(json("meetings", "show", meetingId).transcripts.length, 2, "append preserves unrelated history")
+assert.equal(json("meetings", "show", meetingId).transcripts.length, 1)
+assert.equal(
+  json("meetings", "transcript", meetingId, "--history").items.length,
+  2,
+  "append preserves unrelated history",
+)
 // Seed a distinct account, then restore the initial profile before the MCP process starts.
 json("config", "set", "account.profile", "invented-foreign-platform")
 writeFileSync(vtt, original.replace("Original invented plan", "Foreign invented boundary"))
@@ -357,7 +373,7 @@ assert.equal(people.page.has_more, true)
 assert.equal(people.next[0].step, "page.next")
 const peopleJsonl = invoke(["meetings", "people", "Alice", "--limit", "1", "--cursor", people.page.cursor, "--jsonl"])
 assert.equal(peopleJsonl.stdout.trim().split("\n").length, 1)
-const peopleContinuation = JSON.parse(peopleJsonl.stdout)
+const peopleContinuation = answer(peopleJsonl.stdout)
 assert.ok(peopleContinuation.items.every((item) => String(item.meeting_id) !== foreignMeetingId))
 assert.equal(typeof peopleContinuation.page.has_more, "boolean")
 const { Client } = await import(pathToFileURL(require.resolve("@modelcontextprotocol/sdk/client/index.js")).href)
@@ -394,7 +410,10 @@ try {
   const secondResult = await client.callTool({ name: "meetings_list", arguments: {} })
   assert.notEqual(secondResult.isError, true)
   const secondScope = secondResult.structuredContent ?? JSON.parse(secondResult.content[0].text)
-  assert.deepEqual(secondScope, firstScope, "an initialized MCP account cannot change through config edits")
+  assert.deepEqual(secondScope.items, firstScope.items, "an initialized MCP account cannot change through config edits")
+  assert.deepEqual(secondScope.page, firstScope.page)
+  assert.equal(typeof firstScope.meta.run_id, "string")
+  assert.notEqual(secondScope.meta.run_id, firstScope.meta.run_id)
   child.stdin.end()
   assert.equal(await exited, 0, stderr)
   assert.equal(diagnostics(stderr), "")
@@ -450,7 +469,7 @@ try {
   const origin = `http://127.0.0.1:${port}`
   const modelOptions = ["--model", "invented-platform-model", "--base-url", `${origin}/v1`, "--dims", "2"]
   const remoteEnvironment = { ZM_PLATFORM_MODEL_ORIGIN: origin }
-  const remoteJson = (...args) => JSON.parse(invoke(["--json", ...args], 0, remoteEnvironment).stdout)
+  const remoteJson = (...args) => answer(invoke(["--json", ...args], 0, remoteEnvironment).stdout)
   const requests = () =>
     existsSync(modelRequests)
       ? readFileSync(modelRequests, "utf8")
@@ -531,7 +550,7 @@ try {
       arguments: { query, by_meaning: true },
     })
     assert.notEqual(result.isError, true)
-    const report = result.structuredContent ?? JSON.parse(result.content[0].text)
+    const report = answer(JSON.stringify(result.structuredContent ?? JSON.parse(result.content[0].text)))
     assert.equal(report.account_id, semantic.account_id)
     assert.deepEqual(report.model, semantic.model)
     assert.ok(report.items.length > 0)
