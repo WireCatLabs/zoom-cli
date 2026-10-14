@@ -236,6 +236,22 @@ for (const [phase, destination] of [
   assert.equal(existsSync(denied), false, "installed resume accessed external IO")
   recordingResume.push(JSON.parse(result.stdout))
 }
+const upcomingResult = spawnSync(
+  process.execPath,
+  [...prefix, fileURLToPath(new URL("./installed-upcoming.mjs", import.meta.url)), root],
+  {
+    cwd: root,
+    env: environment,
+    encoding: "utf8",
+    timeout: 15000,
+    maxBuffer: 1024 * 1024,
+  },
+)
+assert.equal(upcomingResult.error, undefined)
+assert.equal(upcomingResult.status, 0, `installed upcoming SDK: ${upcomingResult.stderr}`)
+assert.equal(diagnostics(upcomingResult.stderr), "")
+assert.equal(existsSync(denied), false)
+const upcomingProof = JSON.parse(upcomingResult.stdout)
 const folder = join(sandbox, "vtt")
 mkdirSync(folder)
 const vtt = join(folder, "2026-10-10_1530_example.vtt")
@@ -633,6 +649,7 @@ const proof = {
   semanticReadonlyMcp: true,
   scheduleOfflinePreview: true,
   recordingResume,
+  upcoming_sdk: upcomingProof,
   meetingIntegration,
   modelEndpoint: "isolated loopback fixture only",
   externalAccess: false,

@@ -18,3 +18,5 @@
 - 2026-10-14: `.worktrees/project-evidence-after-standards`, branch `feat/project-evidence-v2`, `/var/tmp/zm-project-evidence-*` — clean port onto released0.11 with canonical Core0.268; retain until owner-approved cleanup.
 
 - 2026-10-14: retain `.worktrees/standards-contract3` and `/var/tmp/core-answer-policy-preview-yXn8ui` until the owner approves cleanup; migration and local dependency-preview evidence.
+
+- 2026-10-14: retain `.worktrees/occurrence-adapter` until owner-approved cleanup; provider occurrence SDK adapter.

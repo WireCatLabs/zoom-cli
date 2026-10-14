@@ -1,5 +1,6 @@
 import { setTimeout } from "node:timers/promises"
-import { providerWaitMs, retryableStatus, statusToCode } from "@wirecat/cli-base/http"
+import { isCliError } from "@wirecat/cli-base"
+import { providerWaitMs, readJsonResponse, retryableStatus, statusToCode } from "@wirecat/cli-base/http"
 import { checkCancelled, object, ZoomError } from "./errors.js"
 import type { TokenManager } from "./tokens.js"
 
@@ -11,6 +12,7 @@ export interface RemoteRequest {
   signal?: AbortSignal
   method?: "GET" | "POST" | "PATCH" | "DELETE"
   body?: unknown
+  maxResponseBytes?: number
 }
 export const operationSignal = (signal?: AbortSignal): AbortSignal => signal ?? AbortSignal.timeout(3600000)
 export class ZoomRemote {
@@ -70,6 +72,12 @@ export class ZoomRemote {
     options: RemoteRequest,
     missingCode?: number,
   ): Promise<Record<string, unknown> | null> {
+    const method = options.method ?? "GET"
+    if (
+      options.maxResponseBytes !== undefined &&
+      (method !== "GET" || !Number.isSafeInteger(options.maxResponseBytes) || options.maxResponseBytes < 1)
+    )
+      throw new ZoomError("validation_error", "maxResponseBytes requires GET and a positive safe integer")
     const signal = operationSignal(options.signal)
     checkCancelled(signal)
     const tokens = await this.tokens.tokens()
@@ -79,7 +87,6 @@ export class ZoomRemote {
         `Zoom scope ${scope} is missing; add it to the app and run zm session start again`,
       )
     checkCancelled(signal)
-    const method = options.method ?? "GET"
     let response: Response
     if (method === "GET") response = await this.get(`https://api.zoom.us/v2${path}`, tokens.accessToken, signal)
     else {
@@ -103,8 +110,15 @@ export class ZoomRemote {
     if (response.status === 204) return {}
     let value: unknown
     try {
-      value = await response.json()
-    } catch {
+      value =
+        options.maxResponseBytes === undefined
+          ? await response.json()
+          : await readJsonResponse(response, { maxBytes: options.maxResponseBytes, signal })
+    } catch (error) {
+      if (method === "GET") {
+        checkCancelled(signal)
+        if (response.ok && isCliError(error)) throw error
+      }
       if (response.ok)
         throw new ZoomError(
           method === "GET" ? "invalid_response" : "outcome_unknown",

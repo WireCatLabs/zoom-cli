@@ -2,8 +2,15 @@
 
 ## Unreleased
 
+### Added
+
+- **The SDK can read explicit upcoming occurrence proof through `createZoomUpcomingMeetingReader`.**
+  Zoom translates bounded meeting details into the shared reader, keeping missing schedules and
+  incomplete recurrence coverage unverified. This library capability does not add a preparation CLI command.
+
 ### Fixed
 
+- **Remote meeting ids reject trailing line breaks before authentication.** URL normalization no longer silently accepts malformed identifiers.
 - **A download takes over a lock left by a dead process on this machine**, so a crash no longer blocks the next
   run until `recordings archive recover --yes`. Active, foreign and unrecognized locks still refuse.
 - **A rerun no longer hashes every archived file.** A file whose size and modification time match what was last
