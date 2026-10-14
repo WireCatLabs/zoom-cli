@@ -31,6 +31,15 @@ gh workflow run release.yml --ref main -f dry_run=true
 A successful dry run checks packaging, not authorization to publish. Verify the actual version
 document, tag and an isolated installation after every real release.
 
+After the workflow succeeds, publish the matching GitHub release entry from the reviewed,
+versioned changelog. The workflow creates the npm package and annotated tag; a tag alone does
+not create a GitHub release. The documentation portal compares GitHub's latest stable release
+with npm, so missing release metadata prevents its release audit from completing.
+Check whether the entry already exists, then use `gh release create` with `--verify-tag`, the
+exact tag and a `--notes-file` containing that version's reviewed notes. Link the complete
+versioned changelog for earlier history. Verify the registry tarball itself is downloadable,
+in addition to the version document, before updating consumers.
+
 ## Delivery gates
 
 - Required lint, typecheck, coverage, docs, build, Bun and installed-package acceptance checks pass.
