@@ -39,7 +39,8 @@ selected local profile. It verifies the complete selection before opening the st
 8 MiB per file and 64 MiB total (`--max-total-bytes`). Appends are atomic per raw occurrence UUID,
 retain corrected revisions and unrelated meeting data, and leave the pull cursor unchanged.
 Unknown start times require an existing occurrence. Receipts acknowledge appends or report
-unavailable occurrences; they do not imply creation or replay counts. Earlier acknowledgements
+unavailable occurrences. The shared exact-receipt port reports `created`, `inserted_transcripts`,
+`replayed_transcripts` and `superseded_transcripts`; legacy injected ports omit counts rather than guessing. Earlier acknowledgements
 remain meaningful if a later occurrence fails.
 
 `recordings archive locks` inspects writer locks. `recover` previews stale lock removal; `--yes`
@@ -142,6 +143,18 @@ Cached `session status` does not contact Zoom; `--check` explicitly verifies rem
 Use `--timeout <milliseconds>` for a positive whole-command deadline and cancellation for foreground
 jobs. `--offline` refuses network access. Recording videos stream to disk; ordinary result output is
 bounded by `--max-output-bytes`, separate from the download's per-file `--max-bytes` limit.
+
+## Participant discovery
+
+Use `meetings people <name-or-email>` before selecting `--identity-id`. Reads inspect bounded
+observations in the selected account; use `--limit`, `--scan-limit`, `--max-read-bytes` and `--cursor`.
+Results expose `identity_id` with page-local ambiguity, not a proven person association. Follow
+`page.next` / `page.cursor` even when `items` is empty. JSONL retains the whole page and coverage.
+MCP `meeting_people` takes the equivalent snake_case arguments and cannot change accounts.
+
+`meetings list [query...]` filters metadata, for example `started_at:[2026-09-01 TO 2026-10-01]`.
+Use `--page` / `--limit` and retain the standard meeting/list envelope; IDs are strings.
+List-only `--since-time` and `--until-time` have become query fields; transcript search keeps its date flags.
 
 ## Bounded context-filtered search
 

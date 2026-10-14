@@ -3,7 +3,6 @@
   "--max-output-bytes",
   "meetings context --cues",
   "meetings context --meetings",
-  "meetings context --scan-limit",
   "meetings embeddings --after-hash",
   "meetings embeddings --after-transcript-id",
   "meetings embeddings --max-rows",

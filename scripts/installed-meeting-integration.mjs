@@ -32,6 +32,12 @@ const fixture = async (root, phase, input) => {
       meeting.attachments = []
       meeting.participants[0].identity.associatePerson = false
       meeting.participants[0].identity.externalId = "AliceExample-installed-guest"
+      meeting.participants.push({
+        ...meeting.participants[0],
+        displayName: "Alice Example Second",
+        identity: { ...meeting.participants[0].identity, externalId: "AliceExample-installed-second-guest" },
+      })
+      meeting.meeting.participantsCount = 2
       meeting.transcripts[0].contentHash = "AliceExample-installed-stemming"
       meeting.transcripts[0].rows = Array.from({ length: 9 }, (_, position) => ({
         ...meeting.transcripts[0].rows[0],

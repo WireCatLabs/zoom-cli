@@ -40,7 +40,8 @@
       "kind": "json",
       "previous": true,
       "capture": {
-        "meeting": "/items/0/id"
+        "meeting": "/items/0/id",
+        "account": "/items/0/accountId"
       }
     },
     {
@@ -63,9 +64,12 @@
       "json": {
         "items": [
           {
-            "id": "{{meeting}}"
+            "ref": "meeting:{{account}}/{{meeting}}"
           }
         ]
+      },
+      "capture": {
+        "current_meeting": "/items/0/id"
       }
     },
     {
@@ -93,7 +97,8 @@
       "json": {
         "items": [
           {
-            "id": "{{meeting}}"
+            "ref": "meeting:{{account}}/{{meeting}}",
+            "id": "{{current_meeting}}"
           }
         ]
       }

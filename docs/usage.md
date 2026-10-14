@@ -86,7 +86,8 @@ Stored `meetings` commands use local database ids; `remote-meetings` uses Zoom's
 
 ## Output for scripts and agents
 
-Use `--json` for one JSON value or `--jsonl` for one item per line. Errors go to stderr. Use `--quiet`
+Use `--json` for one JSON value. `--jsonl` streams ordinary items one per line; stored meeting lists
+and bounded participant pages keep one complete envelope per line so continuation and coverage survive. Errors go to stderr. Use `--quiet`
 to suppress non-error diagnostics. Piped output defaults to JSON; terminal output uses the shared
 human-readable renderer. Completion emits its shell protocol unless JSON is requested.
 

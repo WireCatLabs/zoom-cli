@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**231 ✅ · 1 ⛔ · 0 ❌** — 51 commands, 181 options.
+**233 ✅ · 1 ⛔ · 0 ❌** — 51 commands, 183 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -16,8 +16,6 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings list` |  | ✅ |  |
 | `meetings list` | `--json` | ✅ |  |
 | `meetings list` | `--jsonl` | ✅ |  |
-| `meetings list` | `--since-time` | ✅ |  |
-| `meetings list` | `--until-time` | ✅ |  |
 | `meetings list` | `--limit` | ✅ |  |
 | `meetings list` | `--page` | ✅ |  |
 | `meetings show` |  | ✅ |  |
@@ -39,6 +37,10 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings people` |  | ✅ |  |
 | `meetings people` | `--json` | ✅ |  |
 | `meetings people` | `--jsonl` | ✅ |  |
+| `meetings people` | `--limit` | ✅ |  |
+| `meetings people` | `--scan-limit` | ✅ |  |
+| `meetings people` | `--max-read-bytes` | ✅ |  |
+| `meetings people` | `--cursor` | ✅ |  |
 | `meetings sync` |  | ✅ |  |
 | `meetings sync` | `--json` | ✅ |  |
 | `meetings sync` | `--jsonl` | ✅ |  |

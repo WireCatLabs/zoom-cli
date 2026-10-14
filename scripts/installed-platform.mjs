@@ -221,6 +221,7 @@ json("meetings", "import", folder)
 json("meetings", "import", folder)
 const meetings = json("meetings", "list").items
 assert.equal(meetings.length, 1)
+assert.equal(typeof meetings[0].id, "string")
 const meetingId = String(meetings[0].id)
 writeFileSync(vtt, original.replace("Original", "Corrected"))
 json("meetings", "import", folder)
@@ -346,6 +347,19 @@ const meetingIntegration = await installedMeetingIntegration({
   invoke,
   diagnostics,
 })
+const people = json("meetings", "people", "Alice", "--limit", "1", "--scan-limit", "100", "--max-read-bytes", "10000")
+assert.equal(people.items.length, 1)
+assert.equal(typeof people.items[0].identity_id, "number")
+assert.notEqual(String(people.items[0].meeting_id), foreignMeetingId)
+assert.equal(people.coverage.archive_completeness, "unknown")
+assert.equal(people.page.limit, 1)
+assert.equal(people.page.has_more, true)
+assert.equal(people.next[0].step, "page.next")
+const peopleJsonl = invoke(["meetings", "people", "Alice", "--limit", "1", "--cursor", people.page.cursor, "--jsonl"])
+assert.equal(peopleJsonl.stdout.trim().split("\n").length, 1)
+const peopleContinuation = JSON.parse(peopleJsonl.stdout)
+assert.ok(peopleContinuation.items.every((item) => String(item.meeting_id) !== foreignMeetingId))
+assert.equal(typeof peopleContinuation.page.has_more, "boolean")
 const { Client } = await import(pathToFileURL(require.resolve("@modelcontextprotocol/sdk/client/index.js")).href)
 const { StdioServerTransport } = await import(
   pathToFileURL(require.resolve("@modelcontextprotocol/sdk/server/stdio.js")).href

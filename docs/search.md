@@ -56,7 +56,7 @@ zm search meetings "launch" --tag planning --limit 20 --json
 ```
 
 The IDs and labels above are fictional: replace them with records in your local store. Use the
-`identityId` from participant results for `--identity-id`; `--person-id` takes the numeric ID of
+`identity_id` from participant results for `--identity-id`; `--person-id` takes the numeric ID of
 an explicitly linked person. Several participants with the same display name may be different
 identities. Inspect them before linking; these filters select meetings and do not identify who
 spoke an anonymous transcript cue.
@@ -75,7 +75,19 @@ The read-only MCP tool `search_meetings` provides the same filters in the server
 account, using `identity_id`, `person_id`, `event_id`, `series_id`, `project`, `tag`, `topic`,
 `since_time`, `until_time` and `cursor`; its times are epoch milliseconds.
 
-`meetings people <query>` finds participants by name or email. `search all` uses the shared search
+`meetings people <query>` finds saved participant observations by name or email within the selected account.
+It uses literal Unicode matching; it does not translate names or infer that two people are the same.
+Use `--limit` (default 50), `--scan-limit` (default 1000) and `--max-read-bytes` (default 1048576)
+to bound matching observations, inspected observations and stored name/email bytes per call.
+The answer keeps `page.has_more`, `page.cursor`, coverage and page-local identity ambiguity, including in JSONL.
+Follow the `page.next` step or repeat the same query with `--cursor`. An empty page can still have continuation.
+Distinct identity IDs are candidates to review, never automatic person links. Archive completeness remains unknown.
+
+`meetings list` filters metadata with a query, for example
+`zm meetings list 'started_at:[2026-09-12 TO 2026-10-12]' --json`.
+It returns `items`, `page` and optional `next` steps in JSON and JSONL. Use `--page` to continue.
+The date query replaces the former list-only `--since-time` and `--until-time` flags;
+those flags remain available on transcript search and ingestion commands. `search all` uses the shared search
 service and searches only meetings by default:
 
 ```sh
@@ -159,6 +171,30 @@ link options reject a stale decision. Use `--event-id none` to unlink an event. 
 only the selected participant's identity; it never guesses a person from a speaker name. Target
 people must have authorized account observations. Explicit `--target-accounts <ids>` adds account
 ids for that lookup. Profile labels group local data and do not authenticate a remote identity.
+
+## Find a project before linking it
+
+A confirmed-project filter can miss a relevant meeting that has never been linked to the project.
+For discovery, search the canonical name and known aliases as words while keeping the participant
+and date bounds. The following names and IDs are invented:
+
+```sh
+zm meetings people "Alice Example" --limit 50 --json
+zm search meetings "Research Example" --identity-id 12 --since-time 2026-09-14 --until-time 2026-10-14 --json
+zm search meetings "RES" --identity-id 12 --since-time 2026-09-14 --until-time 2026-10-14 --json
+```
+
+Inspect all participant pages and choose the intended `identity_id`; do not select a person solely
+because the display name matches. Use aliases already recorded in the shared vocabulary or supplied
+by the owner. Current commands do not expand project aliases into transcript-word searches automatically.
+Repeat word searches for those aliases without `--project`, and follow each search's `next_cursor`
+while `has_more` is true. Keep the same participant and date bounds on continuation.
+
+For each relevant retained cue `ref`, open `zm meetings passage <ref> --format markdown`.
+The passage keeps timestamps, source references, revision and coverage, so an agent can write a
+cited answer without a script that trims full transcript JSON. Repeated references from several
+alias searches are the same evidence. A project word can be incidental: inspect its passage before
+proposing a project association. No result proves that an incomplete archive contains every discussion.
 
 ## Notes, tags and memories with memo
 

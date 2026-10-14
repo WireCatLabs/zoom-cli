@@ -191,7 +191,20 @@ describe("read-only SDK meeting server", () => {
           arguments: Object.create({ account_id: 2 }),
         },
       })
-      expect(await reply).toMatchObject({ result: { structuredContent: { items: [data.selected.meeting] } } })
+      expect(await reply).toMatchObject({
+        result: {
+          structuredContent: {
+            items: [
+              {
+                id: String(data.selected.meeting.id),
+                ref: `meeting:1/${data.selected.meeting.id}`,
+                provider: "memory",
+                account: "1",
+              },
+            ],
+          },
+        },
+      })
       expect(data.connectStore).toHaveBeenCalledTimes(1)
       expect(data.close).toHaveBeenCalledTimes(1)
     } finally {

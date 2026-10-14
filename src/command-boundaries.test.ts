@@ -54,17 +54,16 @@ it("keeps CLI paging, calendar filters and participant reads scoped to the selec
     await invoke([
       "meetings",
       "list",
-      "--since-time",
-      "1970-01-01",
-      "--until-time",
-      "1970-01-01T00:00:03Z",
+      "started_at:[1970-01-01 TO 1970-01-02]",
       "--limit",
       "1",
       "--page",
       "2",
       "--jsonl",
     ]),
-  ).toMatchObject([{ id: first.meeting.id, accountId: 1 }])
+  ).toMatchObject([
+    { items: [{ id: String(first.meeting.id), provider: "memory" }], page: { limit: 1, has_more: false } },
+  ])
   expect((await invoke(["meetings", "people", "Alice", "--json"]))[0].items).toHaveLength(2)
   expect(await invoke(["meetings", "people", "Alice", "--jsonl"])).toHaveLength(2)
   expect((await invoke(["events", "list", "--json"]))[0].items).toEqual([event])

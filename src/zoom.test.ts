@@ -439,7 +439,7 @@ describe("zm", () => {
     expect(await run(["meetings", "import", "example-folder", "--json"], deps)).toBe(0)
     expect(JSON.parse(stdout[0] ?? "{}")).toMatchObject({ meetings: 1 })
     expect(await run(["--jsonl", "meetings", "list"], deps)).toBe(0)
-    expect(JSON.parse(stdout[1] ?? "{}")).toHaveProperty("title")
+    expect(JSON.parse(stdout[1] ?? "{}")).toHaveProperty("items.0.title")
     expect(await run(["import", "example-folder"], deps)).toBe(2)
     expect(await run(["--help"], deps)).toBe(0)
     expect(await run(["--version"], deps)).toBe(0)

@@ -67,6 +67,10 @@ More: [installation][docs/installation.md] · [your Zoom app][docs/zoom-app.md] 
 `remote-meetings list` shows upcoming meetings; `meetings people`, `search meetings` (word
 search that also matches English, Spanish and Russian word forms) and `meetings context person:<id>`
 bring back past meetings with the same people.
+Participant discovery accepts `--limit`, `--scan-limit`, `--max-read-bytes` and `--cursor`;
+follow `page.next` even after an empty scan page. It returns observed `identity_id` candidates,
+never inferred person links. Stored meeting lists accept metadata queries, for example
+`zm meetings list 'started_at:[2026-09-01 TO 2026-10-01]' --json`.
 
 **Follow up after it.** *"What did I promise in today's call?"* The agent reads
 `meetings transcript` and `meetings summary`, cites passages with `meetings evidence`, and
