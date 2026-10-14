@@ -12,7 +12,8 @@ Then collect earlier discussions and open questions from stored meeting transcri
 Do not change the meeting or save inferred links.
 ```
 
-The tool lists the Zoom schedule; your agent assembles context from the available local sources.
+The list covers the signed-in host’s scheduled meetings from Zoom’s hosted-meeting API. It does
+not list every invitation on your calendar. Your agent assembles context from the available local sources.
 It does not synchronize Google/Outlook calendars or generate a brief automatically. Read-only
 listing needs `meeting:read:list_meetings`; details and invitations need the extra permissions in
 [the app guide](zoom-app.md#add-archive-or-management-access).
@@ -28,6 +29,10 @@ zm remote-meetings invitation 123456789 --json
 Remote meeting ids are Zoom's numeric ids; stored `meetings` commands use local database ids.
 Listing needs the manually added `meeting:read:list_meetings` scope; showing and invitations need the
 optional scopes in [the app guide](zoom-app.md#add-archive-or-management-access).
+
+For a recurring series, the listed start time alone does not verify the next occurrence. The CLI
+does not yet expose occurrence-specific schedule reads. Confirm the intended occurrence in Zoom
+before relying on a preparation brief; if it cannot be checked, mark its date as unverified.
 
 ## Create, update or cancel
 
