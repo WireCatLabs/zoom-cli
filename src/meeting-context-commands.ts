@@ -1,7 +1,8 @@
+import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { LOCAL_READ } from "@wirecat/cli-core/cli"
+import { type Body, itemOf, LOCAL_READ } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
-import { ZoomError } from "./errors.js"
+import { bodyOf } from "./answer-output.js"
 import { bytes } from "./execution.js"
 import {
   type EvidenceOptions,
@@ -18,11 +19,11 @@ export const addMeetingContextCommands = (
   deps: {
     context: () => Promise<MeetingContextCapabilities>
     signal: () => AbortSignal | undefined
-    output: (value: unknown) => void
+    output: (body: Body) => void
   },
 ) => {
   const meetings = program.commands.find((command) => command.name() === "meetings")
-  if (!meetings) throw new ZoomError("configuration_error", "meeting command group is unavailable")
+  if (!meetings) throw new CliError("configuration_error", "meeting command group is unavailable")
   const label = (command: Command, example: string) =>
     annotate(command, { origin: "handwritten", effects: LOCAL_READ, examples: [example] })
   const limits = (command: Command) =>
@@ -44,17 +45,18 @@ export const addMeetingContextCommands = (
         const options: EvidenceOptions = { ...rest, after: cursor }
         validateEvidenceOptions(options)
         const context = await deps.context()
-        if (!context.evidence) throw new ZoomError("configuration_error", "meeting evidence capability is unavailable")
         deps.output(
-          await context.evidence(reference, {
-            cues: options.cues,
-            bytes: options.bytes,
-            after: options.after,
-            afterTranscriptId: options.afterTranscriptId,
-            maxReadBytes: options.maxReadBytes,
-            maxTranscriptPages: options.maxTranscriptPages,
-            signal: deps.signal(),
-          }),
+          bodyOf(
+            await context.evidence(reference, {
+              cues: options.cues,
+              bytes: options.bytes,
+              after: options.after,
+              afterTranscriptId: options.afterTranscriptId,
+              maxReadBytes: options.maxReadBytes,
+              maxTranscriptPages: options.maxTranscriptPages,
+              signal: deps.signal(),
+            }),
+          ),
         )
       }),
     "zm meetings evidence meeting:3/15 --json",
@@ -71,7 +73,7 @@ export const addMeetingContextCommands = (
       .option("--since-time <time>", "only identity links since this ISO 8601 time", (value: string) => {
         const stamp = Date.parse(value)
         if (!Number.isSafeInteger(stamp) || new Date(stamp).toISOString() !== value)
-          throw new ZoomError("validation_error", "--since-time must be a canonical ISO 8601 time")
+          throw new CliError("validation_error", "--since-time must be a canonical ISO 8601 time")
         return stamp
       })
       .action(
@@ -82,17 +84,17 @@ export const addMeetingContextCommands = (
           const options: PersonContextOptions = { ...rest, since: sinceTime }
           validatePersonContext(person, options)
           const context = await deps.context()
-          if (!context.personContext)
-            throw new ZoomError("configuration_error", "person meeting context capability is unavailable")
           deps.output(
-            await context.personContext(person, {
-              meetings: options.meetings,
-              cues: options.cues,
-              bytes: options.bytes,
-              scanLimit: options.scanLimit,
-              since: options.since,
-              signal: deps.signal(),
-            }),
+            bodyOf(
+              await context.personContext(person, {
+                meetings: options.meetings,
+                cues: options.cues,
+                bytes: options.bytes,
+                scanLimit: options.scanLimit,
+                since: options.since,
+                signal: deps.signal(),
+              }),
+            ),
           )
         },
       ),
@@ -107,11 +109,9 @@ export const addMeetingContextCommands = (
       .action(async (reference: string, options: { type: string }) => {
         const kind = validateTaskKind(options.type)
         const context = await deps.context()
-        if (!context.taskProposal)
-          throw new ZoomError("configuration_error", "meeting task proposal capability is unavailable")
         const proposal = await context.taskProposal(reference, kind, deps.signal())
         validateTaskProposal(proposal)
-        deps.output(proposal)
+        deps.output(itemOf(proposal))
       }),
     "zm meetings task-proposal meeting:3/15/20/0 --type promise --json",
   )

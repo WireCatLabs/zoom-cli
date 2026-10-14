@@ -1,6 +1,6 @@
+import { CliError } from "@wirecat/cli-base"
 import { canonicalMeetingReference, parseMeetingReference } from "@wirecat/cli-core"
 import type { MeetingContextChange, MeetingContextReceipt, MeetingMutationOptions } from "@wirecat/cli-core/meetings"
-import { ZoomError } from "./errors.js"
 
 export type MeetingLinkChange = Extract<MeetingContextChange, { action: "event.link" | "person.link" }>
 export interface MeetingIntegrationCapabilities {
@@ -14,6 +14,6 @@ export interface MeetingIntegrationCapabilities {
 export const integrationReference = (reference: string) => {
   const parsed = parseMeetingReference(reference)
   if (parsed.transcriptId !== undefined)
-    throw new ZoomError("validation_error", "this operation requires a root meeting reference")
+    throw new CliError("validation_error", "this operation requires a root meeting reference")
   return { parsed, reference: canonicalMeetingReference(reference) }
 }

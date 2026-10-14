@@ -1,7 +1,7 @@
 import { setTimeout } from "node:timers/promises"
-import { isCliError } from "@wirecat/cli-base"
+import { CliError, isCliError } from "@wirecat/cli-base"
 import { providerWaitMs, readJsonResponse, retryableStatus, statusToCode } from "@wirecat/cli-base/http"
-import { checkCancelled, object, ZoomError } from "./errors.js"
+import { checkCancelled, object } from "./errors.js"
 import type { TokenManager } from "./tokens.js"
 
 export interface RemoteOptions {
@@ -46,7 +46,7 @@ export class ZoomRemote {
       } catch {
         checkCancelled(signal)
         if (retry && attempt < 2 && (await this.pause(null, attempt, signal))) continue
-        throw new ZoomError("network_error", "Zoom request could not be completed")
+        throw new CliError("network_error", "Zoom request could not be completed")
       }
       if (retry && attempt < 2 && retryableStatus(response.status) && (await this.pause(response, attempt, signal))) {
         await response.body?.cancel()
@@ -77,12 +77,12 @@ export class ZoomRemote {
       options.maxResponseBytes !== undefined &&
       (method !== "GET" || !Number.isSafeInteger(options.maxResponseBytes) || options.maxResponseBytes < 1)
     )
-      throw new ZoomError("validation_error", "maxResponseBytes requires GET and a positive safe integer")
+      throw new CliError("validation_error", "maxResponseBytes requires GET and a positive safe integer")
     const signal = operationSignal(options.signal)
     checkCancelled(signal)
     const tokens = await this.tokens.tokens()
     if (![scope, `${scope}:admin`, `${scope}:master`].some((grant) => tokens.scopes.includes(grant)))
-      throw new ZoomError(
+      throw new CliError(
         "configuration_error",
         `Zoom scope ${scope} is missing; add it to the app and run zm session start again`,
       )
@@ -99,11 +99,11 @@ export class ZoomRemote {
           signal,
         })
       } catch {
-        throw new ZoomError("outcome_unknown", "Zoom mutation did not finish; verify remote state before retrying")
+        throw new CliError("outcome_unknown", "Zoom mutation did not finish; verify remote state before retrying")
       }
     }
     if (method !== "GET" && signal.aborted)
-      throw new ZoomError(
+      throw new CliError(
         "outcome_unknown",
         "Zoom mutation was interrupted after dispatch; verify remote state before retrying",
       )
@@ -120,7 +120,7 @@ export class ZoomRemote {
         if (response.ok && isCliError(error)) throw error
       }
       if (response.ok)
-        throw new ZoomError(
+        throw new CliError(
           method === "GET" ? "invalid_response" : "outcome_unknown",
           method === "GET"
             ? "Zoom returned an invalid response"
@@ -129,26 +129,26 @@ export class ZoomRemote {
       value = {}
     }
     if (method !== "GET" && signal.aborted)
-      throw new ZoomError(
+      throw new CliError(
         "outcome_unknown",
         "Zoom mutation was interrupted after dispatch; verify remote state before retrying",
       )
     const body = typeof value === "object" && value !== null && !Array.isArray(value) ? object(value) : {}
     if (body.code === 4711)
-      throw new ZoomError(
+      throw new CliError(
         "authentication_error",
         `Zoom scope ${scope} is missing; add it to the app and run zm session start again`,
       )
     if (response.status === 404 && missingCode !== undefined && body.code === missingCode) return null
     if (!response.ok || (typeof body.code === "number" && body.code !== 0))
-      throw new ZoomError(
+      throw new CliError(
         body.code === 200 ? "permission_error" : statusToCode(response.status),
         `Zoom request failed (HTTP ${response.status}${typeof body.code === "number" ? `, code ${body.code}` : ""})`,
       )
     try {
       return object(value)
     } catch {
-      throw new ZoomError(
+      throw new CliError(
         method === "GET" ? "invalid_response" : "outcome_unknown",
         method === "GET"
           ? "Zoom returned an invalid response"

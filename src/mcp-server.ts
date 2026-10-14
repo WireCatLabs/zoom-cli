@@ -3,8 +3,8 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js"
 import { CallToolRequestSchema, ListToolsRequestSchema, type Tool } from "@modelcontextprotocol/sdk/types.js"
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv"
-import { type ErrorCode, errorObjectOf, isCliError, mcpErrorResult } from "@wirecat/cli-base"
-import { LOCAL_READ } from "@wirecat/cli-core/cli"
+import { CliError, type ErrorCode, errorObjectOf, isCliError, mcpErrorResult } from "@wirecat/cli-base"
+import { LOCAL_READ, snakeKeys } from "@wirecat/cli-core/cli"
 import { type MeetingStore, SAVE_INSTRUCTION } from "@wirecat/cli-core/meetings"
 import {
   callMeetingPassageTool,
@@ -18,9 +18,8 @@ import {
 import type { MeetingSearchCursor } from "@wirecat/cli-core/services"
 import type { Command } from "commander"
 import { hostFailureContext } from "./answer-policy.js"
-import { meetingAnswer, readMetadata, toolAnswerSchema } from "./answers.js"
-import { ZoomError } from "./errors.js"
-import { camelKeys, snakeKeys } from "./keys.js"
+import { readMetadata, toolAnswer, toolAnswerSchema } from "./answers.js"
+import { camelKeys } from "./keys.js"
 import {
   type MeetingTaskKind,
   validateEvidenceOptions,
@@ -51,7 +50,7 @@ export interface MeetingMcpOptions {
 }
 
 const failure = (code: ErrorCode, message: string) =>
-  mcpErrorResult(errorObjectOf(new ZoomError(code, message), hostFailureContext(undefined, LOCAL_READ)))
+  mcpErrorResult(errorObjectOf(new CliError(code, message), hostFailureContext(undefined, LOCAL_READ)))
 const crashed = () => mcpErrorResult(errorObjectOf(undefined, hostFailureContext(undefined, LOCAL_READ)))
 
 /** SDK protocol handling; shared meeting tools own all read behavior and validation. */
@@ -59,7 +58,7 @@ const buildServer = (options: MeetingMcpOptions) => {
   const semanticModel = options.semanticModel ? Object.freeze({ ...options.semanticModel }) : undefined
   const maxResultBytes = options.maxResultBytes ?? 4 * 1024 * 1024
   if (!Number.isSafeInteger(maxResultBytes) || maxResultBytes < 0)
-    throw new ZoomError("validation_error", "maxResultBytes must be a nonnegative safe integer")
+    throw new CliError("validation_error", "maxResultBytes must be a nonnegative safe integer")
   const running = new Set<Promise<unknown>>()
   let stopping = false
   const validator = new AjvJsonSchemaValidator()
@@ -229,23 +228,22 @@ const buildServer = (options: MeetingMcpOptions) => {
             const value = Reflect.get(target, key)
             return typeof value === "function"
               ? (...args: unknown[]) => {
-                  if (cancelled()) throw new ZoomError("cancelled", "meeting read was cancelled")
+                  if (cancelled()) throw new CliError("cancelled", "meeting read was cancelled")
                   return Reflect.apply(value, target, args)
                 }
               : value
           },
         }) as MeetingStore
         if (request.params.name === "search_meetings" && args.by_meaning === true) {
-          if (!semanticModel || !connection.meetingSemantic)
-            throw new ZoomError("configuration_error", "meeting search by meaning is unavailable")
+          if (!semanticModel) throw new CliError("configuration_error", "meeting search by meaning is unavailable")
           const wordsOnly = Object.keys(args).filter(
             (key) => !["query", "limit", "cursor", ...Object.keys(meaningArguments)].includes(key),
           )
           if (wordsOnly.length)
-            throw new ZoomError("validation_error", `${wordsOnly.join(", ")} do not apply to a search by meaning`)
+            throw new CliError("validation_error", `${wordsOnly.join(", ")} do not apply to a search by meaning`)
           const cursor = args.cursor as string | undefined
           if (cursor !== undefined && !/^[1-9]\d{0,15}$/.test(cursor))
-            throw new ZoomError("validation_error", "cursor by meaning takes the previous page's next_cursor")
+            throw new CliError("validation_error", "cursor by meaning takes the previous page's next_cursor")
           const request = {
             ...semanticModel,
             limit: args.limit as number | undefined,
@@ -258,7 +256,7 @@ const buildServer = (options: MeetingMcpOptions) => {
           validateMeetingSemantic(args.query as string, request)
           const value = await connection.meetingSemantic.search(args.query as string, request)
           if (typeof value !== "object" || value === null || Array.isArray(value))
-            throw new ZoomError("invalid_response", "meeting search by meaning returned an invalid report")
+            throw new CliError("invalid_response", "meeting search by meaning returned an invalid report")
           const next = (value as { nextChunkId?: number }).nextChunkId
           const found = snakeKeys({ ...value, nextCursor: next === undefined ? null : String(next) }) as Record<
             string,
@@ -266,16 +264,13 @@ const buildServer = (options: MeetingMcpOptions) => {
           >
           result = { content: [{ type: "text", text: JSON.stringify(found) }], structuredContent: found }
         } else if (request.params.name === "meeting_passage") {
-          const passage = connection.meetingContext?.passage
-          if (!passage) throw new ZoomError("configuration_error", "meeting passage capability is unavailable")
           result = await callMeetingPassageTool(
-            passage,
+            connection.meetingContext.passage,
             args,
             signal,
             hostFailureContext(options.commandRegistry, LOCAL_READ),
           )
         } else if (request.params.name === "search_meetings") {
-          if (!connection.meetingSearch) throw new ZoomError("configuration_error", "meeting search is unavailable")
           const words = Object.fromEntries(
             Object.entries(args).filter(([key]) => !(key === "by_meaning" && args.by_meaning === false)),
           )
@@ -301,8 +296,6 @@ const buildServer = (options: MeetingMcpOptions) => {
               signal,
             }
             validateEvidenceOptions(options)
-            if (!context?.evidence)
-              throw new ZoomError("configuration_error", "meeting evidence capability is unavailable")
             value = await context.evidence(args.reference as string, options)
           } else if (request.params.name === "person_meeting_context") {
             const options = {
@@ -314,40 +307,32 @@ const buildServer = (options: MeetingMcpOptions) => {
               signal,
             }
             validatePersonContext(args.person as string, options)
-            if (!context?.personContext)
-              throw new ZoomError("configuration_error", "person meeting context capability is unavailable")
             value = await context.personContext(args.person as string, options)
           } else {
             validateTaskKind(args.kind as string)
-            if (!context?.taskProposal)
-              throw new ZoomError("configuration_error", "meeting task proposal capability is unavailable")
             value = await context.taskProposal(args.reference as string, args.kind as MeetingTaskKind, signal)
             validateTaskProposal(value)
           }
           if (typeof value !== "object" || value === null || Array.isArray(value))
-            throw new ZoomError("invalid_response", "meeting context returned an invalid report")
+            throw new CliError("invalid_response", "meeting context returned an invalid report")
           const found = snakeKeys(value) as Record<string, unknown>
           result = { content: [{ type: "text", text: JSON.stringify(found) }], structuredContent: found }
         } else if (request.params.name === "search_all") {
-          if (!connection.unifiedSearch)
-            result = failure("configuration_error", "unified meeting search is unavailable")
-          else {
-            const found = await runUnifiedSearch(
-              connection.unifiedSearch,
-              {
-                text: args.query as string,
-                limit: (args.limit as number | undefined) ?? 100,
-                maxMeetings: args.max_meetings as number | undefined,
-                exact: args.exact as boolean | undefined,
-                meetingCursor: camelKeys(args.meeting_cursor) as MeetingSearchCursor | undefined,
-                only: ["meetings"],
-                signal,
-              },
-              true,
-            )
-            const snake = snakeKeys(unifiedSearchAnswer(found)) as Record<string, unknown>
-            result = { content: [{ type: "text", text: JSON.stringify(snake) }], structuredContent: snake }
-          }
+          const found = await runUnifiedSearch(
+            connection.unifiedSearch,
+            {
+              text: args.query as string,
+              limit: (args.limit as number | undefined) ?? 100,
+              maxMeetings: args.max_meetings as number | undefined,
+              exact: args.exact as boolean | undefined,
+              meetingCursor: camelKeys(args.meeting_cursor) as MeetingSearchCursor | undefined,
+              only: ["meetings"],
+              signal,
+            },
+            true,
+          )
+          const snake = snakeKeys(unifiedSearchAnswer(found)) as Record<string, unknown>
+          result = { content: [{ type: "text", text: JSON.stringify(snake) }], structuredContent: snake }
         } else
           result = await callMeetingTool(
             store,
@@ -381,7 +366,7 @@ const buildServer = (options: MeetingMcpOptions) => {
     if (cancelled()) return failure("cancelled", "meeting read was cancelled")
     if (!result.isError) {
       try {
-        const answer = meetingAnswer(result.structuredContent, meta(), options.commandRegistry)
+        const answer = toolAnswer(result.structuredContent, meta(), options.commandRegistry)
         result = { content: [{ type: "text", text: JSON.stringify(answer) }], structuredContent: answer }
       } catch (error) {
         result = mcpErrorResult(errorObjectOf(error, hostFailureContext(undefined, LOCAL_READ)))

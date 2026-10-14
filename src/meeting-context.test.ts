@@ -3,10 +3,11 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { Writable } from "node:stream"
 import { memoryKeyring } from "@wirecat/cli-base"
+import { snakeKeys } from "@wirecat/cli-core/cli"
 import { expect, it, vi } from "vitest"
 import { readReceipt } from "../scripts/testing/answers.js"
+import { fakeConnection } from "../scripts/testing/connection.js"
 import { setConfig } from "./config.js"
-import { snakeKeys } from "./keys.js"
 import {
   createMeetingContextCapabilities,
   validateEvidenceOptions,
@@ -15,7 +16,7 @@ import {
   validateTaskProposal,
 } from "./meeting-context.js"
 import type { MeetingEmbeddingOptions } from "./meeting-semantic-commands.js"
-import { type ProgramDeps, run } from "./program.js"
+import { type ProgramDeps, run, type StoreConnection } from "./program.js"
 import { writeStream } from "./streaming.js"
 import { TokenManager } from "./tokens.js"
 
@@ -40,12 +41,13 @@ vi.mock("@wirecat/cli-core/services", () => ({
   personMeetingContext: api.personMeetingContext,
   proposeMeetingTask: api.proposeMeetingTask,
 }))
-const readStore = (meetingMetadata = vi.fn()) => ({
-  meetingMetadata,
-  transcriptMetadata: vi.fn(),
-  transcripts: vi.fn(),
-  transcriptRows: vi.fn(),
-})
+const readStore = (meetingMetadata = vi.fn()) =>
+  ({
+    meetingMetadata,
+    transcriptMetadata: vi.fn(),
+    transcripts: vi.fn(),
+    transcriptRows: vi.fn(),
+  }) as never
 const reference = "meeting:3/15/20/0"
 const evidence = {
   schemaVersion: 1 as const,
@@ -106,6 +108,10 @@ const setup = async () => {
   }
   return { deps, output }
 }
+const connectWith = (deps: ProgramDeps, parts: Partial<StoreConnection>) => {
+  setConfig(deps.configPath, "account.profile", "example")
+  deps.connectStore = async () => fakeConnection({ store: {} as never, accountId: 3, close: async () => {}, ...parts })
+}
 
 it("binds public producer evidence and person context to the selected account before any meeting read", async () => {
   api.readMeetingEvidence.mockResolvedValue(evidence)
@@ -159,24 +165,6 @@ it("binds public producer evidence and person context to the selected account be
   )
 })
 
-it("reports unavailable public capabilities without inventing fallback evidence", async () => {
-  const meeting = vi.fn()
-  const context = createMeetingContextCapabilities({}, readStore(meeting), 3, async () => ({}))
-  await expect(context.evidence?.(reference)).rejects.toMatchObject({ code: "configuration_error" })
-  await expect(context.personContext?.("person:7")).rejects.toMatchObject({ code: "configuration_error" })
-  await expect(context.taskProposal?.(reference, "promise")).rejects.toMatchObject({ code: "configuration_error" })
-  const parser = {
-    parseMeetingReference: () => ({ type: "meeting" as const, accountId: 3, meetingId: 15 }),
-    canonicalMeetingReference: (value: string) => value,
-  }
-  const missingService = createMeetingContextCapabilities({}, readStore(meeting), 3, async () => parser)
-  await expect(missingService.evidence?.(reference)).rejects.toMatchObject({ code: "configuration_error" })
-  await expect(missingService.taskProposal?.(reference, "promise")).rejects.toMatchObject({
-    code: "configuration_error",
-  })
-  expect(meeting).not.toHaveBeenCalled()
-})
-
 it("validates limits, person identifiers and unapplied task kinds before context work", () => {
   for (const options of [
     { cues: 0 },
@@ -197,7 +185,7 @@ it("validates limits, person identifiers and unapplied task kinds before context
     expect(() => validatePersonContext(person, options)).toThrow()
   expect(() => validateTaskKind("invalid")).toThrow()
   expect(() => validateTaskProposal({ ...proposal, applied: true })).toThrow()
-  expect(() => createMeetingContextCapabilities({}, readStore(), 0)).toThrow()
+  expect(() => createMeetingContextCapabilities({} as never, readStore(), 0)).toThrow()
 })
 
 it("stops cancelled context callbacks before reads and discards late cancelled evidence", async () => {
@@ -210,10 +198,12 @@ it("stops cancelled context callbacks before reads and discards late cancelled e
     parseMeetingReference: () => ({ type: "meeting" as const, accountId: 3, meetingId: 15 }),
     canonicalMeetingReference: (value: string) => value,
   }
-  const context = createMeetingContextCapabilities({}, readStore(), 3, async () => ({
-    ...parser,
-    readMeetingEvidence: vi.fn().mockImplementation(read),
-  }))
+  const context = createMeetingContextCapabilities(
+    {} as never,
+    readStore(),
+    3,
+    async () => ({ ...parser, readMeetingEvidence: vi.fn().mockImplementation(read) }) as never,
+  )
   await expect(context.evidence?.(reference, { signal: controller.signal })).rejects.toMatchObject({
     code: "cancelled",
   })
@@ -225,11 +215,13 @@ it("stops cancelled context callbacks before reads and discards late cancelled e
 
 it("CLI forwards complete context envelopes and proposal-only previews with no automatic task creation", async () => {
   const { deps, output } = await setup()
-  deps.meetingContext = {
+  const meetingContext = {
+    passage: vi.fn(),
     evidence: vi.fn(async () => evidence),
     personContext: vi.fn(async () => ({ items: [], coverage: { complete: false, pending: 2 } })),
     taskProposal: async () => proposal,
   }
+  connectWith(deps, { meetingContext })
   expect(await run(["meetings", "evidence", reference, "--jsonl"], deps)).toBe(0)
   expect(readReceipt(output.pop() ?? "{}")).toEqual(snakeKeys(evidence))
   expect(
@@ -254,11 +246,11 @@ it("CLI forwards complete context envelopes and proposal-only previews with no a
     ),
   ).toBe(0)
   expect(await run(["meetings", "evidence", "meeting:3/15", "--after-transcript-id", "20", "--json"], deps)).toBe(0)
-  expect(deps.meetingContext.evidence).toHaveBeenLastCalledWith(
+  expect(meetingContext.evidence).toHaveBeenLastCalledWith(
     "meeting:3/15",
     expect.objectContaining({ afterTranscriptId: 20 }),
   )
-  expect(deps.meetingContext.evidence).toHaveBeenCalledWith(
+  expect(meetingContext.evidence).toHaveBeenCalledWith(
     "meeting:3/15",
     expect.objectContaining({ after: reference, maxReadBytes: 1000, maxTranscriptPages: 2, cues: 3, bytes: 512 }),
   )
@@ -284,7 +276,7 @@ it("CLI forwards complete context envelopes and proposal-only previews with no a
     ),
   ).toBe(0)
   expect(readReceipt(output.pop() ?? "{}").coverage.complete).toBe(false)
-  expect(deps.meetingContext.personContext).toHaveBeenCalledWith(
+  expect(meetingContext.personContext).toHaveBeenCalledWith(
     "person:7",
     expect.objectContaining({
       meetings: 2,
@@ -305,17 +297,19 @@ it("CLI forwards complete context envelopes and proposal-only previews with no a
   expect(serve).toHaveBeenCalledWith(expect.objectContaining({ includeUnifiedSearch: true }))
 })
 
-it("CLI validates before connection, uses one read connection, closes before stdout, and detects missing capabilities", async () => {
+it("CLI validates before connection, uses one read connection and closes before stdout", async () => {
   const { deps, output } = await setup()
   const close = vi.fn(async () => {
     expect(output).toEqual([])
   })
-  const connect = vi.fn(async () => ({
-    store: {} as never,
-    accountId: 3,
-    meetingContext: { evidence: async () => evidence },
-    close,
-  }))
+  const connect = vi.fn(async () =>
+    fakeConnection({
+      store: {} as never,
+      accountId: 3,
+      meetingContext: { evidence: async () => evidence } as never,
+      close,
+    }),
+  )
   deps.connectStore = connect
   expect(await run(["meetings", "context", "person:0", "--json"], deps)).toBe(2)
   expect(await run(["meetings", "evidence", reference, "--cues", "0", "--json"], deps)).toBe(2)
@@ -328,15 +322,6 @@ it("CLI validates before connection, uses one read connection, closes before std
   expect(connect).toHaveBeenCalledOnce()
   expect(connect).toHaveBeenCalledWith({ profile: "example", externalId: "zm-profile:example", intent: "read" })
   expect(close).toHaveBeenCalledOnce()
-  output.length = 0
-  deps.meetingContext = {}
-  for (const args of [
-    ["evidence", reference],
-    ["context", "person:7"],
-    ["task-proposal", reference, "--type", "promise"],
-  ])
-    expect(await run(["meetings", ...args, "--json"], deps)).toBe(3)
-  expect(output).toEqual([])
 })
 
 it("requires an explicit semantic model, preserves scan coverage, and previews generation until --yes", async () => {
@@ -344,7 +329,7 @@ it("requires an explicit semantic model, preserves scan coverage, and previews g
   const report = { items: [], ranking: "scanned-candidates", complete: false, hasMore: true, nextChunkId: 12 }
   const search = vi.fn(async () => report)
   const generate = vi.fn(async (options: MeetingEmbeddingOptions) => ({ applied: options.yes === true }))
-  deps.meetingSemantic = { search, generate }
+  connectWith(deps, { meetingSemantic: { search, generate } })
   expect(await run(["search", "meetings", "example", "--max-chunks", "5", "--json"], deps)).toBe(2)
   expect(await run(["search", "meetings", "example", "--model", "installed-example", "--event-id", "1"], deps)).toBe(2)
   expect(await run(["search", "meetings", "example", "--model", "installed-example", "--cursor", "abc"], deps)).toBe(2)
@@ -453,12 +438,14 @@ it("requires an explicit semantic model, preserves scan coverage, and previews g
 
 it("refuses remote semantic models offline before connecting, querying, generating or starting MCP", async () => {
   const { deps, output } = await setup()
-  const connect = vi.fn()
   const search = vi.fn()
   const generate = vi.fn()
   const serve = vi.fn()
+  const connect = vi.fn(async () =>
+    fakeConnection({ store: {} as never, accountId: 3, close: async () => {}, meetingSemantic: { search, generate } }),
+  )
+  setConfig(deps.configPath, "account.profile", "example")
   deps.connectStore = connect
-  deps.meetingSemantic = { search, generate }
   deps.serveMcp = serve
   const remote = ["--model", "served-example", "--base-url", "https://example.invalid/v1", "--dims", "2"]
   for (const args of [
@@ -485,13 +472,15 @@ it("flushes acknowledged embedding writes after cancellation while discarding ca
   const controller = new AbortController()
   deps.signal = controller.signal
   const report = { applied: true, saved: 2, skipped: 1 }
-  deps.meetingSemantic = {
-    search: vi.fn(),
-    generate: async () => {
-      controller.abort()
-      return report
+  connectWith(deps, {
+    meetingSemantic: {
+      search: vi.fn(),
+      generate: async () => {
+        controller.abort()
+        return report
+      },
     },
-  }
+  })
   let callbackSettled = false
   const stream = new Writable({
     highWaterMark: 1,
@@ -513,13 +502,15 @@ it("flushes acknowledged embedding writes after cancellation while discarding ca
   const read = await setup()
   const readController = new AbortController()
   read.deps.signal = readController.signal
-  read.deps.meetingSemantic = {
-    search: async () => {
-      readController.abort()
-      return { items: [{ source: reference }] }
+  connectWith(read.deps, {
+    meetingSemantic: {
+      search: async () => {
+        readController.abort()
+        return { items: [{ source: reference }] }
+      },
+      generate: vi.fn(),
     },
-    generate: vi.fn(),
-  }
+  })
   expect(await run(["search", "meetings", "example", "--model", "installed-example", "--jsonl"], read.deps)).toBe(130)
   expect(read.output).toEqual([])
 })
@@ -528,13 +519,15 @@ it("bounds cancelled embedding receipt backpressure and emits no receipt for rej
   const { deps, output } = await setup()
   const controller = new AbortController()
   deps.signal = controller.signal
-  deps.meetingSemantic = {
-    search: vi.fn(),
-    generate: async () => {
-      controller.abort()
-      return { applied: true, saved: 1 }
+  connectWith(deps, {
+    meetingSemantic: {
+      search: vi.fn(),
+      generate: async () => {
+        controller.abort()
+        return { applied: true, saved: 1 }
+      },
     },
-  }
+  })
   let callback: (() => void) | undefined
   const stream = new Writable({
     highWaterMark: 1,
@@ -550,12 +543,14 @@ it("bounds cancelled embedding receipt backpressure and emits no receipt for rej
   expect(stream.listenerCount("error")).toBe(0)
 
   const failed = await setup()
-  failed.deps.meetingSemantic = {
-    search: vi.fn(),
-    generate: async () => {
-      throw new Error("invented generation failure before acknowledgement")
+  connectWith(failed.deps, {
+    meetingSemantic: {
+      search: vi.fn(),
+      generate: async () => {
+        throw new Error("invented generation failure before acknowledgement")
+      },
     },
-  }
+  })
   expect(await run(["meetings", "embeddings", "--model", "installed-example", "--yes", "--jsonl"], failed.deps)).toBe(1)
   expect(failed.output).toEqual([])
 })
@@ -566,7 +561,12 @@ it("opens only the selected semantic read connection and closes it before finite
   const close = vi.fn(async () => {
     expect(output).toEqual([])
   })
-  const connection = { store: {} as never, accountId: 3, meetingSemantic: { search, generate: vi.fn() }, close }
+  const connection = fakeConnection({
+    store: {} as never,
+    accountId: 3,
+    meetingSemantic: { search, generate: vi.fn() },
+    close,
+  })
   const connect = vi.fn<NonNullable<ProgramDeps["connectStore"]>>(async () => connection)
   deps.connectStore = connect
   const args = ["search", "meetings", "example", "--model", "installed-example", "--json"]
@@ -578,11 +578,6 @@ it("opens only the selected semantic read connection and closes it before finite
   expect(search).toHaveBeenCalledOnce()
   expect(close).toHaveBeenCalledOnce()
   expect(readReceipt(output.pop() ?? "{}").coverage.archive_completeness).toBe("unknown")
-  connect.mockResolvedValue({ ...connection, meetingSemantic: undefined })
-  expect(await run(args, deps)).toBe(3)
-  expect(close).toHaveBeenCalledTimes(2)
-  expect(search).toHaveBeenCalledOnce()
-  expect(output).toEqual([])
 })
 
 it("rejects unsafe remote configuration and invalid generation cursors before opening a store", async () => {

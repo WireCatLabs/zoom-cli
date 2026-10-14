@@ -154,10 +154,10 @@ Each occurrence has a manifest containing metadata, file sizes and SHA-256 check
 download URLs and OAuth tokens are excluded. Repeating a download verifies existing manifest files
 and skips matching assets; a file whose size and modification time are unchanged since it was last
 verified (`.zoom-verified.json`) is not hashed again. `recordings archive check` always hashes every file. Existing files are never overwritten; a mismatch requires a new destination.
-With a selected local profile, interrupted downloads retain verified partial bytes and resume only
+Downloads and syncs need a selected local profile (`zm config set account.profile <label>`); the
+archive belongs to its account. Interrupted downloads retain verified partial bytes and resume only
 when a strong validator and the returned range agree. Changed representations restart safely.
-Explicit `--resume` requires a profile; `--no-resume` and downloads without a profile use ephemeral
-partials. Completed manifest entries remain available if a later transfer fails.
+`--no-resume` uses ephemeral partials. Completed manifest entries remain available if a later transfer fails.
 
 ## Locks and recovery
 

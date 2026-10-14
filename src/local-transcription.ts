@@ -1,4 +1,5 @@
 import { isAbsolute } from "node:path"
+import { CliError } from "@wirecat/cli-base"
 import type {
   MeetingMediaDescriptor,
   MeetingTranscriptionOptions,
@@ -11,8 +12,8 @@ import type {
   LocalSpeechRecognizer,
   LocalSpeechRecognizerOptions,
 } from "@wirecat/cli-core/speech"
-import { checkCancelled, ZoomError } from "./errors.js"
-import { openWavAudio, preflightWavAudio, type WavAudioPlan } from "./wav-audio.js"
+import { openWavAudio, preflightWavAudio, type WavAudioPlan } from "@wirecat/cli-core/speech/wav"
+import { checkCancelled } from "./errors.js"
 
 export interface LocalSpeechPort {
   describe(model: string): Readonly<LocalSpeechRecognitionModel>
@@ -38,7 +39,7 @@ export const validateLocalTranscriptionOptions = (input: LocalTranscriptionOptio
     options.model.length > 200 ||
     /[\0\r\n]/.test(options.model)
   )
-    throw new ZoomError("validation_error", "local transcription requires an explicit speech model")
+    throw new CliError("validation_error", "local transcription requires an explicit speech model")
   if (
     options.modelsDirectory !== undefined &&
     (typeof options.modelsDirectory !== "string" ||
@@ -46,7 +47,7 @@ export const validateLocalTranscriptionOptions = (input: LocalTranscriptionOptio
       options.modelsDirectory.length > 4096 ||
       /[\0\r\n]/.test(options.modelsDirectory))
   )
-    throw new ZoomError("validation_error", "speech model directory must be an absolute bounded path")
+    throw new CliError("validation_error", "speech model directory must be an absolute bounded path")
   for (const [value, max, label] of [
     [options.maxBytes, 4 * 1024 ** 3, "media bytes"],
     [options.maxDurationMs, 24 * 3600_000, "media duration"],
@@ -54,16 +55,16 @@ export const validateLocalTranscriptionOptions = (input: LocalTranscriptionOptio
     [options.maxTextBytes, 64 * 1024 ** 2, "transcript text bytes"],
   ] as const)
     if (value !== undefined && (!Number.isSafeInteger(value) || value < 1 || value > max))
-      throw new ZoomError("validation_error", `invalid ${label} budget`)
+      throw new CliError("validation_error", `invalid ${label} budget`)
   for (const value of [options.apply, options.dryRun])
     if (value !== undefined && typeof value !== "boolean")
-      throw new ZoomError("validation_error", "transcription apply and dry-run options must be booleans")
+      throw new CliError("validation_error", "transcription apply and dry-run options must be booleans")
   return options
 }
 export const compactLocalTranscriptionReceipt = (receipt: MeetingTranscriptionReceipt) => {
   const append = receipt.append
   if (!receipt.applied || !append || !Number.isSafeInteger(append.meeting.meeting.id) || append.meeting.meeting.id < 1)
-    throw new ZoomError("outcome_unknown", "transcription did not return a usable committed acknowledgement")
+    throw new CliError("outcome_unknown", "transcription did not return a usable committed acknowledgement")
   return {
     applied: true as const,
     accountId: receipt.accountId,
@@ -127,7 +128,7 @@ export const createWavTranscriptionSource = (
         media.recognition.model !== recognition.model ||
         media.recognition.version !== recognition.version
       )
-        throw new ZoomError(
+        throw new CliError(
           "validation_error",
           "transcription media descriptor does not match its prepared audio and model",
         )
@@ -145,7 +146,7 @@ export const createWavTranscriptionSource = (
           model.model !== recognition.model ||
           model.version !== recognition.version
         )
-          throw new ZoomError("validation_error", "installed speech recognizer changed after the media preview")
+          throw new CliError("validation_error", "installed speech recognizer changed after the media preview")
         for await (const window of audio.windows()) {
           checkCancelled(context.signal)
           const text = await model.recognize(window.samples, { signal: context.signal })
@@ -172,7 +173,7 @@ export const createLocalTranscriptionCapabilities = (
 ): LocalTranscriptionCapabilities => {
   const accountId = store.accountId
   if (!Number.isSafeInteger(accountId) || accountId < 1)
-    throw new ZoomError("validation_error", "local transcription requires a selected existing account")
+    throw new CliError("validation_error", "local transcription requires a selected existing account")
   const options = { ...input, ...(input.env ? { env: { ...input.env } } : {}) }
   const resolveMeeting = store.resolveMeeting.bind(store)
   const appendTranscriptsWithReceipt = store.appendTranscriptsWithReceipt.bind(store)
@@ -194,7 +195,7 @@ export const createLocalTranscriptionCapabilities = (
         typeof found.externalId !== "string" ||
         !found.externalId.trim()
       )
-        throw new ZoomError("not_found", "meeting was not found in the selected account")
+        throw new CliError("not_found", "meeting was not found in the selected account")
       const target = Object.freeze({ accountId, externalId: found.externalId, now: options.now?.() ?? Date.now() })
       const source = createWavTranscriptionSource(file, {
         model: request.model,
@@ -208,7 +209,7 @@ export const createLocalTranscriptionCapabilities = (
         {
           appendTranscriptsWithReceipt(value) {
             if (value.accountId !== accountId || value.externalId !== target.externalId)
-              throw new ZoomError("validation_error", "transcription append must retain its selected target")
+              throw new CliError("validation_error", "transcription append must retain its selected target")
             return appendTranscriptsWithReceipt(value)
           },
         },

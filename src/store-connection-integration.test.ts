@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
-import { memoryMeetingStore, sampleEvent, sampleMeeting } from "@wirecat/cli-core/meetings/testing"
+import { sampleEvent, sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { openStore } from "@wirecat/cli-core/store"
 import { expect, it } from "vitest"
 import { setConfig } from "./config.js"
@@ -77,13 +77,9 @@ const audioFixture = (directory: string) => {
 
 it("connects actual published context services to an existing scoped account without duplicating records", async () => {
   const value = await fixture()
-  const connection = await createStoreConnector({ path: value.path, env: value.env })({
-    ...request,
-    capability: "meeting-integration",
-  })
+  const connection = await createStoreConnector({ path: value.path, env: value.env })(request)
   try {
     const integration = connection.meetingIntegration
-    if (!integration) throw new Error("missing published meeting link capability")
     const reference = `meeting:${value.accountId}/${value.meeting.meeting.id}`
     const change = { action: "event.link" as const, eventId: value.event.id, expectedEventId: null }
     expect(await integration.change(reference, change)).toMatchObject({ applied: false, accountId: value.accountId })
@@ -126,13 +122,9 @@ it("connects actual published context services to an existing scoped account wit
 it("resolves the existing account before WAV access and previews through real public speech metadata", async () => {
   const value = await fixture()
   const { audio, models } = audioFixture(value.directory)
-  const connection = await createStoreConnector({ path: value.path, env: value.env })({
-    ...request,
-    capability: "transcript-append",
-  })
+  const connection = await createStoreConnector({ path: value.path, env: value.env })(request)
   try {
     const capability = connection.meetingTranscription
-    if (!capability) throw new Error("missing published local transcription capability")
     const options = { model: "parakeet-v3", modelsDirectory: models }
     const preview = await capability.transcribe(String(value.meeting.meeting.id), audio, options)
     expect(preview).toMatchObject({
@@ -151,7 +143,6 @@ it("resolves the existing account before WAV access and previews through real pu
       capability.transcribe(String(value.meeting.meeting.id), audio, { ...options, apply: true }),
     ).rejects.toMatchObject({ code: "not_found", message: expect.stringContaining("not installed") })
     const exact = connection.appendTranscriptsWithReceipt
-    if (!exact) throw new Error("missing public exact append")
     await expect(
       exact({ accountId: value.accountId, externalId: "absent-existing-occurrence", now: 3000, transcripts: [] }),
     ).rejects.toMatchObject({ code: "validation_error" })
@@ -160,7 +151,7 @@ it("resolves the existing account before WAV access and previews through real pu
   }
 })
 
-it("mounts real durable connector capabilities and rejects absent local profiles or legacy capabilities", async () => {
+it("mounts real durable connector capabilities and rejects absent local profiles", async () => {
   const value = await fixture()
   const { audio, models } = audioFixture(value.directory)
   const output: string[] = []
@@ -218,14 +209,9 @@ it("mounts real durable connector capabilities and rejects absent local profiles
     expect(await run([...search, "--event-id", String(event), "--json"], deps)).toBe(0)
     expect(JSON.parse(output.at(-1) ?? "{}").items.length > 0).toBe(hits)
   }
-  deps.connectStore = async () => ({ store: memoryMeetingStore(), accountId: value.accountId, close: async () => {} })
-  for (const command of [links, search, transcribe]) {
-    expect(await run([...command, "--json"], deps)).toBe(3)
-    expect(errors.at(-1)).toContain("unavailable in this store connector")
-  }
 })
 
-it("preserves legacy replay and rejects a metadata adapter that returns another account before audio access", async () => {
+it("appends through the receipt port and rejects a metadata adapter that returns another account before audio access", async () => {
   const value = await fixture()
   const connection = await createStoreConnector({
     path: value.path,
@@ -242,9 +228,8 @@ it("preserves legacy replay and rejects a metadata adapter that returns another 
     },
   })(request)
   try {
-    const append = connection.appendTranscripts
+    const append = connection.appendTranscriptsWithReceipt
     const transcription = connection.meetingTranscription
-    if (!append || !transcription) throw new Error("missing published transcript capabilities")
     const input = sampleMeeting().transcripts[0]
     if (!input.contentHash) throw new Error("missing invented transcript hash")
     const result = await append({
@@ -259,7 +244,7 @@ it("preserves legacy replay and rejects a metadata adapter that returns another 
         },
       ],
     })
-    expect(result.transcripts).toHaveLength(1)
+    expect(result.meeting.transcripts).toHaveLength(1)
     await expect(
       transcription.transcribe(String(value.meeting.meeting.id), join(value.directory, "not-opened.wav"), {
         model: "parakeet-v3",

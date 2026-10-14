@@ -1,52 +1,69 @@
-import { createRenderer, projectFields } from "@wirecat/cli-base"
-import { type Body, jsonlRecords } from "@wirecat/cli-core/cli"
+import { createRenderer, exitCodeOfAnswer, projectFields } from "@wirecat/cli-base"
+import { metaOf } from "@wirecat/cli-base/commands"
+import type { Meta } from "@wirecat/cli-base/standards"
+import { type Body, itemOf, listOf, metaNow, renderAnswer, snakeKeys } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
-import { meetingAnswer } from "./answers.js"
-import { snakeKeys } from "./keys.js"
-import type { ProgramDeps } from "./program.js"
 
-export const createAnswerRenderer =
-  (registry: Command, onAnswer?: (meta: import("@wirecat/cli-base/standards").Meta) => void) =>
-  (
-    value: unknown,
-    format: "json" | "jsonl" | "text",
-    deps: ProgramDeps,
-    fields?: readonly string[],
-    preserveEnvelope = false,
-    providerKeys = false,
-    seal?: () => import("@wirecat/cli-base/standards").Meta,
-  ): string => {
-    if (!providerKeys) value = snakeKeys(value)
-    if (seal) {
-      const packet = meetingAnswer(value, seal(), registry)
-      onAnswer?.(packet.meta)
-      value = packet
-    }
-    if (fields) {
-      if (seal && value && typeof value === "object" && "item" in value)
-        value = { ...value, item: projectFields(value.item, fields) }
-      else value = projectFields(value, fields)
-    }
-    if (seal && format === "jsonl")
-      return `${jsonlRecords(value as Body)
-        .map((record) => JSON.stringify(record))
-        .join("\n")}\n`
-    const chunks: string[] = []
-    const renderer = createRenderer({
-      format: format === "text" ? (deps.outputIsTTY ? "pretty" : "json") : format,
-      color: false,
-      streams: { data: (text) => chunks.push(`${text}\n`), diagnostic: deps.diagnostic },
-    })
-    if (
-      !preserveEnvelope &&
-      !seal &&
-      format === "jsonl" &&
-      typeof value === "object" &&
-      value !== null &&
-      "items" in value &&
-      Array.isArray(value.items)
-    )
-      renderer.stream(value.items)
-    else renderer.result(value)
-    return chunks.join("")
+export type AnswerFormat = "json" | "jsonl" | "pretty"
+
+const record = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value)
+const only = (value: Record<string, unknown>, keys: string[]) => Object.keys(value).every((key) => keys.includes(key))
+
+/**
+ * cli-core's meeting commands and MCP tools return envelopes as plain objects, `listed()` lists or bare reports,
+ * not `itemOf`/`listOf` bodies; zoom's own commands build bodies and never come through here.
+ */
+export const bodyOf = (value: unknown): Body => {
+  const data = snakeKeys(value)
+  if (record(data) && only(data, ["item", "items", "page", "next", "missing", "meta"])) {
+    if ("item" in data || (Array.isArray(data.items) && record(data.page))) return data as unknown as Body
   }
+  if (record(data) && Array.isArray(data.items) && only(data, ["items", "page", "limit", "has_more"]))
+    return listOf("list", {
+      items: data.items,
+      limit: Math.max(1, data.items.length),
+      has_more: data.has_more === true,
+    })
+  return itemOf(data)
+}
+
+/** The answer as text, and the exit code a partial answer earns. */
+export const renderBody = (
+  command: Command,
+  body: Body,
+  options: {
+    format: AnswerFormat
+    meta: Meta
+    fields?: readonly string[]
+    quiet?: boolean
+    diagnostic: (text: string) => void
+  },
+): { text: string; exitCode: number } => {
+  const data = snakeKeys(body) as Body
+  const fields = options.fields
+  const projected: Body = !fields
+    ? data
+    : "items" in data
+      ? { ...data, items: projectFields(data.items, fields) as unknown[] }
+      : { ...data, item: projectFields(data.item, fields) }
+  const meta = metaNow({ ...projected.meta, run_id: options.meta.run_id, duration_ms: options.meta.duration_ms })
+  const chunks: string[] = []
+  const streams = {
+    data: (text: string) => chunks.push(`${text}\n`),
+    diagnostic: (text: string) => options.diagnostic(`${text}\n`),
+  }
+  const renderer = createRenderer({ format: options.format, color: false, quiet: options.quiet, streams })
+  // renderAnswer reports a partial answer through process.exitCode; zoom returns that code from `run` instead.
+  const exitCode = process.exitCode
+  try {
+    renderAnswer(command, { renderer, format: options.format, streams }, { ...projected, meta })
+  } finally {
+    process.exitCode = exitCode
+  }
+  return { text: chunks.join(""), exitCode: exitCodeOfAnswer(meta, metaOf(command).partial === true) }
+}
+
+/** Every row the command read, in one page. */
+export const wholeList = <T>(command: string, items: T[]) =>
+  listOf(command, { items, limit: Math.max(1, items.length), has_more: false })

@@ -1,7 +1,7 @@
 import { CliError } from "@wirecat/cli-base"
 import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { ZoomError } from "./errors.js"
+import { fakeStore } from "../scripts/testing/connection.js"
 import type { StoreConnectRequest } from "./program.js"
 import { createStoreConnector } from "./store-connection.js"
 
@@ -13,7 +13,6 @@ vi.mock("@wirecat/cli-core/store", () => {
 const request = { profile: "example", externalId: "zm-profile:example", intent: "read" as const }
 const fixture = () => ({
   meetings: Object.assign(memoryMeetingStore(), {
-    appendTranscripts: vi.fn(),
     meetingMetadata: vi.fn(),
     transcriptMetadata: vi.fn(),
     transcripts: vi.fn(),
@@ -42,7 +41,7 @@ describe("persistent account connector", () => {
         selected.profile = "BobSample"
         selected.externalId = "zm-profile:BobSample"
         await Promise.resolve()
-        return store
+        return fakeStore(store)
       },
     })
     const connection = await connect(selected)
@@ -73,10 +72,7 @@ describe("persistent account connector", () => {
       indexSearch: index,
       appendTranscriptsWithReceipt: exact,
     })
-    const connection = await createStoreConnector({ openStore: async () => ({ ...store, meetings }) })({
-      ...request,
-      capability: "meeting-search",
-    })
+    const connection = await createStoreConnector({ openStore: async () => fakeStore({ ...store, meetings }) })(request)
     const searchOptions = { accountId: 99, limit: 2, maxReadBytes: 1024 }
     await connection.meetingSearch?.("example", searchOptions)
     expect(search).toHaveBeenCalledWith(
@@ -95,16 +91,6 @@ describe("persistent account connector", () => {
     await connection.close()
   })
 
-  it("closes unavailable optional search and context capabilities without registering accounts", async () => {
-    for (const capability of ["meeting-search", "meeting-integration"] as const) {
-      const store = fixture()
-      await expect(
-        createStoreConnector({ openStore: async () => store })({ ...request, capability }),
-      ).rejects.toMatchObject({ code: "configuration_error" })
-      expect(store.close).toHaveBeenCalledTimes(1)
-      expect(store.saveAccount).not.toHaveBeenCalled()
-    }
-  })
   it("imports the store lazily and resolves existing read accounts without registration", async () => {
     const store = fixture()
     mocked.openStore.mockResolvedValue(store)
@@ -124,7 +110,7 @@ describe("persistent account connector", () => {
   })
   it("registers ingestion profiles using the supported API and forwards explicit paths/clock", async () => {
     const store = fixture()
-    const openStore = vi.fn(async () => store)
+    const openStore = vi.fn(async () => fakeStore(store))
     const env = { MESSAGING_STORE: "/tmp/zm-test-injected-only/wirecat.db" }
     const now = () => 1000
     const connection = await createStoreConnector({
@@ -146,7 +132,7 @@ describe("persistent account connector", () => {
   it("closes missing-account setup without registering or exposing provider error values", async () => {
     const store = fixture()
     store.storedAccount.mockRejectedValue(new CliError("not_found", "example-private-account"))
-    await expect(createStoreConnector({ openStore: async () => store })(request)).rejects.toMatchObject({
+    await expect(createStoreConnector({ openStore: async () => fakeStore(store) })(request)).rejects.toMatchObject({
       code: "configuration_error",
       message: "no stored meetings for the selected profile; import transcripts or pull first",
     })
@@ -158,7 +144,7 @@ describe("persistent account connector", () => {
     store.saveAccount.mockRejectedValue(new Error("example-private-path"))
     store.close.mockRejectedValue(new Error("example-private-close"))
     await expect(
-      createStoreConnector({ openStore: async () => store })({ ...request, intent: "ingestion" }),
+      createStoreConnector({ openStore: async () => fakeStore(store) })({ ...request, intent: "ingestion" }),
     ).rejects.toMatchObject({
       code: "configuration_error",
       message: expect.stringContaining("installed store version"),
@@ -177,13 +163,13 @@ describe("persistent account connector", () => {
       const store = fixture()
       store.saveAccount.mockResolvedValue(id)
       await expect(
-        createStoreConnector({ openStore: async () => store })({ ...request, intent: "ingestion" }),
+        createStoreConnector({ openStore: async () => fakeStore(store) })({ ...request, intent: "ingestion" }),
       ).rejects.toMatchObject({ code: "configuration_error", message: "the selected meeting account is unavailable" })
       expect(store.close).toHaveBeenCalledOnce()
     }
   })
   it("preserves typed configuration errors without an extra close if opening fails", async () => {
-    const error = new ZoomError("configuration_error", "test connection was rejected")
+    const error = new CliError("configuration_error", "test connection was rejected")
     await expect(
       createStoreConnector({
         openStore: async () => {
@@ -219,7 +205,7 @@ describe("persistent account connector", () => {
         name: "example",
         scope: "personal",
       })
-      await expect(createStoreConnector({ openStore: async () => store })(request)).rejects.toMatchObject({
+      await expect(createStoreConnector({ openStore: async () => fakeStore(store) })(request)).rejects.toMatchObject({
         code: "configuration_error",
         message: "the selected meeting account is unavailable",
       })
@@ -232,7 +218,7 @@ describe("persistent account connector", () => {
     const store = fixture()
     store.storedAccount.mockRejectedValue(new CliError("not_found", "invented-private-account"))
     store.close.mockRejectedValue(new Error("invented-private-close"))
-    await expect(createStoreConnector({ openStore: async () => store })(request)).rejects.toMatchObject({
+    await expect(createStoreConnector({ openStore: async () => fakeStore(store) })(request)).rejects.toMatchObject({
       code: "configuration_error",
       message: "no stored meetings for the selected profile; import transcripts or pull first",
     })

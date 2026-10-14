@@ -5,8 +5,9 @@ import { CliError, memoryKeyring } from "@wirecat/cli-base"
 import { describeProgram, flatten, parseCommandsDocument } from "@wirecat/cli-base/commands"
 import { describe, expect, it } from "vitest"
 import { readAnswer } from "../scripts/testing/answers.js"
+import { fakeConnection } from "../scripts/testing/connection.js"
 import { setConfig } from "./config.js"
-import { checkCancelled, ZoomError } from "./errors.js"
+import { checkCancelled } from "./errors.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
 
@@ -162,7 +163,7 @@ describe("portable CLI discovery and diagnostics", () => {
     })
   })
   it("uses shared errors and exit mappings without private generic details", async () => {
-    expect(new ZoomError("rate_limited", "example")).toBeInstanceOf(CliError)
+    expect(new CliError("rate_limited", "example")).toBeInstanceOf(CliError)
     const { deps, stderr } = await setup()
     setConfig(deps.configPath, "zoom.clientId", "example-client")
     for (const [code, exit] of [
@@ -231,12 +232,15 @@ it("quiet suppresses optional login instructions but retains the failure envelop
 
 it("prints a partial non-search answer before returning its source error exit code", async () => {
   const { deps, stdout, stderr } = await setup()
-  deps.meetingContext = {
+  setConfig(deps.configPath, "account.profile", "example")
+  const meetingContext = {
     evidence: async () => ({
       item: { available: [] },
       meta: { complete: false, issues: [{ code: "network_error", source: "meetings" }] },
     }),
-  }
+  } as never
+  deps.connectStore = async () =>
+    fakeConnection({ store: {} as never, accountId: 1, close: async () => {}, meetingContext })
   expect(await run(["meetings", "evidence", "meeting:1/1", "--json"], deps)).toBe(10)
   expect(JSON.parse(stdout.join("")).meta).toMatchObject({ complete: false })
   expect(stderr).toEqual([])

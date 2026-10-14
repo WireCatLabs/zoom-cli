@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto"
 import { readdir, readFile, stat } from "node:fs/promises"
 import { basename, join } from "node:path"
+import { CliError } from "@wirecat/cli-base"
 import { type ImportFile, type MeetingSource, parseVtt, type SourceMeeting } from "@wirecat/cli-core/meetings"
 import { TRANSCRIPT_MAX_BYTES } from "./api.js"
-import { ZoomError } from "./errors.js"
 
 export interface DownloadedFile {
   name: string
@@ -26,7 +26,7 @@ const localTimestamp = (
     hour > 23 ||
     minute > 59
   )
-    throw new ZoomError("validation_error", "transcript filename contains an invalid date or time")
+    throw new CliError("validation_error", "transcript filename contains an invalid date or time")
   let formatter: Intl.DateTimeFormat
   try {
     formatter = new Intl.DateTimeFormat("en-GB", {
@@ -39,7 +39,7 @@ const localTimestamp = (
       hourCycle: "h23",
     })
   } catch {
-    throw new ZoomError("validation_error", "expected a valid IANA timezone")
+    throw new CliError("validation_error", "expected a valid IANA timezone")
   }
   const wallTime = (instant: number) => {
     const parts = Object.fromEntries(formatter.formatToParts(instant).map((part) => [part.type, part.value]))
@@ -58,7 +58,7 @@ const localTimestamp = (
     if (wallTime(candidate) === target) possibilities.add(candidate)
   }
   if (possibilities.size !== 1)
-    throw new ZoomError(
+    throw new CliError(
       "validation_error",
       "transcript filename time is ambiguous or nonexistent in the selected timezone",
     )
@@ -66,7 +66,7 @@ const localTimestamp = (
 }
 export const fileMeeting = (name: string, timezone = "UTC"): SourceMeeting => {
   const match = /^(\d{4})-(\d{2})-(\d{2})_(\d{2})(\d{2})_(.+)\.vtt$/i.exec(basename(name))
-  if (!match) throw new ZoomError("validation_error", "expected a transcript named YYYY-MM-DD_HHMM_topic.vtt")
+  if (!match) throw new CliError("validation_error", "expected a transcript named YYYY-MM-DD_HHMM_topic.vtt")
   const [, year, month, day, hour, minute, topic = ""] = match
   const startedAt = localTimestamp(Number(year), Number(month), Number(day), Number(hour), Number(minute), timezone)
   const slug = topic.normalize("NFC")
@@ -122,7 +122,7 @@ const indexDownloadedFiles = (
     const meeting = fileMeeting(file.name, timezone)
     const existing = result.get(meeting.occurrence.id)
     if (existing && existing.file.content !== file.content)
-      throw new ZoomError("validation_error", "conflicting transcript files have the same occurrence key")
+      throw new CliError("validation_error", "conflicting transcript files have the same occurrence key")
     if (!existing) result.set(meeting.occurrence.id, { meeting, file })
   }
   return result
@@ -137,7 +137,7 @@ export const readDownloadedFiles = async (folder: string): Promise<DownloadedFil
     .filter((entry) => entry.isFile() && /\.vtt$/i.test(entry.name))
     .sort((a, b) => a.name.localeCompare(b.name))
   if (entries.length > FOLDER_MAX_FILES)
-    throw new ZoomError(
+    throw new CliError(
       "validation_error",
       `the folder holds ${entries.length} .vtt files and zm reads at most ${FOLDER_MAX_FILES} — move some into another folder`,
     )
@@ -145,7 +145,7 @@ export const readDownloadedFiles = async (folder: string): Promise<DownloadedFil
   for (const entry of entries) {
     const path = join(folder, entry.name)
     if ((await stat(path)).size > TRANSCRIPT_MAX_BYTES)
-      throw new ZoomError(
+      throw new CliError(
         "validation_error",
         `${entry.name} is larger than ${TRANSCRIPT_MAX_BYTES / 1024 ** 2} MiB, the most zm reads from one transcript`,
       )
@@ -169,7 +169,7 @@ export class FilesSource implements MeetingSource {
   }
   async meetings(since: string): Promise<SourceMeeting[]> {
     const lower = Date.parse(since)
-    if (!Number.isFinite(lower)) throw new ZoomError("validation_error", "expected an ISO since timestamp")
+    if (!Number.isFinite(lower)) throw new CliError("validation_error", "expected an ISO since timestamp")
     return [...this.index().values()]
       .map(({ meeting }) => meeting)
       .filter((m) => Date.parse(m.occurrence.startedAt) >= lower)

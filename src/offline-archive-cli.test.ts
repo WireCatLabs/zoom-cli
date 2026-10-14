@@ -225,7 +225,7 @@ it("discards cancellation output and keeps default terminal rendering on the sha
   expect(output).toEqual([])
   expect(await run(["recordings", "archive", "transcript", directory], { ...deps, outputIsTTY: true })).toBe(0)
   expect(output.join("")).toContain("Example archive")
-  expect(output.join("")).toContain("has_more")
+  expect(output.join("")).not.toContain("has_more")
 })
 
 it("keeps empty transcript envelopes and multi-asset JSONL framing valid", async () => {

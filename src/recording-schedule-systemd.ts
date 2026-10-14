@@ -2,8 +2,9 @@ import { execFile } from "node:child_process"
 import { randomUUID } from "node:crypto"
 import { link, open, unlink } from "node:fs/promises"
 import { isAbsolute, join } from "node:path"
-import { checkCancelled, ZoomError } from "./errors.js"
-import { openOrdinaryFile, syncDirectory } from "./ordinary-file.js"
+import { CliError, isCliError } from "@wirecat/cli-base"
+import { openOrdinaryFile, syncDirectory } from "@wirecat/cli-core/files"
+import { checkCancelled } from "./errors.js"
 import {
   parseRecordingScheduleJob,
   type RecordingScheduleBackend,
@@ -26,9 +27,9 @@ const execute: RecordingScheduleExecutor = (executable, args, options) =>
       (error) => {
         if (!error) return resolve({ exitCode: 0 })
         if (typeof error.code === "number") return resolve({ exitCode: error.code })
-        if (error.code === "ENOENT") return reject(new ZoomError("configuration_error", "systemctl is unavailable"))
+        if (error.code === "ENOENT") return reject(new CliError("configuration_error", "systemctl is unavailable"))
         reject(
-          new ZoomError(
+          new CliError(
             "outcome_unknown",
             "archive timer command was interrupted; inspect its saved pending job and systemctl status",
           ),
@@ -83,7 +84,7 @@ const existingUnit = async (path: string): Promise<string | null> => {
   try {
     const bytes = Buffer.alloc(maximumUnitBytes + 1)
     const size = (await handle.read(bytes, 0, bytes.length, 0)).bytesRead
-    if (size > maximumUnitBytes) throw new ZoomError("validation_error", "archive timer unit exceeds its byte limit")
+    if (size > maximumUnitBytes) throw new CliError("validation_error", "archive timer unit exceeds its byte limit")
     return bytes.subarray(0, size).toString("utf8")
   } finally {
     await handle.close()
@@ -91,12 +92,12 @@ const existingUnit = async (path: string): Promise<string | null> => {
 }
 const writeUnit = async (directory: string, name: string, content: string, signal?: AbortSignal) => {
   if (Buffer.byteLength(content) > maximumUnitBytes)
-    throw new ZoomError("validation_error", "archive timer unit exceeds its byte limit")
+    throw new CliError("validation_error", "archive timer unit exceeds its byte limit")
   const path = join(directory, name)
   const current = await existingUnit(path)
   if (current !== null) {
     if (current !== content)
-      throw new ZoomError("validation_error", "archive timer unit is foreign or was edited; it was preserved")
+      throw new CliError("validation_error", "archive timer unit is foreign or was edited; it was preserved")
     await syncDirectory(directory)
     return
   }
@@ -128,10 +129,10 @@ export const createSystemdRecordingArchiveScheduler = (options: {
   const platform = options.platform ?? process.platform
   const executor = options.execute ?? execute
   if (!isAbsolute(directory) || !isAbsolute(executable) || /[\0\r\n]/.test(directory + executable))
-    throw new ZoomError("validation_error", "systemd archive paths must be absolute")
+    throw new CliError("validation_error", "systemd archive paths must be absolute")
   const assertSupported = () => {
     if (platform !== "linux")
-      throw new ZoomError(
+      throw new CliError(
         "configuration_error",
         "automatic archive scheduling currently supports Linux user systemd only",
       )
@@ -142,14 +143,14 @@ export const createSystemdRecordingArchiveScheduler = (options: {
     try {
       result = await executor(executable, ["--user", ...args], { shell: false, signal })
     } catch (error) {
-      if (error instanceof ZoomError) throw error
-      throw new ZoomError(
+      if (isCliError(error)) throw error
+      throw new CliError(
         "outcome_unknown",
         "archive timer command did not acknowledge completion; inspect its saved job and systemctl status",
       )
     }
     if (result.exitCode !== expected)
-      throw new ZoomError(
+      throw new CliError(
         "outcome_unknown",
         "archive timer state was not verified; inspect its saved job and systemctl status",
       )
@@ -168,7 +169,7 @@ export const createSystemdRecordingArchiveScheduler = (options: {
         try {
           const stat = await handle.stat()
           if (path === job.capture.runtime && (stat.mode & 0o111) === 0)
-            throw new ZoomError("validation_error", "scheduled runtime must be executable")
+            throw new CliError("validation_error", "scheduled runtime must be executable")
         } finally {
           await handle.close()
         }
@@ -186,12 +187,12 @@ export const createSystemdRecordingArchiveScheduler = (options: {
       const units = unitPlan(value)
       checkCancelled(active.signal)
       if (!(await recordingScheduleDirectory(directory, false)))
-        throw new ZoomError("not_found", "archive timer units were not found")
+        throw new CliError("not_found", "archive timer units were not found")
       if (
         (await existingUnit(join(directory, units.serviceName))) !== units.service ||
         (await existingUnit(join(directory, units.timerName))) !== units.timer
       )
-        throw new ZoomError("validation_error", "archive timer units are foreign or were edited; they were preserved")
+        throw new CliError("validation_error", "archive timer units are foreign or were edited; they were preserved")
       await checked(["disable", "--now", units.timerName], 0, active.signal)
       await checked(["is-enabled", "--quiet", units.timerName], 1, active.signal)
       await checked(["is-active", "--quiet", units.timerName], 3, active.signal)

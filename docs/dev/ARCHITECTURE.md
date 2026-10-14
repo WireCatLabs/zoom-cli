@@ -28,11 +28,11 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [meeting-context.ts](../../src/meeting-context.ts) | account-fixed bounded evidence, identity context and read-only task proposals |
 | [meeting-integration-commands.ts](../../src/meeting-integration-commands.ts), [meeting-integration.ts](../../src/meeting-integration.ts) | explicit event/person linking through the shared context service |
 | [meeting-search-commands.ts](../../src/meeting-search-commands.ts) | `search meetings`: the shared word search, plus meaning and archive sources |
-| [local-transcription.ts](../../src/local-transcription.ts), [wav-audio.ts](../../src/wav-audio.ts) | native media verification and shared transcription/speech port adaptation |
+| [local-transcription.ts](../../src/local-transcription.ts) | native media verification and shared transcription/speech port adaptation |
 | [meeting-semantic.ts](../../src/meeting-semantic.ts) | explicit model selection and public vector/model service adaptation |
 | [store-connection.ts](../../src/store-connection.ts) | lazy public shared-store/account adapter, without SQL |
 | [mcp-server.ts](../../src/mcp-server.ts) | official SDK transport and shared read-only meeting tools |
-| [answers.ts](../../src/answers.ts), [answer-output.ts](../../src/answer-output.ts) | host execution metadata, validated shared envelopes and buffered output |
+| [answer-output.ts](../../src/answer-output.ts), [answers.ts](../../src/answers.ts) | commands answer with cli-core `itemOf`/`listOf` bodies printed by `renderAnswer`; `bodyOf` adapts the plain values cli-core meeting commands and MCP tools return; run metadata and MCP envelopes |
 | [command-effects.ts](../../src/command-effects.ts), [answer-policy.ts](../../src/answer-policy.ts) | Zoom effect declarations bound to shared retry and next-step policies |
 | [streaming.ts](../../src/streaming.ts), [watch-commands.ts](../../src/watch-commands.ts) | bounded receipts, writable completion and serial API or folder ingestion |
 

@@ -1,8 +1,7 @@
 import { existsSync } from "node:fs"
-import { saveConfigFile } from "@wirecat/cli-base"
+import { CliError, saveConfigFile } from "@wirecat/cli-base"
 import { loadSnakeCaseConfig } from "@wirecat/cli-core/cli"
 import * as v from "valibot"
-import { ZoomError } from "./errors.js"
 
 export interface ZoomConfig {
   clientId: string | null
@@ -58,8 +57,8 @@ export const readConfig = (path: string): ZoomConfig => {
     }
   } catch (error) {
     if (error instanceof Error && error.message.includes("are the same setting"))
-      throw new ZoomError("configuration_error", error.message)
-    throw new ZoomError("configuration_error", "zm config is invalid")
+      throw new CliError("configuration_error", error.message)
+    throw new CliError("configuration_error", "zm config is invalid")
   }
 }
 
@@ -78,35 +77,35 @@ export const setConfig = (path: string, key: string, value: string): ZoomConfig 
     case "zoom.client_id":
     case "zoom.clientId":
       if (!value.trim() || /\s/.test(value))
-        throw new ZoomError("validation_error", "client id must not contain whitespace")
+        throw new CliError("validation_error", "client id must not contain whitespace")
       config.clientId = value
       break
     case "account.profile":
       if (!profilePattern.test(value))
-        throw new ZoomError(
+        throw new CliError(
           "validation_error",
           "profile must be 1-64 letters, digits, dots, underscores or hyphens and start with a letter or digit",
         )
       config.accountProfile = value
       break
     case "source":
-      if (value !== "api" && value !== "files") throw new ZoomError("validation_error", "source must be api or files")
+      if (value !== "api" && value !== "files") throw new CliError("validation_error", "source must be api or files")
       config.source = value
       break
     case "files.folder":
-      if (!value.trim()) throw new ZoomError("validation_error", "folder must not be empty")
+      if (!value.trim()) throw new CliError("validation_error", "folder must not be empty")
       config.filesFolder = value
       break
     case "files.timezone":
       try {
         new Intl.DateTimeFormat("en", { timeZone: value })
       } catch {
-        throw new ZoomError("validation_error", "expected an IANA time zone")
+        throw new CliError("validation_error", "expected an IANA time zone")
       }
       config.filesTimezone = value
       break
     default:
-      throw new ZoomError("validation_error", "unknown config key")
+      throw new CliError("validation_error", "unknown config key")
   }
   saveConfig(path, config)
   return config

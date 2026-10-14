@@ -4,7 +4,7 @@ import { FETCH, LOCAL_READ, LOCAL_WRITE, REMOTE_WRITE } from "@wirecat/cli-core/
 import { Command } from "commander"
 import { expect, it } from "vitest"
 import { hostFailureContext } from "./answer-policy.js"
-import { meetingAnswer, readMetadata } from "./answers.js"
+import { readMetadata, toolAnswer } from "./answers.js"
 
 it("uses shared retry policy for reads, fetches, local writes and uncertain remote writes", () => {
   const failure = new CliError("network_error", "example transport failure")
@@ -34,7 +34,7 @@ it("checks suggested steps against mounted commands and the shared effects polic
     safe_to_auto_execute: true,
   }))
   const safety = next.map((step) => {
-    const packet = meetingAnswer({ item: {}, next: [step] }, readMetadata(() => 0)(), root)
+    const packet = toolAnswer({ item: {}, next: [step] }, readMetadata(() => 0)(), root)
     return packet.next?.[0]?.safe_to_auto_execute
   })
   expect(safety).toEqual([true, true, false, false, undefined])
@@ -42,7 +42,7 @@ it("checks suggested steps against mounted commands and the shared effects polic
 
 it("preserves source issues and partial completeness while assigning host metadata", () => {
   const host = readMetadata(() => 0)()
-  const packet = meetingAnswer({ item: {}, meta: { issues: [{ code: "network_error", source: "meetings" }] } }, host)
+  const packet = toolAnswer({ item: {}, meta: { issues: [{ code: "network_error", source: "meetings" }] } }, host)
   expect(packet.meta).toMatchObject({
     ...host,
     complete: false,

@@ -1,4 +1,5 @@
 import { isAbsolute } from "node:path"
+import { CliError } from "@wirecat/cli-base"
 import {
   installRecordingArchiveSchedule,
   parseRecordingArchiveSchedule,
@@ -7,7 +8,7 @@ import {
   recordingArchiveScheduleWindow,
 } from "@wirecat/cli-core/meetings"
 import { profileAccountKey } from "./config.js"
-import { checkCancelled, ZoomError } from "./errors.js"
+import { checkCancelled } from "./errors.js"
 import { type ArchiveSyncReceipt, syncRecordingArchive } from "./recording-sync.js"
 import type { ZoomRecordings } from "./recordings.js"
 
@@ -77,14 +78,14 @@ const text = (value: unknown, limit: number): value is string =>
 const absolute = (value: unknown): value is string => text(value, 4096) && isAbsolute(value)
 export const validateRecordingScheduleId = (id: string): string => {
   if (typeof id !== "string" || !/^[a-f0-9]{64}$/.test(id))
-    throw new ZoomError("validation_error", "archive schedule id must be 64 lowercase hexadecimal characters")
+    throw new CliError("validation_error", "archive schedule id must be 64 lowercase hexadecimal characters")
   return id
 }
 export const snapshotRecordingScheduleCapture = (
   value: RecordingScheduleCapture,
 ): Readonly<RecordingScheduleCapture> => {
   if (!value || typeof value !== "object" || Array.isArray(value))
-    throw new ZoomError("validation_error", "archive schedule capture is invalid")
+    throw new CliError("validation_error", "archive schedule capture is invalid")
   const { profile, clientId, configDir, runtime, cliPath } = value
   if (
     !text(profile, 64) ||
@@ -95,7 +96,7 @@ export const snapshotRecordingScheduleCapture = (
     !absolute(runtime) ||
     !absolute(cliPath)
   )
-    throw new ZoomError(
+    throw new CliError(
       "validation_error",
       "archive schedule requires a profile, public client id and absolute config/runtime/CLI paths",
     )
@@ -103,45 +104,43 @@ export const snapshotRecordingScheduleCapture = (
 }
 export const parseRecordingScheduleJob = (value: unknown): RecordingScheduleJob => {
   if (!value || typeof value !== "object" || Array.isArray(value))
-    throw new ZoomError("validation_error", "archive schedule job is invalid")
+    throw new CliError("validation_error", "archive schedule job is invalid")
   const row = value as RecordingScheduleJob
   if (
     row.version !== 1 ||
     Object.keys(row).some((key) => !["version", "schedule", "capture", "state"].includes(key)) ||
     !["pending", "enabled", "disabled"].includes(row.state)
   )
-    throw new ZoomError("validation_error", "archive schedule job is invalid")
+    throw new CliError("validation_error", "archive schedule job is invalid")
   const capture = snapshotRecordingScheduleCapture(row.capture)
   if (Object.keys(row.capture).some((key) => !["profile", "clientId", "configDir", "runtime", "cliPath"].includes(key)))
-    throw new ZoomError("validation_error", "archive schedule capture is invalid")
+    throw new CliError("validation_error", "archive schedule capture is invalid")
   const schedule = parseRecordingArchiveSchedule(row.schedule)
   if (
     schedule.scope.provider !== "zoom" ||
     schedule.scope.account !== profileAccountKey(capture.profile) ||
     !absolute(schedule.destination)
   )
-    throw new ZoomError("validation_error", "archive schedule capture does not match its provider scope")
+    throw new CliError("validation_error", "archive schedule capture does not match its provider scope")
   const job = Object.freeze({ version: 1 as const, schedule, capture, state: row.state })
   if (Buffer.byteLength(JSON.stringify(job)) > 32 * 1024)
-    throw new ZoomError("validation_error", "archive schedule metadata exceeds its byte limit")
+    throw new CliError("validation_error", "archive schedule metadata exceeds its byte limit")
   return job
 }
 export const createRecordingScheduleService = (deps: {
   store: RecordingScheduleStore
   backend: RecordingScheduleBackend
-  recordings: (
-    job: RecordingScheduleJob,
-  ) => Pick<ZoomRecordings, "list" | "download"> & Partial<Pick<ZoomRecordings, "catalog">>
+  recordings: (job: RecordingScheduleJob) => Pick<ZoomRecordings, "download" | "catalog">
   now?: () => number
 }): RecordingScheduleService => {
   const show = async (id: string, options: { signal?: AbortSignal } = {}) => {
     validateRecordingScheduleId(id)
     checkCancelled(options.signal)
     const found = await deps.store.load(id, options)
-    if (!found) throw new ZoomError("not_found", "archive schedule was not found")
+    if (!found) throw new CliError("not_found", "archive schedule was not found")
     const job = parseRecordingScheduleJob(found)
     if (job.schedule.id !== id)
-      throw new ZoomError("validation_error", "archive schedule storage returned a different job")
+      throw new CliError("validation_error", "archive schedule storage returned a different job")
     return job
   }
   return {
@@ -159,11 +158,11 @@ export const createRecordingScheduleService = (deps: {
       if (options.apply !== true || options.dryRun === true)
         return { applied: false, backend, job, units, timerState: "not_checked" }
       if (options.offline)
-        throw new ZoomError("configuration_error", "archive schedule installation requires online mode")
+        throw new CliError("configuration_error", "archive schedule installation requires online mode")
       deps.backend.assertSupported()
       const existing = await deps.store.load(schedule.id, { signal: options.signal })
       if (existing && JSON.stringify(parseRecordingScheduleJob(existing).capture) !== JSON.stringify(capture))
-        throw new ZoomError(
+        throw new CliError(
           "validation_error",
           "archive schedule id belongs to a different captured runtime or client; choose a new name",
         )
@@ -184,7 +183,7 @@ export const createRecordingScheduleService = (deps: {
     show,
     async *run(id, options = {}) {
       options = { ...options }
-      if (options.offline) throw new ZoomError("configuration_error", "archive schedule run requires online mode")
+      if (options.offline) throw new CliError("configuration_error", "archive schedule run requires online mode")
       const job = await show(id, { signal: options.signal })
       const window = recordingArchiveScheduleWindow(job.schedule, { now: deps.now?.() ?? Date.now() })
       if (!window) return

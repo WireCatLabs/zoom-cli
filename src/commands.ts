@@ -1,4 +1,4 @@
-import { projectFields } from "@wirecat/cli-base"
+import { CliError, projectFields } from "@wirecat/cli-base"
 import {
   annotate,
   type CommandInfo,
@@ -9,16 +9,16 @@ import {
   metaOf,
 } from "@wirecat/cli-base/commands"
 import { formatSuggestions, suggest } from "@wirecat/cli-base/completion"
-import { LOCAL_READ, NO_EFFECTS } from "@wirecat/cli-core/cli"
+import { type Body, itemOf, LOCAL_READ, NO_EFFECTS } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
+import { wholeList } from "./answer-output.js"
 import { commandEffects } from "./command-effects.js"
-import { ZoomError } from "./errors.js"
 import { VERSION } from "./version.js"
 
 const CONTRACT = 3
 
 export interface StandardCommandsDeps {
-  output: (value: unknown) => void
+  output: (body: Body) => void
   discovery: (value: unknown) => void
   fields: () => readonly string[] | undefined
   raw: (text: string) => void
@@ -71,7 +71,7 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
           globalOptions: describeOptions(program),
           words,
         })
-        if (program.opts().json || program.opts().jsonl) deps.output({ items: suggestions })
+        if (program.opts().json || program.opts().jsonl) deps.output(wholeList("complete", suggestions))
         else deps.raw(`${formatSuggestions(suggestions)}\n`)
       }),
     { effects: LOCAL_READ, examples: ["zm complete -- meetings s"] },
@@ -80,7 +80,7 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
     program
       .command("doctor")
       .description("check local runtime and public config without a login or database")
-      .action(() => deps.output(deps.doctor())),
+      .action(() => deps.output(itemOf(deps.doctor()))),
     { effects: LOCAL_READ, examples: ["zm doctor --json"] },
   )
   const session = program.command("session").description("the saved Zoom login, separate from local data profiles")
@@ -89,7 +89,9 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
       .command("status")
       .description("show cached login state; remote verification is explicit")
       .option("--check", "verify the session with Zoom")
-      .action(async (options: { check?: boolean }) => deps.output(await deps.sessionStatus(options.check === true))),
+      .action(async (options: { check?: boolean }) =>
+        deps.output(itemOf(await deps.sessionStatus(options.check === true))),
+      ),
     { effects: LOCAL_READ, examples: ["zm session status --json", "zm session status --check --json"] },
   )
 }
@@ -107,7 +109,7 @@ export const annotateMeetingCommands = (program: Command): void => {
     }
     const path = item.path.join(" ")
     const effects = commandEffects(command) ?? metaOf(command).effects
-    if (!effects) throw new ZoomError("configuration_error", `command effects are missing: ${path}`)
+    if (!effects) throw new CliError("configuration_error", `command effects are missing: ${path}`)
     annotate(command, {
       origin: "handwritten",
       effects,
@@ -138,7 +140,7 @@ const scopeOf = (all: readonly CommandInfo[], path: readonly string[]) => {
   for (const word of path) {
     if (command?.options.length) inheritedOptions.push({ path: command.path, options: command.options })
     command = available.find((item) => item.name === word)
-    if (!command) throw new ZoomError("validation_error", "unknown command path; use zm commands --json")
+    if (!command) throw new CliError("validation_error", "unknown command path; use zm commands --json")
     available = command.commands
   }
   return { command: command as CommandInfo, inheritedOptions }

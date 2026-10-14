@@ -1,5 +1,6 @@
 import type { KeyringStore } from "@wirecat/cli-base"
-import { checkCancelled, object, ZoomError } from "./errors.js"
+import { CliError } from "@wirecat/cli-base"
+import { checkCancelled, object } from "./errors.js"
 
 export interface Tokens {
   accessToken: string
@@ -40,7 +41,7 @@ export class TokenManager {
     try {
       saved = this.options.keyring.get(this.options.service, clientId)
     } catch {
-      throw new ZoomError("configuration_error", "system keyring is unavailable")
+      throw new CliError("configuration_error", "system keyring is unavailable")
     }
     if (!saved) return null
     try {
@@ -63,14 +64,14 @@ export class TokenManager {
         scopes: value.scopes,
       }
     } catch {
-      throw new ZoomError("authentication_error", "saved login is invalid; run zm session start again")
+      throw new CliError("authentication_error", "saved login is invalid; run zm session start again")
     }
   }
   save(tokens: Tokens, clientId = this.options.clientId): void {
     try {
       this.options.keyring.set(this.options.service, clientId, JSON.stringify(tokens))
     } catch {
-      throw new ZoomError("configuration_error", "could not save login to the system keyring")
+      throw new CliError("configuration_error", "could not save login to the system keyring")
     }
   }
   async exchange(params: Record<string, string>, previous?: Tokens, clientId = this.options.clientId): Promise<Tokens> {
@@ -88,13 +89,13 @@ export class TokenManager {
         redirect: "error",
       })
     } catch {
-      throw new ZoomError(
+      throw new CliError(
         "outcome_unknown",
         "Zoom token exchange did not finish; run zm session start again before retrying",
       )
     }
     if (!response.ok)
-      throw new ZoomError(
+      throw new CliError(
         "authentication_error",
         `Zoom token request failed (HTTP ${response.status}); run zm session start again`,
       )
@@ -102,7 +103,7 @@ export class TokenManager {
     try {
       body = object(await response.json())
     } catch {
-      throw new ZoomError(
+      throw new CliError(
         "outcome_unknown",
         "Zoom returned an invalid token response; run zm session start again before retrying",
       )
@@ -119,7 +120,7 @@ export class TokenManager {
       (body.scope !== undefined && typeof body.scope !== "string") ||
       (body.refresh_token !== undefined && typeof body.refresh_token !== "string")
     )
-      throw new ZoomError(
+      throw new CliError(
         "outcome_unknown",
         "Zoom returned an invalid token response; run zm session start again before retrying",
       )
@@ -136,7 +137,7 @@ export class TokenManager {
     checkCancelled(this.options.signal)
     const clientId = this.options.clientId
     const saved = this.load(clientId)
-    if (!saved) throw new ZoomError("authentication_error", "run zm session start first")
+    if (!saved) throw new CliError("authentication_error", "run zm session start first")
     if (saved.expiresAt > (this.options.now?.() ?? Date.now()) + 30000) return saved
     let refreshing = this.refreshState.get(clientId)
     if (!refreshing) {
