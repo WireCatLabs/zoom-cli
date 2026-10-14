@@ -36,9 +36,11 @@ a transcript to an AI service. This guide explains those boundaries before you c
 - The MCP server is read-only, fixed to the selected local account, and exposes no file exports,
   remote mutations, embedding generation or task creation.
 - Local audio transcription uses an already installed model on your machine and downloads none.
-- Remote meeting changes, meeting links, search indexing, transcription, archive job creation,
-  embedding generation and lock recovery preview by default and need `--yes`; `--dry-run` wins where
+- Remote meeting changes, meeting links, transcription, archive job creation,
+  explicit `meetings embeddings` generation and lock recovery preview by default and need `--yes`; `--dry-run` wins where
   offered. Remote writes are never automatically retried.
+- Word search updates its index automatically. Search with `--model` generates missing vectors before
+  ranking; a remote `--base-url` receives transcript passages as well as the query.
 - Task proposals never create a task.
 
 An AI app can send the tool results it reads to its own provider. Choose that app and its data policy

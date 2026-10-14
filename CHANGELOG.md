@@ -30,6 +30,8 @@
 
 ### Fixed
 
+- The security guide explains automatic search indexing and generation of missing semantic vectors, including transcript delivery to an explicitly selected remote endpoint.
+
 - The MCP guide lists the seven default tools after search consolidation; the meeting-management guide makes clear that its listing scope must be added manually.
 
 - The search guide distinguishes CLI generation of missing semantic vectors from MCP reads of existing vectors, and the guides use `session start` for browser login and `--cursor` for evidence continuation.
