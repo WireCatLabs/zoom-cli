@@ -13,5 +13,123 @@
       "!config/wirecat",
       "!lint/baseline"
     ]
-  }
+  },
+  "linter": {
+    "rules": {
+      "suspicious": {
+        "noImportCycles": "error"
+      },
+      "style": {
+        "noExcessiveLinesPerFile": {
+          "level": "error",
+          "options": {
+            "maxLines": 1000
+          }
+        }
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["src/**", "!**/*.test.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@modelcontextprotocol/**"],
+                    "message": "only src/mcp-server.ts serves MCP (answers.ts shapes its tool list); commands and services do not know the protocol"
+                  },
+                  {
+                    "group": ["@wirecat/cli-core/store"],
+                    "message": "src/store-connection.ts opens the shared store; the rest of zoom receives it as a dependency"
+                  },
+                  {
+                    "group": ["@wirecat/*/src/**", "@wirecat/*/dist/**"],
+                    "message": "use the WireCat packages through their public exports; their src and dist layout is not a contract"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/mcp-server.ts", "src/answers.ts", "!**/*.test.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@wirecat/cli-core/store"],
+                    "message": "src/store-connection.ts opens the shared store; the rest of zoom receives it as a dependency"
+                  },
+                  {
+                    "group": ["@wirecat/*/src/**", "@wirecat/*/dist/**"],
+                    "message": "use the WireCat packages through their public exports; their src and dist layout is not a contract"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/store-connection.ts", "src/meeting-context.ts", "src/meeting-semantic.ts", "!**/*.test.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@modelcontextprotocol/**"],
+                    "message": "only src/mcp-server.ts serves MCP (answers.ts shapes its tool list); commands and services do not know the protocol"
+                  },
+                  {
+                    "group": ["@wirecat/*/src/**", "@wirecat/*/dist/**"],
+                    "message": "use the WireCat packages through their public exports; their src and dist layout is not a contract"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/*.test.ts", "test/**", "**/generated/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/program.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 1182
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }
