@@ -6,6 +6,11 @@ redirect settings and scopes needed for browser login. This registration does no
 inside meetings or make recordings for you. You do not download a credentials file or create a
 separate OAuth client outside the app: enable Public Client OAuth inside it and copy the displayed ID.
 
+Choose how to connect:
+
+- [Use an app you already created](#use-an-app-you-already-created)
+- [Create your own app](#create-your-own-app)
+
 ## Use an app you already created
 
 1. Sign in to [Zoom App Marketplace](https://marketplace.zoom.us/) and open **Developer → Created apps**.
