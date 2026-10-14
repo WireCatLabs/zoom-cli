@@ -4,12 +4,14 @@ import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js"
 import { CallToolRequestSchema, ListToolsRequestSchema, type Tool } from "@modelcontextprotocol/sdk/types.js"
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv"
 import { type ErrorCode, errorObjectOf, isCliError, mcpErrorResult } from "@wirecat/cli-base"
-import type { MeetingStore } from "@wirecat/cli-core/meetings"
+import { failureContext } from "@wirecat/cli-core"
+import { type MeetingStore, SAVE_INSTRUCTION } from "@wirecat/cli-core/meetings"
 import {
   callMeetingPassageTool,
   callMeetingSearchTool,
   callMeetingTool,
   meetingPassageTool,
+  meetingProjectEvidenceTool,
   meetingSearchTool,
   meetingTools,
 } from "@wirecat/cli-core/meetings/mcp"
@@ -23,12 +25,14 @@ import {
   validateTaskKind,
   validateTaskProposal,
 } from "./meeting-context.js"
+import { readProjectEvidenceTool } from "./meeting-project-evidence-mcp.js"
 import { type MeetingModelOptions, validateMeetingModel, validateMeetingSemantic } from "./meeting-semantic-commands.js"
 import type { StoreConnection } from "./program.js"
 import { runUnifiedSearch } from "./unified-search.js"
 import { VERSION } from "./version.js"
 
 export interface MeetingMcpOptions {
+  now?: () => number
   /** Resolve the selected profile with read intent; each call owns a fresh connection. */
   connectStore: () => Promise<StoreConnection>
   version?: string
@@ -42,8 +46,9 @@ export interface MeetingMcpOptions {
   semanticModel?: MeetingModelOptions
 }
 
-const failure = (code: ErrorCode, message: string) => mcpErrorResult(errorObjectOf(new ZoomError(code, message)))
-const crashed = () => mcpErrorResult(errorObjectOf(undefined))
+const failure = (code: ErrorCode, message: string) =>
+  mcpErrorResult(errorObjectOf(new ZoomError(code, message), failureContext()))
+const crashed = () => mcpErrorResult(errorObjectOf(undefined, failureContext()))
 
 /** SDK protocol handling; shared meeting tools own all read behavior and validation. */
 const buildServer = (options: MeetingMcpOptions) => {
@@ -51,6 +56,10 @@ const buildServer = (options: MeetingMcpOptions) => {
   const maxResultBytes = options.maxResultBytes ?? 4 * 1024 * 1024
   if (!Number.isSafeInteger(maxResultBytes) || maxResultBytes < 0)
     throw new ZoomError("validation_error", "maxResultBytes must be a nonnegative safe integer")
+  const bounded = <T>(result: T) =>
+    maxResultBytes !== 0 && Buffer.byteLength(JSON.stringify(result), "utf8") > maxResultBytes
+      ? failure("validation_error", "meeting tool result exceeds maxResultBytes")
+      : result
   const running = new Set<Promise<unknown>>()
   let stopping = false
   const validator = new AjvJsonSchemaValidator()
@@ -78,6 +87,7 @@ const buildServer = (options: MeetingMcpOptions) => {
       },
     })
   } else tools.push(meetingSearchTool)
+  tools.push(meetingProjectEvidenceTool)
   if (options.includeUnifiedSearch)
     tools.push({
       name: "search_all",
@@ -169,7 +179,7 @@ const buildServer = (options: MeetingMcpOptions) => {
   )
   const server = new Server(
     { name: "zoom-meetings", version: options.version ?? VERSION },
-    { capabilities: { tools: {} } },
+    { capabilities: { tools: {} }, instructions: SAVE_INSTRUCTION },
   )
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }))
   const call = async (
@@ -185,6 +195,10 @@ const buildServer = (options: MeetingMcpOptions) => {
     const prototype = Object.getPrototypeOf(args)
     if ((prototype !== null && prototype !== Object.prototype) || "account_id" in args || !validate(args).valid)
       return failure("validation_error", "invalid meeting tool arguments; account is selected by the server")
+    if (request.params.name === "meeting_project_evidence") {
+      const result = await readProjectEvidenceTool(options, args, signal)
+      return cancelled() ? failure("cancelled", "meeting read was cancelled") : bounded(result)
+    }
     let connection: StoreConnection
     try {
       connection = await options.connectStore()
@@ -243,13 +257,13 @@ const buildServer = (options: MeetingMcpOptions) => {
         } else if (request.params.name === "meeting_passage") {
           const passage = connection.meetingContext?.passage
           if (!passage) throw new ZoomError("configuration_error", "meeting passage capability is unavailable")
-          result = await callMeetingPassageTool(passage, args, signal)
+          result = await callMeetingPassageTool(passage, args, signal, failureContext())
         } else if (request.params.name === "search_meetings") {
           if (!connection.meetingSearch) throw new ZoomError("configuration_error", "meeting search is unavailable")
           const words = Object.fromEntries(
             Object.entries(args).filter(([key]) => !(key === "by_meaning" && args.by_meaning === false)),
           )
-          result = await callMeetingSearchTool(connection.meetingSearch, words, signal)
+          result = await callMeetingSearchTool(connection.meetingSearch, words, signal, failureContext())
         } else if (
           ["meeting_evidence", "person_meeting_context", "meeting_task_proposal"].includes(request.params.name)
         ) {
@@ -314,10 +328,15 @@ const buildServer = (options: MeetingMcpOptions) => {
             result = { content: [{ type: "text", text: JSON.stringify(snake) }], structuredContent: snake }
           }
         } else
-          result = await callMeetingTool(store, request.params.name, {
-            ...args,
-            account_id: connection.accountId,
-          })
+          result = await callMeetingTool(
+            store,
+            request.params.name,
+            {
+              ...args,
+              account_id: connection.accountId,
+            },
+            failureContext(),
+          )
       }
     } catch (error) {
       result =
@@ -326,6 +345,7 @@ const buildServer = (options: MeetingMcpOptions) => {
           "search_meetings",
           "meeting_evidence",
           "meeting_passage",
+          "meeting_project_evidence",
           "person_meeting_context",
           "meeting_task_proposal",
         ].includes(request.params.name) && isCliError(error)
@@ -339,9 +359,7 @@ const buildServer = (options: MeetingMcpOptions) => {
       }
     }
     if (cancelled()) return failure("cancelled", "meeting read was cancelled")
-    return maxResultBytes !== 0 && Buffer.byteLength(JSON.stringify(result), "utf8") > maxResultBytes
-      ? failure("validation_error", "meeting tool result exceeds maxResultBytes")
-      : result
+    return bounded(result)
   }
   server.setRequestHandler(CallToolRequestSchema, (request, extra) => {
     const result = call(request, extra.signal)

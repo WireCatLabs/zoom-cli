@@ -44,7 +44,7 @@ it("discovers opt-in context without IO, rejects account overrides, and closes b
   await client.connect(left)
   try {
     const { tools } = await client.listTools()
-    expect(tools).toHaveLength(11)
+    expect(tools).toHaveLength(12)
     expect(tools.every((tool) => tool.annotations?.readOnlyHint === true)).toBe(true)
     expect(connect).not.toHaveBeenCalled()
     for (const request of [
@@ -105,7 +105,7 @@ it("exposes semantic queries only with a server-selected model and never exposes
   await client.connect(left)
   try {
     const { tools } = await client.listTools()
-    expect(tools).toHaveLength(7)
+    expect(tools).toHaveLength(8)
     expect(tools.find((tool) => tool.name === "search_meetings")?.annotations?.readOnlyHint).toBe(true)
     expect(tools.find((tool) => tool.name === "search_meetings")?.inputSchema.properties).toHaveProperty("by_meaning")
     expect(tools.some((tool) => tool.name.includes("generate"))).toBe(false)

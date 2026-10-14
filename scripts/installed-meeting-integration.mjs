@@ -49,6 +49,7 @@ const fixture = async (root, phase, input) => {
       const saved = await store.meetings.saveMeeting(meeting)
       const project = await store.knowledge.addProject({ name: "Research Example", key: "RES", scope: "work" })
       await store.knowledge.addVocabularyAlias({ kind: "project", id: project.id }, "research-alias")
+      await store.knowledge.addVocabularyAlias({ kind: "project", id: project.id }, "needle")
       await store.knowledge.linkMeetingProject(key, String(saved.meeting.id), project.id)
       await store.knowledge.addTags(key, { type: "meeting", id: String(saved.meeting.id) }, ["planning"])
       const topic = await store.knowledge.createTag("budget", { kind: "topic" })
@@ -241,21 +242,53 @@ export const installedMeetingIntegration = async ({
       ...contextFilters,
       ...(cursor ? ["--cursor", cursor] : []),
     )
-    assert.deepEqual(page.coverage, {
-      archive_completeness: "unknown",
-      current_revisions: true,
-      indexing: "ready",
-      index_completeness: "unknown",
-    })
-    assert.ok(page.items.every((hit) => hit.meeting_id === target.meetingId))
+    assert.equal(page.page.limit, 2)
+    assert.equal(page.missing, undefined)
+    assert.ok(page.items.every((hit) => hit.meeting === reference && hit.ref.startsWith(`${reference}/`)))
+    if (page.page.has_more) {
+      assert.equal(page.next[0].args.query, query)
+      assert.equal(page.next[0].args.identity_id, target.identityId)
+      assert.equal(page.next[0].args.project, "research-alias")
+    }
     hits.push(...page.items)
-    cursor = page.next_cursor
+    cursor = page.page.cursor
     firstCursor ??= cursor
   } while (cursor)
   assert.equal(hits.length, 9)
   const topicHits = json("search", "meetings", "needle", "--topic", "costs", "--project", "RES")
   assert.equal(topicHits.items.length, 9)
-  assert.equal(topicHits.selection[1].name, "budget")
+  const canonicalTopic = json("search", "meetings", "needle", "--topic", "budget", "--project", "RES")
+  assert.deepEqual(topicHits.items, canonicalTopic.items)
+  invoke(["--json", "search", "meetings", "needle", "--topic", "nonexistent-example-topic"], 6)
+  const projectHits = []
+  let projectCursor
+  let projectPages = 0
+  do {
+    const answer = json(
+      "meetings",
+      "projects",
+      "evidence",
+      "RES",
+      `meeting_id:${target.meetingId} identity_id:${target.identityId}`,
+      "--limit",
+      "2",
+      "--max-read-bytes",
+      "4096",
+      ...(projectCursor ? ["--cursor", projectCursor] : []),
+    )
+    assert.equal(answer.item.project.key, "RES")
+    assert.equal(answer.item.association, "unconfirmed-word-evidence")
+    assert.equal(answer.item.coverage.archive_completeness, "unknown")
+    assert.equal(answer.item.limits.max_read_bytes, 4096)
+    assert.equal(typeof answer.meta.run_id, "string")
+    assert.equal(Number.isInteger(answer.meta.duration_ms), true)
+    projectHits.push(...answer.item.hits)
+    projectCursor = answer.item.page.cursor
+    if (projectCursor) assert.equal(answer.next[0].args.project, "RES")
+    if (++projectPages > 16) throw Error("unbounded installed project evidence")
+  } while (projectCursor)
+  assert.equal(projectHits.length, 9)
+  assert.ok(projectHits.every((hit) => hit.meeting === reference && hit.ref.startsWith(`${reference}/`)))
   assert.equal(new Set(hits.map((hit) => hit.id)).size, 9)
   assert.ok(firstCursor)
   invoke(
@@ -336,6 +369,7 @@ export const installedMeetingIntegration = async ({
     readonlySearchPreview: true,
     configuredStemming: ["English", "Russian", "Spanish"],
     hitContinuation: hits.length,
+    projectEvidence: { hits: projectHits.length, pages: projectPages, cited: true },
     crossAccountCursorRejected: true,
     transcriptionPreviewAndMissingModel: true,
     duplicateMemoCommands: false,

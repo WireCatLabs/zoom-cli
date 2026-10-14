@@ -79,8 +79,9 @@ it("exports an explicitly selected historical revision and preserves JSONL item 
   corrected.transcripts[0].rows[0].text = "Corrected invented plan."
   await store.saveMeeting(corrected)
   const id = String(original.meeting.id)
-  expect((await invoke(["meetings", "show", id, "--json"]))[0].transcripts).toHaveLength(2)
-  expect((await invoke(["meetings", "show", id, "--jsonl"]))[0].meeting.id).toBe(original.meeting.id)
+  expect((await invoke(["meetings", "show", id, "--json"]))[0].item.transcripts).toHaveLength(1)
+  expect((await invoke(["meetings", "transcript", id, "--history", "--json"]))[0].items).toHaveLength(2)
+  expect((await invoke(["meetings", "show", id, "--jsonl"]))[0].item.id).toBe(String(original.meeting.id))
   expect(await invoke(["meetings", "transcript", id, "--jsonl"])).toHaveLength(1)
   expect(await invoke(["meetings", "summary", id, "--jsonl"])).toHaveLength(1)
   const exported = await invoke([

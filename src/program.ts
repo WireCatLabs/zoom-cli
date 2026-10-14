@@ -14,10 +14,12 @@ import {
   renderError,
   type SleepLike,
 } from "@wirecat/cli-base"
+import { failureContext } from "@wirecat/cli-core"
 import {
   importFiles,
   listed,
   MeetingError,
+  type MeetingProjectDiscoveryReader,
   type MeetingSource,
   type MeetingStore,
   type MeetingTranscriptReceiptStore,
@@ -51,6 +53,7 @@ import type { MeetingContextCapabilities } from "./meeting-context.js"
 import { addMeetingContextCommands } from "./meeting-context-commands.js"
 import type { MeetingIntegrationCapabilities } from "./meeting-integration.js"
 import { addMeetingIntegrationCommands } from "./meeting-integration-commands.js"
+import { addProjectEvidenceCommand } from "./meeting-project-evidence-commands.js"
 import { addMeetingSearchCommands, type MeetingHitSearch } from "./meeting-search-commands.js"
 import {
   addMeetingEmbeddingCommand,
@@ -86,6 +89,7 @@ export interface StoreConnection {
   appendTranscriptsWithReceipt?: MeetingTranscriptReceiptStore["appendTranscriptsWithReceipt"]
   meetingIntegration?: MeetingIntegrationCapabilities
   meetingSearch?: MeetingHitSearch
+  meetingProjectEvidence?: MeetingProjectDiscoveryReader
   meetingTranscription?: LocalTranscriptionCapabilities
   unifiedSearch?: UnifiedSearch
   meetingContext?: MeetingContextCapabilities
@@ -95,7 +99,7 @@ export interface StoreConnectRequest {
   profile: string
   externalId: string
   intent: "read" | "ingestion"
-  capability?: "transcript-append" | "meeting-integration" | "meeting-search"
+  capability?: "transcript-append" | "meeting-integration" | "meeting-search" | "meeting-project-evidence"
 }
 export interface ProgramDeps {
   configPath: string
@@ -110,6 +114,7 @@ export interface ProgramDeps {
   meetingSemantic?: MeetingSemanticCapabilities
   meetingIntegration?: MeetingIntegrationCapabilities
   meetingSearch?: MeetingHitSearch
+  meetingProjectEvidence?: MeetingProjectDiscoveryReader
   meetingTranscription?: LocalTranscriptionCapabilities
   source?: MeetingSource
   recordings?: RecordingsService
@@ -265,7 +270,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     const opts = action.optsWithGlobals()
     if (opts.json && opts.jsonl) throw new ZoomError("validation_error", "choose --json or --jsonl")
     fields = opts.fields === undefined ? undefined : fieldsOf(opts.fields)
-    execution = startExecution(action, { signal: deps.signal, sleep: deps.sleep })
+    execution = startExecution(action, { signal: deps.signal, sleep: deps.sleep, now: deps.now })
     checkCancelled(signal())
     let family = action
     while (family.parent && family.parent !== program) family = family.parent
@@ -867,7 +872,9 @@ export const createProgram = (deps: ProgramDeps): Command => {
       return runUnifiedSearch(connection.unifiedSearch, request)
     },
   })
-  const integrationConnection = async (capability: "meeting-integration" | "meeting-search") => {
+  const integrationConnection = async (
+    capability: "meeting-integration" | "meeting-search" | "meeting-project-evidence",
+  ) => {
     const config = getConfig()
     if (!config.accountProfile || !deps.connectStore)
       throw new ZoomError("configuration_error", "select a stored local profile for meeting integration")
@@ -881,6 +888,17 @@ export const createProgram = (deps: ProgramDeps): Command => {
   }
   const integrationOutput = (value: unknown) =>
     buffer(render(value, program.opts().jsonl ? "jsonl" : program.opts().json ? "json" : "text", deps, fields, true))
+  addProjectEvidenceCommand(program, {
+    read: deps.meetingProjectEvidence,
+    connect: () => integrationConnection("meeting-project-evidence"),
+    signal,
+    now: deps.now,
+    output: integrationOutput,
+    meta: () => {
+      if (!execution) throw new ZoomError("configuration_error", "project evidence has no execution context")
+      return execution.meta()
+    },
+  })
   addMeetingIntegrationCommands(program, {
     signal,
     output: integrationOutput,
@@ -1078,7 +1096,7 @@ export const reportFailure = (
   const end = args.indexOf("--")
   const flags = args.slice(0, end < 0 ? undefined : end)
   const machine = flags.some((word) => word === "--json" || word === "--jsonl")
-  const object = errorObjectOf(failure)
+  const object = errorObjectOf(failure, failureContext())
   const record = flags.includes("--debug")
     ? errorRecordOf(failure, object, { command, service: "zm", version: VERSION })
     : undefined

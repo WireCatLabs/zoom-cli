@@ -29,7 +29,8 @@ const api = vi.hoisted(() => ({
   personMeetingContext: vi.fn(),
   proposeMeetingTask: vi.fn(),
 }))
-vi.mock("@wirecat/cli-core", () => ({
+vi.mock("@wirecat/cli-core", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@wirecat/cli-core")>()),
   parseMeetingReference: api.parseMeetingReference,
   canonicalMeetingReference: api.canonicalMeetingReference,
 }))

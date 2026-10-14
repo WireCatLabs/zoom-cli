@@ -123,6 +123,7 @@ const exampleFor = (path: string): string => {
     "meetings summary": "1",
     "meetings export": "1 --format markdown",
     "meetings people": '"Alice Example"',
+    "meetings projects evidence": 'RES "identity_id:12"',
     "meetings import": "./downloaded-transcripts",
   }
   return `zm ${path}${argumentsByPath[path] ? ` ${argumentsByPath[path]}` : ""} --json`

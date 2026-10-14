@@ -154,10 +154,19 @@ it("preserves an acknowledged link receipt when cancellation follows commit", as
   expect(latest(errors).error.code).toBe("cancelled")
 })
 
-it("keeps bounded search cursors and coverage in JSONL and forwards typed date/budget filters", async () => {
+it("keeps bounded search cursors and citations in JSONL and forwards typed date/budget filters", async () => {
   const { deps, output, connect } = await setup()
   const search = vi.fn(async () => ({
-    items: [{ meetingId: 1, scope: "transcript" as const, id: 1, text: "Alice Example plan", startMs: 0 }],
+    items: [
+      {
+        ref: "meeting:1/1/1/0",
+        meetingId: 1,
+        scope: "transcript" as const,
+        id: 1,
+        text: "Alice Example plan",
+        startMs: 0,
+      },
+    ],
     hasMore: true,
     nextCursor: "example_next",
     coverage: {
@@ -204,9 +213,8 @@ it("keeps bounded search cursors and coverage in JSONL and forwards typed date/b
     ),
   ).toBe(0)
   expect(latest(output)).toMatchObject({
-    has_more: true,
-    next_cursor: "example_next",
-    coverage: { archive_completeness: "unknown" },
+    items: [{ ref: "meeting:1/1/1/0", meeting: "meeting:1/1", excerpt: "Alice Example plan" }],
+    page: { has_more: true, cursor: "example_next" },
   })
   expect(search).toHaveBeenCalledWith(
     "example plan",
@@ -225,6 +233,16 @@ it("keeps bounded search cursors and coverage in JSONL and forwards typed date/b
       maxReadBytes: 1024,
     }),
   )
+  expect(latest(output).next[0].args).toMatchObject({
+    query: "example plan",
+    identity_id: 12,
+    person_id: 34,
+    project: "RES",
+    tag: "planning",
+    since_time: "2026-10-01T00:00:00.000Z",
+    until_time: "2026-10-11T10:00:00.000Z",
+    max_read_bytes: 1024,
+  })
   expect(await run(["search", "meetings", "example", "--topic", "costs", "--json"], deps)).toBe(0)
   expect(search).toHaveBeenLastCalledWith("example", expect.objectContaining({ topic: "costs" }))
   expect(connect).not.toHaveBeenCalled()

@@ -1,5 +1,13 @@
 import { annotate } from "@wirecat/cli-base/commands"
-import { addMeetingSearchCommand, type MeetingHitSearch } from "@wirecat/cli-core/meetings/cli"
+import { meetingHitsList } from "@wirecat/cli-core/meetings"
+import {
+  createMeetingSearchCommand,
+  type MeetingHitSearch,
+  type MeetingHitSearchOptions,
+  type MeetingSearchFlags,
+  meetingHitSearchRequest,
+  meetingSearchArguments,
+} from "@wirecat/cli-core/meetings/cli"
 import type { Command } from "commander"
 import type { ArchiveTranscriptService } from "./archive-commands.js"
 import { ZoomError } from "./errors.js"
@@ -12,20 +20,7 @@ export {
   validateMeetingHitSearch,
 } from "@wirecat/cli-core/meetings/cli"
 
-interface SearchOptions {
-  meetingId?: number
-  identityId?: number
-  personId?: number
-  eventId?: number
-  seriesId?: number
-  project?: string
-  tag?: string
-  topic?: string
-  sinceTime?: number
-  untilTime?: number
-  limit?: number
-  cursor?: string
-  maxReadBytes?: number
+interface SearchOptions extends MeetingSearchFlags {
   model?: string
   baseUrl?: string
   dims?: number
@@ -95,59 +90,63 @@ export const addMeetingSearchCommands = (
     output: (value: unknown) => void
   },
 ): void => {
-  const command = addMeetingSearchCommand(program, {
-    signal: deps.signal,
-    output: deps.output,
-    search: async (query, request, raw) => {
-      const options = raw as SearchOptions
-      if (options.archive !== undefined) {
-        refuse(
-          options,
-          [
-            ...STORE_FILTERS,
-            "cursor",
-            "maxReadBytes",
-            "model",
-            "baseUrl",
-            "dims",
-            "maxChunks",
-            "maxRows",
-            "maxTextBytes",
-          ],
-          "to an archive folder",
-        )
-        return deps.archive(options.archive, query, {
-          uuid: options.uuid,
-          fileIds: options.fileIds?.split(",").map((id) => id.trim()),
-          maxBytes: options.maxBytes,
-          limit: options.limit,
-          signal: deps.signal(),
-        })
+  const execute = async (query: string, request: MeetingHitSearchOptions, options: SearchOptions) => {
+    if (options.archive !== undefined) {
+      refuse(
+        options,
+        [
+          ...STORE_FILTERS,
+          "cursor",
+          "maxReadBytes",
+          "model",
+          "baseUrl",
+          "dims",
+          "maxChunks",
+          "maxRows",
+          "maxTextBytes",
+        ],
+        "to an archive folder",
+      )
+      return deps.archive(options.archive, query, {
+        uuid: options.uuid,
+        fileIds: options.fileIds?.split(",").map((id) => id.trim()),
+        maxBytes: options.maxBytes,
+        limit: options.limit,
+        signal: deps.signal(),
+      })
+    }
+    refuse(options, ["uuid", "fileIds", "maxBytes"], "without --archive")
+    if (options.model !== undefined) {
+      refuse(options, [...STORE_FILTERS, "maxReadBytes"], "to a search by meaning")
+      const meaning = {
+        model: options.model,
+        baseUrl: options.baseUrl,
+        dims: options.dims,
+        limit: options.limit,
+        maxChunks: options.maxChunks,
+        afterChunkId: chunkCursor(options.cursor),
+        maxRows: options.maxRows,
+        maxTextBytes: options.maxTextBytes,
+        buildMissing: true,
+        signal: deps.signal(),
       }
-      refuse(options, ["uuid", "fileIds", "maxBytes"], "without --archive")
-      if (options.model !== undefined) {
-        refuse(options, [...STORE_FILTERS, "maxReadBytes"], "to a search by meaning")
-        const meaning = {
-          model: options.model,
-          baseUrl: options.baseUrl,
-          dims: options.dims,
-          limit: options.limit,
-          maxChunks: options.maxChunks,
-          afterChunkId: chunkCursor(options.cursor),
-          maxRows: options.maxRows,
-          maxTextBytes: options.maxTextBytes,
-          buildMissing: true,
-          signal: deps.signal(),
-        }
-        validateMeetingSemantic(query, meaning)
-        if (meaning.baseUrl !== undefined && deps.offline())
-          throw new ZoomError("configuration_error", "remote embeddings require network access; remove --offline")
-        const found = (await (await deps.meaning()).search(query, meaning)) as { nextChunkId?: number }
-        return { ...found, nextCursor: found.nextChunkId === undefined ? null : String(found.nextChunkId) }
-      }
-      refuse(options, ["baseUrl", "dims", "maxChunks", "maxRows", "maxTextBytes"], "without --model")
-      return (await deps.words())(query, request)
-    },
+      validateMeetingSemantic(query, meaning)
+      if (meaning.baseUrl !== undefined && deps.offline())
+        throw new ZoomError("configuration_error", "remote embeddings require network access; remove --offline")
+      const found = (await (await deps.meaning()).search(query, meaning)) as { nextChunkId?: number }
+      return { ...found, nextCursor: found.nextChunkId === undefined ? null : String(found.nextChunkId) }
+    }
+    refuse(options, ["baseUrl", "dims", "maxChunks", "maxRows", "maxTextBytes"], "without --model")
+    return meetingHitsList(
+      await (await deps.words())(query, request),
+      request.limit ?? 100,
+      "search meetings",
+      meetingSearchArguments(query, options),
+    )
+  }
+  const command = createMeetingSearchCommand(program).action(async (query: string, options: SearchOptions) => {
+    const request = meetingHitSearchRequest(query, options, deps.signal())
+    deps.output(await execute(query, request, options))
   })
   command
     .description("find words in stored meetings, by meaning with --model, or in an archive folder")

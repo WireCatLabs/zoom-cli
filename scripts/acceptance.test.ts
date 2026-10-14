@@ -204,7 +204,7 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
     try {
       await client.connect(new StdioServerTransport(child.stdout, child.stdin))
       const listed = await client.listTools()
-      expect(listed.tools).toHaveLength(7)
+      expect(listed.tools).toHaveLength(8)
       expect(listed.tools.map((tool) => tool.name)).toContain("search_meetings")
       expect(listed.tools.every((tool) => tool.annotations?.readOnlyHint === true)).toBe(true)
       expect(existsSync(isolated)).toBe(false)
@@ -268,7 +268,7 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
     expect(meetings).toHaveLength(1)
     const id = String(meetings[0].id)
     importedMeetingId = id
-    expect(JSON.parse(invoke("--json", "meetings", "show", id).stdout).transcripts).toHaveLength(1)
+    expect(JSON.parse(invoke("--json", "meetings", "show", id).stdout).item.transcripts).toHaveLength(1)
   })
 
   it("retains the original revision when importing corrected transcript bytes", () => {
@@ -279,7 +279,8 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
     const corrected = invoke("--json", "meetings", "import", files)
     expect(corrected.status, corrected.stderr).toBe(0)
     const id = importedMeetingId
-    expect(JSON.parse(invoke("--json", "meetings", "show", id).stdout).transcripts).toHaveLength(2)
+    expect(JSON.parse(invoke("--json", "meetings", "show", id).stdout).item.transcripts).toHaveLength(1)
+    expect(JSON.parse(invoke("--json", "meetings", "transcript", id, "--history").stdout).items).toHaveLength(2)
   })
 
   it("searches the current correction while exposing retained history explicitly", () => {
