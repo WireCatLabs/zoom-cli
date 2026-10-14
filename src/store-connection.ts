@@ -3,12 +3,15 @@ import {
   type MeetingContextReadCapabilities,
   type MeetingContextStore,
   type MeetingParticipantSearchStore,
+  type MeetingPreparationContextStore,
   type MeetingSearchIndexStore,
   type MeetingSearchStore,
+  type MeetingSeriesHistoryStore,
   type MeetingTranscriptReceiptStore,
   type MeetingTranscriptStore,
   validateMeetingContextChange,
 } from "@wirecat/cli-core/meetings"
+import type { MeetingPreparationPorts } from "@wirecat/cli-core/services"
 import type { MessageStore, StoreOptions } from "@wirecat/cli-core/store"
 import { profileAccountKey } from "./config.js"
 import { ZoomError } from "./errors.js"
@@ -25,7 +28,9 @@ type OptionalMeetingPorts = MeetingParticipantSearchStore &
   MeetingSearchStore &
   MeetingSearchIndexStore &
   MeetingContextStore &
-  MeetingContextReadCapabilities
+  MeetingContextReadCapabilities &
+  MeetingPreparationContextStore &
+  MeetingSeriesHistoryStore
 type SharedMeetingStore = Pick<MessageStore, "saveAccount" | "storedAccount" | "close"> & {
   meetings: Omit<MessageStore["meetings"], keyof OptionalMeetingPorts> & Partial<OptionalMeetingPorts>
 } & Partial<
@@ -41,6 +46,10 @@ type SharedMeetingStore = Pick<MessageStore, "saveAccount" | "storedAccount" | "
       | "facts"
     >
   >
+const preparationStore = (
+  meetings: SharedMeetingStore["meetings"],
+): meetings is SharedMeetingStore["meetings"] & MeetingPreparationPorts["meetings"] =>
+  typeof meetings.seriesHistory === "function" && typeof meetings.preparationContext === "function"
 const contextServiceMeetings = (meetings: SharedMeetingStore["meetings"]): meetings is MessageStore["meetings"] =>
   typeof meetings.appendTranscriptsWithReceipt === "function" &&
   typeof meetings.searchHits === "function" &&
@@ -67,9 +76,13 @@ export const createStoreConnector =
       input.externalId !== profileAccountKey(input.profile) ||
       (input.intent !== "read" && input.intent !== "ingestion") ||
       (input.capability !== undefined &&
-        !["transcript-append", "meeting-integration", "meeting-search", "meeting-project-evidence"].includes(
-          input.capability,
-        ))
+        ![
+          "transcript-append",
+          "meeting-integration",
+          "meeting-search",
+          "meeting-project-evidence",
+          "meeting-preparation",
+        ].includes(input.capability))
     )
       throw new ZoomError("validation_error", "expected a selected Zoom profile and read or ingestion intent")
     let store: SharedMeetingStore | undefined
@@ -114,6 +127,16 @@ export const createStoreConnector =
       )
         throw new ZoomError("configuration_error", "the installed meeting store does not support meeting search")
       return {
+        meetingPreparation: {
+          scope: key,
+          create: async (upcoming) => {
+            const { createMeetingPreparationService } = await import("@wirecat/cli-core/services")
+            if (!preparationStore(connected.meetings))
+              throw new ZoomError("configuration_error", "the installed store does not support bounded preparation")
+            const service = createMeetingPreparationService(key, accountId, { meetings: connected.meetings, upcoming })
+            return service.prepare.bind(service)
+          },
+        },
         store: connected.meetings,
         accountId,
         close: () => connected.close(),

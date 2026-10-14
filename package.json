@@ -1,6 +1,6 @@
 {
   "name": "@wirecat/zoom-cli",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "Zoom cloud recording archives, persistent transcripts and meeting tools",
   "license": "Apache-2.0",
   "type": "module",
@@ -46,7 +46,7 @@
     "generate": "pnpm build && node scripts/commands.ts",
     "generate:check": "pnpm build && node scripts/commands.ts --check",
     "test:matrix": "pnpm test --maxWorkers 2 && pnpm build && pnpm test:matrix:check",
-    "lint:commands": "node node_modules/@wirecat/cli-base/dist/dev/bin.js lint --cli dist/bin/zm.js",
+    "lint:commands": "node node_modules/@wirecat/cli-base-dev/dist/dev/bin.js lint --cli dist/bin/zm.js",
     "test:matrix:check": "node node_modules/@wirecat/cli-base/dist/dev/bin.js test-matrix --program scripts/command-program.ts --untested scripts/test-matrix-untested.ts --name zm --check",
     "contracts:upgrade": "pnpm --dir contracts/previous install --frozen-lockfile --ignore-scripts && cli-contract contracts/upgrade.json",
     "security:no-leak": "cli-testing security no-leak . contracts/no-leak.json"
@@ -54,7 +54,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",
     "@wirecat/cli-base": "0.28.2",
-    "@wirecat/cli-core": "0.277.0",
+    "@wirecat/cli-core": "0.280.0",
     "commander": "15.0.0",
     "valibot": "1.5.0"
   },
@@ -65,6 +65,7 @@
     "@cspell/dict-ru_ru": "2.3.3",
     "@types/node": "^22.20.5",
     "@vitest/coverage-v8": "^5.0.3",
+    "@wirecat/cli-base-dev": "npm:@wirecat/cli-base@0.30.0",
     "@wirecat/cli-testing": "0.4.0",
     "cspell": "10.3.6",
     "lefthook": "2.1.16",

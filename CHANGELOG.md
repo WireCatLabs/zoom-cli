@@ -1,19 +1,24 @@
 # Changelog
 
-## Unreleased
+## 0.14.0 — 14.10.2026
 
 ### Changed — may break callers
 
 - **`--json=id,title` replaces `--fields`** (the standard's `--json [fields]`, read as tg, max, drive and memo read it
-  through cli-core 0.277.0's `liftJson`). `--fields` is gone, and fields come only with `--json`, not `--jsonl`. A
+  through cli-core's shared `liftJson`). `--fields` is gone, and fields come only with `--json`, not `--jsonl`. A
   field the answer does not declare is refused with the fields it has; `search meetings --archive` answers are not
-  the `meeting_hit` they declare, so they take a plain `--json` until that is fixed. Adopts cli-core 0.277.0.
+  the `meeting_hit` they declare, so they take a plain `--json` until that is fixed. Adopts cli-core 0.280.0.
 
 ### Added
 
+- **Prepare one selected upcoming series with `meetings prepare <series-id>`.** Read Zoom occurrence
+  proof alongside bounded stored transcripts, observed people, confirmed projects, accepted meeting
+  facts and directly sourced tasks. Citations and coverage stay together; no findings are accepted.
+  `serve --mcp --meeting-preparation` enables the matching optional `meeting_prepare` tool.
+
 - **The SDK can read explicit upcoming occurrence proof through `createZoomUpcomingMeetingReader`.**
   Zoom translates bounded meeting details into the shared reader, keeping missing schedules and
-  incomplete recurrence coverage unverified. This library capability does not add a preparation CLI command.
+  incomplete recurrence coverage unverified. The shared preparation workflow uses this library capability.
 
 ### Fixed
 

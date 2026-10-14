@@ -283,10 +283,13 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
     expect(JSON.parse(invoke("--json", "meetings", "transcript", id, "--history").stdout).items).toHaveLength(2)
   })
 
-  it("searches the current correction while exposing retained history explicitly", () => {
-    const id = importedMeetingId
+  it("searches only the current correction", () => {
     expect(JSON.parse(invoke("--json", "search", "meetings", "Corrected").stdout).items).toHaveLength(1)
     expect(JSON.parse(invoke("--json", "search", "meetings", "Original").stdout).items).toHaveLength(0)
+  })
+
+  it("exposes retained history, stored events and absent summaries explicitly", () => {
+    const id = importedMeetingId
     expect(JSON.parse(invoke("--json", "events", "list").stdout).items).toHaveLength(1)
     expect(JSON.parse(invoke("--json", "meetings", "transcript", id, "--history").stdout).items).toHaveLength(2)
     expect(JSON.parse(invoke("--json", "meetings", "summary", id).stdout).items).toHaveLength(0)

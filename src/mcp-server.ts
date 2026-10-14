@@ -4,7 +4,7 @@ import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js"
 import { CallToolRequestSchema, ListToolsRequestSchema, type Tool } from "@modelcontextprotocol/sdk/types.js"
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv"
 import { type ErrorCode, errorObjectOf, isCliError, mcpErrorResult } from "@wirecat/cli-base"
-import { LOCAL_READ } from "@wirecat/cli-core/cli"
+import { LOCAL_READ, meetingPreparationTool } from "@wirecat/cli-core/cli"
 import { type MeetingStore, SAVE_INSTRUCTION } from "@wirecat/cli-core/meetings"
 import {
   callMeetingPassageTool,
@@ -28,6 +28,8 @@ import {
   validateTaskKind,
   validateTaskProposal,
 } from "./meeting-context.js"
+import type { ZoomPreparationOptions } from "./meeting-preparation.js"
+import { readPreparationTool } from "./meeting-preparation-mcp.js"
 import { readProjectEvidenceTool } from "./meeting-project-evidence-mcp.js"
 import { type MeetingModelOptions, validateMeetingModel, validateMeetingSemantic } from "./meeting-semantic-commands.js"
 import type { StoreConnection } from "./program.js"
@@ -48,6 +50,7 @@ export interface MeetingMcpOptions {
   includeMeetingContext?: boolean
   /** Server-selected model for search_meetings by_meaning; tool callers cannot select models or generate vectors. */
   semanticModel?: MeetingModelOptions
+  preparation?: ZoomPreparationOptions
 }
 
 const failure = (code: ErrorCode, message: string) =>
@@ -70,6 +73,7 @@ const buildServer = (options: MeetingMcpOptions) => {
     return { ...tool, inputSchema: { ...tool.inputSchema, type: "object" as const, properties } } satisfies Tool
   })
   tools.push(meetingProjectEvidenceTool)
+  if (options.preparation) tools.push(meetingPreparationTool)
   const meaningArguments = {
     by_meaning: { type: "boolean" },
     max_chunks: { type: "integer", minimum: 1, maximum: 10000 },
@@ -206,6 +210,10 @@ const buildServer = (options: MeetingMcpOptions) => {
       return failure("validation_error", "meeting tool arguments must be a plain object")
     const checked = validate(args)
     if (!checked.valid) return failure("validation_error", `invalid meeting tool arguments: ${checked.errorMessage}`)
+    if (request.params.name === "meeting_prepare") {
+      const result = await readPreparationTool(options, args, signal)
+      return cancelled() ? failure("cancelled", "meeting read was cancelled") : bounded(result)
+    }
     if (request.params.name === "meeting_project_evidence") {
       const result = await readProjectEvidenceTool(options, args, signal)
       return cancelled() ? failure("cancelled", "meeting read was cancelled") : bounded(result)

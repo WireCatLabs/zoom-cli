@@ -119,7 +119,7 @@ with `zm session status --json`.
 | `cloud_recording:read:list_user_recordings` | Discover your cloud recording occurrences |
 | `cloud_recording:read:list_recording_files` | Inspect and download available recording assets |
 | `user:read:user` | Verify the remote session with `zm session status --check` |
-| `meeting:read:meeting` | Show a remote meeting |
+| `meeting:read:meeting` | Show remote details and prepare a selected upcoming series with stored context |
 | `meeting:read:invitation` | Retrieve its invitation text |
 | `meeting:write:meeting` | Create a remote meeting |
 | `meeting:update:meeting` | Update a remote meeting |

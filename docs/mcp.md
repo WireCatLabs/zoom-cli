@@ -92,7 +92,8 @@ store opens, with `validation_error` naming the field. The server selects the ac
 ## Optional tools
 
 Optional flags add tools without changing the defaults: `--meeting-context` adds cited passages, evidence, person
-context and task proposals; `--unified-search` adds meetings-only shared search;
+context and task proposals; `--meeting-preparation` adds `meeting_prepare` for remote schedule plus
+cited stored context; `--unified-search` adds meetings-only shared search;
 `--semantic --model <model>` lets `search_meetings` rank existing vectors by meaning (`by_meaning`). Remote semantic models additionally
 require `--base-url` and `--dims`. The server fixes the model at startup and the profile on its first
 read; restart it to change either. Clients cannot override either selection. Embedding generation
@@ -100,3 +101,11 @@ and task creation are never MCP tools.
 
 For broader meeting context across projects, notes and documents, continue with
 [search and evidence](search.md#notes-tags-and-memories-with-memo); connect Memo separately where needed.
+
+With `zm serve --mcp --meeting-preparation`, the agent can call `meeting_prepare` with `series_id`
+and optional ISO `after`, `until`, `history_after`, plus `meetings`, `cues`, `context_limit`,
+`max_read_bytes` and `bytes`. The server selects the account and reads Zoom schedule details, requiring
+`meeting:read:meeting`. This opt-in tool is unavailable with `--offline`; it does not change your
+Zoom app, retrieve absent transcripts or accept findings. Its `meeting_preparation` item retains
+cited cues and explicit coverage. See [preparation](usage.md#prepare-for-an-upcoming-meeting) for
+what it includes, what remains unqueried and how to check the result.
