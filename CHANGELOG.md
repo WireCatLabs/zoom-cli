@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Search/MCP guides locate report continuation under `item` and omit the removed word-search selection field.
+
 ## 0.11.0 — 14.10.2026
 
 ### Changed — may break callers

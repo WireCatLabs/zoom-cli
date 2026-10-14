@@ -66,8 +66,8 @@ spoke an anonymous transcript cue.
 meeting membership counts; an agent's proposed membership or a matching transcript word does
 not establish membership. `--tag` and `--topic` accept canonical names or explicit aliases of
 labels already attached to a meeting; choose one label filter. Missing or ambiguous vocabulary
-names fail instead of silently broadening the search. The result's `selection` lists resolved
-name filters. Date-only bounds use midnight UTC; use a timestamp with an explicit offset when
+names fail instead of silently broadening the search. Date-only bounds use midnight UTC;
+use a timestamp with an explicit offset when
 you need the start or end of a local day. Existing continuation and coverage rules still apply.
 
 If a meeting has not been linked to a project or labelled yet, start with word search and inspect
@@ -135,7 +135,7 @@ default), while `--max-read-bytes` bounds selected stored text (4 MiB by default
 for the anchor budget fails rather than returning a misleading empty passage. The global
 `--max-output-bytes` also bounds the final rendered result.
 
-Check `coverage.has_before`, `has_after` and `truncated_by` before treating a passage as complete.
+Inside `item`, check `coverage.has_before`, `has_after` and `truncated_by` before treating a passage as complete.
 To extend it, open `before_ref` with more preceding lines, or `after_ref` with more following lines.
 These anchors are inclusive: the boundary line repeats, so an agent can deduplicate by `ref`.
 `archive_completeness: "unknown"` describes the archive, even when this local window is complete.
