@@ -1,0 +1,24 @@
+version: 2
+updates:
+  # Actions are pinned by commit; this is what moves the pins forward.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  # The shared packages, at most a day after they ship. Dependabot's list stops at pnpm 10, so CI's
+  # frozen install is what proves each lockfile it writes.
+  - package-ecosystem: npm
+    directory: /
+    # Looks redundant, but it is what keeps `allow` off security updates: with target-branch set,
+    # GitHub stops applying this entry's options to them, so every vulnerable package gets a PR.
+    target-branch: main
+    schedule:
+      interval: daily
+    allow:
+      - dependency-name: "@wirecat/*"
+    groups:
+      shared:
+        patterns:
+          - "@wirecat/*"
+    commit-message:
+      prefix: "chore(deps)"
