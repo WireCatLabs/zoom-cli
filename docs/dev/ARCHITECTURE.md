@@ -149,8 +149,8 @@ mount another set of those commands.
 `search meetings` uses the producer's word search and an opaque cursor that can continue within a
 transcript. The producer indexes newly stored records before each search, in committed batches;
 coverage reports pending indexing and unknown index/archive completeness. With `--model` the same
-command searches by meaning and first builds missing vectors; with `--archive` it reads an archive
-folder instead of the store. The producer owns Unicode tokenization and configured
+command searches by meaning and first builds missing vectors. `search recordings` reads an archive
+folder instead of the store and answers with `search all`'s `hit`. The producer owns Unicode tokenization and configured
 stemming; Zoom does not duplicate either implementation. Command receipts preserve committed local writes when
 cancellation follows acknowledgement.
 

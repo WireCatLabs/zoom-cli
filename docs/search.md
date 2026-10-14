@@ -36,14 +36,17 @@ meeting reference `meeting`, `excerpt` and `offset_ms`; expand a cue with `meeti
 ## Search by meaning or in an archive
 
 `--model <model>` searches by meaning instead of by words, building missing vectors first; see
-[topic search](topic-search.md). `--archive <directory>` searches the transcripts of a downloaded archive
-folder before any import, with no store, configuration or login:
+[topic search](topic-search.md). Store filters do not apply to a search by meaning.
+
+`search recordings <directory> <query>` searches the transcripts of a downloaded archive folder before
+any import, with no store, configuration or login:
 
 ```sh
-zm search meetings "example plan" --archive ./zoom-archive --limit 100 --offline --json
+zm search recordings ./zoom-archive "example plan" --limit 100 --offline --json
 ```
 
-Store filters do not apply to an archive or to a search by meaning.
+Its hits are the ones `search all` answers with: `ref` (`recording:<file id>/<cue position>`), `title`,
+`timestamp`, `excerpt`, `sender_name` and `offset_ms`; `account` is the archive folder.
 
 ## Narrow by people and work
 
