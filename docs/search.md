@@ -172,6 +172,30 @@ only the selected participant's identity; it never guesses a person from a speak
 people must have authorized account observations. Explicit `--target-accounts <ids>` adds account
 ids for that lookup. Profile labels group local data and do not authenticate a remote identity.
 
+## Find a project before linking it
+
+A confirmed-project filter can miss a relevant meeting that has never been linked to the project.
+For discovery, search the canonical name and known aliases as words while keeping the participant
+and date bounds. The following names and IDs are invented:
+
+```sh
+zm meetings people "Alice Example" --limit 50 --json
+zm search meetings "Research Example" --identity-id 12 --since-time 2026-09-14 --until-time 2026-10-14 --json
+zm search meetings "RES" --identity-id 12 --since-time 2026-09-14 --until-time 2026-10-14 --json
+```
+
+Inspect all participant pages and choose the intended `identity_id`; do not select a person solely
+because the display name matches. Use aliases already recorded in the shared vocabulary or supplied
+by the owner. Current commands do not expand project aliases into transcript-word searches automatically.
+Repeat word searches for those aliases without `--project`, and follow each search's `next_cursor`
+while `has_more` is true. Keep the same participant and date bounds on continuation.
+
+For each relevant retained cue `ref`, open `zm meetings passage <ref> --format markdown`.
+The passage keeps timestamps, source references, revision and coverage, so an agent can write a
+cited answer without a script that trims full transcript JSON. Repeated references from several
+alias searches are the same evidence. A project word can be incidental: inspect its passage before
+proposing a project association. No result proves that an incomplete archive contains every discussion.
+
 ## Notes, tags and memories with memo
 
 Use [memo](https://github.com/WireCatLabs/cli-memo) for the existing shared notes, tags and memories
