@@ -5,12 +5,13 @@ import { CallToolRequestSchema, ListToolsRequestSchema, type Tool } from "@model
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv"
 import { type ErrorCode, errorObjectOf, isCliError, mcpErrorResult } from "@wirecat/cli-base"
 import { failureContext } from "@wirecat/cli-core"
-import type { MeetingStore } from "@wirecat/cli-core/meetings"
+import { type MeetingStore, SAVE_INSTRUCTION } from "@wirecat/cli-core/meetings"
 import {
   callMeetingPassageTool,
   callMeetingSearchTool,
   callMeetingTool,
   meetingPassageTool,
+  meetingProjectEvidenceTool,
   meetingSearchTool,
   meetingTools,
 } from "@wirecat/cli-core/meetings/mcp"
@@ -25,6 +26,7 @@ import {
   validateTaskKind,
   validateTaskProposal,
 } from "./meeting-context.js"
+import { readProjectEvidenceTool } from "./meeting-project-evidence-mcp.js"
 import { type MeetingModelOptions, validateMeetingModel, validateMeetingSemantic } from "./meeting-semantic-commands.js"
 import type { StoreConnection } from "./program.js"
 import { runUnifiedSearch } from "./unified-search.js"
@@ -34,6 +36,7 @@ export interface MeetingMcpOptions {
   /** Resolve the selected profile with read intent; each call owns a fresh connection. */
   connectStore: () => Promise<StoreConnection>
   version?: string
+  now?: () => number
   signal?: AbortSignal
   /** Maximum UTF-8 bytes in a serialized tool result, including both content forms; zero is unlimited. */
   maxResultBytes?: number
@@ -63,6 +66,7 @@ const buildServer = (options: MeetingMcpOptions) => {
     )
     return { ...tool, inputSchema: { ...tool.inputSchema, type: "object" as const, properties } } satisfies Tool
   })
+  tools.push(meetingProjectEvidenceTool)
   const meaningArguments = {
     by_meaning: { type: "boolean" },
     max_chunks: { type: "integer", minimum: 1, maximum: 10000 },
@@ -167,15 +171,19 @@ const buildServer = (options: MeetingMcpOptions) => {
       },
     })
   }
-  for (const tool of tools) tool.outputSchema = toolAnswerSchema
+  for (const tool of tools) tool.outputSchema ??= toolAnswerSchema
   const validated = new Map(
     tools.map((tool) => [tool.name, validator.getValidator<Record<string, unknown>>(tool.inputSchema)]),
   )
   const server = new Server(
     { name: "zoom-meetings", version: options.version ?? VERSION },
-    { capabilities: { tools: {} } },
+    { capabilities: { tools: {} }, instructions: SAVE_INSTRUCTION },
   )
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }))
+  const bounded = <T>(result: T) =>
+    maxResultBytes !== 0 && Buffer.byteLength(JSON.stringify(result), "utf8") > maxResultBytes
+      ? failure("validation_error", "meeting tool result exceeds maxResultBytes")
+      : result
   const call = async (
     request: { params: { name: string; arguments?: Record<string, unknown> } },
     requestSignal: AbortSignal,
@@ -185,7 +193,7 @@ const buildServer = (options: MeetingMcpOptions) => {
     if (cancelled()) return failure("cancelled", "meeting read was cancelled")
     const validate = validated.get(request.params.name)
     if (!validate) return failure("validation_error", "unknown meeting tool")
-    const meta = readMetadata()
+    const meta = readMetadata(options.now)
     const args = request.params.arguments ?? {}
     const tool = tools.find((candidate) => candidate.name === request.params.name)
     const unknown = Object.keys(args).filter((key) => !Object.hasOwn(tool?.inputSchema.properties ?? {}, key))
@@ -195,6 +203,10 @@ const buildServer = (options: MeetingMcpOptions) => {
       return failure("validation_error", "meeting tool arguments must be a plain object")
     const checked = validate(args)
     if (!checked.valid) return failure("validation_error", `invalid meeting tool arguments: ${checked.errorMessage}`)
+    if (request.params.name === "meeting_project_evidence") {
+      const result = await readProjectEvidenceTool(options, args, signal)
+      return cancelled() ? failure("cancelled", "meeting read was cancelled") : bounded(result)
+    }
     let connection: StoreConnection
     try {
       connection = await options.connectStore()
@@ -362,9 +374,7 @@ const buildServer = (options: MeetingMcpOptions) => {
         result = mcpErrorResult(errorObjectOf(error, failureContext()))
       }
     }
-    return maxResultBytes !== 0 && Buffer.byteLength(JSON.stringify(result), "utf8") > maxResultBytes
-      ? failure("validation_error", "meeting tool result exceeds maxResultBytes")
-      : result
+    return bounded(result)
   }
   server.setRequestHandler(CallToolRequestSchema, (request, extra) => {
     const result = call(request, extra.signal)

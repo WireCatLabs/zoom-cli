@@ -724,6 +724,488 @@
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
+        "cursor": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        },
+        "limit": {
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_read_bytes": {
+          "maximum": 67108864,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "project": {
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        "query": {
+          "maxLength": 8192,
+          "type": "string"
+        }
+      },
+      "required": ["project"],
+      "type": "object"
+    },
+    "name": "meeting_project_evidence",
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "item": {
+              "additionalProperties": false,
+              "properties": {
+                "account_id": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "association": {
+                  "const": "unconfirmed-word-evidence"
+                },
+                "coverage": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "archive_completeness": {
+                      "const": "unknown"
+                    },
+                    "current_revisions": {
+                      "const": true
+                    },
+                    "duplicates": {
+                      "const": "may-repeat-between-terms"
+                    },
+                    "index_completeness": {
+                      "const": "unknown"
+                    },
+                    "indexing": {
+                      "enum": ["ready", "pending"],
+                      "type": "string"
+                    },
+                    "remaining_terms": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "term_index": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "terms_total": {
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "archive_completeness",
+                    "current_revisions",
+                    "indexing",
+                    "index_completeness",
+                    "term_index",
+                    "terms_total",
+                    "remaining_terms",
+                    "duplicates"
+                  ],
+                  "type": "object"
+                },
+                "hits": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "excerpt": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "meeting": {
+                        "pattern": "^[a-z]+:\\S+$",
+                        "type": "string"
+                      },
+                      "offset_ms": {
+                        "anyOf": [
+                          {
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "ref": {
+                        "pattern": "^[a-z]+:\\S+$",
+                        "type": "string"
+                      },
+                      "scope": {
+                        "enum": ["transcript", "chat", "summary"],
+                        "type": "string"
+                      }
+                    },
+                    "required": ["ref", "meeting", "scope", "id", "excerpt", "offset_ms"],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "kind": {
+                  "const": "meeting_project_evidence"
+                },
+                "limits": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "limit": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "max_read_bytes": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "max_terms": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "max_vocabulary_read_bytes": {
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["limit", "max_read_bytes", "max_vocabulary_read_bytes", "max_terms"],
+                  "type": "object"
+                },
+                "page": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "cursor": {
+                      "pattern": "\\S",
+                      "type": "string"
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "limit": {
+                      "minimum": 1,
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["limit", "has_more"],
+                  "type": "object"
+                },
+                "project": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "key": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id", "name", "key"],
+                  "type": "object"
+                },
+                "query": {
+                  "type": "string"
+                },
+                "schema_version": {
+                  "const": 1
+                },
+                "selection": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "event_id": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "identity_id": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "meeting_id": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "person_id": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "series_id": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "since": {
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "tag_id": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "until": {
+                      "format": "date-time",
+                      "type": "string"
+                    }
+                  },
+                  "required": [],
+                  "type": "object"
+                },
+                "term": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "alias_id": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "kind": {
+                      "enum": ["canonical", "key", "alias"],
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["name", "kind"],
+                  "type": "object"
+                },
+                "vocabulary_fingerprint": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "schema_version",
+                "kind",
+                "account_id",
+                "query",
+                "project",
+                "term",
+                "hits",
+                "association",
+                "vocabulary_fingerprint",
+                "selection",
+                "limits",
+                "page",
+                "coverage"
+              ],
+              "type": "object"
+            },
+            "meta": {
+              "additionalProperties": false,
+              "properties": {
+                "accounts": {
+                  "items": {
+                    "pattern": "\\S",
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "duration_ms": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "run_id": {
+                  "pattern": "\\S",
+                  "type": "string"
+                },
+                "skipped": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "account": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      },
+                      "why": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      }
+                    },
+                    "required": ["account", "why"],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "truncated": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["run_id", "duration_ms"],
+              "type": "object"
+            },
+            "missing": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "field": {
+                    "pattern": "\\S",
+                    "type": "string"
+                  },
+                  "step": {
+                    "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
+                    "type": "string"
+                  },
+                  "why": {
+                    "pattern": "\\S",
+                    "type": "string"
+                  }
+                },
+                "required": ["field", "why", "step"],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "next": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "args": {
+                    "additionalProperties": {},
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "command": {
+                    "pattern": "\\S",
+                    "type": "string"
+                  },
+                  "step": {
+                    "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
+                    "type": "string"
+                  },
+                  "why": {
+                    "pattern": "\\S",
+                    "type": "string"
+                  }
+                },
+                "required": ["step", "command", "args", "why"],
+                "type": "object"
+              },
+              "maxItems": 3,
+              "type": "array"
+            }
+          },
+          "required": ["item", "meta"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "error": {
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "enum": [
+                    "validation_error",
+                    "configuration_error",
+                    "authentication_error",
+                    "permission_error",
+                    "not_found",
+                    "confirmation_required",
+                    "rate_limited",
+                    "timeout",
+                    "network_error",
+                    "provider_error",
+                    "provider_unavailable",
+                    "invalid_response",
+                    "outcome_unknown",
+                    "cancelled",
+                    "internal_error"
+                  ],
+                  "type": "string"
+                },
+                "details": {
+                  "additionalProperties": {},
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                "message": {
+                  "pattern": "\\S",
+                  "type": "string"
+                },
+                "next": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "args": {
+                        "additionalProperties": {},
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "type": "object"
+                      },
+                      "command": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      },
+                      "step": {
+                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
+                        "type": "string"
+                      },
+                      "why": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      }
+                    },
+                    "required": ["step", "command", "args", "why"],
+                    "type": "object"
+                  },
+                  "maxItems": 3,
+                  "type": "array"
+                },
+                "param": {
+                  "pattern": "\\S",
+                  "type": "string"
+                },
+                "reason": {
+                  "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
+                  "type": "string"
+                },
+                "run_id": {
+                  "pattern": "\\S",
+                  "type": "string"
+                }
+              },
+              "required": ["code", "reason", "message"],
+              "type": "object"
+            }
+          },
+          "required": ["error"],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
         "meeting": {
           "minimum": 1,
           "type": "integer"

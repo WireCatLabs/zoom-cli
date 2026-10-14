@@ -2,7 +2,12 @@ import { PassThrough } from "node:stream"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
-import { callMeetingTool, meetingSearchTool, meetingTools } from "@wirecat/cli-core/meetings/mcp"
+import {
+  callMeetingTool,
+  meetingProjectEvidenceTool,
+  meetingSearchTool,
+  meetingTools,
+} from "@wirecat/cli-core/meetings/mcp"
 import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { describe, expect, it, vi } from "vitest"
 import { readAnswer } from "../scripts/testing/answers.js"
@@ -36,7 +41,9 @@ describe("read-only SDK meeting server", () => {
     try {
       expect(client.getServerVersion()).toEqual({ name: "zoom-meetings", version: "example" })
       const { tools } = await client.listTools()
-      expect(tools.map((tool) => tool.name)).toEqual([...meetingTools, meetingSearchTool].map((tool) => tool.name))
+      expect(tools.map((tool) => tool.name)).toEqual(
+        [...meetingTools, meetingProjectEvidenceTool, meetingSearchTool].map((tool) => tool.name),
+      )
       for (const tool of tools) {
         expect(tool.annotations?.readOnlyHint).toBe(true)
         expect(tool.inputSchema.properties).not.toHaveProperty("account_id")

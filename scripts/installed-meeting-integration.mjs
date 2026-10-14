@@ -49,6 +49,7 @@ const fixture = async (root, phase, input) => {
       const saved = await store.meetings.saveMeeting(meeting)
       const project = await store.knowledge.addProject({ name: "Research Example", key: "RES", scope: "work" })
       await store.knowledge.addVocabularyAlias({ kind: "project", id: project.id }, "research-alias")
+      await store.knowledge.addVocabularyAlias({ kind: "project", id: project.id }, "needle")
       await store.knowledge.linkMeetingProject(key, String(saved.meeting.id), project.id)
       await store.knowledge.addTags(key, { type: "meeting", id: String(saved.meeting.id) }, ["planning"])
       const topic = await store.knowledge.createTag("budget", { kind: "topic" })
@@ -257,6 +258,36 @@ export const installedMeetingIntegration = async ({
   assert.equal(topicHits.items.length, 9)
   assert.deepEqual(topicHits.items, json("search", "meetings", "needle", "--topic", "budget", "--project", "RES").items)
   invoke(["--json", "search", "meetings", "needle", "--topic", "missing-invented-topic", "--project", "RES"], 6)
+  const projectPacket = (...args) => JSON.parse(invoke(["--json", ...args]).stdout)
+  const projectHits = []
+  let projectCursor
+  let projectPages = 0
+  do {
+    const answer = projectPacket(
+      "meetings",
+      "projects",
+      "evidence",
+      "RES",
+      `meeting_id:${target.meetingId} identity_id:${target.identityId}`,
+      "--limit",
+      "2",
+      "--max-read-bytes",
+      "4096",
+      ...(projectCursor ? ["--cursor", projectCursor] : []),
+    )
+    assert.equal(answer.item.project.key, "RES")
+    assert.equal(answer.item.association, "unconfirmed-word-evidence")
+    assert.equal(answer.item.coverage.archive_completeness, "unknown")
+    assert.equal(answer.item.limits.max_read_bytes, 4096)
+    assert.equal(typeof answer.meta.run_id, "string")
+    assert.equal(Number.isInteger(answer.meta.duration_ms), true)
+    projectHits.push(...answer.item.hits)
+    projectCursor = answer.item.page.cursor
+    if (projectCursor) assert.equal(answer.next[0].args.project, "RES")
+    if (++projectPages > 16) throw Error("unbounded installed project evidence")
+  } while (projectCursor)
+  assert.equal(projectHits.length, 9)
+  assert.ok(projectHits.every((hit) => hit.meeting === reference && hit.ref.startsWith(`${reference}/`)))
   assert.equal(new Set(hits.map((hit) => hit.id)).size, 9)
   assert.ok(firstCursor)
   invoke(
@@ -337,6 +368,7 @@ export const installedMeetingIntegration = async ({
     readonlySearchPreview: true,
     configuredStemming: ["English", "Russian", "Spanish"],
     hitContinuation: hits.length,
+    projectEvidence: { hits: projectHits.length, pages: projectPages, cited: true },
     crossAccountCursorRejected: true,
     transcriptionPreviewAndMissingModel: true,
     duplicateMemoCommands: false,

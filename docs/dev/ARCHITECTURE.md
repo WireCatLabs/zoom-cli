@@ -13,6 +13,7 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [files.ts](../../src/files.ts) | file contents, legacy names and source metadata |
 | [config.ts](../../src/config.ts) | public client and file-source settings |
 | [program.ts](../../src/program.ts) | shared commands, output and injected store dependency |
+| [meeting-project-evidence-commands.ts](../../src/meeting-project-evidence-commands.ts), [meeting-project-evidence-mcp.ts](../../src/meeting-project-evidence-mcp.ts) | thin account/resource bindings over Core project discovery and registered schemas |
 | [answers.ts](../../src/answers.ts) | host execution metadata and CLI/MCP envelopes validated with shared Base schemas |
 | [commands.ts](../../src/commands.ts) | shared command metadata, completion and local diagnostics |
 | [zm.ts](../../src/bin/zm.ts) | process, browser, stdin and system keyring wiring |
