@@ -1,4 +1,4 @@
-# zm — Zoom for your AI agent
+# Zoom — start here
 
 Use `zm`, the Zoom command-line tool, to find what was discussed, recover a decision with its
 original passage and prepare for a follow-up. It keeps available meeting information locally and
@@ -35,7 +35,7 @@ is read-only; terminal agents have the CLI's broader command set.
 After connection and ingestion, ask your agent:
 
 ```text prompt
-Find the latest meeting about Research Example. Give its date, participants actually recorded,
+Use zm CLI to find the latest meeting about Research Example. Give its date, participants actually recorded,
 one decision and the passage supporting it. Tell me what information is missing.
 ```
 
