@@ -7,6 +7,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { beforeAll, describe, expect, it } from "vitest"
 import { VERSION } from "../src/version.js"
+import { readAnswer } from "./testing/answers.js"
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
 let install: string
@@ -177,9 +178,9 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
     const saved = invoke("--json", "config", "set", "zoom.clientId", "invented-public-client")
     expect(saved.status).toBe(0)
     expect(saved.stderr).toBe("")
-    expect(JSON.parse(saved.stdout).client_id).toBe("invented-public-client")
+    expect(readAnswer(saved.stdout).client_id).toBe("invented-public-client")
     const read = invoke("--json", "config", "show")
-    expect(JSON.parse(read.stdout)).toEqual(JSON.parse(saved.stdout))
+    expect(readAnswer(read.stdout)).toEqual(readAnswer(saved.stdout))
     expect(read.stderr).toBe("")
     const disk = JSON.parse(readFileSync(join(config, "config.json"), "utf8"))
     expect(Object.keys(disk).sort()).toEqual(["accountProfile", "clientId", "filesFolder", "filesTimezone", "source"])
@@ -224,13 +225,13 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
     const selected = invoke("--json", "config", "set", "account.profile", "personal")
     expect(selected.status).toBe(0)
     expect(selected.stderr).toBe("")
-    expect(JSON.parse(selected.stdout).account_profile).toBe("personal")
+    expect(readAnswer(selected.stdout).account_profile).toBe("personal")
     const invalid = invoke("config", "set", "account.profile", "bad profile")
     expect(invalid.status).toBe(2)
     expect(invalid.stdout).toBe("")
     expect(JSON.parse(invalid.stderr).error.code).toBe("validation_error")
     const saved = invoke("--json", "config", "show")
-    expect(JSON.parse(saved.stdout).account_profile).toBe("personal")
+    expect(readAnswer(saved.stdout).account_profile).toBe("personal")
   })
 
   it("refuses noninteractive login before external access", () => {
@@ -268,7 +269,7 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
     expect(meetings).toHaveLength(1)
     const id = String(meetings[0].id)
     importedMeetingId = id
-    expect(JSON.parse(invoke("--json", "meetings", "show", id).stdout).transcripts).toHaveLength(1)
+    expect(readAnswer(invoke("--json", "meetings", "show", id).stdout).transcripts).toHaveLength(1)
   })
 
   it("retains the original revision when importing corrected transcript bytes", () => {
@@ -279,7 +280,8 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
     const corrected = invoke("--json", "meetings", "import", files)
     expect(corrected.status, corrected.stderr).toBe(0)
     const id = importedMeetingId
-    expect(JSON.parse(invoke("--json", "meetings", "show", id).stdout).transcripts).toHaveLength(2)
+    expect(readAnswer(invoke("--json", "meetings", "show", id).stdout).transcripts).toHaveLength(1)
+    expect(JSON.parse(invoke("--json", "meetings", "transcript", id, "--history").stdout).items).toHaveLength(2)
   })
 
   it("searches the current correction while exposing retained history explicitly", () => {
@@ -295,7 +297,7 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
     const id = importedMeetingId
     const exported = invoke("--json", "meetings", "export", id, "--format", "vtt")
     expect(exported.status, exported.stderr).toBe(0)
-    const content = JSON.parse(exported.stdout).content
+    const content = readAnswer(exported.stdout).content
     expect(content).toContain("Corrected example")
     expect(content).not.toContain("Original example")
     const destination = join(install, "exported.vtt")
@@ -379,7 +381,7 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
         .split("\n")
         .map((line) => JSON.parse(line))
       expect(receipts).toHaveLength(1)
-      expect(receipts[0].meetings).toBe(1)
+      expect(receipts[0].item.meetings).toBe(1)
       expect(JSON.parse(diagnostics(errors)).error.code).toBe("cancelled")
       const reopened = invoke("--json", "search", "meetings", "Watched")
       expect(reopened.status, reopened.stderr).toBe(0)

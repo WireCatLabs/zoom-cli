@@ -5,6 +5,7 @@ import { memoryKeyring } from "@wirecat/cli-base"
 import { planRecordingArchiveSchedule } from "@wirecat/cli-core/meetings"
 import { Command } from "commander"
 import { expect, it, vi } from "vitest"
+import { readAnswer } from "../scripts/testing/answers.js"
 import { setConfig } from "./config.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
 import type { RecordingScheduleJob, RecordingScheduleService } from "./recording-schedule.js"
@@ -250,7 +251,7 @@ it.each(["create", "disable"] as const)(
     expect(await run(args, fixture.deps)).toBe(130)
     expect(fixture.service[action]).toHaveBeenCalledTimes(1)
     expect(streamData).toHaveBeenCalledTimes(1)
-    expect(JSON.parse(fixture.output.join(""))).toMatchObject({
+    expect(readAnswer(fixture.output.join(""))).toMatchObject({
       applied: true,
       timer_state: committed.timerState,
       job: { state: committed.job.state },

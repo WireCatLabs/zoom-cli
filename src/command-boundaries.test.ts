@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
 import { fakeMeetingSource, memoryMeetingStore, sampleEvent, sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { expect, it } from "vitest"
+import { snakeKeys } from "./keys.js"
 import { type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
 
@@ -65,9 +66,9 @@ it("keeps CLI paging, calendar filters and participant reads scoped to the selec
     { items: [{ id: String(first.meeting.id), provider: "memory" }], page: { limit: 1, has_more: false } },
   ])
   expect((await invoke(["meetings", "people", "Alice", "--json"]))[0].items).toHaveLength(2)
-  expect(await invoke(["meetings", "people", "Alice", "--jsonl"])).toHaveLength(2)
-  expect((await invoke(["events", "list", "--json"]))[0].items).toEqual([event])
-  expect(await invoke(["events", "list", "--jsonl"])).toEqual([event])
+  expect((await invoke(["meetings", "people", "Alice", "--jsonl"]))[0].items).toHaveLength(2)
+  expect((await invoke(["events", "list", "--json"]))[0].items).toEqual([snakeKeys(event)])
+  expect(await invoke(["events", "list", "--jsonl"])).toMatchObject([{ items: [snakeKeys(event)] }])
   expect(await store.meeting(first.meeting.id)).toEqual(before)
 })
 
@@ -79,8 +80,8 @@ it("exports an explicitly selected historical revision and preserves JSONL item 
   corrected.transcripts[0].rows[0].text = "Corrected invented plan."
   await store.saveMeeting(corrected)
   const id = String(original.meeting.id)
-  expect((await invoke(["meetings", "show", id, "--json"]))[0].transcripts).toHaveLength(2)
-  expect((await invoke(["meetings", "show", id, "--jsonl"]))[0].meeting.id).toBe(original.meeting.id)
+  expect((await invoke(["meetings", "show", id, "--json"]))[0].item.transcripts).toHaveLength(1)
+  expect((await invoke(["meetings", "show", id, "--jsonl"]))[0].item.id).toBe(String(original.meeting.id))
   expect(await invoke(["meetings", "transcript", id, "--jsonl"])).toHaveLength(1)
   expect(await invoke(["meetings", "summary", id, "--jsonl"])).toHaveLength(1)
   const exported = await invoke([
@@ -93,8 +94,8 @@ it("exports an explicitly selected historical revision and preserves JSONL item 
     "vtt",
     "--jsonl",
   ])
-  expect(exported[0].content).toContain("Ship the example plan.")
-  expect(exported[0].content).not.toContain("Corrected")
+  expect(exported[0].item.content).toContain("Ship the example plan.")
+  expect(exported[0].item.content).not.toContain("Corrected")
 })
 
 it("passes explicit lookback into shared ingestion and emits a single acknowledgement per JSONL import", async () => {

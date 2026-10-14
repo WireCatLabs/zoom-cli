@@ -4,6 +4,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { CliError, memoryKeyring } from "@wirecat/cli-base"
 import { expect, it, vi } from "vitest"
+import { readAnswer } from "../scripts/testing/answers.js"
 import type { ArchiveTranscript } from "./archive-transcripts.js"
 import { type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
@@ -58,14 +59,14 @@ const setup = async () => {
   )
   return { deps, directory, output, errors, paths, uuid }
 }
-const latest = (output: string[]) => JSON.parse(output.join("") || "{}")
+const latest = (output: string[]) => readAnswer(output.join("") || "{}")
 
 it("reads verified local archive cues as finite listed JSON without config, credentials or database access", async () => {
   const { deps, directory, output, paths, uuid } = await setup()
   const timestamp = (await stat(paths[0] ?? "")).mtimeMs
   const load = vi.spyOn(deps.tokens, "load")
   expect(await run(["recordings", "archive", "transcript", directory, "--offline", "--json"], deps)).toBe(0)
-  expect(latest(output)).toMatchObject({ page: 1, limit: 2, has_more: false })
+  expect(latest(output)).toMatchObject({ page: { limit: 2, has_more: false } })
   expect(latest(output).items).toHaveLength(2)
   expect(latest(output).items[0]).toMatchObject({
     meeting: { uuid },
@@ -127,18 +128,16 @@ it("projects archive fields, supports finite JSONL and preserves true search pag
     ),
   ).toBe(0)
   expect(latest(output)).toMatchObject({
-    page: 1,
-    limit: 1,
-    has_more: true,
+    page: { limit: 1, has_more: true },
     items: [{ text: "Café [Plan]", position: 0 }],
   })
   expect(latest(output).items[0]).not.toHaveProperty("asset")
   output.length = 0
   expect(await run(["search", "meetings", "Cafe\u0301", "--archive", directory, "--json"], deps)).toBe(0)
-  expect(latest(output)).toMatchObject({ has_more: false, items: [{ text: "Café [Plan]" }] })
+  expect(latest(output)).toMatchObject({ page: { has_more: false }, items: [{ text: "Café [Plan]" }] })
   output.length = 0
   expect(await run(["search", "meetings", "not present", "--archive", directory, "--json"], deps)).toBe(0)
-  expect(latest(output)).toMatchObject({ items: [], has_more: false })
+  expect(latest(output)).toMatchObject({ items: [], page: { has_more: false } })
 })
 
 it("reports corruption, byte bounds and unknown selectors without emitting partial finite output", async () => {
@@ -224,7 +223,7 @@ it("stops a finite transcript iterator at the output limit and preserves project
     ),
   ).toBe(0)
   expect(latest(output)).toMatchObject({
-    limit: 2,
+    page: { limit: 2 },
     items: [{ meeting: { uuid: "example-large" } }, { meeting: { uuid: "example-large" } }],
   })
 })
@@ -246,7 +245,7 @@ it("keeps empty transcript envelopes and multi-asset JSONL framing valid", async
   const { deps, directory, output } = await setup()
   const empty = await mkdtemp(join(tmpdir(), "zm-test-empty-archive-cli-"))
   expect(await run(["recordings", "archive", "transcript", empty], deps)).toBe(0)
-  expect(latest(output)).toEqual({ items: [], page: 1, limit: 0, has_more: false })
+  expect(latest(output)).toMatchObject({ items: [], page: { limit: 1, has_more: false } })
   output.length = 0
   expect(await run(["recordings", "archive", "transcript", empty, "--jsonl"], deps)).toBe(0)
   expect(output).toEqual([])
@@ -256,6 +255,6 @@ it("keeps empty transcript envelopes and multi-asset JSONL framing valid", async
       .join("")
       .trim()
       .split("\n")
-      .map((line) => JSON.parse(line)),
+      .map((line) => readAnswer(line)),
   ).toEqual([{ asset: { id: "example-first" } }, { asset: { id: "example-second" } }])
 })

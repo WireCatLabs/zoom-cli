@@ -5,6 +5,7 @@ import { Writable } from "node:stream"
 import { CliError, memoryKeyring } from "@wirecat/cli-base"
 import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { expect, it, vi } from "vitest"
+import { readAnswer } from "../scripts/testing/answers.js"
 import { setConfig } from "./config.js"
 import { writeExportFile } from "./output-file.js"
 import { type ProgramDeps, run } from "./program.js"
@@ -130,7 +131,7 @@ it("streams bounded archive sync receipts with consumer backpressure", async () 
   release?.()
   expect(await pending).toBe(0)
   expect(downloaded).toEqual(["example-uuid", "example-second"])
-  expect(output.map((text) => JSON.parse(text).meeting.uuid)).toEqual(downloaded)
+  expect(output.map((text) => readAnswer(text).meeting.uuid)).toEqual(downloaded)
 })
 
 it("keeps completed sync receipts when a later occurrence fails and rejects headless aggregate output", async () => {
@@ -161,7 +162,7 @@ it("keeps completed sync receipts when a later occurrence fails and rejects head
     ),
   ).toBe(10)
   expect(output).toHaveLength(1)
-  expect(JSON.parse(output[0] ?? "{}").archive.manifest_path).toBe("example.json")
+  expect(readAnswer(output[0] ?? "{}").archive.manifest_path).toBe("example.json")
   expect(
     await run(
       ["recordings", "sync", "--since-time", "2026-10-01", "--until-time", "2026-10-10", "--destination", "example"],
@@ -405,7 +406,7 @@ it("flushes one completed receipt after late close cancellation through the real
   deps.streamData = (text, signal) => writeStream(stream, text, signal)
   expect(await run(["watch", "files", folder, "--jsonl"], deps)).toBe(130)
   expect(output).toHaveLength(1)
-  expect(JSON.parse(output[0] ?? "{}").meetings).toBe(0)
+  expect(readAnswer(output[0] ?? "{}").meetings).toBe(0)
   expect(open).toHaveBeenCalledOnce()
 })
 

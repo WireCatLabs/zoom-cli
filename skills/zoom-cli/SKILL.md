@@ -2,14 +2,17 @@
 name: zoom-cli
 description: Archive Zoom cloud recordings, read stored meeting transcripts and summaries, or manage a Zoom meeting through zm. Use for Zoom CLI workflows, not joining calls or operating the desktop video client.
 metadata:
-  version: "0.10.0"
+  version: "0.11.0"
 ---
 
 # Zoom CLI
 
 Use `zm commands <resource> --json` and `zm <resource> --help` for the installed version's capabilities.
 Use JSON for finite reads and JSONL for foreground watches or batch synchronization. Keep diagnostics
-on stderr; use `--fields` to limit returned content. `zm doctor --json` checks local setup without login.
+on stderr. Successful replies use `{item,meta}` or `{items,page,meta}` with snake_case keys.
+Detailed reports (participants, evidence, semantic/unified search) live in `item`. Preserve
+`meta.run_id`, `meta.duration_ms`, report coverage and continuation. JSONL keeps complete packets.
+Use `--fields` to limit returned content. `zm doctor --json` checks local setup without login.
 
 ## Recording archives
 
@@ -30,7 +33,7 @@ Read cues with `recordings archive transcript <directory>` or search their text 
 login or a database and verify each WebVTT file they read before returning results. Search can stop
 before reading later files once it proves another match beyond the limit. Select `--uuid` or
 comma-separated `--file-ids`; `--max-bytes` defaults to 8 MiB per file. Search is literal, normalized
-and case-insensitive, with a maximum of 1000 matches. When `has_more` is true, increase the limit or
+and case-insensitive, with a maximum of 1000 matches. When `page.has_more` is true, increase the limit or
 narrow the occurrence, file or query selection;
 there is no continuation cursor. These reads do not import archive assets into the database.
 
@@ -105,7 +108,7 @@ is read-only: `applied: false` and `persistence: "proposal-only"` do not mean a 
 `search all <query>` searches meetings by default. Broader `--only messages,mail,notes,meetings`
 is explicit. Messages use the selected local account, mail includes stored email accounts, and
 notes are store-global. Meetings use word prefixes; unsupported syntax or exact queries
-are reported as skipped. Resume meetings-only results using the returned `meetings.next_cursor` as
+are reported as skipped. Resume meetings-only results using the returned `item.meetings.next_cursor` as
 `--meeting-cursor '<json>'`, bound to account and query. JSONL retains the entire report, including
 coverage, skips and cursors.
 
@@ -149,7 +152,7 @@ bounded by `--max-output-bytes`, separate from the download's per-file `--max-by
 Use `meetings people <name-or-email>` before selecting `--identity-id`. Reads inspect bounded
 observations in the selected account; use `--limit`, `--scan-limit`, `--max-read-bytes` and `--cursor`.
 Results expose `identity_id` with page-local ambiguity, not a proven person association. Follow
-`page.next` / `page.cursor` even when `items` is empty. JSONL retains the whole page and coverage.
+the report's `item.next` / `item.page.cursor` even when `item.items` is empty. JSONL retains the whole page and coverage.
 MCP `meeting_people` takes the equivalent snake_case arguments and cannot change accounts.
 
 `meetings list [query...]` filters metadata, for example `started_at:[2026-09-01 TO 2026-10-01]`.

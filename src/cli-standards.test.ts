@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { CliError, memoryKeyring } from "@wirecat/cli-base"
 import { describeProgram, flatten, parseCommandsDocument } from "@wirecat/cli-base/commands"
 import { describe, expect, it } from "vitest"
+import { readAnswer } from "../scripts/testing/answers.js"
 import { setConfig } from "./config.js"
 import { checkCancelled, ZoomError } from "./errors.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
@@ -71,7 +72,7 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(await run(["commands", "meetings", "show", "--json"], deps)).toBe(0)
     const [whole, scoped] = stdout.map((text) => parseCommandsDocument(JSON.parse(text)))
     expect(whole?.problems).toBeUndefined()
-    expect(whole?.document).toMatchObject({ cli: "zm", contract: 1, exit_codes: { ok: 0 } })
+    expect(whole?.document).toMatchObject({ cli: "zm", contract: 2, exit_codes: { ok: 0 } })
     expect(scoped?.problems).toBeUndefined()
     expect(scoped?.document?.scope).toEqual(["meetings", "show"])
   })
@@ -119,7 +120,7 @@ describe("portable CLI discovery and diagnostics", () => {
       throw new Error("unexpected database")
     }
     expect(await run(["--json", "doctor"], deps)).toBe(0)
-    expect(JSON.parse(stdout[0] ?? "{}")).toMatchObject({
+    expect(readAnswer(stdout[0] ?? "{}")).toMatchObject({
       data_profile: "example",
       authentication: { configured: true, state: "not_checked" },
       database: "not_checked",
@@ -128,11 +129,11 @@ describe("portable CLI discovery and diagnostics", () => {
   it("inspects cached OAuth status without refresh and keeps local profiles distinct", async () => {
     const { deps, stdout } = await setup()
     expect(await run(["--json", "session", "status"], deps)).toBe(0)
-    expect(JSON.parse(stdout.at(-1) ?? "{}")).toMatchObject({ configured: false, state: "not_configured" })
+    expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({ configured: false, state: "not_configured" })
     setConfig(deps.configPath, "zoom.clientId", "example-client")
     setConfig(deps.configPath, "account.profile", "local-example")
     expect(await run(["--json", "session", "status"], deps)).toBe(0)
-    expect(JSON.parse(stdout.at(-1) ?? "{}").state).toBe("missing")
+    expect(readAnswer(stdout.at(-1) ?? "{}").state).toBe("missing")
     deps.tokens.save({
       accessToken: "example-access-secret",
       refreshToken: "example-refresh-secret",
@@ -140,7 +141,7 @@ describe("portable CLI discovery and diagnostics", () => {
       scopes: ["example:read"],
     })
     expect(await run(["--json", "session", "status"], deps)).toBe(0)
-    expect(JSON.parse(stdout.at(-1) ?? "{}")).toMatchObject({
+    expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({
       state: "saved",
       verified: false,
       data_profile: "local-example",
@@ -148,14 +149,14 @@ describe("portable CLI discovery and diagnostics", () => {
     })
     deps.now = () => 1000
     expect(await run(["--json", "session", "status"], deps)).toBe(0)
-    expect(JSON.parse(stdout.at(-1) ?? "{}").state).toBe("expired")
+    expect(readAnswer(stdout.at(-1) ?? "{}").state).toBe("expired")
     expect(stdout.join("")).not.toContain("example-access-secret")
     expect(stdout.join("")).not.toContain("example-refresh-secret")
     deps.tokens.save({ accessToken: "example", refreshToken: "example", expiresAt: 3600000, scopes: ["example:read"] })
     expect(await run(["--json", "session", "status", "--check"], deps)).toBe(3)
     deps.checkSession = async () => ({ id: "example-user" })
     expect(await run(["--json", "session", "status", "--check"], deps)).toBe(0)
-    expect(JSON.parse(stdout.at(-1) ?? "{}")).toMatchObject({
+    expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({
       state: "verified",
       verified: true,
       profile: { id: "example-user" },
@@ -216,7 +217,7 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(stdout[0]).toContain("version")
     expect(() => JSON.parse(stdout[0] ?? "{}")).toThrow()
     expect(await run(["--json", "doctor"], deps)).toBe(0)
-    expect(JSON.parse(stdout[1] ?? "{}")).toHaveProperty("version")
+    expect(readAnswer(stdout[1] ?? "{}")).toHaveProperty("version")
   })
 })
 

@@ -1,1 +1,4 @@
-{ "extends": ["./tsconfig.json", "@wirecat/cli-base/tsconfig.test.json"] }
+{
+  "extends": ["./tsconfig.json", "@wirecat/cli-base/tsconfig.test.json"],
+  "compilerOptions": { "rootDir": "." }
+}

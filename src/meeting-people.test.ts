@@ -7,6 +7,7 @@ import { memoryKeyring } from "@wirecat/cli-base"
 import { sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { openStore } from "@wirecat/cli-core/store"
 import { expect, it, vi } from "vitest"
+import { readAnswer } from "../scripts/testing/answers.js"
 import { setConfig } from "./config.js"
 import { createMeetingMcpServer } from "./mcp-server.js"
 import { type ProgramDeps, run } from "./program.js"
@@ -92,7 +93,7 @@ it("preserves empty participant scan pages and continuation budgets through CLI 
     "--jsonl",
   ]
   expect(await run(args, f.deps)).toBe(0)
-  const first = JSON.parse(f.output.join(""))
+  const first = readAnswer(f.output.join(""))
   expect(first).toMatchObject({
     items: [],
     page: { limit: 1, has_more: true, cursor: expect.any(String) },
@@ -104,12 +105,12 @@ it("preserves empty participant scan pages and continuation budgets through CLI 
   })
   f.output.length = 0
   expect(await run([...args, "--cursor", first.page.cursor], f.deps)).toBe(0)
-  const second = JSON.parse(f.output.join(""))
+  const second = readAnswer(f.output.join(""))
   expect(second.items).toMatchObject([{ display_name: "Алиса Пример", identity_id: expect.any(Number) }])
   expect(second.page.has_more).toBe(true)
   f.output.length = 0
   expect(await run([...args, "--cursor", second.page.cursor], f.deps)).toBe(0)
-  const last = JSON.parse(f.output.join(""))
+  const last = readAnswer(f.output.join(""))
   expect(last.items).toMatchObject([{ display_name: "АЛИСА ПРИМЕР" }])
   expect(last.page).toEqual({ limit: 1, has_more: false })
   expect(last).not.toHaveProperty("next")
@@ -135,9 +136,11 @@ it("keeps MCP participant discovery account-bound and closes each paged read", a
     })
     expect(result).toMatchObject({
       structuredContent: {
-        account_id: f.selected,
-        page: { has_more: true, cursor: expect.any(String) },
-        items: [{ display_name: "Алиса Пример" }],
+        item: {
+          account_id: f.selected,
+          page: { has_more: true, cursor: expect.any(String) },
+          items: [{ display_name: "Алиса Пример" }],
+        },
       },
     })
     expect(f.close).toHaveBeenCalledOnce()

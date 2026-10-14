@@ -86,8 +86,19 @@ Stored `meetings` commands use local database ids; `remote-meetings` uses Zoom's
 
 ## Output for scripts and agents
 
-Use `--json` for one JSON value. `--jsonl` streams ordinary items one per line; stored meeting lists
-and bounded participant pages keep one complete envelope per line so continuation and coverage survive. Errors go to stderr. Use `--quiet`
+Use `--json` for one complete answer. A single result has `item`; a list has `items` and
+`page` (`limit`, `has_more`, optional `cursor`). Both carry `meta.run_id` and `meta.duration_ms`,
+with optional `next` steps and `missing` information. Result keys use snake_case.
+
+Detailed reports, including participant discovery, evidence, semantic search and unified search,
+keep their coverage and report-specific continuation inside `item`. Stored meeting word search
+returns standard hit items with `ref`, `meeting`, `excerpt` and `offset_ms`. Meeting details use
+`item`; transcripts and summaries use `items`. Details count current transcripts; use
+`meetings transcript <meeting> --history` to read retained older revisions.
+
+`--jsonl` preserves each complete answer per line, including streaming acknowledgements. Command
+discovery is the shared contract-2 document; help, version and shell completion retain their protocols.
+Errors go to stderr. Use `--quiet`
 to suppress non-error diagnostics. Piped output defaults to JSON; terminal output uses the shared
 human-readable renderer. Completion emits its shell protocol unless JSON is requested.
 

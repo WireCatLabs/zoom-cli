@@ -13,7 +13,7 @@ import type { Command } from "commander"
 import { ZoomError } from "./errors.js"
 import { VERSION } from "./version.js"
 
-const CONTRACT = 1
+const CONTRACT = 2
 
 export interface StandardCommandsDeps {
   output: (value: unknown) => void
