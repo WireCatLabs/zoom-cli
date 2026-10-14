@@ -55,18 +55,20 @@ stored meetings and their records
 
 ### `zm meetings list`
 
-list stored meetings
+stored meetings, newest first
 
 ```sh
-zm meetings list [options]
+zm meetings list [query] [options]
 ```
+
+| Argument | | What it is |
+|---|---|---|
+| `query` | optional | field:value terms that narrow the list — the fields are below. |
 
 | Option | What it does |
 |---|---|
 | `--json` | one JSON value. |
 | `--jsonl` | one JSON object per item. |
-| `--since-time <time>` | meetings starting at or after this ISO 8601 date or time. |
-| `--until-time <time>` | meetings starting at or before this ISO 8601 date or time. |
 | `--limit <n>` | meetings per page. Default: `100`. |
 | `--page <n>` | page number. Default: `1`. |
 
@@ -160,6 +162,10 @@ zm meetings people <query> [options]
 |---|---|
 | `--json` | one JSON value. |
 | `--jsonl` | one JSON object per item. |
+| `--limit <n>` | most matching observations per page, 1–1000 (default 50). |
+| `--scan-limit <n>` | most participant observations to inspect, 1–10000 (default 1000). |
+| `--max-read-bytes <bytes>` | most stored name and email bytes to read (default 1048576). |
+| `--cursor <cursor>` | continue with the same name query and selected account. |
 
 ### `zm meetings sync`
 

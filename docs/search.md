@@ -56,7 +56,7 @@ zm search meetings "launch" --tag planning --limit 20 --json
 ```
 
 The IDs and labels above are fictional: replace them with records in your local store. Use the
-`identityId` from participant results for `--identity-id`; `--person-id` takes the numeric ID of
+`identity_id` from participant results for `--identity-id`; `--person-id` takes the numeric ID of
 an explicitly linked person. Several participants with the same display name may be different
 identities. Inspect them before linking; these filters select meetings and do not identify who
 spoke an anonymous transcript cue.
@@ -75,7 +75,19 @@ The read-only MCP tool `search_meetings` provides the same filters in the server
 account, using `identity_id`, `person_id`, `event_id`, `series_id`, `project`, `tag`, `topic`,
 `since_time`, `until_time` and `cursor`; its times are epoch milliseconds.
 
-`meetings people <query>` finds participants by name or email. `search all` uses the shared search
+`meetings people <query>` finds saved participant observations by name or email within the selected account.
+It uses literal Unicode matching; it does not translate names or infer that two people are the same.
+Use `--limit` (default 50), `--scan-limit` (default 1000) and `--max-read-bytes` (default 1048576)
+to bound matching observations, inspected observations and stored name/email bytes per call.
+The answer keeps `page.has_more`, `page.cursor`, coverage and page-local identity ambiguity, including in JSONL.
+Follow the `page.next` step or repeat the same query with `--cursor`. An empty page can still have continuation.
+Distinct identity IDs are candidates to review, never automatic person links. Archive completeness remains unknown.
+
+`meetings list` filters metadata with a query, for example
+`zm meetings list 'started_at:[2026-09-12 TO 2026-10-12]' --json`.
+It returns `items`, `page` and optional `next` steps in JSON and JSONL. Use `--page` to continue.
+The date query replaces the former list-only `--since-time` and `--until-time` flags;
+those flags remain available on transcript search and ingestion commands. `search all` uses the shared search
 service and searches only meetings by default:
 
 ```sh

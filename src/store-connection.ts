@@ -1,13 +1,15 @@
 import { isCliError } from "@wirecat/cli-base"
 import {
+  type MeetingContextReadCapabilities,
   type MeetingContextStore,
+  type MeetingParticipantSearchStore,
   type MeetingSearchIndexStore,
   type MeetingSearchStore,
   type MeetingTranscriptReceiptStore,
   type MeetingTranscriptStore,
   validateMeetingContextChange,
 } from "@wirecat/cli-core/meetings"
-import type { MeetingContextReadCapabilities, MessageStore, StoreOptions } from "@wirecat/cli-core/store"
+import type { MessageStore, StoreOptions } from "@wirecat/cli-core/store"
 import { profileAccountKey } from "./config.js"
 import { ZoomError } from "./errors.js"
 import { createLocalTranscriptionCapabilities } from "./local-transcription.js"
@@ -18,7 +20,8 @@ import { createMeetingSemanticCapabilities } from "./meeting-semantic.js"
 import type { StoreConnection, StoreConnectRequest } from "./program.js"
 import { validateUnifiedSearch } from "./unified-search.js"
 
-type OptionalMeetingPorts = MeetingTranscriptReceiptStore &
+type OptionalMeetingPorts = MeetingParticipantSearchStore &
+  MeetingTranscriptReceiptStore &
   MeetingSearchStore &
   MeetingSearchIndexStore &
   MeetingContextStore &

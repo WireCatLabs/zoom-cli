@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Changed — may break callers
+
+- Uses shared meeting SDK `@wirecat/cli-core` 0.267.0 and framework `@wirecat/cli-base` 0.27.2.
+- Stored meeting lists filter with a metadata query in place of list-only `--since-time` and `--until-time` flags. Answers use the shared meeting entity with string IDs and provider/account references, `page` and continuation steps. JSONL preserves the full list envelope.
+- Participant discovery returns bounded snake_case observations with `identity_id`, page-local ambiguity and explicit read coverage. JSONL preserves continuation instead of streaming observations alone. Follow `page.next` or `page.cursor` even after an empty scan page.
+
+### Added
+
+- `meetings people` and MCP `meeting_people` bound matching observations, inspected observations and stored name/email bytes with `--limit`, `--scan-limit`, `--max-read-bytes` and `--cursor` (snake_case MCP arguments). Cursors retain the selected account and name query; no automatic person links are inferred.
+
 ### Fixed
 
 - Existing links to first-sync setup, stored meeting search and explicit vector preparation keep working after the command renames.

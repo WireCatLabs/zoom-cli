@@ -37,9 +37,28 @@
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
+        "cursor": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "limit": {
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_read_bytes": {
+          "maximum": 67108864,
+          "minimum": 1,
+          "type": "integer"
+        },
         "query": {
           "minLength": 1,
           "type": "string"
+        },
+        "scan_limit": {
+          "maximum": 10000,
+          "minimum": 1,
+          "type": "integer"
         }
       },
       "required": ["query"],
@@ -132,15 +151,13 @@
           "minimum": 1,
           "type": "integer"
         },
+        "query": {
+          "minLength": 1,
+          "type": "string"
+        },
         "series_id": {
           "minimum": 1,
           "type": "integer"
-        },
-        "since": {
-          "type": "number"
-        },
-        "until": {
-          "type": "number"
         }
       },
       "required": [],

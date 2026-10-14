@@ -145,6 +145,7 @@ const unavailable = async (): Promise<never> => {
 }
 const unavailableStore: MeetingStore = {
   saveMeeting: unavailable,
+  account: unavailable,
   meetings: unavailable,
   meeting: unavailable,
   participants: unavailable,
@@ -404,7 +405,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
     },
     now: deps.now,
     write: (value, format) => {
-      buffer(render(value, format, deps, fields, false, true))
+      const paged = typeof value === "object" && value !== null && "page" in value && typeof value.page === "object"
+      buffer(render(value, format, deps, fields, paged, true))
     },
     writeFile: deps.writeFile
       ? async (path, content) => {
