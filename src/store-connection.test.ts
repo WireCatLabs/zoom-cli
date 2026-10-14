@@ -250,7 +250,9 @@ it("refuses preparation through an older store instead of reading unbounded hist
   const upcoming = vi.fn(async () => {
     throw new Error("unexpected remote dispatch")
   })
-  await expect(connection.meetingPreparation?.create(upcoming)).rejects.toMatchObject({ code: "configuration_error" })
+  await expect(
+    connection.meetingPreparation?.create({ scope: { provider: "zoom", account: request.externalId }, next: upcoming }),
+  ).rejects.toMatchObject({ code: "configuration_error" })
   expect(upcoming).not.toHaveBeenCalled()
   await connection.close()
   expect(store.close).toHaveBeenCalledOnce()
