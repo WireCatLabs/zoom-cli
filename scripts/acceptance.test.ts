@@ -45,8 +45,7 @@ const invoke = (...args: string[]) => {
   const existedBefore = existsSync(database)
   const timestampBefore = existedBefore ? statSync(database).mtimeMs : null
   const command = args.find(
-    (arg, index) =>
-      !arg.startsWith("--") && !["--fields", "--timeout", "--max-output-bytes"].includes(args[index - 1] ?? ""),
+    (arg, index) => !arg.startsWith("--") && !["--timeout", "--max-output-bytes"].includes(args[index - 1] ?? ""),
   )
   const opensStore = !args.includes("--help") && ["meetings", "events", "watch", "search"].includes(command ?? "")
   const result = spawnSync(executable, args, {

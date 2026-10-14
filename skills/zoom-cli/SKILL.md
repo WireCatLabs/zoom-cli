@@ -15,7 +15,7 @@ Detailed reports (participants, evidence, semantic/unified search) live in `item
 use `page.mode` and optional `page.next_cursor`. JSONL emits typed item records with `data`,
 then an end record with page/completeness. For reports, read the report inside the item record’s
 `data`. Discovery uses contract 3 with separate local/remote effects.
-Use `--fields` to limit returned content. `zm doctor --json` checks local setup without login.
+Use `--json=id,title` to keep only those fields. `zm doctor --json` checks local setup without login.
 
 ## Recording archives
 

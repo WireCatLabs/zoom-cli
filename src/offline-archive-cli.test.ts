@@ -97,14 +97,13 @@ it("projects archive fields, supports finite JSONL and preserves true search pag
         uuid,
         "--file-ids",
         "example-first",
-        "--fields",
-        "meeting.uuid,cues",
-        "--jsonl",
+        "--json=meeting.uuid,cues",
       ],
       deps,
     ),
   ).toBe(0)
-  const item = readReceipt(output.join(""))
+  const [item, ...others] = JSON.parse(output.join("")).items
+  expect(others).toEqual([])
   expect(item.meeting).toEqual({ uuid })
   expect(item.cues).toHaveLength(2)
   expect(item).not.toHaveProperty("asset")
@@ -125,8 +124,6 @@ it("projects archive fields, supports finite JSONL and preserves true search pag
         "4096",
         "--limit",
         "1",
-        "--fields",
-        "text,position",
         "--json",
       ],
       deps,
@@ -136,7 +133,6 @@ it("projects archive fields, supports finite JSONL and preserves true search pag
     page: { limit: 1, has_more: true },
     items: [{ text: "Café [Plan]", position: 0 }],
   })
-  expect(latest(output).items[0]).not.toHaveProperty("asset")
   output.length = 0
   expect(await run(["search", "meetings", "Cafe\u0301", "--archive", directory, "--json"], deps)).toBe(0)
   expect(latest(output)).toMatchObject({ page: { has_more: false }, items: [{ text: "Café [Plan]" }] })
@@ -213,17 +209,7 @@ it("stops a finite transcript iterator at the output limit and preserves project
   expect(closed).toBe(1)
   expect(
     await run(
-      [
-        "recordings",
-        "archive",
-        "transcript",
-        directory,
-        "--max-output-bytes",
-        "500",
-        "--fields",
-        "meeting.uuid",
-        "--json",
-      ],
+      ["recordings", "archive", "transcript", directory, "--max-output-bytes", "500", "--json=meeting.uuid"],
       deps,
     ),
   ).toBe(0)
@@ -255,6 +241,9 @@ it("keeps empty transcript envelopes and multi-asset JSONL framing valid", async
   expect(await run(["recordings", "archive", "transcript", empty, "--jsonl"], deps)).toBe(0)
   expect(readJsonl(output.join(""))).toEqual([])
   output.length = 0
-  expect(await run(["recordings", "archive", "transcript", directory, "--fields", "asset.id", "--jsonl"], deps)).toBe(0)
-  expect(readJsonl(output.join(""))).toEqual([{ asset: { id: "example-first" } }, { asset: { id: "example-second" } }])
+  expect(await run(["recordings", "archive", "transcript", directory, "--json=asset.id"], deps)).toBe(0)
+  expect(JSON.parse(output.join("")).items).toEqual([
+    { asset: { id: "example-first" } },
+    { asset: { id: "example-second" } },
+  ])
 })

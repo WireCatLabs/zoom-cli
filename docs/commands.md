@@ -11,12 +11,11 @@ These options apply to every command.
 | Option | What it does |
 |---|---|
 | `-V, --version` | output the version number. |
-| `--json` | one JSON value. |
+| `--json` | one JSON value; --json=id,title keeps only those fields. |
 | `--jsonl` | one JSON object per item. |
 | `--no-input` | disable interactive login. |
 | `--interactive` | permit browser approval in an interactive terminal. |
 | `--quiet` | suppress non-error diagnostics. |
-| `--fields <paths>` | project result fields, such as id,title. |
 | `--timeout <duration>` | command deadline: reads 30s, login 5m, downloads/transcription 1h; watch/MCP have no default. |
 | `--max-output-bytes <bytes>` | bound rendered result bytes (default 4194304; zero is unlimited). |
 | `--offline` | refuse network requests. |

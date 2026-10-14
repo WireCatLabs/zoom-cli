@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Changed — may break callers
+
+- **`--json=id,title` replaces `--fields`** (the standard's `--json [fields]`, read as tg, max, drive and memo read it
+  through cli-core 0.277.0's `liftJson`). `--fields` is gone, and fields come only with `--json`, not `--jsonl`. A
+  field the answer does not declare is refused with the fields it has; `search meetings --archive` answers are not
+  the `meeting_hit` they declare, so they take a plain `--json` until that is fixed. Adopts cli-core 0.277.0.
+
 ### Added
 
 - **The SDK can read explicit upcoming occurrence proof through `createZoomUpcomingMeetingReader`.**
