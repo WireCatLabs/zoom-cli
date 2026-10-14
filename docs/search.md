@@ -195,7 +195,7 @@ after ingestion when new passages need indexing. Word reads default to 4 MiB and
 `--max-read-bytes` and `--limit` change those budgets. Catalog resolution has a separate 1 MiB
 budget and at most 32 names. Excess vocabulary fails visibly. Archive/index completeness stays unknown.
 
-Continue with the returned `next` step (`page.next`) even if `item.hits` is empty. Its arguments repeat the project,
+Continue with the top-level `next` step even if `item.hits` is empty. The cursor is at `item.page.cursor`. Its arguments repeat the project,
 selection, cursor and budgets. Within-name pages finish before the next alias begins. Relative
 dates are frozen to absolute bounds in the returned query; use that query with `--cursor` so a
 later day does not shift your selection. Changed vocabulary or selection can invalidate the cursor.
