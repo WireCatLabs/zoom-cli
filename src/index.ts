@@ -99,3 +99,5 @@ export { createStoreConnector, type StoreConnectionOptions } from "./store-conne
 export { TokenManager, type TokenOptions, type Tokens } from "./tokens.js"
 
 export { runUnifiedSearch, type UnifiedSearch, type UnifiedSearchRequest } from "./unified-search.js"
+
+export { createZoomUpcomingMeetingReader, type ZoomUpcomingCredentials } from "./upcoming-meetings.js"

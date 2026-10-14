@@ -8,6 +8,7 @@ import {
 import { object, string, ZoomError } from "./errors.js"
 import { required } from "./recordings.js"
 import { operationSignal, type RemoteOptions, type RemoteRequest, ZoomRemote } from "./remote-http.js"
+import { zoomMeetingPath as idPath } from "./remote-meeting-id.js"
 import type { TokenManager } from "./tokens.js"
 
 export interface RemoteMeeting {
@@ -40,10 +41,6 @@ export interface MeetingMutation {
   applied: boolean
   request: { method: "POST" | "PATCH" | "DELETE"; path: string; body?: Record<string, unknown> }
   meeting?: RemoteMeeting
-}
-const idPath = (id: string) => {
-  if (!/^[1-9]\d*$/.test(id)) throw new ZoomError("validation_error", "remote meeting id must be a positive numeric id")
-  return `/meetings/${id}`
 }
 const normalized = (value: unknown): RemoteMeeting => {
   const row = object(value)

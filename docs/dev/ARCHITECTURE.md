@@ -14,7 +14,8 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [config.ts](../../src/config.ts) | public client and file-source settings |
 | [program.ts](../../src/program.ts) | shared commands, output and injected store dependency |
 | [meeting-project-evidence-commands.ts](../../src/meeting-project-evidence-commands.ts), [meeting-project-evidence-mcp.ts](../../src/meeting-project-evidence-mcp.ts) | thin account/resource bindings over Core project discovery and registered schemas |
-| [answers.ts](../../src/answers.ts) | host execution metadata and CLI/MCP envelopes validated with shared Base schemas |
+| [upcoming-meetings.ts](../../src/upcoming-meetings.ts), [occurrence-schedule.ts](../../src/occurrence-schedule.ts) | bounded Zoom occurrence proof over the shared scoped reader |
+| [remote-http.ts](../../src/remote-http.ts) | authenticated Zoom dispatch, retry and opt-in shared JSON byte bounds |
 | [commands.ts](../../src/commands.ts) | shared command metadata, completion and local diagnostics |
 | [zm.ts](../../src/bin/zm.ts) | process, browser, stdin and system keyring wiring |
 | [recordings.ts](../../src/recordings.ts), [recording-archive.ts](../../src/recording-archive.ts) | asset discovery, streamed transfers, manifests and verified skipping |
@@ -177,3 +178,29 @@ Each finite JSONL answer has typed item records and one end record; empty result
 Source issues determine the successful parse’s exit status through Base’s shared mapping;
 `search all` explicitly allows partial results. Cleanup still finishes before finite output flushes.
 Zoom’s configuration owns only Zoom settings; it does not embed the Core settings schema.
+
+## Upcoming occurrence SDK
+
+`createZoomUpcomingMeetingReader(account, credentials, fetcher, options)` binds the shared Core
+reader to one selected Zoom meeting/series. Credentials expose the narrow `withSignal` port;
+TokenManager implements it. Construction performs no login or keyring read. Each operation validates
+its identifier/window/bounds before requesting credentials, then binds refresh and HTTP reads to
+its signal. Interrupted credential refresh preserves outcome_unknown. The account string labels the caller’s selected data scope; OAuth supplies remote access.
+
+`next(id, { after, until, limit, maxReadBytes, signal })` takes absolute milliseconds in a half-open
+window. `id` is a numeric Zoom meeting id, rather than a stored meeting id or recording UUID.
+The byte budget applies before parsing the full detail response and again to normalized proof.
+Provider metadata such as passwords, host URLs and agenda are excluded from that proof.
+
+Core owns scope snapshots, validation and earliest-candidate selection. Zoom maps explicit
+occurrence ids, absolute timestamps, durations and deleted status. It does not expand recurrences
+or substitute the series start date. Recurring coverage is complete only for a matching positive
+end_times count, all dated rows and no end_date_time; open, date-ended, missing or mismatched
+schedules retain incomplete coverage. A small row budget fails rather than silently truncating proof.
+VerifiedNext describes a unique dated candidate in a covered selected-series window. Identity,
+attendance and historical archive coverage use their own sources.
+
+This is a library capability. The CLI still uses its existing remote-meetings commands; the adapter
+performs one selected-series detail read. Broad hosted/invited calendar discovery and the composed
+preparation handler are separate capabilities. The public [Zoom Meetings API](https://developers.zoom.us/docs/api/meetings/)
+describes the detail fields and required meeting:read:meeting scope.

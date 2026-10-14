@@ -55,7 +55,7 @@ it("lists and shows remote scheduled meetings, deduplicates ids and redacts host
   await expect(source(async () => response({ meetings: [], next_page_token: "repeat" })).list()).rejects.toThrow(
     /pagination/,
   )
-  for (const id of ["0", "/example//uuid", "-1", " "])
+  for (const id of ["0", "/example//uuid", "-1", " ", "123\n", "123\r\n", 123 as never])
     await expect(source(async () => response({})).show(id)).rejects.toThrow(/positive numeric/)
 })
 it("previews every mutation without reading tokens or making requests", async () => {
