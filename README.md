@@ -131,7 +131,7 @@ More: [what is planned][gh/cli-meetings/blob/main/docs/dev/roadmap.md] · [Zoom 
 | Task | Commands |
 |---|---|
 | Set up and log in | `config show`, `config set <key> <value>`, `login [--browser <program>]`, `session status [--check]`, `doctor` |
-| Bring meetings in | `meetings sync [--since-time <time>] [--lookback-days <days>]`, `meetings import <folder>`, `watch [folder] --source api\|files --jsonl` |
+| Bring meetings in | `meetings sync [--since-time <time>] [--lookback-days <days>]`, `meetings import <folder>`, `watch [api\|files] [folder] --jsonl` |
 | Read stored meetings | `meetings list`, `meetings show <meeting>`, `meetings transcript <meeting>`, `meetings summary <meeting>`, `meetings export <meeting> --format markdown\|vtt`, `events list` |
 | Search | `search meetings <query>`, `meetings people <query>`, `search all <query>` |
 | Evidence and people | `meetings evidence <reference>`, `meetings context <person>`, `meetings link <reference>`, `meetings update <reference>`, `meetings task-proposal <reference> --type <type>` |
@@ -183,7 +183,7 @@ More: [profiles][docs/sessions.md#select-a-local-profile] ·
 ```sh
 zm meetings sync --lookback-days 7                       # hosted meetings, revisiting late transcripts
 zm meetings import ./downloaded-transcripts              # .vtt files from your Zoom portal
-zm watch --source api --lookback-days 7 --jsonl # keep pulling in the foreground
+zm watch api --lookback-days 7 --jsonl                   # keep pulling in the foreground
 ```
 
 The cursor alone does not revisit transcripts that appear late; use `--lookback-days` or an older

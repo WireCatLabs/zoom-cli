@@ -520,9 +520,9 @@ export const createProgram = (deps: ProgramDeps): Command => {
     receipt,
     outputIsTTY: deps.outputIsTTY,
     sleep: watchSleep ? (ms, abort) => watchSleep(ms, abort, "retry") : undefined,
-    prepare: (folder, flags) => {
+    prepare: (target, folder, flags) => {
       const config = { ...getConfig() }
-      const source = flags.source ?? (folder !== undefined ? "files" : config.source)
+      const source = target ?? config.source
       const plan = {
         source,
         since: flags.sinceTime,

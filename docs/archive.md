@@ -81,8 +81,8 @@ importing a partial folder.
 
 ## Watch for new meetings
 
-For repeated API ingestion, use `zm watch --source api --lookback-days 7 --jsonl`. A folder argument
-selects file watching; otherwise the configured source applies. File watching can use `files.folder`.
+For repeated API ingestion, use `zm watch api --lookback-days 7 --jsonl`. `zm watch files [folder]` watches
+a transcript folder, `files.folder` when none is given. With neither, the configured source applies.
 API watching accepts `--since-time` and revisits zero through 31 days, and requires online access.
 `--since-time` sets the initial lower bound; after a successful cursor write, later cycles use the cursor
 with the selected overlap. Failed cycles retain the initial bound until a cursor write succeeds.
@@ -95,7 +95,7 @@ receipt. Stop with Ctrl-C.
 To watch a transcript folder:
 
 ```sh
-zm watch ./downloaded-transcripts --interval 10s --jsonl
+zm watch files ./downloaded-transcripts --interval 10s --jsonl
 ```
 
 Watching rescans the folder for each cycle, so corrected older files are revisited. It imports serially,

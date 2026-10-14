@@ -432,16 +432,16 @@ keep fetching new meetings from Zoom, or rescanning a folder, until stopped
 **Changes local data.**
 
 ```sh
-zm watch [folder] [options]
+zm watch [target] [folder] [options]
 ```
 
 | Argument | | What it is |
 |---|---|---|
-| `folder` | optional | folder of downloaded transcripts; implies --source files. |
+| `target` | optional | api or files; otherwise the configured source. One of: `api`, `files`. |
+| `folder` | optional | with files: folder of downloaded transcripts; otherwise files.folder. |
 
 | Option | What it does |
 |---|---|
-| `--source <source>` | api or files; otherwise uses configured source. One of: `api`, `files`. |
 | `--since-time <time>` | on the first run, fetch meetings from this ISO 8601 time. |
 | `--lookback-days <days>` | API cursor overlap for late transcripts (0 through 31). |
 | `--interval <duration>` | delay after each completed receipt (1s through 24h). Default: `10000`. |

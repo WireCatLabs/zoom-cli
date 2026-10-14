@@ -17,6 +17,9 @@
   `meetings.next_cursor` prints (`account_id`, `query`, `meeting_offset`, `hit_offset`).
 - **A failure reads as one line at a terminal** (`✗ message`), and as the JSON error object when output is piped or
   `--json`/`--jsonl` is set. A crash in start-up is `internal_error` (exit 1), not `configuration_error`.
+- **What `watch` reads is its first argument, not `--source`:** `zm watch api` and `zm watch files [folder]`.
+  With neither, the configured `source` applies. A bare folder (`zm watch ./downloads`) is now an error; write
+  `zm watch files ./downloads`.
 
 ### Added
 
