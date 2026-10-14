@@ -7,7 +7,7 @@ import {
   type MeetingTranscriptStore,
   validateMeetingContextChange,
 } from "@wirecat/cli-core/meetings"
-import type { MessageStore, StoreOptions } from "@wirecat/cli-core/store"
+import type { MeetingContextReadCapabilities, MessageStore, StoreOptions } from "@wirecat/cli-core/store"
 import { profileAccountKey } from "./config.js"
 import { ZoomError } from "./errors.js"
 import { createLocalTranscriptionCapabilities } from "./local-transcription.js"
@@ -21,10 +21,10 @@ import { validateUnifiedSearch } from "./unified-search.js"
 type OptionalMeetingPorts = MeetingTranscriptReceiptStore &
   MeetingSearchStore &
   MeetingSearchIndexStore &
-  MeetingContextStore
+  MeetingContextStore &
+  MeetingContextReadCapabilities
 type SharedMeetingStore = Pick<MessageStore, "saveAccount" | "storedAccount" | "close"> & {
-  meetings: Omit<MessageStore["meetings"], keyof OptionalMeetingPorts> &
-    Partial<MeetingTranscriptReceiptStore & MeetingSearchStore & MeetingSearchIndexStore & MeetingContextStore>
+  meetings: Omit<MessageStore["meetings"], keyof OptionalMeetingPorts> & Partial<OptionalMeetingPorts>
 } & Partial<
     Pick<
       MessageStore,

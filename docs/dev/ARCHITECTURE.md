@@ -106,6 +106,10 @@ size and digest verification. Strict UTF-8 decoding precedes the shared WebVTT p
 normalized literal cue text and stops after proving an extra match beyond its limit; unread assets
 remain unchecked. These commands never open the store or OAuth credentials.
 
+The shared SDK owns cue-centered context snapshots, read/output budgets, revision fingerprints and cited
+passage formatting. Zoom binds the host callbacks to its selected account, closes the connection before
+finite output and uses the shared CLI/MCP adapters; it does not reconstruct transcript windows itself.
+
 Finite command output uses shared projection, rendering, buffering and caller-owned deadlines.
 Streaming commands bound each receipt and await write completion/drain. Folder watching closes the
 cycle's connection before its receipt; a completed late receipt has a separate one-second deadline.

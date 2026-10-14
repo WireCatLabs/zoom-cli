@@ -5,7 +5,14 @@ import { CallToolRequestSchema, ListToolsRequestSchema, type Tool } from "@model
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv"
 import { type ErrorCode, errorObjectOf, isCliError, mcpErrorResult } from "@wirecat/cli-base"
 import type { MeetingStore } from "@wirecat/cli-core/meetings"
-import { callMeetingSearchTool, callMeetingTool, meetingSearchTool, meetingTools } from "@wirecat/cli-core/meetings/mcp"
+import {
+  callMeetingPassageTool,
+  callMeetingSearchTool,
+  callMeetingTool,
+  meetingPassageTool,
+  meetingSearchTool,
+  meetingTools,
+} from "@wirecat/cli-core/meetings/mcp"
 import type { MeetingSearchCursor } from "@wirecat/cli-core/services"
 import { ZoomError } from "./errors.js"
 import { camelKeys, snakeKeys } from "./keys.js"
@@ -101,6 +108,7 @@ const buildServer = (options: MeetingMcpOptions) => {
       },
     })
   if (options.includeMeetingContext) {
+    tools.push(meetingPassageTool)
     const hints = { readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true }
     const limits = {
       cues: { type: "integer", minimum: 1, maximum: 1000 },
@@ -232,6 +240,10 @@ const buildServer = (options: MeetingMcpOptions) => {
             unknown
           >
           result = { content: [{ type: "text", text: JSON.stringify(found) }], structuredContent: found }
+        } else if (request.params.name === "meeting_passage") {
+          const passage = connection.meetingContext?.passage
+          if (!passage) throw new ZoomError("configuration_error", "meeting passage capability is unavailable")
+          result = await callMeetingPassageTool(passage, args, signal)
         } else if (request.params.name === "search_meetings") {
           if (!connection.meetingSearch) throw new ZoomError("configuration_error", "meeting search is unavailable")
           const words = Object.fromEntries(
@@ -313,6 +325,7 @@ const buildServer = (options: MeetingMcpOptions) => {
           "search_all",
           "search_meetings",
           "meeting_evidence",
+          "meeting_passage",
           "person_meeting_context",
           "meeting_task_proposal",
         ].includes(request.params.name) && isCliError(error)

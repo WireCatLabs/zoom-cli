@@ -26,7 +26,7 @@ zm remote-meetings invitation 123456789 --json
 ```
 
 Remote meeting ids are Zoom's numeric ids; stored `meetings` commands use local database ids.
-Listing uses the manifest's `meeting:read:list_meetings` scope; showing and invitations need the
+Listing needs the manually added `meeting:read:list_meetings` scope; showing and invitations need the
 optional scopes in [the app guide](zoom-app.md#add-archive-or-management-access).
 
 ## Create, update or cancel

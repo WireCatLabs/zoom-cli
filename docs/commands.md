@@ -324,6 +324,27 @@ zm meetings task-proposal <reference> [options]
 |---|---|
 | `--type <type>` | question, request, mention or promise. |
 
+### `zm meetings passage`
+
+read a cited cue with bounded context before and after it
+
+```sh
+zm meetings passage <reference> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `reference` | required | retained transcript cue reference from a search hit. |
+
+| Option | What it does |
+|---|---|
+| `--before-n <n>` | preceding cues (default 3). |
+| `--after-n <n>` | following cues (default 3); at most 999 surrounding cues in total. |
+| `--bytes <bytes>` | cue JSON byte budget (default 65536); the anchor must fit. |
+| `--max-read-bytes <bytes>` | stored text byte budget (default 4194304); boundary probes read metadata only. |
+| `--expected-fingerprint <hash>` | reject a changed anchor using its previously read cue fingerprint. |
+| `--format <format>` | compact text, Markdown or structured JSON. One of: `text`, `markdown`, `json`. Default: `text`. |
+
 ### `zm meetings embeddings`
 
 preview building meeting vectors; --yes builds one batch
