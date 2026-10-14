@@ -1,0 +1,19 @@
+name: Main validation
+
+# The full tests on every commit that lands on main, so a merge that breaks them shows up now
+# and not at the next release. Nothing here publishes or tags: release.yml alone does that.
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: main-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validation:
+    uses: ./.github/workflows/ci.yml
+
