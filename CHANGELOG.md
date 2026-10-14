@@ -30,6 +30,8 @@
 
 ### Fixed
 
+- README setup now distinguishes Public Client ID from Client Secret, makes manual scopes and optional manifest setup explicit, and uses the current login command and published portal address. Coverage claims distinguish available stored data from separately archived transcripts.
+
 - The security guide explains automatic search indexing and generation of missing semantic vectors, including transcript delivery to an explicitly selected remote endpoint.
 
 - The MCP guide lists the seven default tools after search consolidation; the meeting-management guide makes clear that its listing scope must be added manually.

@@ -93,8 +93,8 @@ More: [MCP and skills][docs/mcp.md] · [connect your AI agent][wirecat/en/docs/a
 
 ## Why zm
 
-- **Context, not one transcript.** Every meeting you hosted, transcripts you imported and recordings
-  you archived, searchable together.
+- **Context across meetings.** Search available hosted meetings and imported transcripts in the shared
+  store. Read archived transcripts separately or import them before searching them together.
 - **Local-first.** Meetings live in a SQLite database on your machine. Archived transcripts can be read
   and searched offline, without login.
 - **Every answer has a source.** References such as `meeting:1/42/57/118` point to one passage of one
@@ -108,7 +108,7 @@ More: [security][docs/security.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom
 ## What works today, and what does not yet
 
 `zm` is at version 0.x; commands may still change. Today it reads hosted meetings, participants,
-transcripts and AI summaries (Pro plan or higher) through Zoom's official API, imports downloaded
+transcripts and AI summaries available to the account through Zoom's official API, imports downloaded
 WebVTT files, archives cloud recordings, transcribes local audio with an installed speech model,
 links meetings to events and people, and creates, changes or cancels simple meetings.
 
@@ -130,7 +130,7 @@ More: [what is planned][gh/cli-meetings/blob/main/docs/dev/roadmap.md] · [Zoom 
 
 | Task | Commands |
 |---|---|
-| Set up and log in | `config show`, `config set <key> <value>`, `login [--browser <program>]`, `session status [--check]`, `doctor` |
+| Set up and log in | `config show`, `config set <key> <value>`, `session start [--browser <program>]`, `session status [--check]`, `doctor` |
 | Bring meetings in | `meetings sync [--since-time <time>] [--lookback-days <days>]`, `meetings import <folder>`, `watch [api\|files] [folder] --jsonl` |
 | Read stored meetings | `meetings list`, `meetings show <meeting>`, `meetings transcript <meeting>`, `meetings summary <meeting>`, `meetings export <meeting> --format markdown\|vtt`, `events list` |
 | Search | `search meetings <query>`, `meetings people <query>`, `search all <query>` |
@@ -142,17 +142,21 @@ More: [what is planned][gh/cli-meetings/blob/main/docs/dev/roadmap.md] · [Zoom 
 | Zoom meetings | `remote-meetings list\|show\|invitation`, `remote-meetings create\|update\|cancel` |
 | Agents | `serve --mcp`, `skill show`, `skill install [--for claude\|agents\|all]`, `commands --json`, `complete -- <words...>` |
 
-Zoom meeting changes, links, search indexing, transcription, schedules, embeddings and lock recovery
-preview by default and run once with `--yes`; `--dry-run` always keeps the preview.
+Zoom meeting changes, links, transcription, schedules, explicit `meetings embeddings` generation and
+lock recovery preview by default and run once with `--yes`; `--dry-run` keeps the preview. Word search
+updates its index automatically. Search with `--model` generates missing vectors before ranking; an
+explicitly selected remote embedding endpoint receives those transcript passages and the query.
 
 More: [usage][docs/usage.md] · [every command and option][docs/commands.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
 
 ## Your Zoom app and login
 
-`zm` reads your meetings through Zoom's official API, as you, so it uses **your own Zoom app** with
-Public Client OAuth. Create it once from the supplied manifest: it asks for read-only access to
-meetings, participants, transcripts and AI summaries. Recording archives and meeting management need
-extra scopes, which you add only if you want those features. The app has no client secret.
+`zm` reads your meetings through Zoom's official API using a **configured user-managed Zoom app**
+with Public Client OAuth. Reuse an existing app available to your user or create one. Enable Public
+Client OAuth, copy its Public Client ID, configure the redirect and add the required scopes manually.
+The optional starter manifest supplies neither scopes nor Public Client OAuth. Zoom may show a
+Client Secret, but `zm` does not use it. Recording archives and management need additional scopes.
+Follow the [app setup guide][docs/zoom-app.md]; no credentials file is downloaded.
 
 `zm session start` opens Zoom's consent page. Zoom redirects to the static page
 `https://wirecat.dev/zoom-callback`, which passes the answer to a listener on your machine; if it
@@ -226,8 +230,8 @@ zm meetings context person:7 --meetings 10 --json         # meetings linked to a
 `search meetings` indexes new meetings first, matches every word by prefix or by stored English, Spanish
 and Russian word forms, and pages with an opaque `--cursor`. References have the form
 `meeting:<account>/<meeting>[/<transcript>[/<cue-position>]]`, stay inside the selected account and
-keep pointing at the same revision after a correction. Every bounded read reports whether it is
-complete. `search all --only meetings,notes` adds store-wide notes. `search meetings
+keep pointing at the same revision after a correction. Bounded reads report their
+coverage and limits; archive completeness can remain unknown. `search all --only meetings,notes` adds store-wide notes. `search meetings
 --model` searches by meaning with a model you name; nothing is downloaded for you.
 
 More: [search and evidence][docs/search.md] · [topic search][docs/topic-search.md] ·
@@ -254,9 +258,9 @@ with `["serve", "--mcp"]`:
 
 The server has seven read-only tools: meeting list and show, transcripts, summaries, exports, text
 search and participant search. `--meeting-context`, `--unified-search` and `--semantic --model <model>`
-add evidence, shared search and meaning search. It reads only the selected profile, and never exposes
+enable cited passages, shared search and ranking of existing semantic vectors. It reads only the selected profile, and never exposes
 file exports, Zoom changes, embedding generation or task creation. A desktop app may need the full
-path from `which zm`, and the same `ZM_CONFIG_DIR` or `MESSAGING_STORE` in the entry's `env`.
+path from `command -v zm` (Linux/macOS) or `where.exe zm` (Windows), and the same `ZM_CONFIG_DIR` or `MESSAGING_STORE` in the entry's `env`.
 
 More: [MCP and skills][docs/mcp.md] · [MCP and skills on wirecat.dev][wirecat/en/docs/mcp] ·
 [connect your AI agent][wirecat/en/docs/agents]
@@ -300,7 +304,7 @@ More: [configuration][docs/configuration.md] · [Zoom on wirecat.dev][wirecat/en
 
 ## Security model
 
-- Your own Zoom app with PKCE; no client secret exists.
+- A configured Zoom public-client app with PKCE; no client secret is used.
 - Tokens only in the system keyring, never in a config file; a missing keyring is an error.
 - Network: Zoom's API, plus an embedding endpoint only when you name one. `--offline` refuses both.
 - Manifests and saved jobs never hold signed URLs, tokens or credentials; diagnostics omit raw
@@ -313,7 +317,8 @@ More: [security][docs/security.md] · [security on wirecat.dev][wirecat/en/docs/
 
 - **"Invalid redirect" from Zoom:** the manifest import left the redirect URL or Public Client OAuth
   unset; fill them in by hand.
-- **No transcripts:** turn on **Allow hosts to retain transcripts**; attended meetings need `zm meetings import`.
+- **No transcripts:** check generation, retention and permissions in the [app guide][docs/zoom-app.md].
+  Enabling a setting does not restore deleted text; attended meetings may need `zm meetings import`.
 - **Missing-scope error:** add the named scope in your app, then `zm session start` again.
 - **Browser does not start:** `zm session start --browser firefox`, or paste the callback parameters.
 - **Lock left after a crash:** `zm recordings archive locks`, then `recover` with `--yes`.
@@ -349,8 +354,7 @@ More: [wirecat.dev](https://wirecat.dev) · [connect your AI agent][wirecat/en/d
 | [Security][docs/security.md] | what reaches the disk and the network |
 | [Architecture][docs/dev/architecture.md] · [Testing][docs/dev/testing.md] · [Releasing][docs/dev/releasing.md] | for contributors |
 
-The WireCat portal at [wirecat.dev/en/docs/zoom][wirecat/en/docs/zoom] is being prepared; until then these pages
-are the reference.
+The [Zoom guides on wirecat.dev][wirecat/en/docs/zoom] include setup, search and archive instructions.
 
 ## Development
 
@@ -401,4 +405,4 @@ More: [development setup][docs/dev/development.md] · [test matrix][docs/dev/tes
 [wirecat/en/docs/agents]: https://wirecat.dev/en/docs/agents
 [wirecat/en/docs/mcp]: https://wirecat.dev/en/docs/mcp
 [wirecat/en/docs/security]: https://wirecat.dev/en/docs/security
-[wirecat/en/docs/zoom]: https://wirecat.dev/en/docs/zoom
+[wirecat/en/docs/zoom]: https://wirecat.dev/en/docs/zm
