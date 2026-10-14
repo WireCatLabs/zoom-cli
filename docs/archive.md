@@ -152,7 +152,8 @@ available through your cloud recording API.
 
 Each occurrence has a manifest containing metadata, file sizes and SHA-256 checksums. Signed
 download URLs and OAuth tokens are excluded. Repeating a download verifies existing manifest files
-and skips matching assets. Existing files are never overwritten; a mismatch requires a new destination.
+and skips matching assets; a file whose size and modification time are unchanged since it was last
+verified (`.zoom-verified.json`) is not hashed again. `recordings archive check` always hashes every file. Existing files are never overwritten; a mismatch requires a new destination.
 With a selected local profile, interrupted downloads retain verified partial bytes and resume only
 when a strong validator and the returned range agree. Changed representations restart safely.
 Explicit `--resume` requires a profile; `--no-resume` and downloads without a profile use ephemeral
@@ -161,8 +162,9 @@ partials. Completed manifest entries remain available if a later transfer fails.
 ## Locks and recovery
 
 Archive commands inspect and verify local data without logging in or opening a database. Concurrent
-writers to the same destination are refused. After a process crash, inspect `recordings archive locks`
-and preview `recordings archive recover`. Add `--yes` to remove recognized locks owned by a dead process
+writers to the same destination are refused. A download takes over a lock left by a dead process on
+this machine by itself. For the rest, inspect `recordings archive locks` and preview
+`recordings archive recover`. Add `--yes` to remove recognized locks owned by a dead process
 on this machine; active, foreign and unrecognized locks are preserved. Recovery removes stale lock
 markers only. Download continuation can recover a completed promotion only when its owned journal,
 verified partial and final file all match; unrelated untracked files remain protected.

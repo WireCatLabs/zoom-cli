@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **A download takes over a lock left by a dead process on this machine**, so a crash no longer blocks the next
+  run until `recordings archive recover --yes`. Active, foreign and unrecognized locks still refuse.
+- **A rerun no longer hashes every archived file.** A file whose size and modification time match what was last
+  verified (kept in `.zoom-verified.json`) is trusted; any change rehashes it. `recordings archive check` still
+  hashes everything.
+
 ## 0.13.0 — 14.10.2026
 
 ### Changed — may break callers
