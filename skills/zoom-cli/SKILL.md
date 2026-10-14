@@ -75,7 +75,7 @@ captured before the first cycle, so restart to change profiles or source setting
 `--since-time` is the initial bound until a cursor write succeeds; later cycles use cursor plus overlap.
 The selected overlap also subtracts from the initial bound.
 
-`zm serve --mcp` provides seven read-only stored meeting tools. Discovery opens no database; reads
+`zm serve --mcp` provides eight read-only stored meeting tools. Discovery opens no database; reads
 use the selected account. MCP uses its own framing, so omit JSON/JSONL/field-selection flags. `--meeting-context` adds four
 read-only context tools; `--unified-search` adds one meetings-only shared search tool;
 `--semantic --model <model>` lets `search_meetings` rank existing vectors with `by_meaning`. Remote model selection also requires
@@ -146,6 +146,16 @@ Cached `session status` does not contact Zoom; `--check` explicitly verifies rem
 Use `--timeout <milliseconds>` for a positive whole-command deadline and cancellation for foreground
 jobs. `--offline` refuses network access. Recording videos stream to disk; ordinary result output is
 bounded by `--max-output-bytes`, separate from the download's per-file `--max-bytes` limit.
+
+## Project-name evidence
+
+Use `meetings projects evidence <project> [query...]` for one existing project's canonical name,
+key and explicit aliases, including meetings without confirmed membership. Reuse the shared ID/date
+query fields; the account comes from the selected profile. Each call reads one bounded name page
+from the existing word index and does not refresh it. Keep the full item, coverage and root next
+step even when hits is empty; replay its frozen query with the cursor. Word evidence is unconfirmed:
+inspect cited passages before proposing associations. No project, alias, person or knowledge write.
+MCP `meeting_project_evidence` has the same registered packet and strict account-fixed arguments.
 
 ## Participant discovery
 

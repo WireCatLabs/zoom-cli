@@ -25,8 +25,9 @@ the default is both. Installation is explicit and does not run when a command st
 
 ## The MCP server
 
-`zm serve --mcp` uses MCP's stdio protocol and serves seven read-only tools: meeting list/show,
-transcripts, summaries, exports, filtered text search and participant search. Tool discovery does not open a
+`zm serve --mcp` uses MCP's stdio protocol and serves eight read-only tools: meeting list/show,
+transcripts, summaries, exports, word and participant searches, and evidence for project names.
+Tool discovery does not open a
 database. Each read uses the selected local account and closes its connection before the response;
 a caller cannot override the account. File exports and remote mutations are not exposed as tools.
 
@@ -56,6 +57,12 @@ and `item.next` step preserve continuation even when no observation matches the 
 `identity_id` identifies an observed identity; repeated names never establish person links.
 `meetings_list` takes a metadata `query` (for example `started_at:[2026-09-12 TO 2026-10-12]`)
 instead of its former `since` and `until` arguments, and returns the shared meeting entity/list envelope.
+
+`meeting_project_evidence` accepts an existing project name/key/alias and the shared selection
+query plus limit, cursor and max_read_bytes. It returns one registered item with project, matched
+name, cited hits, coverage and unconfirmed association status. Each call reads one name page from
+the existing index without refreshing it. Follow the root next step even after an empty hit page;
+returned dates are frozen for replay. It never creates aliases or confirms project membership.
 
 ## Try the connection
 

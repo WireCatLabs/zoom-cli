@@ -67,7 +67,9 @@ export const createStoreConnector =
       input.externalId !== profileAccountKey(input.profile) ||
       (input.intent !== "read" && input.intent !== "ingestion") ||
       (input.capability !== undefined &&
-        !["transcript-append", "meeting-integration", "meeting-search"].includes(input.capability))
+        !["transcript-append", "meeting-integration", "meeting-search", "meeting-project-evidence"].includes(
+          input.capability,
+        ))
     )
       throw new ZoomError("validation_error", "expected a selected Zoom profile and read or ingestion intent")
     let store: SharedMeetingStore | undefined
@@ -96,6 +98,10 @@ export const createStoreConnector =
       const knowledge = connected.knowledge
       const memories = connected.memories
       const facts = connected.facts
+      const projectEvidenceAvailable =
+        typeof searchHits === "function" && typeof knowledge?.resolveVocabulary === "function"
+      if (input.capability === "meeting-project-evidence" && !projectEvidenceAvailable)
+        throw new ZoomError("configuration_error", "the installed store does not support project evidence")
       const contextMeetings = contextServiceMeetings(connected.meetings) ? connected.meetings : undefined
       if (
         input.capability === "meeting-integration" &&
@@ -111,6 +117,21 @@ export const createStoreConnector =
         store: connected.meetings,
         accountId,
         close: () => connected.close(),
+        ...(projectEvidenceAvailable && knowledge && searchHits
+          ? {
+              meetingProjectEvidence: async (project, options) => {
+                const { readMeetingProjectDiscovery } = await import("@wirecat/cli-core/services")
+                return readMeetingProjectDiscovery(
+                  {
+                    vocabulary: knowledge,
+                    search: { searchHits: (query, request) => searchHits.call(connected.meetings, query, request) },
+                  },
+                  project,
+                  { ...options, accountId },
+                )
+              },
+            }
+          : {}),
         ...(typeof append === "function"
           ? {
               appendTranscripts: (input: Parameters<MeetingTranscriptStore["appendTranscripts"]>[0]) => {

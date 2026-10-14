@@ -397,7 +397,23 @@ const timer = setTimeout(() => child.kill(), 15000)
 const client = new Client({ name: "invented-platform-proof", version: "1" })
 try {
   await client.connect(new StdioServerTransport(child.stdout, child.stdin))
-  assert.equal((await client.listTools()).tools.length, 7)
+  assert.equal((await client.listTools()).tools.length, 8)
+  const projectEvidence = await client.callTool({
+    name: "meeting_project_evidence",
+    arguments: { project: "RES", limit: 2 },
+  })
+  assert.notEqual(projectEvidence.isError, true)
+  assert.equal(projectEvidence.structuredContent.item.project.key, "RES")
+  assert.equal(projectEvidence.structuredContent.item.association, "unconfirmed-word-evidence")
+  assert.equal(projectEvidence.structuredContent.item.coverage.archive_completeness, "unknown")
+  assert.equal(projectEvidence.structuredContent.item.page.has_more, true)
+  assert.equal(typeof projectEvidence.structuredContent.meta.run_id, "string")
+  assert.equal(projectEvidence.structuredContent.next[0].args.project, "RES")
+  const refusedScope = await client.callTool({
+    name: "meeting_project_evidence",
+    arguments: { project: "RES", account_id: 999 },
+  })
+  assert.equal(refusedScope.isError, true)
   const result = await client.callTool({ name: "meetings_list", arguments: {} })
   assert.notEqual(result.isError, true)
   const firstScope = result.structuredContent ?? JSON.parse(result.content[0].text)
@@ -414,6 +430,12 @@ try {
   assert.deepEqual(secondScope.page, firstScope.page)
   assert.equal(typeof firstScope.meta.run_id, "string")
   assert.notEqual(secondScope.meta.run_id, firstScope.meta.run_id)
+  const frozenProject = await client.callTool({
+    name: "meeting_project_evidence",
+    arguments: { project: "RES", limit: 2 },
+  })
+  assert.equal(frozenProject.structuredContent.item.account_id, projectEvidence.structuredContent.item.account_id)
+
   child.stdin.end()
   assert.equal(await exited, 0, stderr)
   assert.equal(diagnostics(stderr), "")
@@ -531,7 +553,7 @@ try {
   try {
     await semanticClient.connect(new StdioServerTransport(semanticChild.stdout, semanticChild.stdin))
     const tools = (await semanticClient.listTools()).tools
-    assert.equal(tools.length, 7)
+    assert.equal(tools.length, 8)
     assert.equal(
       tools.some((tool) => /generat|embedding/.test(tool.name)),
       false,

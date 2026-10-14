@@ -58,6 +58,7 @@ does not import that transcript into the meeting database until you request arch
 | `meetings summary <meeting>` | read stored summaries |
 | `meetings export <meeting> --format markdown\|vtt` | export stored meeting content |
 | `search meetings <query>`, `meetings people <query>` | find stored text, indexing new meetings first, or participants |
+| `meetings projects evidence <project> [query...]` | read bounded canonical-name/key/alias evidence for an existing project |
 | `meetings update <reference>`, `meetings link <reference>` | preview or apply owner-selected stored links |
 | `meetings transcribe <meeting> <file> --model <model>` | preview or locally recognize a WAV file into an independent transcript |
 | `meetings passage <reference>`, `meetings evidence <reference>`, `meetings context <person>` | read bounded evidence or identity-linked person context |

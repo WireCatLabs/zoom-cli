@@ -205,7 +205,7 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
     try {
       await client.connect(new StdioServerTransport(child.stdout, child.stdin))
       const listed = await client.listTools()
-      expect(listed.tools).toHaveLength(7)
+      expect(listed.tools).toHaveLength(8)
       expect(listed.tools.map((tool) => tool.name)).toContain("search_meetings")
       expect(listed.tools.every((tool) => tool.annotations?.readOnlyHint === true)).toBe(true)
       expect(existsSync(isolated)).toBe(false)

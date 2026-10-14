@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Existing-project name/key/alias evidence through shared `meetings projects evidence` and MCP `meeting_project_evidence`. Reads preserve citations, account-bound/frozen continuation and explicit unknown coverage without refreshing indexes or accepting membership.
+
 ### Fixed
 
 - Search/MCP guides locate report continuation under `item` and omit the removed word-search selection field.

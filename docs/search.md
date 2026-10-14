@@ -175,27 +175,43 @@ ids for that lookup. Profile labels group local data and do not authenticate a r
 
 ## Find a project before linking it
 
-A confirmed-project filter can miss a relevant meeting that has never been linked to the project.
-For discovery, search the canonical name and known aliases as words while keeping the participant
-and date bounds. The following names and IDs are invented:
+A confirmed-project filter can miss a relevant meeting that has never been linked. Use an
+existing project from the shared catalog to search its canonical name, key and explicit aliases:
 
 ```sh
 zm meetings people "Alice Example" --limit 50 --json
-zm search meetings "Research Example" --identity-id 12 --since-time 2026-09-14 --until-time 2026-10-14 --json
-zm search meetings "RES" --identity-id 12 --since-time 2026-09-14 --until-time 2026-10-14 --json
+zm meetings projects evidence RES 'identity_id:12 started_at:[2026-09-14 TO 2026-10-14]' --limit 20 --json
 ```
 
-Inspect all participant pages and choose the intended `identity_id`; do not select a person solely
-because the display name matches. Use aliases already recorded in the shared vocabulary or supplied
-by the owner. Current commands do not expand project aliases into transcript-word searches automatically.
-Repeat word searches for those aliases without `--project`, and follow each search's `page.cursor` or `next` step
-while `page.has_more` is true. Keep the same participant and date bounds on continuation.
+The project key and identity ID are fictional. Review participant pages before choosing the
+intended identity; matching names alone do not establish a person link. If the project is missing
+or ambiguous, inspect the shared project catalog in Memo first. This command resolves existing
+names only; it does not invent aliases or create projects, labels, person links or membership.
 
-For each relevant retained cue `ref`, open `zm meetings passage <ref> --format markdown`.
-The passage keeps timestamps, source references, revision and coverage, so an agent can write a
-cited answer without a script that trims full transcript JSON. Repeated references from several
-alias searches are the same evidence. A project word can be incidental: inspect its passage before
-proposing a project association. No result proves that an incomplete archive contains every discussion.
+The answer is one `item`, keeping its canonical `project`, matched `term`, cited `hits`,
+`selection`, limits, `page` and explicit `coverage`, plus run metadata. Each call reads one name
+page from the existing local word index; it does not refresh that index. Run a normal word search
+after ingestion when new passages need indexing. Word reads default to 4 MiB and at most 100 hits;
+`--max-read-bytes` and `--limit` change those budgets. Catalog resolution has a separate 1 MiB
+budget and at most 32 names. Excess vocabulary fails visibly. Archive/index completeness stays unknown.
+
+Continue with the returned `next` step (`page.next`) even if `item.hits` is empty. Its arguments repeat the project,
+selection, cursor and budgets. Within-name pages finish before the next alias begins. Relative
+dates are frozen to absolute bounds in the returned query; use that query with `--cursor` so a
+later day does not shift your selection. Changed vocabulary or selection can invalidate the cursor.
+
+The optional selection query accepts exact `meeting_id`, `identity_id`, `person_id`, `tag_id`,
+`event_id` and `series_id` values, each once and joined by AND, plus `started_at` dates/ranges.
+Date ranges include whole UTC calendar days; quoted ISO timestamps give exact bounds. OR,
+negation and confirmed project-membership filters are refused. The MCP tool
+`meeting_project_evidence` takes `project`, optional `query`, `limit`, `cursor` and
+`max_read_bytes`; its account is fixed by the server.
+
+For every relevant retained cue, open `zm meetings passage <ref> --format markdown` and check the
+surrounding words. `association: "unconfirmed-word-evidence"` means candidate evidence: a key
+may be incidental, and repeated refs across names are the same evidence. Propose associations
+only after reviewing the passage. If no project record exists yet, ordinary word search remains
+available without `--project`; repeat known names manually and retain the same selection.
 
 ## Notes, tags and memories with memo
 
