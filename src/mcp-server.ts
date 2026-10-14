@@ -4,7 +4,7 @@ import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js"
 import { CallToolRequestSchema, ListToolsRequestSchema, type Tool } from "@modelcontextprotocol/sdk/types.js"
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv"
 import { type ErrorCode, errorObjectOf, isCliError, mcpErrorResult } from "@wirecat/cli-base"
-import { failureContext } from "@wirecat/cli-core"
+import { LOCAL_READ } from "@wirecat/cli-core/cli"
 import { type MeetingStore, SAVE_INSTRUCTION } from "@wirecat/cli-core/meetings"
 import {
   callMeetingPassageTool,
@@ -16,6 +16,8 @@ import {
   meetingTools,
 } from "@wirecat/cli-core/meetings/mcp"
 import type { MeetingSearchCursor } from "@wirecat/cli-core/services"
+import type { Command } from "commander"
+import { hostFailureContext } from "./answer-policy.js"
 import { meetingAnswer, readMetadata, toolAnswerSchema } from "./answers.js"
 import { ZoomError } from "./errors.js"
 import { camelKeys, snakeKeys } from "./keys.js"
@@ -29,12 +31,13 @@ import {
 import { readProjectEvidenceTool } from "./meeting-project-evidence-mcp.js"
 import { type MeetingModelOptions, validateMeetingModel, validateMeetingSemantic } from "./meeting-semantic-commands.js"
 import type { StoreConnection } from "./program.js"
-import { runUnifiedSearch } from "./unified-search.js"
+import { runUnifiedSearch, unifiedSearchAnswer } from "./unified-search.js"
 import { VERSION } from "./version.js"
 
 export interface MeetingMcpOptions {
   /** Resolve the selected profile with read intent; each call owns a fresh connection. */
   connectStore: () => Promise<StoreConnection>
+  commandRegistry?: Command
   version?: string
   now?: () => number
   signal?: AbortSignal
@@ -48,8 +51,8 @@ export interface MeetingMcpOptions {
 }
 
 const failure = (code: ErrorCode, message: string) =>
-  mcpErrorResult(errorObjectOf(new ZoomError(code, message), failureContext()))
-const crashed = () => mcpErrorResult(errorObjectOf(undefined, failureContext()))
+  mcpErrorResult(errorObjectOf(new ZoomError(code, message), hostFailureContext(undefined, LOCAL_READ)))
+const crashed = () => mcpErrorResult(errorObjectOf(undefined, hostFailureContext(undefined, LOCAL_READ)))
 
 /** SDK protocol handling; shared meeting tools own all read behavior and validation. */
 const buildServer = (options: MeetingMcpOptions) => {
@@ -265,13 +268,23 @@ const buildServer = (options: MeetingMcpOptions) => {
         } else if (request.params.name === "meeting_passage") {
           const passage = connection.meetingContext?.passage
           if (!passage) throw new ZoomError("configuration_error", "meeting passage capability is unavailable")
-          result = await callMeetingPassageTool(passage, args, signal, failureContext())
+          result = await callMeetingPassageTool(
+            passage,
+            args,
+            signal,
+            hostFailureContext(options.commandRegistry, LOCAL_READ),
+          )
         } else if (request.params.name === "search_meetings") {
           if (!connection.meetingSearch) throw new ZoomError("configuration_error", "meeting search is unavailable")
           const words = Object.fromEntries(
             Object.entries(args).filter(([key]) => !(key === "by_meaning" && args.by_meaning === false)),
           )
-          result = await callMeetingSearchTool(connection.meetingSearch, words, signal, failureContext())
+          result = await callMeetingSearchTool(
+            connection.meetingSearch,
+            words,
+            signal,
+            hostFailureContext(options.commandRegistry, LOCAL_READ),
+          )
         } else if (
           ["meeting_evidence", "person_meeting_context", "meeting_task_proposal"].includes(request.params.name)
         ) {
@@ -332,7 +345,7 @@ const buildServer = (options: MeetingMcpOptions) => {
               },
               true,
             )
-            const snake = snakeKeys(found) as Record<string, unknown>
+            const snake = snakeKeys(unifiedSearchAnswer(found)) as Record<string, unknown>
             result = { content: [{ type: "text", text: JSON.stringify(snake) }], structuredContent: snake }
           }
         } else
@@ -343,7 +356,7 @@ const buildServer = (options: MeetingMcpOptions) => {
               ...args,
               account_id: connection.accountId,
             },
-            failureContext(),
+            hostFailureContext(options.commandRegistry, LOCAL_READ),
           )
       }
     } catch (error) {
@@ -356,7 +369,7 @@ const buildServer = (options: MeetingMcpOptions) => {
           "person_meeting_context",
           "meeting_task_proposal",
         ].includes(request.params.name) && isCliError(error)
-          ? mcpErrorResult(errorObjectOf(error, failureContext()))
+          ? mcpErrorResult(errorObjectOf(error, hostFailureContext(undefined, LOCAL_READ)))
           : crashed()
     } finally {
       try {
@@ -368,10 +381,10 @@ const buildServer = (options: MeetingMcpOptions) => {
     if (cancelled()) return failure("cancelled", "meeting read was cancelled")
     if (!result.isError) {
       try {
-        const answer = meetingAnswer(result.structuredContent, meta())
+        const answer = meetingAnswer(result.structuredContent, meta(), options.commandRegistry)
         result = { content: [{ type: "text", text: JSON.stringify(answer) }], structuredContent: answer }
       } catch (error) {
-        result = mcpErrorResult(errorObjectOf(error, failureContext()))
+        result = mcpErrorResult(errorObjectOf(error, hostFailureContext(undefined, LOCAL_READ)))
       }
     }
     return bounded(result)

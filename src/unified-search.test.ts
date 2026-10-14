@@ -3,7 +3,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
 import { expect, it, vi } from "vitest"
-import { readAnswer } from "../scripts/testing/answers.js"
+import { readReceipt } from "../scripts/testing/answers.js"
 import { setConfig } from "./config.js"
 import { snakeKeys } from "./keys.js"
 import { type ProgramDeps, run } from "./program.js"
@@ -93,7 +93,7 @@ it("preserves nullable completeness and explicit cross-resource opt-in in CLI", 
   const search = vi.fn(async (_request: UnifiedSearchRequest) => found())
   deps.unifiedSearch = search
   expect(await run(["search", "all", "example", "--json"], deps)).toBe(0)
-  expect(readAnswer(output.pop() ?? "{}")).toEqual(snakeKeys(found()))
+  expect(readReceipt(output.pop() ?? "{}")).toEqual(snakeKeys(found()))
   expect(search.mock.calls[0]?.[0]).toMatchObject({ only: ["meetings"] })
   expect(
     await run(
@@ -128,8 +128,8 @@ it("preserves nullable completeness and explicit cross-resource opt-in in CLI", 
   expect(search.mock.calls[2]?.[0]).toMatchObject({ meetingCursor: result.meetings.nextCursor })
   output.length = 0
   expect(await run(["search", "all", "example", "--jsonl"], deps)).toBe(0)
-  expect(output.join("").trim().split("\n")).toHaveLength(1)
-  expect(readAnswer(output.join(""))).toEqual(snakeKeys(found()))
+  expect(output.join("").trim().split("\n")).toHaveLength(2)
+  expect(readReceipt(output.join(""))).toEqual(snakeKeys(found()))
 })
 
 it("resolves read intent only after validating query options and closes before finite output", async () => {
@@ -168,4 +168,20 @@ it("prevents service work on cancellation and rejects late cancelled results", a
     runUnifiedSearch(search, { text: "example", limit: 100, signal: controller.signal }),
   ).rejects.toMatchObject({ code: "cancelled" })
   expect(search).toHaveBeenCalledOnce()
+})
+
+it("reports skipped sources as partial in JSON and JSONL while keeping the search partial exit policy", async () => {
+  const { deps, output } = await setup()
+  deps.unifiedSearch = async () => ({
+    ...found(),
+    skipped: [{ resource: "meetings", code: "network_error", reason: "example source unavailable" }],
+  })
+  for (const flag of ["--json", "--jsonl"]) {
+    output.length = 0
+    expect(await run(["search", "all", "example", flag], deps)).toBe(0)
+    const text = output.join("")
+    expect(readReceipt(text).skipped).toHaveLength(1)
+    const meta = flag === "--json" ? JSON.parse(text).meta : JSON.parse(text.trim().split("\n").at(-1) ?? "{}")
+    expect(meta).toMatchObject({ complete: false, issues: [{ code: "network_error", source: "meetings" }] })
+  }
 })

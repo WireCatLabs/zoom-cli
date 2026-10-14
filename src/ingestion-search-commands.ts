@@ -1,11 +1,12 @@
 import { annotate } from "@wirecat/cli-base/commands"
+import { LOCAL_READ, LOCAL_WRITE } from "@wirecat/cli-core/cli"
 import type { MeetingSearchCursor, ResourceWithMeetings } from "@wirecat/cli-core/services"
 import type { Command } from "commander"
 import type { ArchiveImportPlan, applyArchiveImport, preflightArchiveImport } from "./archive-import.js"
 import { ZoomError } from "./errors.js"
 import { bytes } from "./execution.js"
 import { camelKeys } from "./keys.js"
-import { type UnifiedSearch, validateUnifiedSearch } from "./unified-search.js"
+import { type UnifiedSearch, unifiedSearchAnswer, validateUnifiedSearch } from "./unified-search.js"
 
 interface Deps {
   preflight: typeof preflightArchiveImport
@@ -59,7 +60,7 @@ export const addIngestionSearchCommands = (program: Command, deps: Deps): void =
           } else await deps.outputItems(receipts)
         },
       ),
-    { origin: "handwritten", mutates: true, local: true, examples: ["zm recordings archive import ./archive --jsonl"] },
+    { origin: "handwritten", effects: LOCAL_WRITE, examples: ["zm recordings archive import ./archive --jsonl"] },
   )
   const search = program.command("search").description("opt-in shared store search; meetings by default")
   annotate(
@@ -92,9 +93,9 @@ export const addIngestionSearchCommands = (program: Command, deps: Deps): void =
             meetingCursor: options.meetingCursor,
             signal: deps.signal(),
           })
-          deps.output(await deps.search(request))
+          deps.output(unifiedSearchAnswer(await deps.search(request)))
         },
       ),
-    { origin: "handwritten", mutates: false, examples: ['zm search all "example plan" --json'] },
+    { origin: "handwritten", effects: LOCAL_READ, partial: true, examples: ['zm search all "example plan" --json'] },
   )
 }

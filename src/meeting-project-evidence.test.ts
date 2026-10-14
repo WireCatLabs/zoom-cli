@@ -10,6 +10,7 @@ import { meetingProjectEvidenceTool } from "@wirecat/cli-core/meetings/mcp"
 import { sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { openStore } from "@wirecat/cli-core/store"
 import { expect, it, vi } from "vitest"
+import { readJsonl } from "../scripts/testing/answers.js"
 import { profileAccountKey, setConfig } from "./config.js"
 import { createMeetingMcpServer } from "./mcp-server.js"
 import { readProjectEvidenceTool } from "./meeting-project-evidence-mcp.js"
@@ -138,7 +139,7 @@ it("keeps empty alias pages, frozen date scope and within-name continuation in t
       "1",
       "--max-read-bytes",
       "1024",
-      "--jsonl",
+      "--json",
     ]
     if (cursor) args.push("--cursor", cursor)
     const code = await run(args, f.deps)
@@ -173,7 +174,7 @@ it("keeps empty alias pages, frozen date scope and within-name continuation in t
     expect(validator(next.answer).valid).toBe(true)
     hits.push(...next.answer.item.hits.map((hit: { ref: string }) => hit.ref))
     expect(next.answer.item.association).toBe("unconfirmed-word-evidence")
-    cursor = next.answer.item.page.cursor
+    cursor = next.answer.item.page.next_cursor
     if (++pages > 8) throw Error("unbounded evidence pages")
   }
   expect(hits).toHaveLength(2)
@@ -366,4 +367,14 @@ it("MCP rejects an invalid host account before reading and bounds the complete s
     await client.close()
     await server.close()
   }
+})
+
+it("keeps project citations and report continuation together in typed JSONL", async () => {
+  const f = await fixture()
+  expect(await run(["meetings", "projects", "evidence", "RES", "--limit", "1", "--jsonl"], f.deps)).toBe(0)
+  const [report] = readJsonl(f.output.join(""))
+  expect(report.project.key).toBe("RES")
+  expect(report.coverage.archive_completeness).toBe("unknown")
+  expect(report.page).toMatchObject({ mode: "cursor", limit: 1, has_more: true, next_cursor: expect.any(String) })
+  expect(f.close).toHaveBeenCalledOnce()
 })

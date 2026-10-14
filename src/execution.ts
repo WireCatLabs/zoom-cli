@@ -38,6 +38,7 @@ export interface ExecutionOptions {
   now?: () => number
 }
 export interface ExecutionState {
+  action: Command
   deadline: Deadline
   output: OutputBuffer
   meta: () => Meta
@@ -45,6 +46,7 @@ export interface ExecutionState {
 export const startExecution = (action: Command, options: ExecutionOptions): ExecutionState => {
   const flags = action.optsWithGlobals()
   return {
+    action,
     meta: readMetadata(options.now),
     deadline: createDeadline({
       timeoutMs: flags.timeout ?? commandDeadline(action),

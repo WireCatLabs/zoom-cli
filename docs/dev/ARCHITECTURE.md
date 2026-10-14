@@ -31,6 +31,8 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [meeting-semantic.ts](../../src/meeting-semantic.ts) | explicit model selection and public vector/model service adaptation |
 | [store-connection.ts](../../src/store-connection.ts) | lazy public shared-store/account adapter, without SQL |
 | [mcp-server.ts](../../src/mcp-server.ts) | official SDK transport and shared read-only meeting tools |
+| [answers.ts](../../src/answers.ts), [answer-output.ts](../../src/answer-output.ts) | host execution metadata, validated shared envelopes and buffered output |
+| [command-effects.ts](../../src/command-effects.ts), [answer-policy.ts](../../src/answer-policy.ts) | Zoom effect declarations bound to shared retry and next-step policies |
 | [streaming.ts](../../src/streaming.ts), [watch-commands.ts](../../src/watch-commands.ts) | bounded receipts, writable completion and serial API or folder ingestion |
 
 The API uses the signed-in participant `id` when present, else email, else registrant id. Session
@@ -168,3 +170,10 @@ downloads a model, and remote inference is incompatible with offline execution.
 Optional MCP tools share these public adapters. The model options are frozen when the server is built;
 the executable captures its local profile on the first read. Discovery still avoids config, database,
 keyring and model access. Tool arguments cannot override model, account or broader resource scope.
+
+Contract 3 uses Core’s public envelope, metadata, JSONL, runnable-step and effect-policy helpers.
+The host preserves source completeness/issues while assigning execution identity and duration.
+Each finite JSONL answer has typed item records and one end record; empty results retain the end.
+Source issues determine the successful parse’s exit status through Base’s shared mapping;
+`search all` explicitly allows partial results. Cleanup still finishes before finite output flushes.
+Zoom’s configuration owns only Zoom settings; it does not embed the Core settings schema.

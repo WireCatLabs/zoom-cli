@@ -1,4 +1,5 @@
 import { annotate } from "@wirecat/cli-base/commands"
+import { LOCAL_WRITE } from "@wirecat/cli-core/cli"
 import { type RunReport, type WatchSleep, watchMeetingIngestion } from "@wirecat/cli-core/meetings"
 import { Argument, type Command } from "commander"
 import { ZoomError } from "./errors.js"
@@ -67,8 +68,7 @@ export const addWatchCommand = (program: Command, deps: WatchCommandDeps): void 
     })
   annotate(command, {
     origin: "handwritten",
-    mutates: true,
-    local: true,
+    effects: LOCAL_WRITE,
     examples: ["zm watch files ./downloads --interval 10s --jsonl", "zm watch api --lookback-days 2 --jsonl"],
   })
 }

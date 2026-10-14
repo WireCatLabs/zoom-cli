@@ -6,7 +6,7 @@ import { parseMeetingReference } from "@wirecat/cli-core"
 import { createMeetingContext, type MeetingMediaDescriptor, transcribeMeeting } from "@wirecat/cli-core/meetings"
 import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { expect, it, vi } from "vitest"
-import { readAnswer } from "../scripts/testing/answers.js"
+import { readAnswer, readJsonlPage, readReceipt } from "../scripts/testing/answers.js"
 import { ZoomError } from "./errors.js"
 import type { LocalTranscriptionOptions } from "./local-transcription.js"
 import { type ProgramDeps, run } from "./program.js"
@@ -45,6 +45,13 @@ const setup = async () => {
 }
 const latest = (rows: string[]) => {
   const text = rows.at(-1) ?? "{}"
+  if (text.startsWith('{"type":')) {
+    const records = text
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line))
+    return records[0]?.data?.applied !== undefined ? readReceipt(text) : readJsonlPage(text)
+  }
   const packet = JSON.parse(text)
   return "error" in packet || "commands" in packet ? packet : readAnswer(text)
 }
@@ -219,7 +226,7 @@ it("keeps bounded search cursors and coverage in JSONL and forwards typed date/b
   ).toBe(0)
   expect(latest(output)).toMatchObject({
     items: [{ ref: "meeting:1/1/1/0", meeting: "meeting:1/1", offset_ms: 0, excerpt: "Alice Example plan" }],
-    page: { has_more: true, cursor: "example_next" },
+    page: { has_more: true, next_cursor: "example_next" },
   })
   expect(search).toHaveBeenCalledWith(
     "example plan",

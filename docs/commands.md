@@ -465,7 +465,7 @@ zm session status [options]
 
 log in to Zoom through your browser
 
-**Changes local data.**
+**Changes remote Zoom data.**
 
 ```sh
 zm session start [options]
@@ -879,6 +879,8 @@ zm skill install [options]
 
 serve read-only meeting tools over MCP stdio
 
+**Changes local data.**
+
 ```sh
 zm serve [options]
 ```
@@ -921,6 +923,8 @@ zm search all <query> [options]
 
 find words in stored meetings, by meaning with --model, or in an archive folder
 
+**Changes local data.**
+
 ```sh
 zm search meetings <query> [options]
 ```
@@ -942,7 +946,7 @@ zm search meetings <query> [options]
 | `--since-time <time>` | meetings starting at or after this ISO 8601 date or time. |
 | `--until-time <time>` | meetings starting at or before this ISO 8601 date or time. |
 | `--limit <n>` | how many hits, 1 through 1000 (default 100). |
-| `--cursor <cursor>` | continue from the previous page's page.cursor, with the same query and filters. |
+| `--cursor <cursor>` | continue from the previous page's page.next_cursor, with the same query and filters. |
 | `--max-read-bytes <bytes>` | most stored bytes to read, 1 through 67108864 (default 4194304). |
 | `--model <model>` | search by meaning with this embedding model, building missing vectors first. |
 | `--base-url <url>` | remote embedding service for --model; OpenAI reads OPENAI_API_KEY. |

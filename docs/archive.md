@@ -132,7 +132,7 @@ zm recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --destination
 ```
 
 Sync accepts explicit ordered dates spanning at most ten calendar years. It splits them into monthly
-requests, deduplicates occurrence UUIDs and downloads serially. Each JSONL receipt describes one
+requests, deduplicates occurrence UUIDs and downloads serially. Each JSONL item record describes one
 completed occurrence; earlier receipts and completed files remain if a later request fails. Repeat the
 same range or an overlapping recent range to discover new assets. With a selected local profile,
 sync saves durable progress and retains pending recordings. Use `--recheck-since-time YYYY-MM-DD` to

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.13.0 — 14.10.2026
+
+### Changed — may break callers
+
+- Adopt cli-base 0.28 and Core 0.273’s shared answer policy. Discovery uses contract 3 with separate
+  local and remote effects. JSON lists include a page mode and `next_cursor`; JSONL emits typed
+  item records and an end record, including for empty results. Scripts reading the former whole
+  answer per line must read `data` and the final page/completeness instead.
+- Successful CLI/MCP answers include complete metadata. Skipped search sources report partial
+  completeness and source issues. Shared policies validate mounted next steps and retry safety.
+
 ## 0.12.0 — 14.10.2026
 
 ### Added

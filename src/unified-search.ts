@@ -72,3 +72,18 @@ export const runUnifiedSearch = async (search: UnifiedSearch, input: UnifiedSear
   checkCancelled(request.signal)
   return result
 }
+
+export const unifiedSearchAnswer = (result: SearchAllIncludingMeetingsFound) => ({
+  item: result,
+  meta: {
+    complete: result.skipped.length === 0,
+    ...(result.skipped.length
+      ? {
+          issues: result.skipped.map((issue) => ({
+            code: issue.code,
+            source: "source" in issue ? issue.source : issue.resource,
+          })),
+        }
+      : {}),
+  },
+})

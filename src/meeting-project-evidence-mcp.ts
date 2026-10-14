@@ -1,12 +1,14 @@
 import { CliError, errorObjectOf, mcpErrorResult } from "@wirecat/cli-base"
-import { failureContext } from "@wirecat/cli-core"
+import { LOCAL_READ } from "@wirecat/cli-core/cli"
 import { callMeetingProjectEvidenceTool } from "@wirecat/cli-core/meetings/mcp"
-import { readMetadata } from "./answers.js"
+import type { Command } from "commander"
+import { hostFailureContext } from "./answer-policy.js"
+import { meetingAnswer, readMetadata } from "./answers.js"
 import type { StoreConnection } from "./program.js"
 
 /** The shared adapter validates before this host opens a connection, and output follows cleanup. */
 export const readProjectEvidenceTool = async (
-  deps: { connectStore: () => Promise<StoreConnection>; now?: () => number },
+  deps: { connectStore: () => Promise<StoreConnection>; now?: () => number; commandRegistry?: Command },
   input: unknown,
   signal: AbortSignal,
 ) => {
@@ -27,7 +29,7 @@ export const readProjectEvidenceTool = async (
       },
       input,
       signal,
-      failureContext(),
+      hostFailureContext(deps.commandRegistry, LOCAL_READ),
       deps.now?.(),
     )
   } finally {
@@ -37,10 +39,12 @@ export const readProjectEvidenceTool = async (
       closeFailed = true
     }
   }
-  if (closeFailed) return mcpErrorResult(errorObjectOf(undefined, failureContext()))
+  if (closeFailed) return mcpErrorResult(errorObjectOf(undefined, hostFailureContext(undefined, LOCAL_READ)))
   if (signal.aborted)
-    return mcpErrorResult(errorObjectOf(new CliError("cancelled", "meeting read was cancelled"), failureContext()))
+    return mcpErrorResult(
+      errorObjectOf(new CliError("cancelled", "meeting read was cancelled"), hostFailureContext(undefined, LOCAL_READ)),
+    )
   if ("isError" in result && result.isError) return result
-  const answer = { ...result.structuredContent, meta: meta() }
+  const answer = meetingAnswer(result.structuredContent, meta(), deps.commandRegistry)
   return { content: [{ type: "text" as const, text: JSON.stringify(answer) }], structuredContent: answer }
 }

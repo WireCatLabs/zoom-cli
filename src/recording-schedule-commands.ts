@@ -1,4 +1,5 @@
 import { annotate } from "@wirecat/cli-base/commands"
+import { LOCAL_READ, LOCAL_WRITE } from "@wirecat/cli-core/cli"
 import { listed } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
 import { ZoomError } from "./errors.js"
@@ -29,7 +30,7 @@ export const addRecordingScheduleCommands = (
   if (!recordings) throw new ZoomError("configuration_error", "recording command group is unavailable")
   const schedule = recordings.command("schedule").description("local archive jobs and Linux user systemd timers")
   const label = (command: Command, example: string, mutates = false) =>
-    annotate(command, { origin: "handwritten", mutates, ...(mutates ? { local: true } : {}), examples: [example] })
+    annotate(command, { origin: "handwritten", effects: mutates ? LOCAL_WRITE : LOCAL_READ, examples: [example] })
   label(
     schedule
       .command("create")

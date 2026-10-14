@@ -2,7 +2,7 @@
 name: zoom-cli
 description: Archive Zoom cloud recordings, read stored meeting transcripts and summaries, or manage a Zoom meeting through zm. Use for Zoom CLI workflows, not joining calls or operating the desktop video client.
 metadata:
-  version: "0.12.0"
+  version: "0.13.0"
 ---
 
 # Zoom CLI
@@ -11,7 +11,10 @@ Use `zm commands <resource> --json` and `zm <resource> --help` for the installed
 Use JSON for finite reads and JSONL for foreground watches or batch synchronization. Keep diagnostics
 on stderr. Successful replies use `{item,meta}` or `{items,page,meta}` with snake_case keys.
 Detailed reports (participants, evidence, semantic/unified search) live in `item`. Preserve
-`meta.run_id`, `meta.duration_ms`, report coverage and continuation. JSONL keeps complete packets.
+`meta.run_id`, `meta.duration_ms`, `meta.complete`, report coverage and continuation. JSON lists
+use `page.mode` and optional `page.next_cursor`. JSONL emits typed item records with `data`,
+then an end record with page/completeness. For reports, read the report inside the item record’s
+`data`. Discovery uses contract 3 with separate local/remote effects.
 Use `--fields` to limit returned content. `zm doctor --json` checks local setup without login.
 
 ## Recording archives
@@ -109,8 +112,8 @@ is read-only: `applied: false` and `persistence: "proposal-only"` do not mean a 
 is explicit. Messages use the selected local account, mail includes stored email accounts, and
 notes are store-global. Meetings use word prefixes; unsupported syntax or exact queries
 are reported as skipped. Resume meetings-only results using the returned `item.meetings.next_cursor` as
-`--meeting-cursor '<json>'`, bound to account and query. JSONL retains the entire report, including
-coverage, skips and cursors.
+`--meeting-cursor '<json>'`, bound to account and query. JSONL retains the entire report inside one item record, including coverage, skips and cursors,
+followed by an end record. Skipped sources add issues and set completeness false; search exits zero.
 
 ## Explicit vector work
 
@@ -162,7 +165,7 @@ MCP `meeting_project_evidence` has the same registered packet and strict account
 Use `meetings people <name-or-email>` before selecting `--identity-id`. Reads inspect bounded
 observations in the selected account; use `--limit`, `--scan-limit`, `--max-read-bytes` and `--cursor`.
 Results expose `identity_id` with page-local ambiguity, not a proven person association. Follow
-the report's `item.next` / `item.page.cursor` even when `item.items` is empty. JSONL retains the whole page and coverage.
+the report's `item.next` / `item.page.next_cursor` even when `item.items` is empty. JSONL retains the report and coverage inside its item record.
 MCP `meeting_people` takes the equivalent snake_case arguments and cannot change accounts.
 
 `meetings list [query...]` filters metadata, for example `started_at:[2026-09-01 TO 2026-10-01]`.

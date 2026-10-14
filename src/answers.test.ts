@@ -6,7 +6,7 @@ it("seals standalone values and arrays and refuses a missing answer", () => {
   expect(meetingAnswer(null, meta)).toEqual({ item: null, meta })
   expect(meetingAnswer([{ accountId: 1 }], meta)).toEqual({
     items: [{ account_id: 1 }],
-    page: { limit: 1, has_more: false },
+    page: { mode: "page", limit: 1, has_more: false },
     meta,
   })
   expect(() => meetingAnswer(undefined, meta)).toThrow(/no answer/)
@@ -22,16 +22,30 @@ it("keeps report coverage and cursors together while sealing an item", () => {
 
 it("preserves standard continuation and seals empty legacy lists with a positive page limit", () => {
   const meta = readMetadata(() => 100)()
-  const next = [{ step: "page.next", command: "meetings list", args: { cursor: "example" }, why: "read the next page" }]
-  expect(meetingAnswer({ items: [], page: { limit: 2, has_more: true, cursor: "example" }, next }, meta)).toEqual({
+  const next = [
+    {
+      kind: "command",
+      safe_to_auto_execute: false,
+      step: "page.next",
+      command: "meetings list",
+      args: { cursor: "example" },
+      why: "read the next page",
+    },
+  ]
+  expect(
+    meetingAnswer(
+      { items: [], page: { mode: "cursor", limit: 2, has_more: true, next_cursor: "example" }, next },
+      meta,
+    ),
+  ).toEqual({
     items: [],
-    page: { limit: 2, has_more: true, cursor: "example" },
+    page: { mode: "cursor", limit: 2, has_more: true, next_cursor: "example" },
     next,
     meta,
   })
   expect(meetingAnswer({ items: [], page: 1, limit: 0, hasMore: false }, meta)).toEqual({
     items: [],
-    page: { limit: 1, has_more: false },
+    page: { mode: "page", limit: 1, has_more: false },
     meta,
   })
 })
@@ -44,6 +58,8 @@ it("rejects malformed standard bodies and gives each execution its own metadata"
   expect(first().run_id).not.toBe(readMetadata(() => now)().run_id)
   now = 90
   expect(first().duration_ms).toBe(0)
-  expect(() => meetingAnswer({ items: [], page: { limit: 0, has_more: false } }, first())).toThrow(/invalid answer/)
+  expect(() => meetingAnswer({ items: [], page: { mode: "page", limit: 0, has_more: false } }, first())).toThrow(
+    /invalid answer/,
+  )
   expect(() => meetingAnswer({ item: {}, next: [{ command: "missing-step" }] }, first())).toThrow(/invalid answer/)
 })

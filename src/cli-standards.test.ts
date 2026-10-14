@@ -52,8 +52,7 @@ describe("portable CLI discovery and diagnostics", () => {
     const commands = flatten(JSON.parse(stdout[0] ?? "{}").commands)
     expect(commands.find((item) => item.path.join(" ") === "config set")).toMatchObject({
       origin: "handwritten",
-      mutates: true,
-      local: true,
+      effects: { remote: "none", local: "write" },
       examples: ["zm config set account.profile personal --json"],
     })
     expect(commands.find((item) => item.path.join(" ") === "search meetings")?.examples).toContain(
@@ -72,7 +71,7 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(await run(["commands", "meetings", "show", "--json"], deps)).toBe(0)
     const [whole, scoped] = stdout.map((text) => parseCommandsDocument(JSON.parse(text)))
     expect(whole?.problems).toBeUndefined()
-    expect(whole?.document).toMatchObject({ cli: "zm", contract: 2, exit_codes: { ok: 0 } })
+    expect(whole?.document).toMatchObject({ cli: "zm", contract: 3, exit_codes: { ok: 0 } })
     expect(scoped?.problems).toBeUndefined()
     expect(scoped?.document?.scope).toEqual(["meetings", "show"])
   })
@@ -207,8 +206,8 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(
       describeProgram(program)
         .find((cmd) => cmd.name === "session")
-        ?.commands.find((cmd) => cmd.name === "start")?.mutates,
-    ).toBe(true)
+        ?.commands.find((cmd) => cmd.name === "start")?.effects,
+    ).toEqual({ remote: "write", local: "write" })
   })
   it("uses shared human rendering only for terminal output", async () => {
     const { deps, stdout } = await setup()
@@ -228,4 +227,17 @@ it("quiet suppresses optional login instructions but retains the failure envelop
   expect(stdout).toEqual([])
   expect(stderr).toHaveLength(1)
   expect(JSON.parse(stderr[0] ?? "{}").error.code).toBe("configuration_error")
+})
+
+it("prints a partial non-search answer before returning its source error exit code", async () => {
+  const { deps, stdout, stderr } = await setup()
+  deps.meetingContext = {
+    evidence: async () => ({
+      item: { available: [] },
+      meta: { complete: false, issues: [{ code: "network_error", source: "meetings" }] },
+    }),
+  }
+  expect(await run(["meetings", "evidence", "meeting:1/1", "--json"], deps)).toBe(10)
+  expect(JSON.parse(stdout.join("")).meta).toMatchObject({ complete: false })
+  expect(stderr).toEqual([])
 })

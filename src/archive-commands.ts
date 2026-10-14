@@ -1,4 +1,5 @@
 import { annotate } from "@wirecat/cli-base/commands"
+import { LOCAL_READ, LOCAL_WRITE, REMOTE_WRITE } from "@wirecat/cli-core/cli"
 import { listed, recordingWindows } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
 import type { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
@@ -43,8 +44,7 @@ export interface ArchiveCommandsDeps {
 const label = (command: Command, example: string, mutation: "none" | "local" | "remote" = "none") =>
   annotate(command, {
     origin: "handwritten",
-    mutates: mutation !== "none",
-    ...(mutation === "none" ? {} : { local: mutation === "local" }),
+    effects: mutation === "none" ? LOCAL_READ : mutation === "local" ? LOCAL_WRITE : REMOTE_WRITE,
     examples: [example],
   })
 const positive = (text: string): number => {

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { CliError, memoryKeyring } from "@wirecat/cli-base"
 import { expect, it, vi } from "vitest"
-import { readAnswer } from "../scripts/testing/answers.js"
+import { readAnswer, readJsonl, readJsonlPage, readReceipt } from "../scripts/testing/answers.js"
 import type { ArchiveTranscript } from "./archive-transcripts.js"
 import { type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
@@ -59,7 +59,12 @@ const setup = async () => {
   )
   return { deps, directory, output, errors, paths, uuid }
 }
-const latest = (output: string[]) => readAnswer(output.join("") || "{}")
+const latest = (output: string[]) =>
+  output.join("").startsWith('{"type":')
+    ? JSON.parse(output.join("").trim().split("\n").at(-1) ?? "{}").page
+      ? readJsonlPage(output.join(""))
+      : readReceipt(output.join(""))
+    : readAnswer(output.join("") || "{}")
 
 it("reads verified local archive cues as finite listed JSON without config, credentials or database access", async () => {
   const { deps, directory, output, paths, uuid } = await setup()
@@ -99,7 +104,7 @@ it("projects archive fields, supports finite JSONL and preserves true search pag
       deps,
     ),
   ).toBe(0)
-  const item = latest(output)
+  const item = readReceipt(output.join(""))
   expect(item.meeting).toEqual({ uuid })
   expect(item.cues).toHaveLength(2)
   expect(item).not.toHaveProperty("asset")
@@ -248,13 +253,8 @@ it("keeps empty transcript envelopes and multi-asset JSONL framing valid", async
   expect(latest(output)).toMatchObject({ items: [], page: { limit: 1, has_more: false } })
   output.length = 0
   expect(await run(["recordings", "archive", "transcript", empty, "--jsonl"], deps)).toBe(0)
-  expect(output).toEqual([])
+  expect(readJsonl(output.join(""))).toEqual([])
+  output.length = 0
   expect(await run(["recordings", "archive", "transcript", directory, "--fields", "asset.id", "--jsonl"], deps)).toBe(0)
-  expect(
-    output
-      .join("")
-      .trim()
-      .split("\n")
-      .map((line) => readAnswer(line)),
-  ).toEqual([{ asset: { id: "example-first" } }, { asset: { id: "example-second" } }])
+  expect(readJsonl(output.join(""))).toEqual([{ asset: { id: "example-first" } }, { asset: { id: "example-second" } }])
 })

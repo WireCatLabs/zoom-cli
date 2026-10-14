@@ -7,7 +7,7 @@ import { memoryKeyring } from "@wirecat/cli-base"
 import { sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { openStore } from "@wirecat/cli-core/store"
 import { expect, it, vi } from "vitest"
-import { readAnswer } from "../scripts/testing/answers.js"
+import { readAnswer, readJsonl } from "../scripts/testing/answers.js"
 import { setConfig } from "./config.js"
 import { createMeetingMcpServer } from "./mcp-server.js"
 import { type ProgramDeps, run } from "./program.js"
@@ -77,7 +77,7 @@ const fixture = async () => {
   }
 }
 
-it("preserves empty participant scan pages and continuation budgets through CLI JSONL", async () => {
+it("preserves empty participant scan pages and continuation budgets through CLI JSON", async () => {
   const f = await fixture()
   const args = [
     "--offline",
@@ -90,29 +90,29 @@ it("preserves empty participant scan pages and continuation budgets through CLI 
     "1",
     "--max-read-bytes",
     "100",
-    "--jsonl",
+    "--json",
   ]
   expect(await run(args, f.deps)).toBe(0)
   const first = readAnswer(f.output.join(""))
   expect(first).toMatchObject({
     items: [],
-    page: { limit: 1, has_more: true, cursor: expect.any(String) },
+    page: { limit: 1, has_more: true, next_cursor: expect.any(String) },
     coverage: { scanned: 1, truncated_by: "scan_limit", archive_completeness: "unknown" },
   })
   expect(first.next[0]).toMatchObject({
     step: "page.next",
-    args: { query: "алиса", limit: 1, scan_limit: 1, max_read_bytes: 100, cursor: first.page.cursor },
+    args: { query: "алиса", limit: 1, scan_limit: 1, max_read_bytes: 100, cursor: first.page.next_cursor },
   })
   f.output.length = 0
-  expect(await run([...args, "--cursor", first.page.cursor], f.deps)).toBe(0)
+  expect(await run([...args, "--cursor", first.page.next_cursor], f.deps)).toBe(0)
   const second = readAnswer(f.output.join(""))
   expect(second.items).toMatchObject([{ display_name: "Алиса Пример", identity_id: expect.any(Number) }])
   expect(second.page.has_more).toBe(true)
   f.output.length = 0
-  expect(await run([...args, "--cursor", second.page.cursor], f.deps)).toBe(0)
+  expect(await run([...args, "--cursor", second.page.next_cursor], f.deps)).toBe(0)
   const last = readAnswer(f.output.join(""))
   expect(last.items).toMatchObject([{ display_name: "АЛИСА ПРИМЕР" }])
-  expect(last.page).toEqual({ limit: 1, has_more: false })
+  expect(last.page).toEqual({ mode: "cursor", limit: 1, has_more: false })
   expect(last).not.toHaveProperty("next")
   expect(f.close).toHaveBeenCalledTimes(3)
   expect(f.network).not.toHaveBeenCalled()
@@ -138,7 +138,7 @@ it("keeps MCP participant discovery account-bound and closes each paged read", a
       structuredContent: {
         item: {
           account_id: f.selected,
-          page: { has_more: true, cursor: expect.any(String) },
+          page: { has_more: true, next_cursor: expect.any(String) },
           items: [{ display_name: "Алиса Пример" }],
         },
       },
@@ -153,4 +153,12 @@ it("keeps MCP participant discovery account-bound and closes each paged read", a
     await client.close()
     await server.close()
   }
+})
+
+it("keeps the bounded participant report in JSONL data with a final end record", async () => {
+  const f = await fixture()
+  expect(await run(["meetings", "people", "алиса", "--limit", "1", "--scan-limit", "1", "--jsonl"], f.deps)).toBe(0)
+  const [report] = readJsonl(f.output.join(""))
+  expect(report).toMatchObject({ items: [], page: { mode: "cursor", has_more: true, next_cursor: expect.any(String) } })
+  expect(f.close).toHaveBeenCalledOnce()
 })
