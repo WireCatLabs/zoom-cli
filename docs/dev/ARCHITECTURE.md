@@ -202,9 +202,8 @@ schedules retain incomplete coverage. A small row budget fails rather than silen
 VerifiedNext describes a unique dated candidate in a covered selected-series window. Identity,
 attendance and historical archive coverage use their own sources.
 
-This is a library capability. The CLI still uses its existing remote-meetings commands; the adapter
-performs one selected-series detail read. Broad hosted/invited calendar discovery and the composed
-preparation handler are separate capabilities. The public [Zoom Meetings API](https://developers.zoom.us/docs/api/meetings/)
+The CLI preparation handler uses this adapter for one selected-series detail read and joins it
+with the shared preparation service. Broad hosted/invited calendar discovery remains separate. The public [Zoom Meetings API](https://developers.zoom.us/docs/api/meetings/)
 describes the detail fields and required meeting:read:meeting scope.
 
 Command vocabulary checks use the development-only `@wirecat/cli-base-dev` alias at 0.30.0.
