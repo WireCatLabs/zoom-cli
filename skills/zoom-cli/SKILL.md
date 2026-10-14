@@ -32,12 +32,12 @@ unavailable assets. A failed transfer can leave earlier completed files; retry s
 file again. Existing files are never overwritten. Do not infer HTTP byte-range resume.
 
 Read cues with `recordings archive transcript <directory>` or search their text with
-`search meetings <query> --archive <directory> --limit 100`. Both work offline without configuration,
+`search recordings <directory> <query> --limit 100`. Both work offline without configuration,
 login or a database and verify each WebVTT file they read before returning results. Search can stop
-before reading later files once it proves another match beyond the limit. Select `--uuid` or
-comma-separated `--file-ids`; `--max-bytes` defaults to 8 MiB per file. Search is literal, normalized
-and case-insensitive, with a maximum of 1000 matches. When `page.has_more` is true, increase the limit or
-narrow the occurrence, file or query selection;
+before reading later files once it proves another match beyond the limit. `recordings archive transcript`
+selects with `--uuid` or comma-separated `--file-ids`; `--max-bytes` defaults to 8 MiB per file. Search is
+literal, normalized and case-insensitive, with a maximum of 1000 matches, and answers `search all`'s hits.
+When `page.has_more` is true, increase the limit or narrow the query;
 there is no continuation cursor. These reads do not import archive assets into the database.
 
 Use `recordings archive import <directory> --offline --jsonl` to append verified VTT assets to the

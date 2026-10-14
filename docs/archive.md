@@ -196,16 +196,17 @@ archived transcripts directly:
 
 ```sh
 zm recordings archive transcript ./zoom-archive --offline --json
-zm search meetings "example plan" --archive ./zoom-archive --limit 100 --offline --json
+zm search recordings ./zoom-archive "example plan" --limit 100 --offline --json
 ```
 
 Both commands verify each WebVTT file they read against manifest sizes and SHA-256 digests before
 returning parsed cues. Search stops after finding one match beyond its limit; later files remain
-unread. They need no login, configuration or database. Use `--uuid` or comma-separated
-`--file-ids` to select assets, and `--max-bytes` to change the default 8 MiB per-file read limit.
+unread. They need no login, configuration or database. The transcript read takes `--uuid` or
+comma-separated `--file-ids` to select assets, and `--max-bytes` to change the default 8 MiB per-file
+read limit; search refuses a transcript over 8 MiB.
 Search matches literal cue text after Unicode normalization and lowercasing; speaker names are
 not searched. Its default limit is 100, with a maximum of 1000. `has_more` means another matching cue
-exists; increase the limit or narrow the occurrence, file or query selection to read more.
+exists; increase the limit or narrow the query to read more.
 Results have no continuation cursor. Finite output remains bounded by `--max-output-bytes`, and a
 failed verification emits no successful result.
 

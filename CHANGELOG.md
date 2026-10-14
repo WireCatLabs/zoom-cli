@@ -6,8 +6,19 @@
 
 - **`--json=id,title` replaces `--fields`** (the standard's `--json [fields]`, read as tg, max, drive and memo read it
   through cli-core's shared `liftJson`). `--fields` is gone, and fields come only with `--json`, not `--jsonl`. A
-  field the answer does not declare is refused with the fields it has; `search meetings --archive` answers are not
-  the `meeting_hit` they declare, so they take a plain `--json` until that is fixed. Adopts cli-core 0.280.0.
+  field the answer does not declare is refused with the fields it has. Adopts cli-core 0.280.0.
+
+- **`zm search recordings <directory> <query>` replaces `zm search meetings <query> --archive <directory>`.** One
+  command answered with two shapes; archive search now has its own command and answers with `search all`'s hits
+  (`ref` `recording:<file id>/<cue position>`, `title`, `timestamp`, `excerpt`, `sender_name`, `offset_ms`; `account`
+  is the archive folder) instead of raw cues, so `--json=ref,excerpt` works. `--archive`, `--uuid`, `--file-ids` and
+  `--max-bytes` are gone from `search meetings`; the new command takes only `--limit`. To read one occurrence or
+  file, or a transcript over 8 MiB, use `recordings archive transcript`.
+
+- **Settings are named in snake_case.** The config file stores `client_id`, `files_folder`, `files_timezone` and
+  `account_profile`, and `zm config set zoom.client_id` is the documented name. The camelCase spellings are still read
+  in the file and accepted by `zm config set zoom.clientId`; an old file is rewritten in snake_case on the next read,
+  keeping its mode. A file giving both spellings of one setting with different values is refused.
 
 ### Added
 

@@ -11,6 +11,7 @@ import {
 } from "@wirecat/cli-core/meetings/cli"
 import type { Command } from "commander"
 import type { ArchiveTranscriptService } from "./archive-commands.js"
+import type { ArchiveTranscriptMatch } from "./archive-transcripts.js"
 import { ZoomError } from "./errors.js"
 import { bytes } from "./execution.js"
 import { type MeetingSemanticCapabilities, validateMeetingSemantic } from "./meeting-semantic-commands.js"
@@ -28,10 +29,6 @@ interface SearchOptions extends MeetingSearchFlags {
   maxChunks?: number
   maxRows?: number
   maxTextBytes?: number
-  archive?: string
-  uuid?: string
-  fileIds?: string
-  maxBytes?: number
 }
 const STORE_FILTERS = [
   "meetingId",
@@ -64,9 +61,6 @@ const FLAG = {
   maxChunks: "--max-chunks",
   maxRows: "--max-rows",
   maxTextBytes: "--max-text-bytes",
-  uuid: "--uuid",
-  fileIds: "--file-ids",
-  maxBytes: "--max-bytes",
 } satisfies Partial<Record<keyof SearchOptions, string>>
 const refuse = (options: SearchOptions, keys: readonly (keyof typeof FLAG)[], mode: string) => {
   const given = keys.filter((key) => options[key] !== undefined).map((key) => FLAG[key])
@@ -79,7 +73,25 @@ const chunkCursor = (cursor: string | undefined): number | undefined => {
   return Number(cursor)
 }
 
-/** One meeting search: stored words by default, meaning with --model, an archive folder with --archive. */
+/** An archive cue as a `search all` hit: an archive has no store ids, so the ref names the asset and cue. */
+const recordingHit = (directory: string) => (match: ArchiveTranscriptMatch) => {
+  const meetingStart = Date.parse(match.meeting.startedAt ?? "")
+  const assetStart = Date.parse(match.asset.startedAt ?? "")
+  const lead = assetStart - meetingStart
+  return {
+    kind: "meeting",
+    ref: `recording:${match.asset.id}/${match.position}`,
+    provider: "zoom",
+    account: directory,
+    title: match.meeting.title,
+    timestamp: Number.isFinite(meetingStart) ? new Date(meetingStart).toISOString() : null,
+    excerpt: match.text,
+    sender_name: match.speaker,
+    offset_ms: match.startMs + (Number.isFinite(lead) && lead > 0 ? lead : 0),
+  }
+}
+
+/** One meeting search: stored words by default, meaning with --model. */
 export const addMeetingSearchCommands = (
   program: Command,
   deps: {
@@ -92,31 +104,6 @@ export const addMeetingSearchCommands = (
   },
 ): void => {
   const execute = async (query: string, request: MeetingHitSearchOptions, options: SearchOptions) => {
-    if (options.archive !== undefined) {
-      refuse(
-        options,
-        [
-          ...STORE_FILTERS,
-          "cursor",
-          "maxReadBytes",
-          "model",
-          "baseUrl",
-          "dims",
-          "maxChunks",
-          "maxRows",
-          "maxTextBytes",
-        ],
-        "to an archive folder",
-      )
-      return deps.archive(options.archive, query, {
-        uuid: options.uuid,
-        fileIds: options.fileIds?.split(",").map((id) => id.trim()),
-        maxBytes: options.maxBytes,
-        limit: options.limit,
-        signal: deps.signal(),
-      })
-    }
-    refuse(options, ["uuid", "fileIds", "maxBytes"], "without --archive")
     if (options.model !== undefined) {
       refuse(options, [...STORE_FILTERS, "maxReadBytes"], "to a search by meaning")
       const meaning = {
@@ -150,24 +137,36 @@ export const addMeetingSearchCommands = (
     deps.output(await execute(query, request, options))
   })
   command
-    .description("find words in stored meetings, by meaning with --model, or in an archive folder")
+    .description("find words in stored meetings, or by meaning with --model")
     .option("--model <model>", "search by meaning with this embedding model, building missing vectors first")
     .option("--base-url <url>", "remote embedding service for --model; OpenAI reads OPENAI_API_KEY")
     .option("--dims <n>", "vector size the remote service returns, in dimensions", bytes)
     .option("--max-chunks <n>", "by meaning: most stored passages to compare", bytes)
     .option("--max-rows <n>", "by meaning: most transcript lines to read, 1 through 100000", bytes)
     .option("--max-text-bytes <bytes>", "by meaning: most transcript text to read (default 4 MiB)", bytes)
-    .option("--archive <directory>", "search the transcripts of this archive folder, before any import")
-    .option("--uuid <uuid>", "with --archive: only this occurrence UUID")
-    .option("--file-ids <ids>", "with --archive: only these comma-separated transcript asset ids")
-    .option("--max-bytes <bytes>", "with --archive: largest transcript file to read (default 8 MiB)", bytes)
   annotate(command, {
     origin: "handwritten",
     effects: LOCAL_READ,
     examples: [
       'zm search meetings "example plan" --since-time 2026-09-01 --json',
       'zm search meetings "example plan" --model e5-small --json',
-      'zm search meetings "example plan" --archive ./zoom-archive --offline --json',
     ],
+  })
+  const search = program.commands.find((child) => child.name() === "search") ?? program.command("search")
+  const recordings = search
+    .command("recordings")
+    .description("find words in the transcripts of a downloaded archive folder, before any import")
+    .argument("<directory>", "archive folder")
+    .argument("<query...>", "words to find as one phrase, ignoring case")
+    .option("--limit <n>", "how many hits, 1 through 1000 (default 100)", bytes)
+    .action(async (directory: string, words: string[], options: { limit?: number }) => {
+      const found = await deps.archive(directory, words.join(" "), { limit: options.limit, signal: deps.signal() })
+      deps.output({ ...found, items: found.items.map(recordingHit(directory)) })
+    })
+  annotate(recordings, {
+    origin: "handwritten",
+    effects: LOCAL_READ,
+    output: { entity: "hit" },
+    examples: ['zm search recordings ./zoom-archive "example plan" --limit 100 --offline --json'],
   })
 }

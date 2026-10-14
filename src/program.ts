@@ -246,7 +246,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     if (program.opts().offline)
       throw new ZoomError("configuration_error", "the command requires network access; remove --offline")
     if (!getConfig().clientId)
-      throw new ZoomError("configuration_error", "run zm config set zoom.clientId <Public Client ID> first")
+      throw new ZoomError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
   }
   program.hook("preAction", async (_root, action) => {
     const opts = action.optsWithGlobals()
@@ -503,7 +503,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .action(async (opts: { browser?: string }) => {
       const config = getConfig()
       if (!config.clientId)
-        throw new ZoomError("configuration_error", "run zm config set zoom.clientId <Public Client ID> first")
+        throw new ZoomError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
       const globals = program.opts()
       if (globals.offline) throw new ZoomError("configuration_error", "login requires network access; remove --offline")
       const headless =
@@ -576,7 +576,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
           throw new ZoomError("configuration_error", "API watching requires network access; remove --offline")
         if (!deps.source) {
           if (!config.clientId)
-            throw new ZoomError("configuration_error", "run zm config set zoom.clientId <Public Client ID> first")
+            throw new ZoomError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
           if (tokens().options.clientId !== config.clientId)
             throw new ZoomError(
               "configuration_error",

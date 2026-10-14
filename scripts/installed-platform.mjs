@@ -168,7 +168,7 @@ invoke(
 )
 assert.equal(existsSync(missingProfileArchive), false)
 json("config", "set", "account.profile", "invented-platform")
-json("config", "set", "zoom.clientId", "example-public-client")
+json("config", "set", "zoom.client_id", "example-public-client")
 const scheduleArchive = join(sandbox, "scheduled-archive")
 const schedulePreview = json(
   "recordings",
@@ -331,10 +331,7 @@ try {
   await probeFile.close()
 }
 assert.equal(json("recordings", "archive", "transcript", archive).items[0].cues[0].text, "Original invented plan")
-assert.equal(
-  json("search", "meetings", "invented", "--archive", archive, "--uuid", uuid, "--file-ids", fileId).items.length,
-  1,
-)
+assert.equal(json("search", "recordings", archive, "invented").items.length, 1)
 invoke(["recordings", "archive", "transcript", archive, "--json"], 2, { ZM_PLATFORM_RACE: asset })
 assert.equal(readFileSync(asset, "utf8"), "private replacement bytes must not be read")
 renameSync(asset, `${asset}.replacement`)

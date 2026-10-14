@@ -46,7 +46,7 @@ walks through app settings, browser approval and callback completion.
 
 ```sh
 npm install -g @wirecat/zoom-cli
-zm config set zoom.clientId <public-client-id>
+zm config set zoom.client_id <public-client-id>
 zm session start                          # approve in your browser; the token goes to the keyring
 zm config set account.profile personal    # a label for your stored meetings
 zm meetings sync --lookback-days 7
@@ -207,7 +207,7 @@ More: [the local archive][docs/archive.md] · [Zoom on wirecat.dev][wirecat/en/d
 ```sh
 zm recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --destination ./zoom-archive --jsonl
 zm recordings archive check ./zoom-archive --offline --json
-zm search meetings "example plan" --archive ./zoom-archive --offline --json
+zm search recordings ./zoom-archive "example plan" --offline --json
 ```
 
 Sync covers up to ten years in monthly requests and downloads serially, streaming to disk. Each
@@ -296,7 +296,7 @@ More: [usage][docs/usage.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
 
 | Setting | Meaning |
 |---|---|
-| `zoom.clientId` | your Zoom app's Public Client ID |
+| `zoom.client_id` | your Zoom app's Public Client ID |
 | `account.profile` | the local profile label |
 | `source` | `api` or `files` for `meetings sync` and `watch` |
 | `files.folder`, `files.timezone` | the transcript folder and the zone of its filenames |

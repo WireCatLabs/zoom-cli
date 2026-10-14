@@ -23,7 +23,7 @@ Choose how to connect:
 5. Configure that ID and start a new login:
 
 ```sh
-zm config set zoom.clientId <public-client-id>
+zm config set zoom.client_id <public-client-id>
 zm config set source api
 zm session start
 ```

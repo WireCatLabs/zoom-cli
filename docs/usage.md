@@ -123,7 +123,7 @@ does not import that transcript into the meeting database until you request arch
 | `recordings archive show\|check\|locks <directory>` | inspect local manifests, checksums or locks |
 | `recordings archive recover <directory>` | preview recovery of stale local locks |
 | `recordings archive transcript <directory>` | read verified archived WebVTT cues without a database |
-| `search meetings <query> --archive <directory>` | search verified archived cue text without a database |
+| `search recordings <directory> <query>` | search verified archived cue text without a database |
 | `recordings archive import <directory>` | verify archived VTT assets and append them to stored occurrences |
 | `remote-meetings list\|show\|invitation` | read upcoming Zoom meetings and invitations |
 | `remote-meetings create\|update\|cancel` | preview or apply a simple Zoom meeting change |
