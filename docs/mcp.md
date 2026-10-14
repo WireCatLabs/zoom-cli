@@ -47,7 +47,7 @@ environment ([MCP debugging guide](https://modelcontextprotocol.io/docs/tools/de
 server does not start, use the full path from `command -v zm` on Linux/macOS or `where.exe zm` on Windows as the command. If you set `ZM_CONFIG_DIR` or `MESSAGING_STORE`, pass the same values
 in the entry's `env`, or the server reads a different profile or database.
 
-Keep stdout for protocol messages; omit `--json`, `--jsonl` and `--fields`. `--max-output-bytes`
+Keep stdout for protocol messages; omit `--json` and `--jsonl`. `--max-output-bytes`
 bounds each tool result, with zero meaning unlimited. Select a profile and import or pull its data
 before reading tools; discovery is available without stored data.
 

@@ -67,7 +67,7 @@ describe("command execution controls", () => {
   it("projects values while retaining discovery identities and complete error envelopes", async () => {
     const { deps, stdout, stderr } = await setup()
     await writeFile(deps.configPath, "invalid")
-    expect(await run(["--json", "--fields", "usage", "commands", "recordings", "download"], deps)).toBe(0)
+    expect(await run(["--json=usage", "commands", "recordings", "download"], deps)).toBe(0)
     expect(value(stdout).commands[0]).toMatchObject({
       name: "download",
       path: ["recordings", "download"],
@@ -75,7 +75,7 @@ describe("command execution controls", () => {
     })
     expect(value(stdout).commands[0].usage).toContain("<meeting>")
     expect(value(stdout).commands[0]).not.toHaveProperty("description")
-    expect(await run(["--fields", "id", "commands", "not-a-resource", "--json"], deps)).toBe(2)
+    expect(await run(["--json=id", "commands", "not-a-resource"], deps)).toBe(2)
     expect(value(stderr)).toHaveProperty("error.code", "validation_error")
     expect(value(stderr).error.message).toContain("command path")
   })
@@ -84,7 +84,7 @@ describe("command execution controls", () => {
     expect(await run(["--json", "--max-output-bytes", "1", "doctor"], deps)).toBe(13)
     expect(stdout).toEqual([])
     expect(value(stderr).error.code).toBe("invalid_response")
-    expect(await run(["--json", "--max-output-bytes", "0", "--fields", "version", "doctor"], deps)).toBe(0)
+    expect(await run(["--json=version", "--max-output-bytes", "0", "doctor"], deps)).toBe(0)
     expect(Object.keys(value(stdout))).toEqual(["version"])
   })
   it("rejects invalid and zero timeout controls before config writes or remote dispatch", async () => {
@@ -195,7 +195,7 @@ describe("command execution controls", () => {
         signal?.addEventListener("abort", () => reject(new Error("disposed")), { once: true })
       })
     const program = createProgram(deps)
-    await program.parseAsync(["--json", "--fields", "version", "--timeout", "2s", "doctor"], { from: "user" })
+    await program.parseAsync(["--json=version", "--timeout", "2s", "doctor"], { from: "user" })
     await program.parseAsync(["--json", "doctor"], { from: "user" })
     expect(durations).toEqual([2000, 30000])
     expect(Object.keys(value(stdout))).toContain("authentication")
@@ -486,7 +486,7 @@ it("shows and installs the packaged skill through the CLI using an isolated home
   const { deps, stdout, stderr, directory } = await setup()
   deps.env = { HOME: directory }
   await writeFile(deps.configPath, "invalid")
-  expect(await run(["skill", "show", "--json", "--fields", "name,content"], deps)).toBe(0)
+  expect(await run(["skill", "show", "--json=name,content"], deps)).toBe(0)
   expect(value(stdout)).toMatchObject({ name: "zoom-cli", content: expect.stringContaining("recordings") })
   expect(await run(["skill", "show"], deps)).toBe(0)
   expect(stdout.at(-1)).toContain("name: zoom-cli")

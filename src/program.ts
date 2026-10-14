@@ -8,7 +8,6 @@ import {
   errorRecordOf,
   exitCodeOfAnswer,
   exitCodeOfError,
-  fieldsOf,
   isCliError,
   projectFields,
   realSleep,
@@ -16,7 +15,7 @@ import {
   type SleepLike,
 } from "@wirecat/cli-base"
 import { metaOf } from "@wirecat/cli-base/commands"
-import { jsonlRecords, listOf } from "@wirecat/cli-core/cli"
+import { checkJson, jsonlRecords, listOf } from "@wirecat/cli-core/cli"
 import {
   importFiles,
   listed,
@@ -50,6 +49,7 @@ import { checkCancelled, ZoomError } from "./errors.js"
 import { bytes, duration, type ExecutionState, resetCliOptions, startExecution } from "./execution.js"
 import { FilesSource, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { addIngestionSearchCommands } from "./ingestion-search-commands.js"
+import { liftJsonFields } from "./json-fields.js"
 import { snakeKeys } from "./keys.js"
 import type { LocalTranscriptionCapabilities } from "./local-transcription.js"
 import { addLocalTranscriptionCommands } from "./local-transcription-commands.js"
@@ -224,12 +224,11 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .name("zm")
     .version(VERSION)
     .description("Zoom meeting transcripts and summaries")
-    .option("--json", "one JSON value")
+    .option("--json", "one JSON value; --json=id,title keeps only those fields")
     .option("--jsonl", "one JSON object per item")
     .option("--no-input", "disable interactive login")
     .option("--interactive", "permit browser approval in an interactive terminal")
     .option("--quiet", "suppress non-error diagnostics")
-    .option("--fields <paths>", "project result fields, such as id,title")
     .option(
       "--timeout <duration>",
       "command deadline: reads 30s, login 5m, downloads/transcription 1h; watch/MCP have no default",
@@ -256,7 +255,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
   program.hook("preAction", async (_root, action) => {
     const opts = action.optsWithGlobals()
     if (opts.json && opts.jsonl) throw new ZoomError("validation_error", "choose --json or --jsonl")
-    fields = opts.fields === undefined ? undefined : fieldsOf(opts.fields)
+    checkJson(action, { json: opts.json === true, ...(fields ? { fields: fields.join(",") } : {}) }, false)
     execution = startExecution(action, { signal: deps.signal, sleep: deps.sleep, now: deps.now })
     checkCancelled(signal())
     let family = action
@@ -821,11 +820,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
         dims?: number
       }) => {
         const opts = program.opts()
-        if (opts.json || opts.jsonl || opts.fields)
-          throw new ZoomError(
-            "validation_error",
-            "MCP stdio controls its own output; omit --json, --jsonl and --fields",
-          )
+        if (opts.json || opts.jsonl || fields)
+          throw new ZoomError("validation_error", "MCP stdio controls its own output; omit --json and --jsonl")
         if (!deps.serveMcp) throw new ZoomError("configuration_error", "the MCP server adapter is not available")
         if (options.semantic)
           validateMeetingModel({ model: options.model ?? "", baseUrl: options.baseUrl, dims: options.dims })
@@ -1067,11 +1063,12 @@ export const createProgram = (deps: ProgramDeps): Command => {
     activeTokens = undefined
     watchConfig = undefined
     watchSince = undefined
-    fields = undefined
+    const lifted = liftJsonFields(program, args)
+    fields = lifted.fields
     let result = program
     let failed = false
     let failure: unknown
-    const running = parseAsync(...args)
+    const running = parseAsync(...lifted.args)
     void running.catch(() => {})
     try {
       const active = currentExecution()

@@ -114,7 +114,7 @@ Errors go to stderr. Use `--quiet`
 to suppress non-error diagnostics. Piped output defaults to JSON; terminal output uses the shared
 human-readable renderer. Completion emits its shell protocol unless JSON is requested.
 
-Use `--fields id,title` to select result fields. `--offline` refuses network requests. Finite commands
+Use `--json=id,title` to keep only those fields. `--offline` refuses network requests. Finite commands
 buffer successful output until resource cleanup completes, with a default output limit of 4 MiB;
 `--max-output-bytes 0` removes that limit.
 

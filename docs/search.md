@@ -144,7 +144,7 @@ These anchors are inclusive: the boundary line repeats, so an agent can deduplic
 A corrected transcript keeps the old reference readable and marks it `superseded`; it does not
 silently switch to the replacement. To reject an altered anchor, pass its previously returned
 `target_fingerprint` as `--expected-fingerprint`. JSON output retains the structured cues and
-fingerprints; Markdown quotes transcript content as text. Use `--json` when selecting fields with `--fields`.
+fingerprints; Markdown quotes transcript content as text. `--json=id,title` keeps only those fields.
 
 For agents using `zm serve --mcp --meeting-context`, `meeting_passage` provides the same read,
 with `reference`, `before`, `after`, `bytes`, `max_read_bytes`, `expected_fingerprint` and
