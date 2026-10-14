@@ -27,6 +27,52 @@ zm meetings export <meeting-id> --format markdown --json
 Read the returned export before saving it to a file. MCP can return exports as text but does not
 write files. [Search and evidence](search.md) keeps exact passage references when you need citations.
 
+## Prepare for an upcoming meeting
+
+You have an upcoming Zoom call and want the relevant earlier discussion beside it. Ask your agent:
+
+```text prompt
+Prepare for the next Research Example planning call in Zoom. Identify the intended series first.
+Show the upcoming time, cited passages from earlier calls, confirmed project links, saved decisions
+and directly sourced follow-up tasks. Show candidates if several series fit. Tell me what is missing
+or uncertain. Do not change anything.
+```
+
+Use the provider series ID from [the Zoom schedule](remote-meetings.md), with digits and no spaces,
+rather than the internal ID printed by `meetings list`. In a terminal:
+
+```sh
+zm meetings prepare 123456789 --json
+```
+
+This reads the selected series from Zoom and joins it to your selected local profile's stored
+history. It needs the optional `meeting:read:meeting` permission in your
+[Zoom app](zoom-app.md#add-archive-or-management-access). It does not pull missing transcripts,
+change app permissions or start login. The default window looks seven days ahead and thirty days
+back, including at most five prior occurrences and ten cited cues per occurrence.
+
+Check `item.upcoming.candidate` and `verified_next`: a candidate time can be useful without proving
+it is the next occurrence. Recurring series dates alone never establish that claim. The result's
+`meetings` hold meeting references, transcript cues and fingerprints, observed participant names
+with existing person links, confirmed projects, accepted meeting facts and directly sourced tasks.
+Past participants are not a prediction of who will attend next.
+
+If the upcoming time appears without earlier calls, pull the relevant period through the Zoom API
+so the store has its exact series links. Imported transcript files may not contain that provider
+series ID. Preparation does not match calls by similar titles or participant names.
+
+Coverage distinguishes missing stored history, undated occurrences, extra rows and output limits.
+Archive completeness remains unknown. Person history, project-wide context and project-name/alias
+candidates are listed as unqueried; stored fact evidence is not revalidated. Use
+[search and evidence](search.md) to investigate those gaps. Preparation does not generate a summary,
+record a decision, accept a finding or create a task.
+
+For more control, use ISO timestamps with a zone for `--since-time`, `--before-time` and `--history-since-time`.
+`--meetings`, `--cues` and `--context-limit` bound the context; `--max-read-bytes` bounds individual
+reads and `--bytes` bounds the preparation item. Additional rows may remain when a bound is reached.
+Skipped unavailable sources set `meta.complete=false`; inspect their references before relying on
+the brief. Increase the relevant bound when the coverage identifies truncation.
+
 ## Choose local or remote data
 
 | Need | Command family | Where it works |
@@ -35,6 +81,7 @@ write files. [Search and evidence](search.md) keeps exact passage references whe
 | Retrieve hosted meeting data | `meetings sync`, API `watch` | Zoom to local database |
 | Import transcript files | `meetings import`, folder `watch` | Local files to database |
 | Back up available recording assets | `recordings` | Zoom to the destination you name |
+| Prepare one upcoming series with saved context | `meetings prepare` | Zoom schedule plus local database |
 | Read the Zoom schedule or change a meeting | `remote-meetings` | Zoom account |
 
 A successful local read does not prove Zoom still has the same content. A successful cloud download
@@ -58,6 +105,7 @@ does not import that transcript into the meeting database until you request arch
 | `meetings summary <meeting>` | read stored summaries |
 | `meetings export <meeting> --format markdown\|vtt` | export stored meeting content |
 | `search meetings <query>`, `meetings people <query>` | find stored text, indexing new meetings first, or participants |
+| `meetings prepare <series-id>` | gather upcoming proof and cited stored context for one selected series |
 | `meetings projects evidence <project> [query...]` | read bounded canonical-name/key/alias evidence for an existing project |
 | `meetings update <reference>`, `meetings link <reference>` | preview or apply owner-selected stored links |
 | `meetings transcribe <meeting> <file> --model <model>` | preview or locally recognize a WAV file into an independent transcript |

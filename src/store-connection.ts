@@ -44,6 +44,14 @@ export const createStoreConnector =
         return input
       }
       return {
+        meetingPreparation: {
+          scope: key,
+          create: async (upcoming) => {
+            const { createMeetingPreparationService } = await import("@wirecat/cli-core/services")
+            const service = createMeetingPreparationService(key, accountId, { meetings, upcoming })
+            return service.prepare.bind(service)
+          },
+        },
         store: meetings,
         accountId,
         close: () => connected.close(),

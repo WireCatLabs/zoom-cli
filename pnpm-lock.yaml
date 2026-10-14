@@ -15,8 +15,8 @@ importers:
         specifier: 0.28.2
         version: 0.28.2(commander@15.0.0)(typescript@7.0.2)
       '@wirecat/cli-core':
-        specifier: 0.277.0
-        version: 0.277.0(@wirecat/cli-base@0.28.2(commander@15.0.0)(typescript@7.0.2))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.5)
+        specifier: 0.280.0
+        version: 0.280.0(@wirecat/cli-base@0.28.2(commander@15.0.0)(typescript@7.0.2))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.5)
       commander:
         specifier: 15.0.0
         version: 15.0.0
@@ -42,6 +42,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^5.0.3
         version: 5.0.3(vitest@5.0.3)
+      '@wirecat/cli-base-dev':
+        specifier: npm:@wirecat/cli-base@0.30.0
+        version: '@wirecat/cli-base@0.30.0(commander@15.0.0)(typescript@7.0.2)'
       '@wirecat/cli-testing':
         specifier: 0.4.0
         version: 0.4.0(zod@4.6.5)
@@ -986,14 +989,24 @@ packages:
       commander:
         optional: true
 
+  '@wirecat/cli-base@0.30.0':
+    resolution: {integrity: sha512-n/WTlh6gi8Hzfm4C/PfkkhvT7sMRU2ZMdcX5t7IH6Zu/LlWVaTppZij2Rl4NqGWSC3oWTNaxYGY/mmWAQNxH1Q==}
+    engines: {node: '>=22'}
+    hasBin: true
+    peerDependencies:
+      commander: '>=15'
+    peerDependenciesMeta:
+      commander:
+        optional: true
+
   '@wirecat/cli-core-onnx@1.0.1':
     resolution: {integrity: sha512-4oLtnyhm8W69oCWYqCWYtUQEhaJYitivQmgLkKHAsPOCEJlZG8+IUzchEgGyq3X1rWFs66wRw6uVnKHjYRMyyQ==}
 
   '@wirecat/cli-core-sqlite@1.0.1':
     resolution: {integrity: sha512-dFkTE3+XdvZwrt7bZZEd2fzdqR2vFgnnGPOhmBKGNa7uKQHjOdqJL8Q9O5cajIjy5o8Gl0LVn0OZbYajhLvQ1A==}
 
-  '@wirecat/cli-core@0.277.0':
-    resolution: {integrity: sha512-X0IBZ2waGP3EV4R5mbUnpT+nUFjXvPXvkwAS2lK3yeUfWVbazIVp1kJz1G2fKwsN7ZQH5dvW7zroeGWhyTk+Vg==}
+  '@wirecat/cli-core@0.280.0':
+    resolution: {integrity: sha512-LuZ3sR6nsTlEoTfyqI0HNoawB2/eeHx7AmjL6KqTBr2STs4uDDqKKGXPI3mCekDiuFOgTNFWg4LNlyzt5KNkww==}
     engines: {node: ^22.16.0 || >=24}
     hasBin: true
     peerDependencies:
@@ -3077,13 +3090,26 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
+  '@wirecat/cli-base@0.30.0(commander@15.0.0)(typescript@7.0.2)':
+    dependencies:
+      '@valibot/to-json-schema': 1.8.0(valibot@1.5.0(typescript@7.0.2))
+      cli-table3: 0.6.5
+      cross-spawn: 7.0.6
+      picocolors: 1.1.1
+      valibot: 1.5.0(typescript@7.0.2)
+    optionalDependencies:
+      '@napi-rs/keyring': 2.1.0
+      commander: 15.0.0
+    transitivePeerDependencies:
+      - typescript
+
   '@wirecat/cli-core-onnx@1.0.1':
     dependencies:
       onnxruntime-common: 1.30.0
 
   '@wirecat/cli-core-sqlite@1.0.1': {}
 
-  '@wirecat/cli-core@0.277.0(@wirecat/cli-base@0.28.2(commander@15.0.0)(typescript@7.0.2))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.5)':
+  '@wirecat/cli-core@0.280.0(@wirecat/cli-base@0.28.2(commander@15.0.0)(typescript@7.0.2))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.5)':
     dependencies:
       '@anthropic-ai/sdk': 0.131.0(zod@4.6.5)
       '@bomb.sh/tab': 0.0.22(commander@15.0.0)

@@ -225,6 +225,29 @@ zm meetings projects evidence <project> [query] [options]
 | `--cursor <cursor>` | continue with the same project and frozen selection from next. |
 | `--max-read-bytes <bytes>` | word-read byte budget, at most 67108864 (default 4194304). |
 
+### `zm meetings prepare`
+
+prepare cited context for one upcoming series
+
+```sh
+zm meetings prepare <series-id> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `series-id` | required | exact provider series ID. |
+
+| Option | What it does |
+|---|---|
+| `--since-time <time>` | window start as ISO timestamp with zone (default now). |
+| `--before-time <time>` | exclusive window end as ISO timestamp (default seven days after start). |
+| `--history-since-time <time>` | history start as ISO timestamp (default thirty days before start). |
+| `--meetings <n>` | prior occurrences, 1–20 (default 5). |
+| `--cues <n>` | cues per occurrence, 1–100 (default 10). |
+| `--context-limit <n>` | entries per context category, 1–100 (default 20). |
+| `--max-read-bytes <bytes>` | stored/normalized bytes per read, at most 4194304 (default 262144). |
+| `--bytes <bytes>` | preparation item JSON bytes, 4096–4194304 (default 65536). |
+
 ### `zm meetings update`
 
 preview linking a stored meeting to an event; --yes applies it
@@ -889,6 +912,7 @@ zm serve [options]
 | `--mcp` | use the MCP JSON-RPC protocol. |
 | `--unified-search` | include selected-profile meetings-only unified search. |
 | `--meeting-context` | include account-fixed evidence, person context and task proposals. |
+| `--meeting-preparation` | include cited meeting preparation with remote Zoom schedule reads. |
 | `--semantic` | include read-only meeting vector search with an explicit query model. |
 | `--model <model>` | query embedding model: an installed one, or one served at --base-url. |
 | `--base-url <url>` | explicit remote embedding endpoint for semantic queries. |

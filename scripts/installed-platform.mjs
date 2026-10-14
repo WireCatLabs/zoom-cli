@@ -143,6 +143,7 @@ const json = (...args) => answer(invoke(["--json", ...args]).stdout)
 assert.equal(invoke(["--version"]).stdout.trim(), expectedVersion)
 invoke(["--help"])
 json("commands")
+invoke(["--json", "meetings", "prepare", "123", "--cues", "101"], 2)
 assert.equal(existsSync(environment.ZM_CONFIG_DIR), false)
 assert.equal(existsSync(environment.MESSAGING_STORE), false)
 const missingProfileArchive = join(sandbox, "missing-profile-archive")
@@ -252,6 +253,16 @@ assert.equal(upcomingResult.status, 0, `installed upcoming SDK: ${upcomingResult
 assert.equal(diagnostics(upcomingResult.stderr), "")
 assert.equal(existsSync(denied), false)
 const upcomingProof = JSON.parse(upcomingResult.stdout)
+const preparationResult = spawnSync(
+  process.execPath,
+  [...prefix, fileURLToPath(new URL("./installed-preparation.mjs", import.meta.url)), root],
+  { cwd: root, env: environment, encoding: "utf8", timeout: 15000, maxBuffer: 1024 * 1024 },
+)
+assert.equal(preparationResult.error, undefined)
+assert.equal(preparationResult.status, 0, `installed preparation SDK: ${preparationResult.stderr}`)
+assert.equal(diagnostics(preparationResult.stderr), "")
+assert.equal(existsSync(denied), false)
+const preparationProof = JSON.parse(preparationResult.stdout)
 const folder = join(sandbox, "vtt")
 mkdirSync(folder)
 const vtt = join(folder, "2026-10-10_1530_example.vtt")
@@ -647,6 +658,7 @@ const proof = {
   scheduleOfflinePreview: true,
   recordingResume,
   upcoming_sdk: upcomingProof,
+  preparation_sdk: preparationProof,
   meetingIntegration,
   modelEndpoint: "isolated loopback fixture only",
   externalAccess: false,

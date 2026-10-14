@@ -14,6 +14,8 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [config.ts](../../src/config.ts) | public client and file-source settings |
 | [program.ts](../../src/program.ts) | shared commands, output and injected store dependency |
 | [meeting-project-evidence-commands.ts](../../src/meeting-project-evidence-commands.ts), [meeting-project-evidence-mcp.ts](../../src/meeting-project-evidence-mcp.ts) | thin account/resource bindings over Core project discovery and registered schemas |
+| [meeting-preparation.ts](../../src/meeting-preparation.ts), [meeting-preparation-mcp.ts](../../src/meeting-preparation-mcp.ts) | per-call account/credential binding and close-before-output over Core preparation services and adapters |
+| [meeting-mcp-command.ts](../../src/meeting-mcp-command.ts), [meeting-read-command-bindings.ts](../../src/meeting-read-command-bindings.ts) | native command composition without expanding the main program |
 | [upcoming-meetings.ts](../../src/upcoming-meetings.ts), [occurrence-schedule.ts](../../src/occurrence-schedule.ts) | bounded Zoom occurrence proof over the shared scoped reader |
 | [remote-http.ts](../../src/remote-http.ts) | authenticated Zoom dispatch, retry and opt-in shared JSON byte bounds |
 | [commands.ts](../../src/commands.ts) | shared command metadata, completion and local diagnostics |
@@ -200,7 +202,11 @@ schedules retain incomplete coverage. A small row budget fails rather than silen
 VerifiedNext describes a unique dated candidate in a covered selected-series window. Identity,
 attendance and historical archive coverage use their own sources.
 
-This is a library capability. The CLI still uses its existing remote-meetings commands; the adapter
-performs one selected-series detail read. Broad hosted/invited calendar discovery and the composed
-preparation handler are separate capabilities. The public [Zoom Meetings API](https://developers.zoom.us/docs/api/meetings/)
+The CLI preparation handler uses this adapter for one selected-series detail read and joins it
+with the shared preparation service. Broad hosted/invited calendar discovery remains separate. The public [Zoom Meetings API](https://developers.zoom.us/docs/api/meetings/)
 describes the detail fields and required meeting:read:meeting scope.
+
+Command vocabulary checks use the development-only `@wirecat/cli-base-dev` alias at 0.30.0.
+Runtime remains on Base 0.28.2, matching Core 0.280.0; the alias does not enter published
+runtime dependencies. This permits current preparation vocabulary checks without adopting
+the separate breaking Base path and logging migration.

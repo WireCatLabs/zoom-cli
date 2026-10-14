@@ -2,7 +2,7 @@
 name: zoom-cli
 description: Archive Zoom cloud recordings, read stored meeting transcripts and summaries, or manage a Zoom meeting through zm. Use for Zoom CLI workflows, not joining calls or operating the desktop video client.
 metadata:
-  version: "0.13.0"
+  version: "0.14.0"
 ---
 
 # Zoom CLI
@@ -80,7 +80,8 @@ The selected overlap also subtracts from the initial bound.
 
 `zm serve --mcp` provides eight read-only stored meeting tools. Discovery opens no database; reads
 use the selected account. MCP uses its own framing, so omit JSON/JSONL/field-selection flags. `--meeting-context` adds four
-read-only context tools; `--unified-search` adds one meetings-only shared search tool;
+read-only context tools; `--meeting-preparation` adds the remote schedule plus cited-context
+`meeting_prepare` tool; `--unified-search` adds one meetings-only shared search tool;
 `--semantic --model <model>` lets `search_meetings` rank existing vectors with `by_meaning`. Remote model selection also requires
 `--base-url` and `--dims`. The server fixes the model at startup and the profile on its first read.
 Clients cannot select another model or account. Generation and task creation are not MCP tools.
@@ -175,3 +176,19 @@ List-only `--since-time` and `--until-time` have become query fields; transcript
 ## Bounded context-filtered search
 
 Use `search meetings <query>` with `--since-time`/`--until-time` and optionally `--identity-id`, `--person-id`, `--event-id`, `--series-id`, `--project`, `--tag` or `--topic`. It indexes newly stored meetings before reading; there is no separate index step. Identity IDs come from observed participant results; person IDs follow explicit identity links. Filters select meetings, never attribute cue speech. Project names, keys and aliases resolve existing vocabulary and require confirmed membership; labels require explicit meeting taggings. Do not silently infer membership from matching words or merge similar participant names. Missing or ambiguous names fail. Inspect pending indexing and unknown archive coverage even for empty pages. `search_meetings` exposes the same selected-account MCP read.
+
+## Prepare one upcoming series
+
+Use `meetings prepare <series-id> --json` with the exact provider series ID from remote meeting
+listing, rather than an internal stored meeting ID. This reads Zoom's schedule and stored history,
+requiring `meeting:read:meeting`; it does not start login, change scopes or import missing text.
+Default windows look seven days ahead and thirty days back. Use ISO `--since-time`, `--before-time` and
+`--history-since-time` for a fixed window; keep the returned absolute windows when replaying.
+
+Preserve candidate/verified-next distinction and all meeting/cue references, fingerprints, stored
+person links, confirmed project links, accepted facts and directly sourced tasks. Past attendees do
+not establish future attendance. Coverage states live reads and unknown archive completeness, plus
+unqueried person-history, project-wide context and project-alias candidates. Stored fact evidence
+is not revalidated. Inspect skipped-source metadata and truncation before relying on the brief.
+This command does not summarize, accept findings or create tasks. Use existing Memo workflows for
+reviewed writes, retaining meeting evidence and preconditions.

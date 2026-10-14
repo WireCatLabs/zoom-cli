@@ -53,14 +53,11 @@ import type { MeetingContextCapabilities } from "./meeting-context.js"
 import { addMeetingContextCommands } from "./meeting-context-commands.js"
 import type { MeetingIntegrationCapabilities } from "./meeting-integration.js"
 import { addMeetingIntegrationCommands } from "./meeting-integration-commands.js"
-import { addProjectEvidenceCommand } from "./meeting-project-evidence-commands.js"
+import { addZoomMcpCommand, type ZoomMcpServeOptions } from "./meeting-mcp-command.js"
+import type { MeetingPreparationBinding, ZoomPreparationOptions } from "./meeting-preparation.js"
+import { addMeetingReadBindings } from "./meeting-read-command-bindings.js"
 import { addMeetingSearchCommands, type MeetingHitSearch } from "./meeting-search-commands.js"
-import {
-  addMeetingEmbeddingCommand,
-  type MeetingModelOptions,
-  type MeetingSemanticCapabilities,
-  validateMeetingModel,
-} from "./meeting-semantic-commands.js"
+import { addMeetingEmbeddingCommand, type MeetingSemanticCapabilities } from "./meeting-semantic-commands.js"
 import { createRecordingScheduleService, type RecordingScheduleService } from "./recording-schedule.js"
 import { addRecordingScheduleCommands } from "./recording-schedule-commands.js"
 import { fileRecordingScheduleStore } from "./recording-schedule-store.js"
@@ -88,6 +85,7 @@ export interface StoreConnection {
   appendTranscriptsWithReceipt: MeetingTranscriptReceiptStore["appendTranscriptsWithReceipt"]
   meetingIntegration: MeetingIntegrationCapabilities
   meetingSearch: MeetingHitSearch
+  meetingPreparation: MeetingPreparationBinding
   meetingProjectEvidence: MeetingProjectDiscoveryReader
   meetingTranscription: LocalTranscriptionCapabilities
   unifiedSearch: UnifiedSearch
@@ -126,14 +124,7 @@ export interface ProgramDeps {
   checkSession?: (options?: { signal?: AbortSignal }) => Promise<unknown>
   signal?: AbortSignal
   sleep?: SleepLike
-  serveMcp?: (options: {
-    signal: AbortSignal
-    commandRegistry: Command
-    maxResultBytes?: number
-    includeUnifiedSearch?: boolean
-    includeMeetingContext?: boolean
-    semanticModel?: MeetingModelOptions
-  }) => Promise<void>
+  serveMcp?: (options: ZoomMcpServeOptions) => Promise<void>
   streamData?: (text: string, signal: AbortSignal) => Promise<void>
 }
 const unavailable = async (): Promise<never> => {
@@ -713,47 +704,15 @@ export const createProgram = (deps: ProgramDeps): Command => {
       env: deps.env,
     }
   })
-  program
-    .command("serve")
-    .description("serve read-only meeting tools over MCP stdio")
-    .requiredOption("--mcp", "use the MCP JSON-RPC protocol")
-    .option("--unified-search", "include selected-profile meetings-only unified search")
-    .option("--meeting-context", "include account-fixed evidence, person context and task proposals")
-    .option("--semantic", "include read-only meeting vector search with an explicit query model")
-    .option("--model <model>", "query embedding model: an installed one, or one served at --base-url")
-    .option("--base-url <url>", "explicit remote embedding endpoint for semantic queries")
-    .option("--dims <n>", "vector size the remote service returns, in dimensions", bytes)
-    .action(
-      async (options: {
-        unifiedSearch?: boolean
-        meetingContext?: boolean
-        semantic?: boolean
-        model?: string
-        baseUrl?: string
-        dims?: number
-      }) => {
-        const opts = program.opts()
-        if (opts.json || opts.jsonl || fields)
-          throw new CliError("validation_error", "MCP stdio controls its own output; omit --json and --jsonl")
-        if (!deps.serveMcp) throw new CliError("configuration_error", "the MCP server adapter is not available")
-        if (options.semantic)
-          validateMeetingModel({ model: options.model ?? "", baseUrl: options.baseUrl, dims: options.dims })
-        else if (options.model !== undefined || options.baseUrl !== undefined || options.dims !== undefined)
-          throw new CliError("validation_error", "MCP model options require --semantic")
-        if (options.semantic && options.baseUrl !== undefined && opts.offline)
-          throw new CliError("configuration_error", "remote embeddings require network access; remove --offline")
-        await deps.serveMcp({
-          commandRegistry: program,
-          signal: signal() as AbortSignal,
-          maxResultBytes: program.opts().maxOutputBytes,
-          ...(options.unifiedSearch ? { includeUnifiedSearch: true } : {}),
-          ...(options.meetingContext ? { includeMeetingContext: true } : {}),
-          ...(options.semantic
-            ? { semanticModel: { model: options.model ?? "", baseUrl: options.baseUrl, dims: options.dims } }
-            : {}),
-        })
-      },
-    )
+  const preparationOptions: ZoomPreparationOptions = {
+    credentials: () => {
+      api()
+      return tokens()
+    },
+    fetch: fetchWithSignal(deps.fetch),
+    remoteOptions,
+  }
+  addZoomMcpCommand(program, { fields: () => fields, signal, serve: deps.serveMcp, preparation: preparationOptions })
   addIngestionSearchCommands(program, {
     signal,
     output,
@@ -772,11 +731,17 @@ export const createProgram = (deps: ProgramDeps): Command => {
     },
     search: async (request) => runUnifiedSearch((await connected()).unifiedSearch, request),
   })
-  addProjectEvidenceCommand(program, {
-    read: async (project, request) => (await connected()).meetingProjectEvidence(project, request),
-    signal,
-    now: deps.now,
-    output: (value) => output(bodyOf(value)),
+  addMeetingReadBindings(program, {
+    project: {
+      read: async (project, request) => (await connected()).meetingProjectEvidence(project, request),
+      signal,
+      now: deps.now,
+      output: (value) => output(bodyOf(value)),
+    },
+    preparation: {
+      ...preparationOptions,
+      connect: () => openStore("read"),
+    },
   })
   addMeetingIntegrationCommands(program, {
     signal,
