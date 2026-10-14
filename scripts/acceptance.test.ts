@@ -139,13 +139,17 @@ require('node:module').syncBuiltinESMExports();
 // These process-boundary checks share one retained, invented installation and database.
 describe("installed package", { concurrent: false, shuffle: false }, () => {
   let importedMeetingId: string
-  it("ships usable bin and exports with the package version", () => {
+  it("ships a usable bin with the package version", () => {
     const pkg = JSON.parse(readFileSync(join(install, "node_modules/@wirecat/zoom-cli/package.json"), "utf8"))
     expect(pkg.version).toBe(VERSION)
     const version = invoke("--version")
     expect(version.status).toBe(0)
     expect(version.stdout.trim()).toBe(pkg.version)
     expect(version.stderr).toBe("")
+    expect(existsSync(config)).toBe(false)
+  })
+
+  it("shows general and ingestion help without configuration", () => {
     const help = invoke("--help")
     expect(help.status).toBe(0)
     expect(help.stdout).toContain("meetings")
@@ -155,6 +159,9 @@ describe("installed package", { concurrent: false, shuffle: false }, () => {
     expect(pullHelp.stdout).toContain("--lookback-days")
     expect(pullHelp.stderr).toBe("")
     expect(existsSync(config)).toBe(false)
+  })
+
+  it("exposes its public file preflight adapter", () => {
     const exports = spawnSync(
       process.execPath,
       [
