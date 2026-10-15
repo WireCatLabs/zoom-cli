@@ -63,12 +63,20 @@ project memberships shared with included history. Each has a meeting reference, 
 those connections. The search stays within this profile and history window, uses current links,
 and excludes proposed project memberships. Matching names or transcript words never creates a link.
 
+`knowledge.items` adds accepted facts about explicitly linked people and confirmed global projects,
+including decisions recorded outside these meetings. Each has a `fact:` reference, subject/project
+references, update time and `shared_person`/`shared_project` flags. It uses the included prior calls
+as anchors and excludes proposed, reversed, deleted and later-updated facts. The fact reference lets
+you retrieve the full record and evidence through Memo before relying on it. Notes, mail and messages
+are not searched; `knowledge.coverage` keeps `fact_evidence: not-revalidated` and
+`other_sources: not-queried` visible.
+
 If the upcoming time appears without earlier calls, pull the relevant period through the Zoom API
 so the store has its exact series links. Imported transcript files may not contain that provider
 series ID. Preparation does not match calls by similar titles or participant names.
 
 Coverage distinguishes missing stored history, undated occurrences, extra rows and output limits.
-Archive completeness remains unknown. Person/project sources outside meeting transcripts and
+Archive completeness remains unknown. Person/project notes, mail, messages and
 project-name/alias candidates remain unqueried; without usable prior occurrences, related history
 also remains unqueried. Stored fact evidence is not revalidated. Use
 [search and evidence](search.md) to investigate those gaps. Preparation does not generate a summary,
@@ -79,6 +87,8 @@ For more control, use ISO timestamps with a zone for `--since-time`, `--before-t
 bound the context; `--max-read-bytes` bounds individual
 reads and `--bytes` bounds the entire preparation item. Exact-series evidence takes priority;
 `related.has_more` and `related.output_limited` identify extra or omitted related context.
+Accepted knowledge has independent `knowledge.coverage.has_more` and `knowledge.coverage.output_limited` flags;
+it returns at most twenty facts (or a smaller `--context-limit`) and yields bytes to meeting evidence.
 Additional rows may remain when a bound is reached.
 Skipped unavailable sources set `meta.complete=false`; inspect their references before relying on
 the brief. Increase the relevant bound when the coverage identifies truncation.

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.18.0 — 15.10.2026
+
+### Added
+
+- Meeting preparation includes cited accepted facts about explicitly linked people and confirmed
+  global projects in `knowledge`, including decisions recorded outside the meeting. Lookahead and
+  output-limit flags remain visible; meeting evidence has byte priority. Source evidence is not
+  revalidated and notes, mail and messages remain unqueried. The shared Core SDK owns the behavior.
+
 ## 0.17.1 — 15.10.2026
 
 ### Fixed

@@ -12,6 +12,7 @@ const { sampleMeeting } = await load("@wirecat/cli-core/meetings/testing")
 const { createTaskFromMeeting } = await load("@wirecat/cli-core/services")
 const { readMeetingPreparation } = await load("@wirecat/cli-core/cli")
 const { itemEnvelopeSchema } = await load("@wirecat/cli-base/standards")
+const { projectFields } = await load("@wirecat/cli-base")
 const v = await load("valibot")
 const now = Date.parse("2026-10-14T12:00:00Z")
 const path = join(root, "preparation-sdk.db")
@@ -36,6 +37,12 @@ const fact = await store.facts.add({
   by: "owner",
 })
 const task = await createTaskFromMeeting(store, key, { source: reference, kind: "promise", origin: "owner" })
+const projectFact = await store.facts.add({
+  type: "decision",
+  statement: "Use the written launch checklist",
+  subject: project.ref,
+  by: "owner",
+})
 const relatedInput = {
   ...sample,
   meeting: {
@@ -122,10 +129,19 @@ assert.equal(extra.shared_person, true)
 assert.equal(extra.shared_project, true)
 assert.ok(extra.evidence.items[0].ref.startsWith(`${relatedReference}/`))
 assert.equal(answer.item.related.has_more, false)
+assert.deepEqual(answer.item.knowledge.anchors, [reference])
+assert.equal(answer.item.knowledge.items.length, 1)
+assert.equal(answer.item.knowledge.items[0].ref, projectFact.ref)
+assert.equal(answer.item.knowledge.items[0].shared_project, true)
+assert.equal(answer.item.knowledge.coverage.fact_evidence, "not-revalidated")
+assert.equal(answer.item.knowledge.coverage.other_sources, "not-queried")
+const selectedFacts = projectFields(answer, ["knowledge.items.ref"])
+assert.deepEqual(selectedFacts.item.knowledge.items, [{ ref: projectFact.ref }])
+assert.deepEqual(selectedFacts.item.knowledge.coverage, answer.item.knowledge.coverage)
 assert.ok(Buffer.byteLength(JSON.stringify(answer.item)) <= 16384)
 const reopened = await openStore({ path })
 try {
-  assert.equal((await reopened.facts.list()).length, 1)
+  assert.equal((await reopened.facts.list()).length, 2)
   assert.equal((await reopened.knowledge.meetingProjects(key)).items.length, 2)
 } finally {
   await reopened.close()
@@ -136,6 +152,8 @@ console.log(
     selected_account: true,
     cited_context: true,
     cited_related_context: true,
+    cited_accepted_knowledge: true,
+    knowledge_projection: true,
     bounded_output: true,
     no_writes: true,
     strict_arguments: true,
