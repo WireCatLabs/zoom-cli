@@ -15,17 +15,12 @@ const oldFile = {
 }
 
 describe("config names", () => {
-  it("reads a camelCase file and rewrites it in snake_case, keeping the mode", () => {
+  it("refuses camelCase files without rewriting them", () => {
     const path = configPath()
-    writeFileSync(path, JSON.stringify(oldFile), { mode: 0o600 })
-    expect(readConfig(path)).toEqual(oldFile)
-    expect(saved(path)).toEqual({
-      client_id: "example-client",
-      source: "files",
-      files_folder: "example-folder",
-      files_timezone: "Europe/Madrid",
-      account_profile: "example",
-    })
+    const text = JSON.stringify(oldFile)
+    writeFileSync(path, text, { mode: 0o600 })
+    expect(() => readConfig(path)).toThrow("zm config is invalid")
+    expect(readFileSync(path, "utf8")).toBe(text)
     expect(statSync(path).mode & 0o777).toBe(0o600)
   })
 
@@ -42,12 +37,12 @@ describe("config names", () => {
   it("refuses both spellings of one setting with different values", () => {
     const path = configPath()
     writeFileSync(path, JSON.stringify({ ...oldFile, client_id: "example-other" }))
-    expect(() => readConfig(path)).toThrow(/clientId and client_id are the same setting/)
+    expect(() => readConfig(path)).toThrow("zm config is invalid")
   })
 
-  it("accepts both spellings with the same value", () => {
+  it("refuses old names even when snake_case values match", () => {
     const path = configPath()
     writeFileSync(path, JSON.stringify({ ...oldFile, client_id: "example-client" }))
-    expect(readConfig(path).clientId).toBe("example-client")
+    expect(() => readConfig(path)).toThrow("zm config is invalid")
   })
 })

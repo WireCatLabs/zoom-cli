@@ -36,7 +36,8 @@ vi.mock("@wirecat/cli-core", async (importOriginal) => ({
   parseMeetingReference: api.parseMeetingReference,
   canonicalMeetingReference: api.canonicalMeetingReference,
 }))
-vi.mock("@wirecat/cli-core/services", () => ({
+vi.mock("@wirecat/cli-core/services", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@wirecat/cli-core/services")>()),
   readMeetingEvidence: api.readMeetingEvidence,
   personMeetingContext: api.personMeetingContext,
   proposeMeetingTask: api.proposeMeetingTask,

@@ -475,7 +475,7 @@ it("reads older valid configuration and validates optional local profile labels"
   const { deps } = await setup()
   await writeFile(
     deps.configPath,
-    JSON.stringify({ clientId: "example-client", source: "api", filesFolder: null, filesTimezone: "UTC" }),
+    JSON.stringify({ client_id: "example-client", source: "api", files_folder: null, files_timezone: "UTC" }),
   )
   expect(readConfig(deps.configPath).accountProfile).toBeNull()
   setConfig(deps.configPath, "account.profile", "Example-work_1.2")
@@ -486,11 +486,11 @@ it("reads older valid configuration and validates optional local profile labels"
   await writeFile(
     deps.configPath,
     JSON.stringify({
-      clientId: "example-client",
+      client_id: "example-client",
       source: "api",
-      filesFolder: null,
-      filesTimezone: "UTC",
-      accountProfile: [],
+      files_folder: null,
+      files_timezone: "UTC",
+      account_profile: [],
     }),
   )
   expect(() => readConfig(deps.configPath)).toThrow(/invalid/)
