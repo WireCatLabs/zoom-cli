@@ -4,7 +4,14 @@ import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js"
 import { CallToolRequestSchema, ListToolsRequestSchema, type Tool } from "@modelcontextprotocol/sdk/types.js"
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv"
 import { CliError, type ErrorCode, errorObjectOf, isCliError, mcpErrorResult } from "@wirecat/cli-base"
-import { LOCAL_READ, meetingPreparationTool, snakeKeys } from "@wirecat/cli-core/cli"
+import {
+  agentResult,
+  LOCAL_READ,
+  meetingPreparationTool,
+  snakeKeys,
+  UNTRUSTED,
+  UNTRUSTED_INSTRUCTION,
+} from "@wirecat/cli-core/cli"
 import { type MeetingStore, SAVE_INSTRUCTION } from "@wirecat/cli-core/meetings"
 import {
   callMeetingPassageTool,
@@ -83,7 +90,10 @@ const buildServer = (options: MeetingMcpOptions) => {
     validateMeetingModel(semanticModel)
     tools.push({
       ...meetingSearchTool,
-      description: `${meetingSearchTool.description}; by_meaning ranks stored vectors with the server's model and builds none`,
+      description: meetingSearchTool.description.replace(
+        UNTRUSTED,
+        `by_meaning ranks stored vectors with the server's model and builds none. ${UNTRUSTED}`,
+      ),
       annotations: { ...meetingSearchTool.annotations, openWorldHint: semanticModel.baseUrl !== undefined },
       inputSchema: {
         ...meetingSearchTool.inputSchema,
@@ -177,13 +187,19 @@ const buildServer = (options: MeetingMcpOptions) => {
       },
     })
   }
-  for (const tool of tools) tool.outputSchema ??= toolAnswerSchema
+  // Said on every tool, not only in the instructions: a host may show a model the tool alone.
+  for (const [index, tool] of tools.entries())
+    tools[index] = {
+      ...tool,
+      outputSchema: tool.outputSchema ?? toolAnswerSchema,
+      description: tool.description?.includes(UNTRUSTED) ? tool.description : `${tool.description}. ${UNTRUSTED}`,
+    }
   const validated = new Map(
     tools.map((tool) => [tool.name, validator.getValidator<Record<string, unknown>>(tool.inputSchema)]),
   )
   const server = new Server(
     { name: "zoom-meetings", version: options.version ?? VERSION },
-    { capabilities: { tools: {} }, instructions: SAVE_INSTRUCTION },
+    { capabilities: { tools: {} }, instructions: `${UNTRUSTED_INSTRUCTION}\n${SAVE_INSTRUCTION}` },
   )
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }))
   const bounded = <T>(result: T) =>
@@ -211,11 +227,11 @@ const buildServer = (options: MeetingMcpOptions) => {
     if (!checked.valid) return failure("validation_error", `invalid meeting tool arguments: ${checked.errorMessage}`)
     if (request.params.name === "meeting_prepare") {
       const result = await readPreparationTool(options, args, signal)
-      return cancelled() ? failure("cancelled", "meeting read was cancelled") : bounded(result)
+      return cancelled() ? failure("cancelled", "meeting read was cancelled") : result
     }
     if (request.params.name === "meeting_project_evidence") {
       const result = await readProjectEvidenceTool(options, args, signal)
-      return cancelled() ? failure("cancelled", "meeting read was cancelled") : bounded(result)
+      return cancelled() ? failure("cancelled", "meeting read was cancelled") : result
     }
     let connection: StoreConnection
     try {
@@ -380,10 +396,11 @@ const buildServer = (options: MeetingMcpOptions) => {
         result = mcpErrorResult(errorObjectOf(error, hostFailureContext(undefined, LOCAL_READ)))
       }
     }
-    return bounded(result)
+    return result
   }
   server.setRequestHandler(CallToolRequestSchema, (request, extra) => {
-    const result = call(request, extra.signal)
+    // Escaping lengthens the answer, so the byte limit counts what the agent reads.
+    const result = call(request, extra.signal).then((answer) => bounded(agentResult(answer)))
     running.add(result)
     void result.then(
       () => running.delete(result),
