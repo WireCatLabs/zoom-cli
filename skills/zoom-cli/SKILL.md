@@ -45,6 +45,17 @@ Passage boundary anchors are inclusive, so adjacent windows overlap. Historical 
 readable and may be superseded; `meetings transcript <id> --history` includes retained versions.
 `meetings summary <id>` reads provider summaries; prefer transcript evidence for consequential claims.
 
+For several word queries or retained cue references, use `zm batch <file> --json` (or `-` for stdin)
+with `{"requests":[{"id":"q1","command":["search","meetings"],"args":["budget","--limit","20"]}]}`.
+Only word search and `meetings passage` are registered; keep account/profile selection outside.
+Each request has its own args/cursor/fingerprint and returns its ID, status and normal `answer` or
+`error`. Preserve duplicates, overlapping cues, per-answer coverage and outer completeness.
+Text/Markdown reuses compact passages; JSON selectors apply inside answers, preserving correlation.
+Bounds: 32 requests, 256 KiB input, 64 MiB reserved text ceilings, 4 MiB output. Each request reserves
+its full read ceiling (default 4 MiB), plus one 4 MiB index pass before searches; lower per-request
+ceilings or split batches when needed. Partial batches exit zero: inspect `error`/`not_run` and
+`meta.complete`, then retry only the unresolved inputs. JSONL ends with explicit completeness.
+
 ## People, projects and other sources
 
 Use `meetings people <name-or-email>` before choosing `--identity-id`; inspect ambiguity and

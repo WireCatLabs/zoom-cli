@@ -44,4 +44,6 @@ Commands:
                                      stdio
   search                             opt-in shared store search; meetings by
                                      default
+  batch [options] <file>             run bounded stored meeting reads: search
+                                     meetings and meetings passage
   help [command]                     display help for command

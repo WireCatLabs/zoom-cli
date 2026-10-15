@@ -96,6 +96,10 @@ against an explicitly empty model directory reports the missing model without do
 Archive import assertions use exact creation, insertion, replay and supersession receipts. The helper
 inspects audit rows only in its fresh fixture; product code uses the shared public services.
 
+The same installed artifact checks batch file/stdin input, strict UTF-8 and input bounds before
+store creation, independent query cursors, stale fingerprints, correlated budget refusals and
+truthful JSONL end records. All meeting evidence is invented and guarded against external I/O.
+
 Archive reads compare the opened file's identity with its path before reading bytes. This also
 checks replacement races on Windows, where libuv does not support `O_NOFOLLOW`:
 [libuv file-system flags](https://docs.libuv.org/en/v1.x/fs.html).

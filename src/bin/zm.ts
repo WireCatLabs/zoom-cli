@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process"
+import { createReadStream } from "node:fs"
 import { join } from "node:path"
 import { createInterface } from "node:readline/promises"
+import { addAbortSignal } from "node:stream"
 import { fileURLToPath } from "node:url"
-import { CliError, catchCrashes, systemKeyring } from "@wirecat/cli-base"
+import { CliError, catchCrashes, isCliError, readBatchInput, systemKeyring } from "@wirecat/cli-base"
 import { profileAccountKey, readConfig } from "../config.js"
 import { loginService, zmPaths } from "../folders.js"
 import { writeExportFile } from "../output-file.js"
@@ -74,6 +76,18 @@ try {
     env: process.env,
     signal: cancellation.signal,
     writeFile: writeExportFile,
+    readBatchInput: async (path, signal) => {
+      signal?.throwIfAborted()
+      const input = path === "-" ? process.stdin : createReadStream(path, { signal })
+      if (signal && path === "-") addAbortSignal(signal, input)
+      try {
+        return await readBatchInput(input, { signal })
+      } catch (error) {
+        signal?.throwIfAborted()
+        if (isCliError(error)) throw error
+        throw new CliError("configuration_error", "could not read the batch input file or stdin")
+      }
+    },
     streamData: (text, signal) => writeStream(process.stdout, text, signal),
     data: (text) => process.stdout.write(text),
     diagnostic: (text) => {

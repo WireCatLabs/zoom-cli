@@ -254,6 +254,68 @@ export const installedMeetingIntegration = async ({
     firstCursor ??= cursor
   } while (cursor)
   assert.equal(hits.length, 9)
+  const cueRef = hits[0].ref
+  const batchInput = JSON.stringify({
+    requests: [
+      { id: "q1", command: ["search", "meetings"], args: ["needle", "--limit", "1"] },
+      { id: "p1", command: ["meetings", "passage"], args: [cueRef, "--before-n", "0", "--after-n", "1"] },
+      { id: "stale", command: ["meetings", "passage"], args: [cueRef, "--expected-fingerprint", "f".repeat(64)] },
+      { id: "q2", command: ["search", "meetings"], args: ["needle", "--limit", "2"] },
+    ],
+  })
+  const batchFile = join(sandbox, "meeting-batch.json")
+  writeFileSync(batchFile, batchInput)
+  const batch = JSON.parse(invoke(["batch", batchFile, "--json"]).stdout)
+  assert.deepEqual(
+    batch.items.map((item) => item.id),
+    ["q1", "p1", "stale", "q2"],
+  )
+  assert.deepEqual(
+    batch.items.map((item) => item.status),
+    ["ok", "ok", "error", "ok"],
+  )
+  assert.equal(batch.meta.complete, false)
+  assert.equal(batch.items[0].answer.items.length, 1)
+  assert.equal(batch.items[3].answer.items.length, 2)
+  assert.ok(batch.items[0].answer.page.next_cursor)
+  assert.equal(batch.items[1].answer.item.target_ref, cueRef)
+  const batchLines = invoke(["batch", "-", "--jsonl"], 0, {}, batchInput)
+    .stdout.trim()
+    .split("\n")
+    .map((line) => JSON.parse(line))
+  assert.deepEqual(
+    batchLines.map((line) => line.type),
+    ["item", "item", "item", "item", "end"],
+  )
+  assert.equal(batchLines.at(-1).complete, false)
+  assert.deepEqual(
+    batchLines.slice(0, -1).map((line) => line.data.status),
+    ["ok", "ok", "error", "ok"],
+  )
+  const resumeBatch = JSON.stringify({
+    requests: [
+      {
+        id: "q1-next",
+        command: ["search", "meetings"],
+        args: ["needle", "--limit", "1", "--cursor", batch.items[0].answer.page.next_cursor],
+      },
+      {
+        id: "q2-next",
+        command: ["search", "meetings"],
+        args: ["needle", "--limit", "2", "--cursor", batch.items[3].answer.page.next_cursor],
+      },
+    ],
+  })
+  const resumed = JSON.parse(invoke(["batch", "-", "--json"], 0, {}, resumeBatch).stdout)
+  assert.equal(resumed.meta.complete, true)
+  assert.notEqual(resumed.items[0].answer.items[0].ref, batch.items[0].answer.items[0].ref)
+  assert.notEqual(resumed.items[1].answer.items[0].ref, batch.items[3].answer.items[0].ref)
+  const refused = JSON.parse(invoke(["batch", batchFile, "--max-read-bytes", "1", "--json"]).stdout)
+  assert.deepEqual(
+    refused.items.map((item) => item.status),
+    ["not_run", "not_run", "not_run", "not_run"],
+  )
+  assert.equal(refused.meta.complete, false)
   const topicHits = json("search", "meetings", "needle", "--topic", "costs", "--project", "RES")
   assert.equal(topicHits.items.length, 9)
   assert.deepEqual(topicHits.items, json("search", "meetings", "needle", "--topic", "budget", "--project", "RES").items)
@@ -368,6 +430,7 @@ export const installedMeetingIntegration = async ({
     readonlySearchPreview: true,
     configuredStemming: ["English", "Russian", "Spanish"],
     hitContinuation: hits.length,
+    meetingBatch: { fileAndStdin: true, jsonAndJsonl: true, independentCursors: true, partialAndBudgetRefusals: true },
     projectEvidence: { hits: projectHits.length, pages: projectPages, cited: true },
     crossAccountCursorRejected: true,
     transcriptionPreviewAndMissingModel: true,
