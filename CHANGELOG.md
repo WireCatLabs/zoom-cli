@@ -9,6 +9,8 @@
   coverage and shared JSON budget keep the brief bounded. Exact-series context retains priority;
   neither names nor transcript words create associations. CLI and opt-in MCP share Core's service.
 
+## 0.16.0 — 15.10.2026
+
 ### Changed — may break callers
 
 - **Flags take the shared names from cli-base 0.31.1.** `recordings download`, `recordings sync` and
