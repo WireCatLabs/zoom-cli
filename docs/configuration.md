@@ -42,7 +42,7 @@ actual path without checking the saved OAuth session.
 | Windows | `%APPDATA%\zm\Config\config.json` |
 | Explicit override | `config.json` inside `ZM_CONFIG_DIR` |
 
-Older macOS layouts are migrated when possible; doctor shows the path actually in use. Keep
+Older macOS layouts are no longer moved automatically; doctor shows the path actually in use. Keep
 public app settings separate from keyring tokens and the shared meeting database.
 
 ## Environment variables

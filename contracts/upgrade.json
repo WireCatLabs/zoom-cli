@@ -45,6 +45,38 @@
       }
     },
     {
+      "id": "legacy-config-fingerprint",
+      "entry": "./convert-legacy-config.mjs",
+      "args": ["snapshot", "{{root}}"],
+      "exit": 0,
+      "stream": "stdout",
+      "kind": "json",
+      "capture": {
+        "legacy_config_fingerprint": "/fingerprint"
+      }
+    },
+    {
+      "id": "candidate-refuses-legacy-config",
+      "args": ["config", "show", "--json"],
+      "exit": 3,
+      "stream": "stderr",
+      "kind": "json",
+      "errorCode": "configuration_error"
+    },
+    {
+      "id": "owner-converts-fixture-config",
+      "entry": "./convert-legacy-config.mjs",
+      "args": ["convert", "{{root}}", "{{legacy_config_fingerprint}}"],
+      "exit": 0,
+      "stream": "stdout",
+      "kind": "json",
+      "json": {
+        "converted": true,
+        "preserved_values": true,
+        "preserved_mode": true
+      }
+    },
+    {
       "id": "candidate-config",
       "args": ["config", "show", "--json"],
       "exit": 0,
