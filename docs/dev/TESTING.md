@@ -61,6 +61,12 @@ These commands run only in release, monthly and manual full validation. See the
 
 ## Command coverage
 
+Each test file gets a private `zm-test-suite-*` temporary root. Its temporary-file environment is
+inherited by subprocesses and restored afterwards. Stack-ordered cleanup runs after the file's
+resource-closing hooks and removes that root; an interrupted process may leave a root behind.
+Command traces remain under `coverage/argv.jsonl`, with one previous run retained as
+`coverage/argv.previous.jsonl`, instead of accumulating temporary backup directories.
+
 `pnpm test:matrix` runs the offline suite and generates the [measured matrix](test-matrix.md).
 The test-only Commander hook records command paths and option names in `coverage/argv.jsonl`;
 it never records arguments or option values. Tests run with two workers to avoid local contention.
