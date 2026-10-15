@@ -179,9 +179,8 @@ meetings you store; use separate labels for data you want kept apart. Import and
 profile; read commands never do, so pull or import first.
 
 Meetings live in the shared WireCat database `wirecat.db`, next to data from other WireCat tools.
-`MESSAGING_STORE` selects another path. Opening the default path deletes the legacy unencrypted
-`messages.db` and its sidecars without migrating them, unless another path is set or another process
-holds it open. Metadata, help, configuration and login never open the database.
+`MESSAGING_STORE` selects another path. Store opens preserve legacy `messages.db` files and their
+sidecars; manage their retention separately. Metadata, help, configuration and login never open the database.
 
 More: [profiles][docs/sessions.md#select-a-local-profile] ·
 [where meetings are stored][docs/archive.md#where-meetings-are-stored] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]

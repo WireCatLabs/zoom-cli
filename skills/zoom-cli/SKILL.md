@@ -2,7 +2,7 @@
 name: zoom-cli
 description: Archive Zoom cloud recordings, read stored meeting transcripts and summaries, or manage a Zoom meeting through zm. Use for Zoom CLI workflows, not joining calls or operating the desktop video client.
 metadata:
-  version: "0.18.0"
+  version: "0.19.0"
 ---
 
 # Zoom CLI
@@ -87,8 +87,7 @@ Receipts acknowledge completed appends; optional exact counts distinguish creati
 
 Select a local profile before import/sync; labels group stored data, not OAuth accounts. Reads require
 existing profile data and do not register profiles. `MESSAGING_STORE` selects an explicit database.
-Default-path opens remove legacy unencrypted messages.db and sidecars without migration; explicit
-paths preserve them. Serialize ingestion for an account. `meetings sync --lookback-days` revisits late
+Store opens preserve legacy messages.db files and sidecars; manage their retention separately. Serialize ingestion for an account. `meetings sync --lookback-days` revisits late
 transcripts. Legacy folder imports use `meetings import`; cloud archive assets use `archive import`.
 `meetings export <id> --format markdown|vtt` needs `--output` to write and never overwrites; VTT needs
 an unambiguous current transcript or explicit transcript id.

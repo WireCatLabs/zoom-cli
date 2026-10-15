@@ -50,9 +50,6 @@ in addition to the version document, before updating consumers.
 - Live login, import and pull results are recorded truthfully; captures contain counts/types only.
 - User documentation describes the delivered executable and its current limitations.
 
-The shared store uses `wirecat.db`. Producer versions from 0.222.0 delete the legacy unencrypted
-`messages.db` and its SQLite sidecars on default-path store open, without migrating them. Explicit
-paths and `MESSAGING_STORE` preserve those files; an active legacy lock defers deletion to a later
-open. Release notes must
-retain this security-related breaking change. The SQLite adapter belongs to cli-core; do not
-substitute test memory storage for production persistence.
+The shared store uses `wirecat.db`. cli-core 0.286.0 and later preserve legacy `messages.db` files
+and their SQLite sidecars during store opens. Legacy-file retention is a separate maintenance
+action. Use the published shared SQLite adapter and verify persistence with isolated store fixtures.
