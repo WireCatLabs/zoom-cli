@@ -45,6 +45,33 @@
       }
     },
     {
+      "id": "candidate-old-config-refused",
+      "args": ["config", "show", "--json"],
+      "exit": 3,
+      "stream": "stderr",
+      "kind": "json",
+      "errorCode": "configuration_error",
+      "files": [
+        {
+          "path": "ZM/CONFIG/config.json",
+          "json": {
+            "accountProfile": "contract"
+          }
+        }
+      ]
+    },
+    {
+      "id": "explicit-config-key-rename",
+      "entry": "./rename-upgrade-config.mjs",
+      "args": [],
+      "exit": 0,
+      "stream": "stdout",
+      "kind": "json",
+      "json": {
+        "renamed": true
+      }
+    },
+    {
       "id": "candidate-config",
       "args": ["config", "show", "--json"],
       "exit": 0,
