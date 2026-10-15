@@ -18,20 +18,21 @@ Start with `zm search meetings '<words>' --limit 20 --json`. Words match prefixe
 word forms. Try the full name and abbreviation separately when needed; an empty result does not
 prove absence from incomplete archives. This search indexes newly stored meetings locally first.
 
-Hits retain a cue `ref`, their parent `meeting`, an excerpt and `offset_ms`. When available,
+Hits retain a `ref`, their parent `meeting`, an excerpt and `offset_ms`. Transcript hits use cue
+references; summary/chat hits use meeting references. When available,
 `source` contains the meeting title, `started_at`, the evidence `ref` and a stored document `url`.
-A null URL means no source permalink is stored; do not substitute a meeting join link. Older binaries
-may omit `source`. On binaries supporting `--json=<paths>`,
+A null URL means no source permalink is stored; do not substitute a meeting join link.
+
 `--json=ref,excerpt,source.title,source.started_at,source.url` keeps a compact search result.
 Use `meetings show <id>` for additional details, not to reread full summaries for
 every hit. Stored ids are local database ids, different from remote Zoom meeting ids.
 
-Read nearby cues with `zm meetings passage <ref> --before-n 3 --after-n 3 --format text`.
+Read nearby transcript cues with `zm meetings passage <ref> --before-n 3 --after-n 3 --format text`.
+For summary/chat hits, use `meetings show` or `meetings evidence` instead.
 Text/Markdown prints timestamps, speakers and references, with coverage once. Start small and
 expand only where context requires it. `--json=items.ref,items.start_ms,items.speaker_name,items.text`
 keeps compact structured cues. Dotted paths traverse nested objects and arrays; pagination,
-coverage, next steps, missing data and execution metadata remain. Older releases use `--fields`
-with `--json`; discover the installed grammar before using projection.
+coverage, next steps, missing data and execution metadata remain.
 
 Success uses `{item,meta}` or `{items,page,meta}`. Reports such as passage, evidence and participants
 live in `item`. Keep `meta.complete`, coverage and continuation; projection is not a smaller scan.
