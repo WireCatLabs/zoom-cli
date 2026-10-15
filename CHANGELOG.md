@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Meeting preparation includes cited stored meetings from other series through existing person
+  links or confirmed shared projects. The same-account history window, independent related-row
+  coverage and shared JSON budget keep the brief bounded. Exact-series context retains priority;
+  neither names nor transcript words create associations. CLI and opt-in MCP share Core's service.
+
 ## 0.16.0 — 15.10.2026
 
 ### Changed — may break callers

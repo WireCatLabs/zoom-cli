@@ -1,6 +1,6 @@
 {
   "name": "@wirecat/zoom-cli",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "description": "Zoom cloud recording archives, persistent transcripts and meeting tools",
   "license": "Apache-2.0",
   "type": "module",
@@ -54,7 +54,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",
     "@wirecat/cli-base": "0.31.1",
-    "@wirecat/cli-core": "0.283.0",
+    "@wirecat/cli-core": "0.284.0",
     "commander": "15.0.0",
     "valibot": "1.5.0"
   },

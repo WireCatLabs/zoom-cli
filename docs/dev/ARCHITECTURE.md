@@ -90,7 +90,7 @@ recognized dead-process markers only. Local reads and checksum verification run 
 
 The shared SDK owns transfer range/validator rules, bounded catalog synchronization and checkpoint
 acknowledgements. Zoom owns trusted authenticated requests, native files and cross-process locks.
-Configured profiles enable durable partials; unscoped legacy downloads remain ephemeral. Prefix
+Downloads require an account scope; resume settings select durable partials. Prefix
 hashes and file identity are verified before append. A retained owned promotion journal allows safe
 recovery between final publication and manifest commitment. Untracked foreign files are preserved.
 Checkpoints record prior successful callbacks, not current file integrity or provider completeness.
@@ -205,6 +205,13 @@ attendance and historical archive coverage use their own sources.
 The CLI preparation handler uses this adapter for one selected-series detail read and joins it
 with the shared preparation service. Broad hosted/invited calendar discovery remains separate. The public [Zoom Meetings API](https://developers.zoom.us/docs/api/meetings/)
 describes the detail fields and required meeting:read:meeting scope.
+
+Core also owns the related-history port and SQL adapter. Included exact-series calls anchor
+same-account related calls through current person links or confirmed global projects. Metadata
+preflight precedes transcript hydration; related rows have independent lookahead and exact-series
+evidence keeps output-budget priority. Skips, revision checks and cancellation remain shared service
+concerns. These bounds limit returned/read metadata, not SQL scan or sort work. Zoom adds no matching
+rules or SQL; other meeting providers reuse the same port and service.
 
 Command vocabulary checks use the same canonical Base 0.31.1 package as the runtime. Core and
 Zoom must resolve one Base installation; installed-package proofs check that identity. No separate

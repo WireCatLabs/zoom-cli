@@ -242,7 +242,7 @@ zm meetings prepare <series-id> [options]
 | `--since-time <time>` | window start as ISO timestamp with zone (default now). |
 | `--before-time <time>` | exclusive window end as ISO timestamp (default seven days after start). |
 | `--history-since-time <time>` | history start as ISO timestamp (default thirty days before start). |
-| `--meetings <n>` | prior occurrences, 1–20 (default 5). |
+| `--meetings <n>` | prior occurrences and separate related-meeting limit, 1–20 (default 5). |
 | `--cues <n>` | cues per occurrence, 1–100 (default 10). |
 | `--context-limit <n>` | entries per context category, 1–100 (default 20). |
 | `--max-read-bytes <bytes>` | stored/normalized bytes per read, at most 4194304 (default 262144). |
