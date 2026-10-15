@@ -12,6 +12,9 @@
 - **zm no longer moves its folders out of `~/Library` on macOS at start.** cli-base 0.31.1 dropped the move, so
   zm reads its folders where cli-base resolves them. Adopts cli-base 0.31.1 and cli-core 0.283.0.
 
+- MCP meeting search advertises an optional cited source record with meeting reference, title,
+  start time and stored document URL. Missing source details remain null.
+
 - JSON field projection keeps coverage metadata alongside the requested fields, including meeting
   preparation coverage. Nested paths use Base's shared projection behavior.
 
