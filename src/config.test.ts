@@ -43,9 +43,19 @@ describe("config names", () => {
 
   it("refuses a legacy camelCase file without rewriting it", () => {
     const path = configPath()
-    writeFileSync(path, JSON.stringify(oldFile))
+    writeFileSync(path, JSON.stringify(oldFile), { mode: 0o600 })
+    const before = readFileSync(path, "utf8")
     expect(() => readConfig(path)).toThrow(/zm config is invalid/)
-    expect(saved(path)).toEqual(oldFile)
+    expect(readFileSync(path, "utf8")).toBe(before)
+    expect(statSync(path).mode & 0o777).toBe(0o600)
+  })
+
+  it.each(["example-client", "example-other"])("refuses mixed spellings with client_id=%s", (client_id) => {
+    const path = configPath()
+    const before = JSON.stringify({ ...oldFile, client_id })
+    writeFileSync(path, before)
+    expect(() => readConfig(path)).toThrow("zm config is invalid")
+    expect(readFileSync(path, "utf8")).toBe(before)
   })
 
   it("refuses invalid canonical configuration values", () => {

@@ -15,8 +15,10 @@
 - MCP meeting search advertises an optional cited source record with meeting reference, title,
   start time and stored document URL. Missing source details remain null.
 
-- JSON field projection keeps coverage metadata alongside the requested fields, including meeting
-  preparation coverage. Nested paths use Base's shared projection behavior.
+- Nested JSON selectors use Base's shared projector across objects and arrays, retaining coverage,
+  pagination and execution metadata, including meeting preparation coverage. Meeting search hits
+  include stored title, date and source reference/link. Compact passage selection and the bundled
+  skill follow the same rules.
 
 - Configuration JSON uses `client_id`, `files_folder`, `files_timezone` and `account_profile`.
   Core no longer converts camelCase files; rename older keys before upgrading. Reads do not rewrite

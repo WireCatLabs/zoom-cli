@@ -496,7 +496,7 @@ it("config reads expose only supported public fields and parser failures are one
       unexpected: "example-private-value",
     }),
   )
-  expect(readConfig(setup.deps.configPath)).not.toHaveProperty("unexpected")
+  expect(() => readConfig(setup.deps.configPath)).toThrow("zm config is invalid")
   expect(await run(["unknown-command"], setup.deps)).toBe(2)
   expect(setup.stdout).toEqual([])
   expect(setup.stderr).toHaveLength(1)

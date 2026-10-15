@@ -3,9 +3,9 @@ import { spawn } from "node:child_process"
 import { join } from "node:path"
 import { createInterface } from "node:readline/promises"
 import { fileURLToPath } from "node:url"
-import { CliError, catchCrashes, resolvePaths, systemKeyring } from "@wirecat/cli-base"
+import { CliError, catchCrashes, systemKeyring } from "@wirecat/cli-base"
 import { profileAccountKey, readConfig } from "../config.js"
-import { loginService } from "../folders.js"
+import { loginService, zmPaths } from "../folders.js"
 import { writeExportFile } from "../output-file.js"
 import { reportFailure, run } from "../program.js"
 import { createStoreConnector } from "../store-connection.js"
@@ -32,7 +32,7 @@ process.once("SIGINT", cancel)
 process.once("SIGTERM", cancel)
 process.stdout.on("error", onPipeError)
 try {
-  const paths = resolvePaths({ appName: "zm" })
+  const paths = zmPaths()
   const configPath = join(paths.config, "config.json")
   const connectStore = createStoreConnector({ env: process.env })
   const tokens = new TokenManager({

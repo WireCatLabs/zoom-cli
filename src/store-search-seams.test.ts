@@ -4,7 +4,10 @@ import { fakeStore } from "../scripts/testing/connection.js"
 import { createStoreConnector } from "./store-connection.js"
 
 const mocked = vi.hoisted(() => ({ search: vi.fn() }))
-vi.mock("@wirecat/cli-core/services", () => ({ searchAllIncludingMeetings: mocked.search }))
+vi.mock("@wirecat/cli-core/services", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@wirecat/cli-core/services")>()),
+  searchAllIncludingMeetings: mocked.search,
+}))
 const setup = () => ({
   meetings: Object.assign(memoryMeetingStore(), {
     appendTranscriptsWithReceipt: vi.fn(),
