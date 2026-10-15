@@ -10,7 +10,7 @@ const { createStoreConnector, createZoomPreparationReader, profileAccountKey } =
 const { openStore } = await load("@wirecat/cli-core/store")
 const { sampleMeeting } = await load("@wirecat/cli-core/meetings/testing")
 const { createTaskFromMeeting } = await load("@wirecat/cli-core/services")
-const { readMeetingPreparation } = await load("@wirecat/cli-core/cli")
+const { readMeetingPreparation, callMeetingPreparationTool } = await load("@wirecat/cli-core/cli")
 const { itemEnvelopeSchema } = await load("@wirecat/cli-base/standards")
 const { projectFields } = await load("@wirecat/cli-base")
 const v = await load("valibot")
@@ -162,6 +162,28 @@ try {
 } finally {
   await reopened.close()
 }
+const edited = await openStore({ path, now: () => now })
+try {
+  await edited.notes.editNote(projectNote.id, "\u200b".repeat(11000), 2)
+} finally {
+  await edited.close()
+}
+const framed = await callMeetingPreparationTool(
+  read,
+  { series_id: "123", meetings: 1, cues: 1, context_limit: 1, bytes: 65536 },
+  undefined,
+  {},
+  now,
+)
+assert.notEqual(framed.isError, true)
+assert.ok(framed.structuredContent.item)
+assert.equal(framed.structuredContent.item.meetings.length, 1)
+assert.equal(framed.structuredContent.item.notes.items.length, 0)
+assert.equal(framed.structuredContent.item.notes.coverage.output_limited, true)
+assert.equal(framed.structuredContent.meta.truncated, true)
+assert.ok(Buffer.byteLength(JSON.stringify(framed.structuredContent.item)) <= 65536)
+assert.deepEqual(JSON.parse(framed.content[0].text), framed.structuredContent)
+assert.equal(closed, 2)
 console.log(
   JSON.stringify({
     cold_credentials: true,
@@ -172,6 +194,7 @@ console.log(
     knowledge_projection: true,
     cited_owner_notes: true,
     notes_projection: true,
+    mcp_framed_budget: true,
     bounded_output: true,
     no_writes: true,
     strict_arguments: true,
