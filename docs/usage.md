@@ -78,7 +78,7 @@ current revisions and confirmed associations; it excludes deleted notes, bot-aut
 account-scoped subjects and revisions updated after the preparation start. Retrieve the referenced
 note in Memo when you need its full associations.
 
-Check `notes.coverage.has_more` and `output_limited` for additional or omitted notes.
+Check `notes.coverage.has_more` and `notes.coverage.output_limited` for additional or omitted notes.
 `source_evidence: not-revalidated` means the note's supporting sources have not been checked;
 `other_sources: not-queried` keeps imported documents, mail and messages outside this result's coverage.
 Selecting `--json=notes.items.ref` keeps that coverage visible beside the references.
