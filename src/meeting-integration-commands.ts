@@ -79,7 +79,7 @@ export const addMeetingIntegrationCommands = (
         .argument("<reference>", "meeting reference, such as meeting:1/1")
         .requiredOption("--participant-id <id>", "participant id from this meeting", bytes)
         .requiredOption("--person <uid>", "explicit stored person UID")
-        .option("--target-accounts <ids>", "explicit additional account ids authorized for target-person lookup")
+        .option("--source <accounts>", "explicit additional account ids authorized for target-person lookup")
         .option("--expected-person <uid>", "compare current person UID, or none"),
     ).action(
       async (
@@ -87,7 +87,7 @@ export const addMeetingIntegrationCommands = (
         options: {
           participantId: number
           person: string
-          targetAccounts?: string
+          source?: string
           expectedPerson?: string
           yes?: boolean
           dryRun?: boolean
@@ -99,9 +99,9 @@ export const addMeetingIntegrationCommands = (
             action: "person.link",
             participantId: options.participantId,
             personUid: options.person,
-            ...(options.targetAccounts === undefined
+            ...(options.source === undefined
               ? {}
-              : { targetAccountIds: options.targetAccounts.split(",").map((item) => bytes(item.trim())) }),
+              : { targetAccountIds: options.source.split(",").map((item) => bytes(item.trim())) }),
             ...(options.expectedPerson === undefined
               ? {}
               : { expectedPersonUid: options.expectedPerson === "none" ? null : options.expectedPerson }),

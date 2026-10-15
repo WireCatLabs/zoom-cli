@@ -70,7 +70,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings link` |  | ✅ |  |
 | `meetings link` | `--participant-id` | ✅ |  |
 | `meetings link` | `--person` | ✅ |  |
-| `meetings link` | `--target-accounts` | ✅ |  |
+| `meetings link` | `--source` | ✅ |  |
 | `meetings link` | `--expected-person` | ✅ |  |
 | `meetings link` | `--yes` | ✅ |  |
 | `meetings link` | `--dry-run` | ✅ |  |

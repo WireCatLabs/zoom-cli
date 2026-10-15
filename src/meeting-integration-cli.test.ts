@@ -107,7 +107,7 @@ it("previews links and applies owner-selected event and participant links once",
         "3",
         "--person",
         "4",
-        "--target-accounts",
+        "--source",
         "1, 2",
         "--expected-person",
         "none",
@@ -132,7 +132,8 @@ it("rejects malformed links before connecting and refuses foreign meeting scope"
     ["update", "meeting:1/1", "--event-id", "0"],
     ["link", "meeting:1/1", "--participant-id", "0", "--person", "1"],
     ["link", "meeting:1/1", "--participant-id", "1", "--person", "Alice Example"],
-    ["link", "meeting:1/1", "--participant-id", "1", "--person", "1", "--target-accounts", "0"],
+    ["link", "meeting:1/1", "--participant-id", "1", "--person", "1", "--source", "0"],
+    ["link", "meeting:1/1", "--participant-id", "1", "--person", "1", "--target-accounts", "1"],
   ])
     expect(await run(["meetings", ...args, "--yes", "--json"], deps)).toBe(2)
   expect(connect).not.toHaveBeenCalled()

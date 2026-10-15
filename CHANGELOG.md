@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Changed — may break callers
+
+- Shared standards now use cli-base 0.33.0 and cli-core 0.288.0. `meetings link --source <accounts>`
+  replaces `--target-accounts` for explicit additional numeric store accounts used in person lookup.
+  Update scripts to use `--source`; the retired spelling has no alias. Command lint's baseline shrinks
+  from 27 findings to 26, with no new exceptions.
+
 ## 0.18.0 — 15.10.2026
 
 ### Added

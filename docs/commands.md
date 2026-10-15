@@ -287,7 +287,7 @@ zm meetings link <reference> [options]
 |---|---|
 | `--participant-id <id>` | participant id from this meeting. |
 | `--person <uid>` | explicit stored person UID. |
-| `--target-accounts <ids>` | explicit additional account ids authorized for target-person lookup. |
+| `--source <accounts>` | explicit additional account ids authorized for target-person lookup. |
 | `--expected-person <uid>` | compare current person UID, or none. |
 | `--yes` | apply this local change once. |
 | `--dry-run` | preview even when --yes is present. |
