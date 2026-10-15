@@ -114,3 +114,9 @@ unqueried-source/evidence limits. Owner notes and annotations appear separately 
 unqueried. Related reads stay within the selected account and history window
 and perform no writes. See [preparation](usage.md#prepare-for-an-upcoming-meeting) for
 what it includes, what remains unqueried and how to check the result.
+
+Preparation's `bytes` bounds the item after hidden characters are made visible, which can take more
+space than CLI JSON. Notes yield first, then accepted knowledge, related calls and exact history;
+inspect `meta.truncated` and each section's coverage for omissions. Cue `content_bytes` counts the
+escaped cues the MCP client receives. Metadata that cannot fit returns `validation_error`; increase
+`bytes` or narrow the selected context.

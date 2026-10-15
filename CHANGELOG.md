@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- MCP preparation keeps its item within the requested byte budget after making hidden characters
+  visible. It preserves meeting evidence before notes and accepted knowledge, reports omissions,
+  and counts cue bytes for the escaped text the client receives. Metadata that cannot fit is refused.
+
 ## 0.20.0 — 15.10.2026
 
 ### Added

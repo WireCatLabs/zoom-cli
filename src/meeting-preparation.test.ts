@@ -18,7 +18,7 @@ import { createStoreConnector } from "./store-connection.js"
 import { TokenManager } from "./tokens.js"
 
 const now = Date.parse("2026-10-14T12:00:00Z")
-const fixture = async () => {
+const fixture = async (noteText = "Bring the written launch checklist") => {
   const directory = mkdtempSync(join(tmpdir(), "zm-test-preparation-"))
   const path = join(directory, "fixture.db")
   const env = { MESSAGING_STORE: path }
@@ -58,7 +58,7 @@ const fixture = async () => {
     by: { bot: "invented-reviewer" },
   })
   const draftNote = await store.notes.addNote({ text: "Bring the checklist", about: [project.ref] })
-  const projectNote = await store.notes.editNote(draftNote.id, "Bring the written launch checklist", 1)
+  const projectNote = await store.notes.editNote(draftNote.id, noteText, 1)
   await store.notes.addNote({ text: "An unrelated personal reminder" })
   await createTaskFromMeeting(store, key, { source: reference, kind: "promise", origin: "owner" })
   const relatedInput = {
@@ -280,6 +280,30 @@ it("MCP preparation is opt-in, uses the same selected account and has strict arg
       await server.close()
     }
   }
+})
+
+it("keeps the native MCP preparation item within bytes after hidden text expands", async () => {
+  const f = await fixture("\u200b".repeat(11000))
+  expect(Buffer.byteLength(f.projectNote.text)).toBe(33000)
+  expect(await run(["meetings", "prepare", "123", "--bytes", "65536", "--json"], f.deps)).toBe(0)
+  const raw = readAnswer(f.output.join(""))
+  expect(raw.notes.items[0]).toMatchObject({ ref: f.projectNote.ref, text: f.projectNote.text })
+  expect(Buffer.byteLength(JSON.stringify(raw))).toBeLessThanOrEqual(65536)
+  const result = await readPreparationTool(f.mcp, { series_id: "123", bytes: 65536 }, new AbortController().signal)
+  expect(result).not.toMatchObject({ isError: true })
+  expect(result).toMatchObject({
+    structuredContent: {
+      meta: { truncated: true },
+      item: {
+        notes: { items: [], coverage: { output_limited: true } },
+        meetings: [{ ref: f.reference }],
+        knowledge: { items: [{ ref: f.projectFact.ref }] },
+      },
+    },
+  })
+  const item = readAnswer(JSON.stringify(result.structuredContent))
+  expect(Buffer.byteLength(JSON.stringify(item))).toBeLessThanOrEqual(65536)
+  expect(f.closed).toHaveBeenCalledTimes(2)
 })
 
 it("closes on provider failure and refuses output when close fails", async () => {
