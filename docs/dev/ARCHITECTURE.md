@@ -22,6 +22,7 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [zm.ts](../../src/bin/zm.ts) | process, browser, stdin and system keyring wiring |
 | [recordings.ts](../../src/recordings.ts), [recording-archive.ts](../../src/recording-archive.ts) | asset discovery, streamed transfers, manifests and verified skipping |
 | [recording-sync.ts](../../src/recording-sync.ts), [recording-sync-store.ts](../../src/recording-sync-store.ts) | shared catalog/checkpoint orchestration and native durable progress |
+| [recording-writer-lease.ts](../../src/recording-writer-lease.ts) | Zoom marker layout and public error/cancellation mapping over Core native writer leases |
 | [recording-partial-store.ts](../../src/recording-partial-store.ts), [recording-promotion-store.ts](../../src/recording-promotion-store.ts) | verified partial bytes and owned final-promotion recovery |
 | [recording-schedule.ts](../../src/recording-schedule.ts), [recording-schedule-store.ts](../../src/recording-schedule-store.ts), [recording-schedule-systemd.ts](../../src/recording-schedule-systemd.ts) | captured local jobs, native metadata and Linux user timers |
 | [archive-transcripts.ts](../../src/archive-transcripts.ts) | verified local WebVTT reads and bounded literal search |
@@ -94,7 +95,10 @@ and no-overwrite promotion; repeated downloads verify existing entries. Stale-lo
 recognized dead-process markers only. Local reads and checksum verification run serially.
 
 The shared SDK owns transfer range/validator rules, bounded catalog synchronization and checkpoint
-acknowledgements. Zoom owns trusted authenticated requests, native files and cross-process locks.
+acknowledgements, native writer ownership and stale-owner recovery. Zoom binds its existing marker
+layout and errors through the public `./files` capability; each acquired lease owns its release,
+including after cancellation. Zoom owns trusted authenticated requests and native partial/publication
+layout. A missing or replaced writer marker is refused before asset download.
 Downloads require an account scope; resume settings select durable partials. Prefix
 hashes and file identity are verified before append. A retained owned promotion journal allows safe
 recovery between final publication and manifest commitment. Untracked foreign files are preserved.

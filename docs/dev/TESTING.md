@@ -103,3 +103,17 @@ truthful JSONL end records. All meeting evidence is invented and guarded against
 Archive reads compare the opened file's identity with its path before reading bytes. This also
 checks replacement races on Windows, where libuv does not support `O_NOFOLLOW`:
 [libuv file-system flags](https://docs.libuv.org/en/v1.x/fs.html).
+
+## Native writer ownership
+
+`recording-writer-lease.test.ts` removes a fixture marker during ownership confirmation and proves
+that archive creation fails before an asset download or manifest write. The existing recordings,
+resume, cancellation and recovery tests exercise the provider binding to Core rather than a second
+ownership implementation. Core separately tests a non-Zoom layout with actual two-process contention.
+
+Release-installed `installed-writer-leases.mjs` uses the public Zoom and Core entries together. It
+checks cross-account contention at one root, the existing marker layout, preview/applied stale
+recovery, owned release and a verified archive. `installed-platform.mjs` requires that proof on every
+Linux/Windows Node 22/24 installation, with explicit temporary HOME/store/WIRECAT_STATE_DIR and its
+existing network/keyring guard. Candidate-file dependency checks are labelled separately and never
+substitute for immutable released-package proof.

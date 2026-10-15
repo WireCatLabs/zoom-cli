@@ -1,14 +1,17 @@
 import { createHash, randomUUID } from "node:crypto"
-import { type FileHandle, link, lstat, mkdir, open, readdir, realpath, rename, rmdir, unlink } from "node:fs/promises"
-import { hostname } from "node:os"
+import { type FileHandle, link, lstat, mkdir, open, readdir, realpath, rename, unlink } from "node:fs/promises"
 import { join } from "node:path"
 import { CliError, isCliError } from "@wirecat/cli-base"
 import { retryableStatus, statusToCode } from "@wirecat/cli-base/http"
-import { openOrdinaryFile, syncDirectory } from "@wirecat/cli-core/files"
+import { openOrdinaryFile, syncDirectory, type WriterLease } from "@wirecat/cli-core/files"
 import { type RecordingTransferSource, transferRecording } from "@wirecat/cli-core/meetings"
 import { checkCancelled, string } from "./errors.js"
 import { RecordingPartialStore } from "./recording-partial-store.js"
 import { readRecordingPromotion, writeRecordingPromotion } from "./recording-promotion-store.js"
+import { acquireArchiveWriter } from "./recording-writer-lease.js"
+
+export { type ArchiveLockInfo, inspectArchiveLocks, recoverArchiveLocks } from "./recording-writer-lease.js"
+
 import type { RecordingAsset, RecordingMeeting } from "./recordings.js"
 import { operationSignal, type ZoomRemote } from "./remote-http.js"
 
@@ -75,141 +78,6 @@ export interface ArchiveVerification {
   id: string
   path: string
   valid: boolean
-}
-export interface ArchiveLockInfo {
-  name: string
-  status: "active" | "stale" | "foreign" | "unrecognized"
-  pid: number | null
-  host: string | null
-}
-interface LockOwner {
-  version: 1
-  pid: number
-  host: string
-  nonce: string
-}
-const locksFolder = ".zoom-archive-locks"
-const lockOwner = async (path: string, name: string, signal?: AbortSignal): Promise<LockOwner | null> => {
-  checkCancelled(signal)
-  try {
-    const file = await localFile(path)
-    try {
-      if ((await file.stat()).size > 4096) return null
-      const content = await file.readFile("utf8")
-      checkCancelled(signal)
-      const owner = JSON.parse(content) as LockOwner
-      if (
-        owner.version !== 1 ||
-        !Number.isSafeInteger(owner.pid) ||
-        owner.pid <= 0 ||
-        !string(owner.host) ||
-        !/^[a-f0-9-]{36}$/.test(owner.nonce) ||
-        name !== `${owner.pid}-${owner.nonce}.json`
-      )
-        return null
-      return owner
-    } finally {
-      await file.close()
-    }
-  } catch {
-    checkCancelled(signal)
-    return null
-  }
-}
-const lockStatus = (owner: LockOwner): ArchiveLockInfo["status"] => {
-  if (owner.host !== hostname()) return "foreign"
-  try {
-    process.kill(owner.pid, 0)
-    return "active"
-  } catch (error) {
-    return typeof error === "object" && error !== null && "code" in error && error.code === "ESRCH" ? "stale" : "active"
-  }
-}
-export const inspectArchiveLocks = async (
-  destination: string,
-  options: { signal?: AbortSignal } = {},
-): Promise<ArchiveLockInfo[]> => {
-  checkCancelled(options.signal)
-  const root = await realpath(destination)
-  checkCancelled(options.signal)
-  const folder = join(root, locksFolder)
-  let names: string[]
-  try {
-    if ((await lstat(folder)).isSymbolicLink())
-      throw new CliError("validation_error", "archive lock directory must not be a symlink")
-    names = await readdir(folder)
-  } catch (error) {
-    if (missing(error)) return []
-    throw new CliError("configuration_error", "archive lock directory could not be read")
-  }
-  const result: ArchiveLockInfo[] = []
-  for (const name of names.sort()) {
-    checkCancelled(options.signal)
-    const owner = await lockOwner(join(folder, name), name, options.signal)
-    result.push({
-      name,
-      status: owner ? lockStatus(owner) : "unrecognized",
-      pid: owner?.pid ?? null,
-      host: owner?.host ?? null,
-    })
-  }
-  return result
-}
-export const recoverArchiveLocks = async (
-  destination: string,
-  options: { apply?: boolean; signal?: AbortSignal } = {},
-): Promise<{ locks: ArchiveLockInfo[]; removed: string[] }> => {
-  checkCancelled(options.signal)
-  const root = await realpath(destination)
-  const locks = await inspectArchiveLocks(root, options)
-  const removed: string[] = []
-  if (options.apply)
-    for (const lock of locks) {
-      checkCancelled(options.signal)
-      if (lock.status !== "stale") continue
-      const path = join(root, locksFolder, lock.name)
-      const owner = await lockOwner(path, lock.name, options.signal)
-      if (!owner || lockStatus(owner) !== "stale") continue
-      // Unique PID/nonce paths are never reused, so a new writer cannot replace this stale owner.
-      try {
-        await unlink(path)
-        removed.push(lock.name)
-      } catch (error) {
-        if (!missing(error)) throw new CliError("configuration_error", "stale archive lock could not be removed")
-      }
-    }
-  return { locks, removed }
-}
-const acquireArchiveLock = async (root: string): Promise<string> => {
-  const folder = join(root, locksFolder)
-  await mkdir(folder, { recursive: true })
-  if ((await lstat(folder)).isSymbolicLink())
-    throw new CliError("validation_error", "archive lock directory must not be a symlink")
-  // A lock whose process on this machine is gone is taken over; foreign and unreadable ones still need `locks recover`.
-  await recoverArchiveLocks(root, { apply: true })
-  const owner: LockOwner = { version: 1, pid: process.pid, host: hostname(), nonce: randomUUID() }
-  const name = `${owner.pid}-${owner.nonce}.json`
-  const path = join(folder, name)
-  const file = await open(path, "wx", 0o600)
-  try {
-    await file.writeFile(JSON.stringify(owner))
-    await file.sync()
-    await file.close()
-    const locks = await inspectArchiveLocks(root)
-    if (locks.some((lock) => lock.name !== name))
-      throw new CliError("validation_error", "archive is locked; inspect or recover stale local locks")
-    try {
-      await lstat(join(root, ".zoom-archive.lock"))
-      throw new CliError("validation_error", "archive has an unrecognized legacy lock")
-    } catch (error) {
-      if (!missing(error)) throw error
-    }
-    return path
-  } catch (error) {
-    await file.close().catch(() => undefined)
-    await unlink(path).catch(() => undefined)
-    throw error
-  }
 }
 const digest = (text: string) => createHash("sha256").update(text).digest("hex")
 const manifestName = (uuid: string) => `.zoom-archive-${digest(uuid)}.json`
@@ -487,12 +355,11 @@ export const archiveRecording = async (
   const maxBytes = validateDownloadOptions(options)
   if (options.fileIds?.some((id) => !meeting.assets.some((asset) => asset.id === id)))
     throw new CliError("validation_error", "requested recording file was not found")
-  let lock: string | undefined
-  let root = ""
+  let lock: WriterLease | undefined
   try {
     await mkdir(options.destination, { recursive: true })
-    root = await realpath(options.destination)
-    lock = await acquireArchiveLock(root)
+    const root = await realpath(options.destination)
+    lock = await acquireArchiveWriter(root, signal)
     const manifestPath = join(root, manifestName(meeting.uuid))
     const previous = await readManifest(manifestPath, signal)
     const manifest: ArchiveManifest = previous ?? {
@@ -646,11 +513,7 @@ export const archiveRecording = async (
     if (isCliError(error)) throw error
     throw new CliError("provider_error", "archive operation could not be completed")
   } finally {
-    if (root && !lock) await rmdir(join(root, locksFolder)).catch(() => undefined)
-    if (lock) {
-      await unlink(lock)
-      await rmdir(join(root, locksFolder)).catch(() => undefined)
-    }
+    await lock?.release()
   }
 }
 export const inspectArchive = async (

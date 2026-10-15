@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Recording archives use Core's shared native writer leases while keeping the existing marker
+  layout and inspect/recover commands. Acquisition refuses a missing or replaced ownership marker
+  before downloading, and owned release completes after cancellation without deleting replacements.
+
 ## 0.21.0 — 15.10.2026
 
 ### Added

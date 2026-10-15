@@ -167,6 +167,10 @@ on this machine; active, foreign and unrecognized locks are preserved. Recovery 
 markers only. Download continuation can recover a completed promotion only when its owned journal,
 verified partial and final file all match; unrelated untracked files remain protected.
 
+If archiving reports lost or changed writer ownership, inspect the destination and its lock records
+before retrying. Run archive checksum verification for completed files: a cleanup failure can occur
+after files were saved, even when no successful download receipt was returned.
+
 ## Daily backups
 
 To plan a daily backup, choose an absolute destination and timer timezone:
