@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- The publishing workflow checks the exact commit supplied by `bin/release` before building,
+  so a concurrent merge cannot silently replace the source selected for release.
 - Recording archives use Core's shared native writer leases while keeping the existing marker
   layout and inspect/recover commands. Acquisition refuses a missing or replaced ownership marker
   before downloading, and owned release completes after cancellation without deleting replacements.
