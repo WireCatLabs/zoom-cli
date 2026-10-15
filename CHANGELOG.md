@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Offline tests remove their per-file temporary roots after resource cleanup. Current and previous
+  command traces remain in `coverage` instead of accumulating temporary backup directories.
+
 ## 0.17.0 — 15.10.2026
 
 ### Added

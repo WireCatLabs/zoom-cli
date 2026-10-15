@@ -8,7 +8,8 @@ export default defineConfig({
     // Agents run suites side by side on 24 cores; one worker per core ran the machine out of memory (2026-10-11).
     maxWorkers: 4,
     globalSetup: ["scripts/testing/argv-setup.ts"],
-    setupFiles: ["scripts/testing/argv-trace.ts"],
+    setupFiles: ["scripts/testing/temp-state.ts", "scripts/testing/argv-trace.ts"],
+    sequence: { hooks: "stack" },
     include: ["src/**/*.test.ts", "scripts/**/*.test.ts"],
     coverage: {
       provider: "v8",
