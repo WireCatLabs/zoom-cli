@@ -43,6 +43,9 @@ const projectFact = await store.facts.add({
   subject: project.ref,
   by: "owner",
 })
+const draftNote = await store.notes.addNote({ text: "Bring the checklist", about: [project.ref] })
+const projectNote = await store.notes.editNote(draftNote.id, "Bring the written launch checklist", 1)
+await store.notes.addNote({ text: "An unrelated personal reminder" })
 const relatedInput = {
   ...sample,
   meeting: {
@@ -138,10 +141,23 @@ assert.equal(answer.item.knowledge.coverage.other_sources, "not-queried")
 const selectedFacts = projectFields(answer, ["knowledge.items.ref"])
 assert.deepEqual(selectedFacts.item.knowledge.items, [{ ref: projectFact.ref }])
 assert.deepEqual(selectedFacts.item.knowledge.coverage, answer.item.knowledge.coverage)
+assert.deepEqual(answer.item.notes.anchors, [reference])
+assert.equal(answer.item.notes.items.length, 1)
+assert.equal(answer.item.notes.items[0].ref, projectNote.ref)
+assert.equal(answer.item.notes.items[0].revision, 2)
+assert.equal(answer.item.notes.items[0].text, projectNote.text)
+assert.equal(answer.item.notes.items[0].project, project.ref)
+assert.equal(answer.item.notes.coverage.source_evidence, "not-revalidated")
+assert.equal(answer.item.notes.coverage.other_sources, "not-queried")
+const selectedNotes = projectFields(answer, ["notes.items.ref"])
+assert.deepEqual(selectedNotes.item.notes.items, [{ ref: projectNote.ref }])
+assert.deepEqual(selectedNotes.item.notes.coverage, answer.item.notes.coverage)
 assert.ok(Buffer.byteLength(JSON.stringify(answer.item)) <= 16384)
 const reopened = await openStore({ path })
 try {
   assert.equal((await reopened.facts.list()).length, 2)
+  assert.equal((await reopened.notes.notes({ source: "internal" })).items.length, 2)
+  assert.equal((await reopened.notes.note(projectNote.ref)).revision, 2)
   assert.equal((await reopened.knowledge.meetingProjects(key)).items.length, 2)
 } finally {
   await reopened.close()
@@ -154,6 +170,8 @@ console.log(
     cited_related_context: true,
     cited_accepted_knowledge: true,
     knowledge_projection: true,
+    cited_owner_notes: true,
+    notes_projection: true,
     bounded_output: true,
     no_writes: true,
     strict_arguments: true,
