@@ -16,20 +16,12 @@
   instead of `--interval`. The old names are gone. Value names follow the shared vocabulary too: `--at <hh:mm>`,
   `--max-entries <n>`, `--models-dir <dir>`, `--start-time <time>`, `--title <title>`.
 
-- **zm no longer moves its folders out of `~/Library` on macOS at start.** cli-base 0.31.1 dropped the move, so
-  zm reads its folders where cli-base resolves them. Adopts cli-base 0.31.1 and cli-core 0.283.0.
+## 0.15.0 — 15.10.2026
 
-- MCP meeting search advertises an optional cited source record with meeting reference, title,
-  start time and stored document URL. Missing source details remain null.
+### Changed — may break callers
 
-- Nested JSON selectors use Base's shared projector across objects and arrays, retaining coverage,
-  pagination and execution metadata, including meeting preparation coverage. Meeting search hits
-  include stored title, date and source reference/link. Compact passage selection and the bundled
-  skill follow the same rules.
-
-- Configuration JSON uses `client_id`, `files_folder`, `files_timezone` and `account_profile`.
-  Core no longer converts camelCase files; rename older keys before upgrading. Reads do not rewrite
-  configuration. Command setting selectors retain their existing behavior.
+- **Nested JSON selectors share the Base projector.** Dotted paths traverse objects and arrays while keeping coverage, pagination and execution metadata. Meeting search hits include stored title, date and source reference/link, so agents can cite hits without separate detail reads. Compact passage selection and the bundled skill use the same rules.
+- **Config files use snake_case without automatic rewriting, and startup no longer moves folders.** Rename older config fields and explicitly choose the current folders before upgrading. The `zoom.clientId` command alias still writes `client_id`.
 
 ## 0.14.0 — 15.10.2026
 
