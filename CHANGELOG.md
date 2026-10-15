@@ -4,7 +4,7 @@
 
 ### Changed — may break callers
 
-- **Nested JSON selectors share the Base projector.** Dotted paths traverse objects and arrays while keeping coverage, pagination and execution metadata. Meeting search hits include stored title, date and source reference/link, so agents can cite hits without separate detail reads.
+- **Nested JSON selectors share the Base projector.** Dotted paths traverse objects and arrays while keeping coverage, pagination and execution metadata. Meeting search hits include stored title, date and source reference/link, so agents can cite hits without separate detail reads. Compact passage selection and the bundled skill use the same rules.
 - **Config files use snake_case without automatic rewriting, and startup no longer moves folders.** Rename older config fields and explicitly choose the current folders before upgrading. The `zoom.clientId` command alias still writes `client_id`.
 
 ## 0.14.0 — 15.10.2026
@@ -51,7 +51,6 @@
 
 ### Fixed
 
-- **Compact JSON passages use the shared nested-field projector.** Cue arrays can omit repeated fingerprints without losing coverage or continuation. The bundled skill explains economical search, source context and the installed-version boundaries.
 - **Remote meeting ids reject trailing line breaks before authentication.** URL normalization no longer silently accepts malformed identifiers.
 - **A download takes over a lock left by a dead process on this machine**, so a crash no longer blocks the next
   run until `recordings archive recover --yes`. Active, foreign and unrecognized locks still refuse.
