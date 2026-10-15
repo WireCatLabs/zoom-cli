@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Meeting preparation includes owner-written notes and annotations about explicitly linked people
+  and confirmed global projects through cli-core's shared preparation service. Notes retain their
+  references, revisions and separate coverage; meeting evidence and accepted facts keep priority.
+  Imported documents, mail, messages and project-alias candidates remain outside this selection.
+
 ## 0.19.0 — 15.10.2026
 
 ### Changed — may break callers
