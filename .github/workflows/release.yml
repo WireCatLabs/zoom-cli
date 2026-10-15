@@ -13,6 +13,10 @@ on:
         description: "Build and pack, run npm publish --dry-run, do not tag"
         type: boolean
         default: false
+      commit:
+        description: "The commit bin/release checked; the run refuses any other"
+        type: string
+        default: ""
 
 permissions: {}
 
@@ -21,7 +25,21 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  checked-commit:
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - env:
+          COMMIT: ${{ inputs.commit }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          [ "$COMMIT" = "$GITHUB_SHA" ] && exit 0
+          [ "$DRY_RUN" = "true" ] && [ -z "$COMMIT" ] && exit 0
+          echo "::error::this run is at $GITHUB_SHA, but bin/release checked '${COMMIT}' — nothing is published"
+          exit 1
+
   validation:
+    needs: checked-commit
     if: github.ref == 'refs/heads/main' || inputs.dry_run
     permissions:
       contents: read
@@ -30,6 +48,7 @@ jobs:
       pack: true
 
   checks:
+    needs: checked-commit
     if: github.ref == 'refs/heads/main' || inputs.dry_run
     permissions:
       contents: read

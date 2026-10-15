@@ -5,6 +5,11 @@ PRs have passed CI. Date the top changelog section with the package version and 
 `bin/release` takes the machine-wide release lock and dispatches the GitHub workflow; it never reads
 an npm token or publishes locally. Concurrent releases of another CLI wait for that lock.
 
+The wrapper passes the full commit it checked to the workflow. A publishing run refuses a different
+commit before validation or artifact creation. If main moves between checking and dispatch, refresh
+the clean checkout and repeat `bin/release`; the refused run publishes nothing. A dry run may omit
+the commit, but an explicitly supplied mismatching commit is refused even for a dry run.
+
 Full validation builds, tests, checks docs and packs once. Linux and Windows installed-package
 checks run against the resulting tarball before publication. A separate job publishes only the tarball
 through npm trusted publishing. A final job tags the version after the registry exposes it.
