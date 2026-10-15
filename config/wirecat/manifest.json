@@ -1,11 +1,15 @@
 {
   "source": "https://github.com/WireCatLabs/community",
-  "revision": "5d00ac9d7e80eeedb4ec4c3c6748ad2ccf2af657",
+  "revision": "60a8857c04548e135f672db64e0723dbe87b433f",
   "files": {
-    "biome.base.json": "83a43910f2530e21d720e3ad4c3fc7fcb16ba36253c6dbc720b3c68a4dd80893",
+    "biome.base.json": "6a5a2efe0b8989c29458f47f79c35cf756e6277a6b51699fe832b0da49d67370",
     "cspell.json": "8241122ed4d461976a838099b265ef8f2689a066608257b6fdc250d9b49b58aa",
     "lefthook.yml": "2f65a2e3103006d43f6d6f0a07ab333c132286157763222a59a5a22676acd391",
     "markdownlint.json": "5ed7d6980054c539f3f3c0e47a090f1a725b15be2c486a769a836bc6cd48ad2d",
+    "no-exec-interpolation.grit": "b9461f887afd0f7d555814bc45c5cd47537808edc10a17b06049f3ca0fff5957",
+    "no-new-function.grit": "f6423e186cca90b1ab87d40185c6d920e99d83366af6dc11455963a0797fb627",
+    "no-shell-true.grit": "d3943cfa1d7ebbf7be0fa22c2aaf2b7d7aa9ff462f2eb14a7798632764e3875c",
+    "no-unbounded-spread.grit": "f4178e5b74212fef58fec8916b6783d9f4f192ac618aa4ced041c4167bfbf81b",
     "rumdl.toml": "048b929176f13234324f5825d1e811397f1491b9cb6684a1953e268e2c2ed863",
     "check.mjs": "34b266411eaab7707030915f645308e86784b1574b21fa44ca974861a90c9ce1"
   },

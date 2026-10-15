@@ -1,0 +1,8 @@
+language js
+
+or {
+  `new Function($args)`,
+  `Function($args)`
+} as $call where {
+  register_diagnostic(span=$call, message="Function() compiles a string into code, like eval. Pass a function value instead.", severity="error")
+}

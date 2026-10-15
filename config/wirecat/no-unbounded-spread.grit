@@ -1,0 +1,10 @@
+language js
+
+or {
+  `$target.push($args)`,
+  `Math.max($args)`,
+  `Math.min($args)`
+} as $call where {
+  $args <: some `...$items`,
+  register_diagnostic(span=$call, message="Spreading a list into call arguments throws past about 125,000 items. Loop or reduce instead.", severity="warn")
+}
