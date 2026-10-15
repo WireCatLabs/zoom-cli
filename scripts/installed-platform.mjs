@@ -59,6 +59,7 @@ const environment = {
   ZM_STATE_DIR: join(sandbox, "state"),
   ZM_CACHE_DIR: join(sandbox, "cache"),
   MESSAGING_STORE: join(sandbox, "wirecat.db"),
+  WIRECAT_STATE_DIR: join(sandbox, "wirecat-state"),
   ZM_PLATFORM_DENIED: denied,
   ZM_PLATFORM_LOADED: loaded,
 }
@@ -240,6 +241,22 @@ for (const [phase, destination] of [
   assert.equal(existsSync(denied), false, "installed resume accessed external IO")
   recordingResume.push(JSON.parse(result.stdout))
 }
+const writerLeaseResult = spawnSync(
+  process.execPath,
+  [...prefix, fileURLToPath(new URL("./installed-writer-leases.mjs", import.meta.url)), root],
+  {
+    cwd: root,
+    env: environment,
+    encoding: "utf8",
+    timeout: 15000,
+    maxBuffer: 4 * 1024 * 1024,
+  },
+)
+assert.equal(writerLeaseResult.error, undefined)
+assert.equal(writerLeaseResult.status, 0, `installed writer leases: ${writerLeaseResult.stderr}`)
+assert.equal(diagnostics(writerLeaseResult.stderr), "")
+assert.equal(existsSync(denied), false, "installed writer leases accessed external IO")
+const writerLeaseProof = JSON.parse(writerLeaseResult.stdout)
 const upcomingResult = spawnSync(
   process.execPath,
   [...prefix, fileURLToPath(new URL("./installed-upcoming.mjs", import.meta.url)), root],
@@ -660,6 +677,7 @@ const proof = {
   semanticReadonlyMcp: true,
   scheduleOfflinePreview: true,
   recordingResume,
+  writer_leases: writerLeaseProof,
   upcoming_sdk: upcomingProof,
   preparation_sdk: preparationProof,
   meetingIntegration,
