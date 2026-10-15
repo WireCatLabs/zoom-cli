@@ -132,7 +132,7 @@ it("streams bounded archive sync receipts with consumer backpressure", async () 
       "2026-10-01",
       "--until-time",
       "2026-10-10",
-      "--destination",
+      "--output-dir",
       "example",
       "--max-bytes",
       "1024",
@@ -171,7 +171,7 @@ it("keeps completed sync receipts when a later occurrence fails and rejects head
         "2026-10-01",
         "--until-time",
         "2026-10-10",
-        "--destination",
+        "--output-dir",
         "example",
         "--no-resume",
         "--jsonl",
@@ -183,7 +183,7 @@ it("keeps completed sync receipts when a later occurrence fails and rejects head
   expect(readReceipt(output[0] ?? "{}").archive.manifest_path).toBe("example.json")
   expect(
     await run(
-      ["recordings", "sync", "--since-time", "2026-10-01", "--until-time", "2026-10-10", "--destination", "example"],
+      ["recordings", "sync", "--since-time", "2026-10-01", "--until-time", "2026-10-10", "--output-dir", "example"],
       deps,
     ),
   ).toBe(2)
@@ -218,7 +218,7 @@ it("rescans watched folders with a fresh closed account connection before each r
     if (cycles === 2) controller.abort(new CliError("cancelled", "example watch stopped"))
     expect(signal).toBeInstanceOf(AbortSignal)
   }
-  expect(await run(["watch", "files", folder, "--interval", "1s", "--jsonl"], deps)).toBe(130)
+  expect(await run(["watch", "files", folder, "--pause", "1s", "--jsonl"], deps)).toBe(130)
   expect(order).toEqual(["open", "read", "close", "receipt", "open", "read", "close", "receipt"])
   expect(output).toHaveLength(2)
   expect(await run(["watch", "files", folder], { ...deps, signal: undefined })).toBe(2)
@@ -282,7 +282,7 @@ it("rejects aggregate JSON for continuous streams and sanitizes a synchronous wr
         "2026-10-01",
         "--until-time",
         "2026-10-10",
-        "--destination",
+        "--output-dir",
         folder,
         "--json",
       ],

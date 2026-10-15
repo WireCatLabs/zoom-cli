@@ -87,7 +87,7 @@ API watching accepts `--since-time` and revisits zero through 31 days, and requi
 `--since-time` sets the initial lower bound; after a successful cursor write, later cycles use the cursor
 with the selected overlap. Failed cycles retain the initial bound until a cursor write succeeds.
 The overlap also subtracts from the initial `--since-time` bound.
-`--interval` controls the delay between completed cycles. Profile, source and file settings are
+`--pause` controls the delay between completed cycles. Profile, source and file settings are
 captured, along with the OAuth client, before watching begins; changing configuration requires
 restarting the watch. Cycles never overlap and close their store connection before emitting a
 receipt. Stop with Ctrl-C.
@@ -95,7 +95,7 @@ receipt. Stop with Ctrl-C.
 To watch a transcript folder:
 
 ```sh
-zm watch files ./downloaded-transcripts --interval 10s --jsonl
+zm watch files ./downloaded-transcripts --pause 10s --jsonl
 ```
 
 Watching rescans the folder for each cycle, so corrected older files are revisited. It imports serially,
@@ -115,7 +115,7 @@ and download its available files to an explicit destination:
 ```sh
 zm recordings list --since-time 2026-10-01 --until-time 2026-10-10 --json
 zm recordings show <zoom-occurrence-uuid> --json
-zm recordings download <zoom-occurrence-uuid> --destination ./zoom-archive --json
+zm recordings download <zoom-occurrence-uuid> --output-dir ./zoom-archive --json
 zm recordings archive check ./zoom-archive --offline --json
 ```
 
@@ -128,7 +128,7 @@ cloud recording availability and scopes before widening the backup.
 For recording history across months, use:
 
 ```sh
-zm recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --destination ./zoom-archive --jsonl
+zm recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl
 ```
 
 Sync accepts explicit ordered dates spanning at most ten calendar years. It splits them into monthly
@@ -174,7 +174,7 @@ verified partial and final file all match; unrelated untracked files remain prot
 To plan a daily backup, choose an absolute destination and timer timezone:
 
 ```sh
-zm recordings schedule create --name daily --destination /home/AliceExample/zoom-archive --since-time 2026-01-01 --at 03:15 --timezone Europe/Madrid --json
+zm recordings schedule create --name daily --output-dir /home/AliceExample/zoom-archive --since-time 2026-01-01 --at 03:15 --timezone Europe/Madrid --json
 zm recordings schedule list --offline --json
 zm recordings schedule run <schedule-id> --jsonl
 zm recordings schedule disable <schedule-id> --yes --json

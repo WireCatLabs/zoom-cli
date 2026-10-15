@@ -147,10 +147,7 @@ invoke(["--json", "meetings", "prepare", "123", "--cues", "101"], 2)
 assert.equal(existsSync(environment.ZM_CONFIG_DIR), false)
 assert.equal(existsSync(environment.MESSAGING_STORE), false)
 const missingProfileArchive = join(sandbox, "missing-profile-archive")
-invoke(
-  ["recordings", "download", "example-occurrence", "--destination", missingProfileArchive, "--resume", "--json"],
-  3,
-)
+invoke(["recordings", "download", "example-occurrence", "--output-dir", missingProfileArchive, "--resume", "--json"], 3)
 invoke(
   [
     "recordings",
@@ -159,7 +156,7 @@ invoke(
     "2026-10-01",
     "--until-time",
     "2026-10-11",
-    "--destination",
+    "--output-dir",
     missingProfileArchive,
     "--resume",
     "--jsonl",
@@ -176,7 +173,7 @@ const schedulePreview = json(
   "create",
   "--name",
   "Alice Example backup",
-  "--destination",
+  "--output-dir",
   scheduleArchive,
   "--since-time",
   "2026-10-01",
@@ -213,7 +210,7 @@ for (const [path, flags] of [
     ["--checkpoint", join(sandbox, "contradictory-checkpoint"), "--no-resume"],
   ],
 ])
-  invoke([...path, "--destination", scheduleArchive, ...flags], 2)
+  invoke([...path, "--output-dir", scheduleArchive, ...flags], 2)
 assert.equal(existsSync(scheduleArchive), false)
 assert.equal(existsSync(join(environment.ZM_CONFIG_DIR, "recording-schedules")), false)
 assert.equal(existsSync(join(environment.XDG_CONFIG_HOME, "systemd", "user")), false)

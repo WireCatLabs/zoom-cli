@@ -36,9 +36,9 @@ export const addRecordingScheduleCommands = (
       .command("create")
       .description("preview a daily archive job; --yes installs its timer")
       .requiredOption("--name <name>", "local job name")
-      .requiredOption("--destination <directory>", "absolute archive directory")
+      .requiredOption("--output-dir <dir>", "absolute archive directory")
       .requiredOption("--since-time <time>", "first day to archive, YYYY-MM-DD")
-      .requiredOption("--at <time>", "daily HH:mm time")
+      .requiredOption("--at <hh:mm>", "daily time")
       .requiredOption("--timezone <zone>", "IANA timezone for the timer")
       .option("--lookback-days <days>", "revisit the latest zero through 31 UTC days (default seven)", bytes)
       .option("--max-bytes <bytes>", "maximum bytes per recording file (default 20 GiB)", bytes)
@@ -47,7 +47,7 @@ export const addRecordingScheduleCommands = (
       .action(
         async (options: {
           name: string
-          destination: string
+          outputDir: string
           sinceTime: string
           at: string
           timezone: string
@@ -65,7 +65,7 @@ export const addRecordingScheduleCommands = (
             await service.create(
               {
                 name: options.name,
-                destination: options.destination,
+                destination: options.outputDir,
                 from: options.sinceTime,
                 dailyAt: options.at,
                 timeZone: options.timezone,
@@ -78,7 +78,7 @@ export const addRecordingScheduleCommands = (
           )
         },
       ),
-    "zm recordings schedule create --name daily --destination /home/AliceExample/archive --since-time 2026-01-01 --at 03:15 --timezone UTC --json",
+    "zm recordings schedule create --name daily --output-dir /home/AliceExample/archive --since-time 2026-01-01 --at 03:15 --timezone UTC --json",
     true,
   )
   label(

@@ -1,6 +1,6 @@
 {
   "name": "@wirecat/zoom-cli",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "Zoom cloud recording archives, persistent transcripts and meeting tools",
   "license": "Apache-2.0",
   "type": "module",
@@ -53,8 +53,8 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",
-    "@wirecat/cli-base": "0.28.2",
-    "@wirecat/cli-core": "0.280.0",
+    "@wirecat/cli-base": "0.31.0",
+    "@wirecat/cli-core": "0.281.0",
     "commander": "15.0.0",
     "valibot": "1.5.0"
   },
@@ -65,7 +65,7 @@
     "@cspell/dict-ru_ru": "2.3.3",
     "@types/node": "^22.20.5",
     "@vitest/coverage-v8": "^5.0.3",
-    "@wirecat/cli-base-dev": "npm:@wirecat/cli-base@0.30.0",
+    "@wirecat/cli-base-dev": "npm:@wirecat/cli-base@0.31.0",
     "@wirecat/cli-testing": "0.4.0",
     "cspell": "10.3.6",
     "lefthook": "2.1.16",

@@ -19,10 +19,10 @@ Use `--json=id,title` to keep only those fields. `zm doctor --json` checks local
 
 ## Recording archives
 
-Use `recordings sync --since-time <date> --until-time <date> --destination <directory> --jsonl` to archive history
+Use `recordings sync --since-time <date> --until-time <date> --output-dir <dir> --jsonl` to archive history
 across months. It emits serial occurrence receipts and accepts up to ten calendar years.
 Use `recordings list` to find cloud recording occurrences, then `recordings show <id-or-uuid>` to
-inspect assets. Download with `recordings download <id-or-uuid> --destination <directory>`.
+inspect assets. Download with `recordings download <id-or-uuid> --output-dir <dir>`.
 Prefer occurrence UUIDs for recurring meetings. Download access depends on Zoom scopes and the
 signed-in account; attending a meeting does not imply access to its recording API.
 

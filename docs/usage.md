@@ -117,8 +117,8 @@ does not import that transcript into the meeting database until you request arch
 | `events list` | read stored events |
 | `watch [api\|files] [folder] --jsonl` | repeatedly ingest from Zoom or a folder (default: configured source) in the foreground |
 | `recordings list`, `recordings show <meeting>` | discover cloud recordings and asset metadata |
-| `recordings download <meeting> --destination <directory>` | archive available recording files |
-| `recordings sync --since-time <date> --until-time <date> --destination <directory> --jsonl` | archive recording history across calendar months |
+| `recordings download <meeting> --output-dir <dir>` | archive available recording files |
+| `recordings sync --since-time <date> --until-time <date> --output-dir <dir> --jsonl` | archive recording history across calendar months |
 | `recordings schedule create\|list\|show\|run\|disable` | plan and manage local daily archive jobs |
 | `recordings archive show\|check\|locks <directory>` | inspect local manifests, checksums or locks |
 | `recordings archive recover <directory>` | preview recovery of stale local locks |

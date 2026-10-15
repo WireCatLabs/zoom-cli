@@ -475,7 +475,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
         source,
         since: flags.sinceTime,
         lookbackDays: flags.lookbackDays ?? 0,
-        intervalMs: flags.interval,
+        intervalMs: flags.pause,
         folder: folder ?? config.filesFolder ?? undefined,
       }
       if (source === "files") {

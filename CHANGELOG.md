@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.15.0 — 15.10.2026
+
+### Changed — may break callers
+
+- **Flags take the shared names from cli-base 0.31.0.** `recordings download`, `recordings sync` and
+  `recordings schedule create` take `--output-dir <dir>` instead of `--destination`, and `watch` takes `--pause`
+  instead of `--interval`. The old names are gone. Value names follow the shared vocabulary too: `--at <hh:mm>`,
+  `--max-entries <n>`, `--models-dir <dir>`, `--start-time <time>`, `--title <title>`.
+
+- **zm no longer moves its folders out of `~/Library` on macOS at start.** cli-base 0.31.0 dropped the move, so
+  zm reads its folders where cli-base resolves them. Adopts cli-base 0.31.0 and cli-core 0.281.0.
+
 ## 0.14.0 — 15.10.2026
 
 ### Changed — may break callers
