@@ -108,5 +108,7 @@ and optional ISO `after`, `until`, `history_after`, plus `meetings`, `cues`, `co
 `meeting:read:meeting`. This opt-in tool is unavailable with `--offline`; it does not change your
 Zoom app, retrieve absent transcripts or accept findings. Its `meeting_preparation` item retains
 cited cues, bounded related meetings through explicit person/confirmed project links, and explicit
-coverage. Related reads stay within the selected account and history window and perform no writes. See [preparation](usage.md#prepare-for-an-upcoming-meeting) for
+coverage. Accepted person/project facts appear in `knowledge`, with fact references and explicit
+unqueried-source/evidence limits. Related reads stay within the selected account and history window
+and perform no writes. See [preparation](usage.md#prepare-for-an-upcoming-meeting) for
 what it includes, what remains unqueried and how to check the result.

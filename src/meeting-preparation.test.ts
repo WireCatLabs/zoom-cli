@@ -45,6 +45,18 @@ const fixture = async () => {
   const project = await store.knowledge.addProject({ name: "Harbour Example", key: "HAR" })
   await store.knowledge.linkMeetingProject(key, String(saved.meeting.id), project.id)
   await store.facts.add({ type: "decision", statement: "Ship the invented draft", subject: reference, by: "owner" })
+  const projectFact = await store.facts.add({
+    type: "decision",
+    statement: "Use the written launch checklist",
+    subject: project.ref,
+    by: "owner",
+  })
+  await store.facts.add({
+    type: "statement",
+    statement: "An unreviewed project suggestion",
+    subject: project.ref,
+    by: { bot: "invented-reviewer" },
+  })
   await createTaskFromMeeting(store, key, { source: reference, kind: "promise", origin: "owner" })
   const relatedInput = {
     ...input,
@@ -115,6 +127,7 @@ const fixture = async () => {
     closed,
     accountId,
     reference,
+    projectFact,
     relatedReference,
     mcp: {
       now: () => now,
@@ -158,6 +171,12 @@ it("CLI prepares the selected series with cited local context and closes before 
     ],
   })
   expect(item.related.items).toHaveLength(1)
+  expect(item.knowledge).toMatchObject({
+    anchors: [f.reference],
+    items: [{ ref: f.projectFact.ref, statement: "Use the written launch checklist", shared_project: true }],
+    coverage: { fact_evidence: "not-revalidated", other_sources: "not-queried", has_more: false },
+  })
+  expect(item.knowledge.items).toHaveLength(1)
   expect(f.connectStore).toHaveBeenCalledOnce()
   expect(f.connectStore).toHaveBeenCalledWith(expect.objectContaining({ intent: "read" }))
   expect(f.network).toHaveBeenCalledOnce()
@@ -179,6 +198,23 @@ it("refuses invalid fields, provider IDs and offline reads before store or crede
   expect(load).not.toHaveBeenCalled()
   expect(f.network).not.toHaveBeenCalled()
   expect(f.output).toEqual([])
+})
+
+it("fact-reference projection retains knowledge pagination and coverage", async () => {
+  const f = await fixture()
+  expect(await run(["meetings", "prepare", "123", "--json=knowledge.items.ref"], f.deps)).toBe(0)
+  const item = readAnswer(f.output.join(""))
+  expect(item.knowledge).toMatchObject({
+    items: [{ ref: f.projectFact.ref }],
+    coverage: {
+      has_more: false,
+      output_limited: false,
+      fact_evidence: "not-revalidated",
+      other_sources: "not-queried",
+    },
+  })
+  expect(item.knowledge.items[0]).toEqual({ ref: f.projectFact.ref })
+  expect(item.coverage).toMatchObject({ archive_completeness: "unknown", fact_evidence: "not-revalidated" })
 })
 
 it("MCP preparation is opt-in, uses the same selected account and has strict arguments", async () => {
@@ -203,6 +239,7 @@ it("MCP preparation is opt-in, uses the same selected account and has strict arg
           account_id: String(f.accountId),
           meetings: [{ ref: f.reference }],
           related: { items: [{ ref: f.relatedReference, shared_person: true, shared_project: true }] },
+          knowledge: { items: [{ ref: f.projectFact.ref, shared_project: true }] },
         })
         expect(f.closed).toHaveBeenCalledOnce()
       }
