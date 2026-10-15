@@ -46,6 +46,19 @@ const fixture = async () => {
   await store.knowledge.linkMeetingProject(key, String(saved.meeting.id), project.id)
   await store.facts.add({ type: "decision", statement: "Ship the invented draft", subject: reference, by: "owner" })
   await createTaskFromMeeting(store, key, { source: reference, kind: "promise", origin: "owner" })
+  const relatedInput = {
+    ...input,
+    meeting: {
+      ...input.meeting,
+      externalId: "invented-related",
+      startedAt: now - 2 * 86400000,
+      series: { ...series, externalId: "456" },
+    },
+  }
+  const related = await store.meetings.saveMeeting(relatedInput)
+  await store.knowledge.linkMeetingProject(key, String(related.meeting.id), project.id)
+  await store.meetings.saveMeeting({ ...relatedInput, meeting: { ...relatedInput.meeting, accountId: otherId } })
+  const relatedReference = `meeting:${accountId}/${related.meeting.id}`
   await store.close()
   const network = vi.fn<typeof fetch>(
     async () => new Response(JSON.stringify({ id: 123, type: 2, start_time: "2026-10-15T10:00:00Z", duration: 30 })),
@@ -102,6 +115,7 @@ const fixture = async () => {
     closed,
     accountId,
     reference,
+    relatedReference,
     mcp: {
       now: () => now,
       connectStore: () => connectStore({ profile: "AliceExample", externalId: key.account, intent: "read" }),
@@ -131,6 +145,19 @@ it("CLI prepares the selected series with cited local context and closes before 
     ],
   })
   expect(item.meetings).toHaveLength(1)
+  expect(item.related).toMatchObject({
+    anchors: [f.reference],
+    has_more: false,
+    items: [
+      {
+        ref: f.relatedReference,
+        shared_person: true,
+        shared_project: true,
+        evidence: { items: [{ text: "Ship the example plan." }] },
+      },
+    ],
+  })
+  expect(item.related.items).toHaveLength(1)
   expect(f.connectStore).toHaveBeenCalledOnce()
   expect(f.connectStore).toHaveBeenCalledWith(expect.objectContaining({ intent: "read" }))
   expect(f.network).toHaveBeenCalledOnce()
@@ -175,6 +202,7 @@ it("MCP preparation is opt-in, uses the same selected account and has strict arg
         expect(readAnswer(text[0]?.text ?? "")).toMatchObject({
           account_id: String(f.accountId),
           meetings: [{ ref: f.reference }],
+          related: { items: [{ ref: f.relatedReference, shared_person: true, shared_project: true }] },
         })
         expect(f.closed).toHaveBeenCalledOnce()
       }

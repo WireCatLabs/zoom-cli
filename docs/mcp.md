@@ -107,5 +107,6 @@ and optional ISO `after`, `until`, `history_after`, plus `meetings`, `cues`, `co
 `max_read_bytes` and `bytes`. The server selects the account and reads Zoom schedule details, requiring
 `meeting:read:meeting`. This opt-in tool is unavailable with `--offline`; it does not change your
 Zoom app, retrieve absent transcripts or accept findings. Its `meeting_preparation` item retains
-cited cues and explicit coverage. See [preparation](usage.md#prepare-for-an-upcoming-meeting) for
+cited cues, bounded related meetings through explicit person/confirmed project links, and explicit
+coverage. Related reads stay within the selected account and history window and perform no writes. See [preparation](usage.md#prepare-for-an-upcoming-meeting) for
 what it includes, what remains unqueried and how to check the result.

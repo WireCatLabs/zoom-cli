@@ -49,7 +49,7 @@ This reads the selected series from Zoom and joins it to your selected local pro
 history. It needs the optional `meeting:read:meeting` permission in your
 [Zoom app](zoom-app.md#add-archive-or-management-access). It does not pull missing transcripts,
 change app permissions or start login. The default window looks seven days ahead and thirty days
-back, including at most five prior occurrences and ten cited cues per occurrence.
+back, including at most five prior occurrences, five related meetings and ten cited cues per meeting.
 
 Check `item.upcoming.candidate` and `verified_next`: a candidate time can be useful without proving
 it is the next occurrence. Recurring series dates alone never establish that claim. The result's
@@ -57,19 +57,29 @@ it is the next occurrence. Recurring series dates alone never establish that cla
 with existing person links, confirmed projects, accepted meeting facts and directly sourced tasks.
 Past participants are not a prediction of who will attend next.
 
+`related.items` adds stored meetings outside this series through existing person links or confirmed
+project memberships shared with included history. Each has a meeting reference, cited cues and
+`shared_person`/`shared_project` flags; `related.anchors` shows the prior calls used to establish
+those connections. The search stays within this profile and history window, uses current links,
+and excludes proposed project memberships. Matching names or transcript words never creates a link.
+
 If the upcoming time appears without earlier calls, pull the relevant period through the Zoom API
 so the store has its exact series links. Imported transcript files may not contain that provider
 series ID. Preparation does not match calls by similar titles or participant names.
 
 Coverage distinguishes missing stored history, undated occurrences, extra rows and output limits.
-Archive completeness remains unknown. Person history, project-wide context and project-name/alias
-candidates are listed as unqueried; stored fact evidence is not revalidated. Use
+Archive completeness remains unknown. Person/project sources outside meeting transcripts and
+project-name/alias candidates remain unqueried; without usable prior occurrences, related history
+also remains unqueried. Stored fact evidence is not revalidated. Use
 [search and evidence](search.md) to investigate those gaps. Preparation does not generate a summary,
 record a decision, accept a finding or create a task.
 
 For more control, use ISO timestamps with a zone for `--since-time`, `--before-time` and `--history-since-time`.
-`--meetings`, `--cues` and `--context-limit` bound the context; `--max-read-bytes` bounds individual
-reads and `--bytes` bounds the preparation item. Additional rows may remain when a bound is reached.
+`--meetings` caps each of exact-series and related history separately; `--cues` and `--context-limit`
+bound the context; `--max-read-bytes` bounds individual
+reads and `--bytes` bounds the entire preparation item. Exact-series evidence takes priority;
+`related.has_more` and `related.output_limited` identify extra or omitted related context.
+Additional rows may remain when a bound is reached.
 Skipped unavailable sources set `meta.complete=false`; inspect their references before relying on
 the brief. Increase the relevant bound when the coverage identifies truncation.
 

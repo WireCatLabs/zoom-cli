@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Added
+
+- Meeting preparation includes cited stored meetings from other series through existing person
+  links or confirmed shared projects. The same-account history window, independent related-row
+  coverage and shared JSON budget keep the brief bounded. Exact-series context retains priority;
+  neither names nor transcript words create associations. CLI and opt-in MCP share Core's service.
+
 ### Changed — may break callers
 
 - **Flags take the shared names from cli-base 0.31.1.** `recordings download`, `recordings sync` and
@@ -23,6 +30,7 @@
 - Configuration JSON uses `client_id`, `files_folder`, `files_timezone` and `account_profile`.
   Core no longer converts camelCase files; rename older keys before upgrading. Reads do not rewrite
   configuration. Command setting selectors retain their existing behavior.
+
 
 ## 0.14.0 — 15.10.2026
 

@@ -36,6 +36,19 @@ const fact = await store.facts.add({
   by: "owner",
 })
 const task = await createTaskFromMeeting(store, key, { source: reference, kind: "promise", origin: "owner" })
+const relatedInput = {
+  ...sample,
+  meeting: {
+    ...sample.meeting,
+    externalId: "invented-related",
+    startedAt: now - 2 * 86400000,
+    series: { ...sample.meeting.series, externalId: "456" },
+  },
+}
+const related = await store.meetings.saveMeeting(relatedInput)
+await store.knowledge.linkMeetingProject(key, String(related.meeting.id), project.id)
+await store.meetings.saveMeeting({ ...relatedInput, meeting: { ...relatedInput.meeting, accountId: foreignId } })
+const relatedReference = `meeting:${accountId}/${related.meeting.id}`
 await store.close()
 let credentials = 0,
   requests = 0,
@@ -83,7 +96,7 @@ assert.equal(requests, 0)
 assert.equal(credentials, 0)
 const answer = await readMeetingPreparation(
   read,
-  { series_id: "123", meetings: 1, cues: 1, context_limit: 1, bytes: 8192 },
+  { series_id: "123", meetings: 1, cues: 1, context_limit: 1, bytes: 16384 },
   undefined,
   now,
 )
@@ -101,11 +114,19 @@ assert.ok(meeting.evidence.items[0].ref.startsWith(`${reference}/`))
 assert.equal(meeting.context.projects.items[0].ref, project.ref)
 assert.equal(meeting.context.facts.items[0].ref, fact.ref)
 assert.equal(meeting.context.tasks.items[0].ref, `task:${task.task.id}`)
-assert.ok(Buffer.byteLength(JSON.stringify(answer.item)) <= 8192)
+assert.deepEqual(answer.item.related.anchors, [reference])
+assert.equal(answer.item.related.items.length, 1)
+const extra = answer.item.related.items[0]
+assert.equal(extra.ref, relatedReference)
+assert.equal(extra.shared_person, true)
+assert.equal(extra.shared_project, true)
+assert.ok(extra.evidence.items[0].ref.startsWith(`${relatedReference}/`))
+assert.equal(answer.item.related.has_more, false)
+assert.ok(Buffer.byteLength(JSON.stringify(answer.item)) <= 16384)
 const reopened = await openStore({ path })
 try {
   assert.equal((await reopened.facts.list()).length, 1)
-  assert.equal((await reopened.knowledge.meetingProjects(key)).items.length, 1)
+  assert.equal((await reopened.knowledge.meetingProjects(key)).items.length, 2)
 } finally {
   await reopened.close()
 }
@@ -114,6 +135,7 @@ console.log(
     cold_credentials: true,
     selected_account: true,
     cited_context: true,
+    cited_related_context: true,
     bounded_output: true,
     no_writes: true,
     strict_arguments: true,
