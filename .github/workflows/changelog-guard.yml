@@ -9,4 +9,4 @@ permissions:
 
 jobs:
   changelog:
-    uses: WireCatLabs/cli-base/.github/workflows/changelog-guard.yml@cf3591c71c82e16399c513f037c9dbfa97277e80 # cli-base changelog guard
+    uses: WireCatLabs/cli-base/.github/workflows/changelog-guard.yml@24be149098e324d7f0e5c0df68a9f2f1af1d50f4 # cli-base: reject duplicate release headings
