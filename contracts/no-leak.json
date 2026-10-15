@@ -9,6 +9,6 @@
     "contracts/previous/package.json",
     "contracts/previous/pnpm-lock.yaml",
     "contracts/previous/pnpm-workspace.yaml",
-    "contracts/convert-legacy-config.mjs"
+    "contracts/rename-upgrade-config.mjs"
   ]
 }

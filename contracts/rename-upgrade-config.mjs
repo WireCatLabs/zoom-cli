@@ -40,5 +40,5 @@ if (action === "snapshot") {
   writeFileSync(path, `${JSON.stringify(converted, null, 2)}\n`)
   assert.equal(lstatSync(path).mode, mode)
   assert.deepEqual(JSON.parse(readFileSync(path, "utf8")), converted)
-  process.stdout.write(`${JSON.stringify({ converted: true, preserved_values: true, preserved_mode: true })}\n`)
+  process.stdout.write(`${JSON.stringify({ renamed: true, preserved_values: true, preserved_mode: true })}\n`)
 }

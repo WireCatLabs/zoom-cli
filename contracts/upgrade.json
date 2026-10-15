@@ -46,7 +46,7 @@
     },
     {
       "id": "legacy-config-fingerprint",
-      "entry": "./convert-legacy-config.mjs",
+      "entry": "./rename-upgrade-config.mjs",
       "args": ["snapshot", "{{root}}"],
       "exit": 0,
       "stream": "stdout",
@@ -56,22 +56,30 @@
       }
     },
     {
-      "id": "candidate-refuses-legacy-config",
+      "id": "candidate-old-config-refused",
       "args": ["config", "show", "--json"],
       "exit": 3,
       "stream": "stderr",
       "kind": "json",
-      "errorCode": "configuration_error"
+      "errorCode": "configuration_error",
+      "files": [
+        {
+          "path": "ZM/CONFIG/config.json",
+          "json": {
+            "accountProfile": "contract"
+          }
+        }
+      ]
     },
     {
-      "id": "owner-converts-fixture-config",
-      "entry": "./convert-legacy-config.mjs",
+      "id": "explicit-config-key-rename",
+      "entry": "./rename-upgrade-config.mjs",
       "args": ["convert", "{{root}}", "{{legacy_config_fingerprint}}"],
       "exit": 0,
       "stream": "stdout",
       "kind": "json",
       "json": {
-        "converted": true,
+        "renamed": true,
         "preserved_values": true,
         "preserved_mode": true
       }
