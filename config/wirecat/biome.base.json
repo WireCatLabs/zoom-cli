@@ -38,6 +38,14 @@
             "allow": ["error"]
           }
         }
+      },
+      "security": {
+        "noSecrets": {
+          "level": "error",
+          "options": {
+            "entropyThreshold": 50
+          }
+        }
       }
     }
   },
@@ -51,6 +59,45 @@
           }
         }
       }
+    },
+    {
+      "includes": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/test/**",
+        "**/tests/**",
+        "**/__tests__/**",
+        "**/fixtures/**",
+        "**/generated/**"
+      ],
+      "linter": {
+        "rules": {
+          "security": {
+            "noSecrets": "off"
+          }
+        }
+      }
+    }
+  ],
+  "plugins": [
+    "./config/wirecat/no-new-function.grit",
+    "./config/wirecat/no-shell-true.grit",
+    "./config/wirecat/no-exec-interpolation.grit",
+    {
+      "path": "./config/wirecat/no-unbounded-spread.grit",
+      "includes": [
+        "**",
+        "!**/*.test.*",
+        "!**/*.spec.*",
+        "!**/test/**",
+        "!**/tests/**",
+        "!**/__tests__/**",
+        "!**/fixtures/**",
+        "!**/testing/**",
+        "!**/scripts/**",
+        "!**/bench/**",
+        "!**/performance/**"
+      ]
     }
   ]
 }

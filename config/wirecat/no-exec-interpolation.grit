@@ -1,0 +1,17 @@
+language js
+
+or {
+  `exec($args)`,
+  `execSync($args)`,
+  `$_.execSync($args)`,
+  `child_process.exec($args)`,
+  `childProcess.exec($args)`,
+  `cp.exec($args)`
+} where {
+  $args <: [$command, ...],
+  $command <: or {
+    r"^`[\s\S]*\$\{[\s\S]*`$",
+    `$left + $right`
+  },
+  register_diagnostic(span=$command, message="A command string built from values runs through a shell. Use execFile or spawn with an argument array.", severity="error")
+}
