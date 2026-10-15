@@ -176,7 +176,7 @@ zm meetings link meeting:1/1 --participant-id 1 --person 1 --expected-person non
 These local changes preview by default; `--yes` applies once and `--dry-run` overrides it. Expected
 link options reject a stale decision. Use `--event-id none` to unlink an event. Person linking moves
 only the selected participant's identity; it never guesses a person from a speaker name. Target
-people must have authorized account observations. Explicit `--target-accounts <ids>` adds account
+people must have authorized account observations. Explicit `--source <accounts>` adds account
 ids for that lookup. Profile labels group local data and do not authenticate a remote identity.
 
 ## Find a project before linking it

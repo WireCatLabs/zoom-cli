@@ -186,7 +186,7 @@ export const installedMeetingIntegration = async ({
   assert.equal(json(...personArgs).applied, false)
   invoke(["--json", ...personArgs, "--yes"], 6)
   assert.deepEqual(native("audit", target).audit, [])
-  const linked = json(...personArgs, "--target-accounts", String(target.foreignAccountId), "--yes")
+  const linked = json(...personArgs, "--source", String(target.foreignAccountId), "--yes")
   assert.equal(linked.applied, true)
   assert.equal(linked.result.changed, true)
   const after = native("audit", target)
@@ -196,7 +196,7 @@ export const installedMeetingIntegration = async ({
   assert.deepEqual(after.audit, [
     { method: "manual", author: "owner", from_person_id: null, to_person_id: Number(target.personUid) },
   ])
-  invoke(["--json", ...personArgs, "--target-accounts", String(target.foreignAccountId), "--yes"], 3)
+  invoke(["--json", ...personArgs, "--source", String(target.foreignAccountId), "--yes"], 3)
   assert.deepEqual(native("audit", target).audit, after.audit)
   const unchanged = json(
     "meetings",

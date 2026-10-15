@@ -219,6 +219,6 @@ UTF-8 preflight and fact validation stay in Core. Knowledge has its own lookahea
 bytes to meeting evidence. Zoom binds the existing shared store unchanged; CLI, MCP and installed
 SDK tests exercise that integration with invented facts, including exclusion of unreviewed proposals.
 
-Command vocabulary checks use the same canonical Base 0.31.1 package as the runtime. Core and
+Command vocabulary checks use the same canonical Base 0.33.0 package as the runtime. Core and
 Zoom must resolve one Base installation; installed-package proofs check that identity. No separate
 vocabulary alias or widened peer range is needed.

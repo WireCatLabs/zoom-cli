@@ -26,10 +26,8 @@ Store connections open lazily and close before successful results are emitted. M
 in the shared WireCat database; `MESSAGING_STORE` selects an explicit database path. The shared model,
 exports and ingestion loop come from `@wirecat/cli-core/meetings`.
 
-The shared store uses `wirecat.db`. Opening its default path deletes the legacy unencrypted
-`messages.db` and its `-wal` and `-shm` sidecars, without migrating them. The legacy files are kept
-when `MESSAGING_STORE` is set, an explicit store path is supplied, or another process holds the
-legacy database open. A later default-path open retries deletion after that process closes.
+The shared store uses `wirecat.db`. Store opens preserve legacy `messages.db` files and their
+`-wal` and `-shm` sidecars. Manage legacy-file retention separately from importing or reading meetings.
 
 Select a [local profile](sessions.md#select-a-local-profile) before importing or pulling.
 
