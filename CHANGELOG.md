@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **Release scripts report observed lock holders separately from stale release labels.** Shared
+  diagnostics no longer attribute a live lock to a previous run; wait for the holders to finish, then
+  retry.
+
 ## 0.21.1 — 16.10.2026
 
 ### Fixed

@@ -8,10 +8,8 @@ git fetch -q origin
 [ -z "$(git status --porcelain --untracked-files=no)" ] || { echo "uncommitted changes" >&2; exit 1; }
 [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || { echo "update main to origin/main first" >&2; exit 1; }
 # Serialize publishing across the owner's CLI packages, as in cli-core.
-lock="${XDG_RUNTIME_DIR:-/tmp}/leemour-release.lock"
-exec 9>"$lock"
-flock -n 9 || { echo "another release is running: $(cat "$lock.who" 2>/dev/null)" >&2; exit 1; }
-echo "$(basename "$PWD") pid $$ since $(date -u +%H:%M)" > "$lock.who"
+. ./config/wirecat/release-lock.sh
+wirecat_release_lock
 version=$(node -p 'require("./package.json").version')
 # A session that merges after the version was dated, but before it was published, adds Unreleased above it.
 # --land folds on a fresh main through its own pull request, and folds again once if main moves under it.
