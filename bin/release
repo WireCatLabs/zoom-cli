@@ -14,31 +14,12 @@ flock -n 9 || { echo "another release is running: $(cat "$lock.who" 2>/dev/null)
 echo "$(basename "$PWD") pid $$ since $(date -u +%H:%M)" > "$lock.who"
 version=$(node -p 'require("./package.json").version')
 # A session that merges after the version was dated, but before it was published, adds Unreleased above it.
+# --land folds on a fresh main through its own pull request, and folds again once if main moves under it.
 # cli-dev is pinned rather than taken from the dependencies: cli-core accepts only an older cli-base.
 folded=""
 npm view "@wirecat/zoom-cli@$version" version --prefer-online >/dev/null 2>&1 ||
-  folded=$(npx -y -p @wirecat/cli-base@0.34.0 cli-dev changelog fold --version "$version")
-if [ -n "$folded" ]; then
-  echo "$folded"
-  # main takes changes only through a pull request (the repository's ruleset).
-  branch="release/fold-$version" title="chore(release): fold Unreleased into $version"
-  body="bin/release: $version is dated but not on npm, and Unreleased sat above it. Only CHANGELOG.md changes."
-  git switch -q -c "$branch"
-  git commit -q -am "$title" -m "$body"
-  git push -q -u origin "$branch"
-  git switch -q main
-  pr=$(gh pr create --base main --head "$branch" --title "$title" --body "$body")
-  # Checks register a few seconds after the pull request; --watch with none exits at once.
-  for _ in $(seq 30); do
-    [ "$(gh pr checks "$pr" --json name --jq length 2>/dev/null || echo 0)" -gt 0 ] && break
-    sleep 2
-  done
-  gh pr checks "$pr" --watch --fail-fast >/dev/null || { echo "checks failed on $pr — nothing is published" >&2; exit 1; }
-  gh pr merge "$pr" --squash --delete-branch --subject "$title (#${pr##*/})"
-  git fetch -q origin
-  git merge -q --ff-only origin/main
-  [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || { echo "main is not origin/main after $pr" >&2; exit 1; }
-fi
+  folded=$(npx -y -p @wirecat/cli-base@0.36.0 cli-dev changelog fold --land --version "$version")
+[ -z "$folded" ] || echo "$folded"
 top=$(sed -n '/^## /{p;q;}' CHANGELOG.md)
 case "$top" in
   "## $version — "*) ;;
