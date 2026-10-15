@@ -284,8 +284,13 @@ it("MCP preparation is opt-in, uses the same selected account and has strict arg
 
 it("keeps the native MCP preparation item within bytes after hidden text expands", async () => {
   const f = await fixture("\u200b".repeat(11000))
+  expect(Buffer.byteLength(f.projectNote.text)).toBe(33000)
+  expect(await run(["meetings", "prepare", "123", "--bytes", "65536", "--json"], f.deps)).toBe(0)
+  const raw = readAnswer(f.output.join(""))
+  expect(raw.notes.items[0]).toMatchObject({ ref: f.projectNote.ref, text: f.projectNote.text })
+  expect(Buffer.byteLength(JSON.stringify(raw))).toBeLessThanOrEqual(65536)
   const result = await readPreparationTool(f.mcp, { series_id: "123", bytes: 65536 }, new AbortController().signal)
-  expect(result.isError).not.toBe(true)
+  expect(result).not.toMatchObject({ isError: true })
   expect(result).toMatchObject({
     structuredContent: {
       meta: { truncated: true },
@@ -298,7 +303,7 @@ it("keeps the native MCP preparation item within bytes after hidden text expands
   })
   const item = readAnswer(JSON.stringify(result.structuredContent))
   expect(Buffer.byteLength(JSON.stringify(item))).toBeLessThanOrEqual(65536)
-  expect(f.closed).toHaveBeenCalledOnce()
+  expect(f.closed).toHaveBeenCalledTimes(2)
 })
 
 it("closes on provider failure and refuses output when close fails", async () => {

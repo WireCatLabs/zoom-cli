@@ -162,12 +162,23 @@ try {
 } finally {
   await reopened.close()
 }
+const hiddenNote = "\u200b".repeat(11000)
+assert.equal(Buffer.byteLength(hiddenNote), 33000)
 const edited = await openStore({ path, now: () => now })
 try {
-  await edited.notes.editNote(projectNote.id, "\u200b".repeat(11000), 2)
+  await edited.notes.editNote(projectNote.id, hiddenNote, 2)
 } finally {
   await edited.close()
 }
+const unframed = await readMeetingPreparation(
+  read,
+  { series_id: "123", meetings: 1, cues: 1, context_limit: 1, bytes: 65536 },
+  undefined,
+  now,
+)
+assert.equal(unframed.item.notes.items.length, 1)
+assert.equal(unframed.item.notes.items[0].text, hiddenNote)
+assert.ok(Buffer.byteLength(JSON.stringify(unframed.item)) <= 65536)
 const framed = await callMeetingPreparationTool(
   read,
   { series_id: "123", meetings: 1, cues: 1, context_limit: 1, bytes: 65536 },
@@ -183,7 +194,7 @@ assert.equal(framed.structuredContent.item.notes.coverage.output_limited, true)
 assert.equal(framed.structuredContent.meta.truncated, true)
 assert.ok(Buffer.byteLength(JSON.stringify(framed.structuredContent.item)) <= 65536)
 assert.deepEqual(JSON.parse(framed.content[0].text), framed.structuredContent)
-assert.equal(closed, 2)
+assert.equal(closed, 3)
 console.log(
   JSON.stringify({
     cold_credentials: true,
