@@ -470,12 +470,12 @@ it("closes after source and rejected-save errors and sanitizes connector failure
   expect(JSON.parse(stderr.at(-1) ?? "{}").error.message).toBe("selected profile was not registered")
 })
 
-it("reads older valid configuration and validates optional local profile labels", async () => {
+it("reads canonical configuration without an optional profile and validates optional local profile labels", async () => {
   const { readConfig, profileAccountKey } = await import("./config.js")
   const { deps } = await setup()
   await writeFile(
     deps.configPath,
-    JSON.stringify({ clientId: "example-client", source: "api", filesFolder: null, filesTimezone: "UTC" }),
+    JSON.stringify({ client_id: "example-client", source: "api", files_folder: null, files_timezone: "UTC" }),
   )
   expect(readConfig(deps.configPath).accountProfile).toBeNull()
   setConfig(deps.configPath, "account.profile", "Example-work_1.2")
@@ -486,11 +486,11 @@ it("reads older valid configuration and validates optional local profile labels"
   await writeFile(
     deps.configPath,
     JSON.stringify({
-      clientId: "example-client",
+      client_id: "example-client",
       source: "api",
-      filesFolder: null,
-      filesTimezone: "UTC",
-      accountProfile: [],
+      files_folder: null,
+      files_timezone: "UTC",
+      account_profile: [],
     }),
   )
   expect(() => readConfig(deps.configPath)).toThrow(/invalid/)

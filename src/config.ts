@@ -55,9 +55,7 @@ export const readConfig = (path: string): ZoomConfig => {
       filesTimezone: file.files_timezone,
       accountProfile: file.account_profile ?? null,
     }
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("are the same setting"))
-      throw new CliError("configuration_error", error.message)
+  } catch {
     throw new CliError("configuration_error", "zm config is invalid")
   }
 }

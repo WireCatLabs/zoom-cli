@@ -15,17 +15,19 @@ const oldFile = {
 }
 
 describe("config names", () => {
-  it("reads a camelCase file and rewrites it in snake_case, keeping the mode", () => {
+  it("reads a canonical snake_case file without rewriting it or changing its mode", () => {
     const path = configPath()
-    writeFileSync(path, JSON.stringify(oldFile), { mode: 0o600 })
-    expect(readConfig(path)).toEqual(oldFile)
-    expect(saved(path)).toEqual({
+    const file = {
       client_id: "example-client",
       source: "files",
       files_folder: "example-folder",
       files_timezone: "Europe/Madrid",
       account_profile: "example",
-    })
+    }
+    writeFileSync(path, JSON.stringify(file), { mode: 0o600 })
+    const before = readFileSync(path, "utf8")
+    expect(readConfig(path)).toEqual(oldFile)
+    expect(readFileSync(path, "utf8")).toBe(before)
     expect(statSync(path).mode & 0o777).toBe(0o600)
   })
 
@@ -39,15 +41,19 @@ describe("config names", () => {
     expect(saved(path)).not.toHaveProperty("clientId")
   })
 
-  it("refuses both spellings of one setting with different values", () => {
+  it("refuses a legacy camelCase file without rewriting it", () => {
     const path = configPath()
-    writeFileSync(path, JSON.stringify({ ...oldFile, client_id: "example-other" }))
-    expect(() => readConfig(path)).toThrow(/clientId and client_id are the same setting/)
+    writeFileSync(path, JSON.stringify(oldFile))
+    expect(() => readConfig(path)).toThrow(/zm config is invalid/)
+    expect(saved(path)).toEqual(oldFile)
   })
 
-  it("accepts both spellings with the same value", () => {
+  it("refuses invalid canonical configuration values", () => {
     const path = configPath()
-    writeFileSync(path, JSON.stringify({ ...oldFile, client_id: "example-client" }))
-    expect(readConfig(path).clientId).toBe("example-client")
+    writeFileSync(
+      path,
+      JSON.stringify({ client_id: "has spaces", source: "api", files_folder: null, files_timezone: "UTC" }),
+    )
+    expect(() => readConfig(path)).toThrow(/zm config is invalid/)
   })
 })

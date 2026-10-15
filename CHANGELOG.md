@@ -1,16 +1,23 @@
 # Changelog
 
-## 0.15.0 — 15.10.2026
+## Unreleased
 
 ### Changed — may break callers
 
-- **Flags take the shared names from cli-base 0.31.0.** `recordings download`, `recordings sync` and
+- **Flags take the shared names from cli-base 0.31.1.** `recordings download`, `recordings sync` and
   `recordings schedule create` take `--output-dir <dir>` instead of `--destination`, and `watch` takes `--pause`
   instead of `--interval`. The old names are gone. Value names follow the shared vocabulary too: `--at <hh:mm>`,
   `--max-entries <n>`, `--models-dir <dir>`, `--start-time <time>`, `--title <title>`.
 
-- **zm no longer moves its folders out of `~/Library` on macOS at start.** cli-base 0.31.0 dropped the move, so
-  zm reads its folders where cli-base resolves them. Adopts cli-base 0.31.0 and cli-core 0.281.0.
+- **zm no longer moves its folders out of `~/Library` on macOS at start.** cli-base 0.31.1 dropped the move, so
+  zm reads its folders where cli-base resolves them. Adopts cli-base 0.31.1 and cli-core 0.283.0.
+
+- JSON field projection keeps coverage metadata alongside the requested fields, including meeting
+  preparation coverage. Nested paths use Base's shared projection behavior.
+
+- Configuration JSON uses `client_id`, `files_folder`, `files_timezone` and `account_profile`.
+  Core no longer converts camelCase files; rename older keys before upgrading. Reads do not rewrite
+  configuration. Command setting selectors retain their existing behavior.
 
 ## 0.14.0 — 15.10.2026
 
