@@ -2,7 +2,7 @@
 name: zoom-cli
 description: Archive Zoom cloud recordings, read stored meeting transcripts and summaries, or manage a Zoom meeting through zm. Use for Zoom CLI workflows, not joining calls or operating the desktop video client.
 metadata:
-  version: "0.15.0"
+  version: "0.16.0"
 ---
 
 # Zoom CLI
@@ -128,8 +128,12 @@ Default windows look seven days ahead and thirty days back. Use ISO `--since-tim
 
 Preserve candidate/verified-next distinction and all meeting/cue references, fingerprints, stored
 person links, confirmed project links, accepted facts and directly sourced tasks. Past attendees do
-not establish future attendance. Coverage states live reads and unknown archive completeness, plus
-unqueried person-history, project-wide context and project-alias candidates. Stored fact evidence
-is not revalidated. Inspect skipped-source metadata and truncation before relying on the brief.
+not establish future attendance. `related.items` adds cited stored calls outside the series through
+existing person links or confirmed projects shared with included history. Keep its anchor refs and
+shared-person/project flags. Names and transcript words never create links. `--meetings` caps each
+history separately; exact-series evidence has priority within `--bytes`. Inspect related lookahead
+and output-limit flags. Coverage keeps nonmeeting person/project sources and project-alias candidates
+unqueried; without usable anchors, related history is unqueried too. Archive completeness stays
+unknown. Stored fact evidence is not revalidated. Inspect skipped sources and truncation.
 This command does not summarize, accept findings or create tasks. Use existing Memo workflows for
 reviewed writes, retaining meeting evidence and preconditions.
