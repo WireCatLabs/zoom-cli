@@ -135,8 +135,11 @@ and output-limit flags. `knowledge.items` adds cited accepted facts about explic
 and confirmed global projects, including decisions outside these meetings. Preserve fact/subject/project
 refs and association flags; inspect `knowledge.coverage.has_more` and `knowledge.coverage.output_limited`. These facts
 yield bytes to meeting evidence and their source evidence is not revalidated. Coverage keeps
-nonmeeting notes, mail, messages and project-alias candidates
+imported documents, mail, messages and project-alias candidates
 unqueried; without usable anchors, related history is unqueried too. Archive completeness stays
-unknown. Stored fact evidence is not revalidated. Inspect skipped sources and truncation.
+unknown. `notes.items` contains bounded owner notes and annotations through explicit person/project
+associations; retain note refs, revision and update time. These comments are separate from accepted
+facts. Inspect `notes.coverage` for lookahead, truncation and sources that were not rechecked. Imported/file
+notes are outside that selection. Stored fact evidence is not revalidated. Inspect skipped sources and truncation.
 This command does not summarize, accept findings or create tasks. Use existing Memo workflows for
 reviewed writes, retaining meeting evidence and preconditions.

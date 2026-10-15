@@ -57,6 +57,9 @@ const fixture = async () => {
     subject: project.ref,
     by: { bot: "invented-reviewer" },
   })
+  const draftNote = await store.notes.addNote({ text: "Bring the checklist", about: [project.ref] })
+  const projectNote = await store.notes.editNote(draftNote.id, "Bring the written launch checklist", 1)
+  await store.notes.addNote({ text: "An unrelated personal reminder" })
   await createTaskFromMeeting(store, key, { source: reference, kind: "promise", origin: "owner" })
   const relatedInput = {
     ...input,
@@ -128,6 +131,7 @@ const fixture = async () => {
     accountId,
     reference,
     projectFact,
+    projectNote,
     relatedReference,
     mcp: {
       now: () => now,
@@ -177,6 +181,17 @@ it("CLI prepares the selected series with cited local context and closes before 
     coverage: { fact_evidence: "not-revalidated", other_sources: "not-queried", has_more: false },
   })
   expect(item.knowledge.items).toHaveLength(1)
+  expect(item.notes).toMatchObject({
+    anchors: [f.reference],
+    items: [{ ref: f.projectNote.ref, text: f.projectNote.text, revision: 2 }],
+    coverage: {
+      has_more: false,
+      output_limited: false,
+      source_evidence: "not-revalidated",
+      other_sources: "not-queried",
+    },
+  })
+  expect(item.notes.items).toHaveLength(1)
   expect(f.connectStore).toHaveBeenCalledOnce()
   expect(f.connectStore).toHaveBeenCalledWith(expect.objectContaining({ intent: "read" }))
   expect(f.network).toHaveBeenCalledOnce()
@@ -217,6 +232,22 @@ it("fact-reference projection retains knowledge pagination and coverage", async 
   expect(item.coverage).toMatchObject({ archive_completeness: "unknown", fact_evidence: "not-revalidated" })
 })
 
+it("note-reference projection retains note source and pagination coverage", async () => {
+  const f = await fixture()
+  expect(await run(["meetings", "prepare", "123", "--json=notes.items.ref"], f.deps)).toBe(0)
+  const item = readAnswer(f.output.join(""))
+  expect(item.notes).toMatchObject({
+    items: [{ ref: f.projectNote.ref }],
+    coverage: {
+      has_more: false,
+      output_limited: false,
+      source_evidence: "not-revalidated",
+      other_sources: "not-queried",
+    },
+  })
+  expect(item.notes.items[0]).toEqual({ ref: f.projectNote.ref })
+})
+
 it("MCP preparation is opt-in, uses the same selected account and has strict arguments", async () => {
   const f = await fixture()
   for (const enabled of [false, true]) {
@@ -240,6 +271,7 @@ it("MCP preparation is opt-in, uses the same selected account and has strict arg
           meetings: [{ ref: f.reference }],
           related: { items: [{ ref: f.relatedReference, shared_person: true, shared_project: true }] },
           knowledge: { items: [{ ref: f.projectFact.ref, shared_project: true }] },
+          notes: { items: [{ ref: f.projectNote.ref, revision: 2, text: f.projectNote.text }] },
         })
         expect(f.closed).toHaveBeenCalledOnce()
       }

@@ -33,9 +33,9 @@ You have an upcoming Zoom call and want the relevant earlier discussion beside i
 
 ```text prompt
 Prepare for the next Research Example planning call in Zoom. Identify the intended series first.
-Show the upcoming time, cited passages from earlier calls, confirmed project links, saved decisions
-and directly sourced follow-up tasks. Show candidates if several series fit. Tell me what is missing
-or uncertain. Do not change anything.
+Show the upcoming time, cited passages from earlier calls, confirmed project links, saved decisions,
+notes about linked people/projects and directly sourced follow-up tasks. Show candidates if several
+series fit. Tell me what is missing or uncertain. Do not change anything.
 ```
 
 Use the provider series ID from [the Zoom schedule](remote-meetings.md), with digits and no spaces,
@@ -67,16 +67,28 @@ and excludes proposed project memberships. Matching names or transcript words ne
 including decisions recorded outside these meetings. Each has a `fact:` reference, subject/project
 references, update time and `shared_person`/`shared_project` flags. It uses the included prior calls
 as anchors and excludes proposed, reversed, deleted and later-updated facts. The fact reference lets
-you retrieve the full record and evidence through Memo before relying on it. Notes, mail and messages
-are not searched; `knowledge.coverage` keeps `fact_evidence: not-revalidated` and
+you retrieve the full record and evidence through Memo before relying on it. This section contains
+accepted facts; `knowledge.coverage` keeps `fact_evidence: not-revalidated` and
 `other_sources: not-queried` visible.
+
+`notes.items` adds owner-written notes and annotations about those linked people and confirmed
+global projects. Each includes a `note:` reference, title/text, revision, update time and a qualifying
+person/project reference. These are saved comments, separate from accepted facts. The command uses
+current revisions and confirmed associations; it excludes deleted notes, bot-authored notes,
+account-scoped subjects and revisions updated after the preparation start. Retrieve the referenced
+note in Memo when you need its full associations.
+
+Check `notes.coverage.has_more` and `notes.coverage.output_limited` for additional or omitted notes.
+`source_evidence: not-revalidated` means the note's supporting sources have not been checked;
+`other_sources: not-queried` keeps imported documents, mail and messages outside this result's coverage.
+Selecting `--json=notes.items.ref` keeps that coverage visible beside the references.
 
 If the upcoming time appears without earlier calls, pull the relevant period through the Zoom API
 so the store has its exact series links. Imported transcript files may not contain that provider
 series ID. Preparation does not match calls by similar titles or participant names.
 
 Coverage distinguishes missing stored history, undated occurrences, extra rows and output limits.
-Archive completeness remains unknown. Person/project notes, mail, messages and
+Archive completeness remains unknown. Imported documents, mail, messages and
 project-name/alias candidates remain unqueried; without usable prior occurrences, related history
 also remains unqueried. Stored fact evidence is not revalidated. Use
 [search and evidence](search.md) to investigate those gaps. Preparation does not generate a summary,
@@ -89,7 +101,9 @@ reads and `--bytes` bounds the entire preparation item. Exact-series evidence ta
 `related.has_more` and `related.output_limited` identify extra or omitted related context.
 Accepted knowledge has independent `knowledge.coverage.has_more` and `knowledge.coverage.output_limited` flags;
 it returns at most twenty facts (or a smaller `--context-limit`) and yields bytes to meeting evidence.
-Additional rows may remain when a bound is reached.
+Notes have their own lookahead and output-limit flags, with at most twenty entries (or a smaller
+`--context-limit`). They fit after accepted facts and meeting evidence. Additional rows may remain
+when a bound is reached.
 Skipped unavailable sources set `meta.complete=false`; inspect their references before relying on
 the brief. Increase the relevant bound when the coverage identifies truncation.
 

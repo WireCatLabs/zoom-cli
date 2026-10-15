@@ -219,6 +219,12 @@ UTF-8 preflight and fact validation stay in Core. Knowledge has its own lookahea
 bytes to meeting evidence. Zoom binds the existing shared store unchanged; CLI, MCP and installed
 SDK tests exercise that integration with invented facts, including exclusion of unreviewed proposals.
 
+Core's optional `preparationNotes` capability and separate assembler add owner-authored global
+person/project notes and annotations after accepted knowledge. Shared persistence rechecks current
+associations and excludes deleted/scoped subjects and later revisions. Its UTF-8 probe includes
+lookahead before hydration. References, revision, explicit source gaps and coverage survive CLI/MCP
+and field projection; native installed tests verify the binding without adding provider policy or SQL.
+
 Command vocabulary checks use the same canonical Base 0.33.0 package as the runtime. Core and
 Zoom must resolve one Base installation; installed-package proofs check that identity. No separate
 vocabulary alias or widened peer range is needed.
