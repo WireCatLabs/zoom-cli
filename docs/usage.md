@@ -142,7 +142,9 @@ with optional `next` steps and `missing` information. Result keys use snake_case
 
 Detailed reports, including participant discovery, evidence, semantic search and unified search,
 keep their coverage and report-specific continuation inside `item`. Stored meeting word search
-returns standard hit items with `ref`, `meeting`, `excerpt` and `offset_ms`. Meeting details use
+returns standard hit items with `ref`, `meeting`, `excerpt` and `offset_ms`. When stored, `source`
+adds the meeting title, `started_at`, evidence `ref` and document `url`. A null URL means no source
+permalink is stored; a meeting join link is not an evidence link. Meeting details use
 `item`; transcripts and summaries use `items`. Details count current transcripts; use
 `meetings transcript <meeting> --history` to read retained older revisions.
 
@@ -162,7 +164,11 @@ Errors go to stderr. Use `--quiet`
 to suppress non-error diagnostics. Piped output defaults to JSON; terminal output uses the shared
 human-readable renderer. Completion emits its shell protocol unless JSON is requested.
 
-Use `--json=id,title` to keep only those fields. `--offline` refuses network requests. Finite commands
+Use `--json=id,title` to keep only those fields. Dotted paths select nested objects and arrays,
+for example `--json=ref,excerpt,source.title,source.started_at,source.url` for meeting search hits.
+Paths are relative to the answer payload; pagination, coverage, next steps, missing data and
+execution metadata remain. Projection reduces printed output, not the work scanned.
+`--offline` refuses network requests. Finite commands
 buffer successful output until resource cleanup completes, with a default output limit of 4 MiB;
 `--max-output-bytes 0` removes that limit.
 

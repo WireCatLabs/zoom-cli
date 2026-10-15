@@ -22,7 +22,8 @@ using its API. `ZOOM_CLIENT_ID` is not a runtime setting for the installed `zm` 
 `zm config set zoom.client_id` rather than an environment variable copied from a development probe.
 
 The file stores these settings as `client_id`, `files_folder`, `files_timezone`, `account_profile` and `source`.
-The camelCase names `zoom.clientId`, `clientId`, `filesFolder`, `filesTimezone` and `accountProfile` are still read.
+Config files require these snake_case names; older camelCase files are refused without rewriting.
+The command alias `zoom.clientId` still sets `client_id`.
 
 A malformed config still allows `--help` and `--version`; config commands report the error.
 
@@ -38,7 +39,7 @@ actual path without checking the saved OAuth session.
 | Windows | `%APPDATA%\zm\Config\config.json` |
 | Explicit override | `config.json` inside `ZM_CONFIG_DIR` |
 
-Older macOS layouts are migrated when possible; doctor shows the path actually in use. Keep
+Folders are no longer moved automatically; doctor shows the path actually in use. Keep
 public app settings separate from keyring tokens and the shared meeting database.
 
 ## Environment variables

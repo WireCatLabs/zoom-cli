@@ -257,7 +257,11 @@ it("accepts fixed windows and bounded context options, including standard field 
   })
   f.output.length = 0
   expect(await run([...flags, "--json=kind,account_id"], f.deps)).toBe(0)
-  expect(readAnswer(f.output.join(""))).toEqual({ kind: "meeting_preparation", account_id: String(f.accountId) })
+  expect(readAnswer(f.output.join(""))).toEqual({
+    kind: "meeting_preparation",
+    account_id: String(f.accountId),
+    coverage: expect.objectContaining({ context: expect.any(String) }),
+  })
 })
 
 it("the public reader validates before credentials and closes on cancellation during binding", async () => {
