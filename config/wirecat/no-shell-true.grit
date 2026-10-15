@@ -1,0 +1,8 @@
+language js
+
+`shell: true` as $option where {
+  $option <: within `$callee($args)` where {
+    $callee <: r"^(?:.*\.)?(?:spawn|spawnSync|exec|execSync|execFile|execFileSync|fork)$"
+  },
+  register_diagnostic(span=$option, message="shell: true hands the arguments to a shell, so a space, quote or ; in user data runs as a command. Call the program directly with an argument array.", severity="error")
+}
