@@ -207,7 +207,7 @@ describe("command execution controls", () => {
     setConfig(deps.configPath, "zoom.clientId", "example-client")
     setConfig(deps.configPath, "account.profile", "example-profile")
     deps.recordings = { list: async () => [], show: async () => meeting, download: async () => archive, catalog }
-    expect(await run(["recordings", "download", "example", "--destination", "invented"], deps)).toBe(0)
+    expect(await run(["recordings", "download", "example", "--output-dir", "invented"], deps)).toBe(0)
     expect(durations.at(-1)).toBe(3600000)
     deps.openBrowser = async (url) => {
       const state = new URL(url).searchParams.get("state") ?? ""
@@ -253,7 +253,7 @@ describe("archive and explicit remote command wiring", () => {
           "recordings",
           "download",
           "example-occurrence",
-          "--destination",
+          "--output-dir",
           "invented",
           "--file-ids",
           "first, second",
@@ -272,9 +272,9 @@ describe("archive and explicit remote command wiring", () => {
         account: profileAccountKey("example-profile"),
       }),
     )
-    expect(
-      await run(["recordings", "download", "example", "--destination", "invented", "--max-bytes", "0"], deps),
-    ).toBe(2)
+    expect(await run(["recordings", "download", "example", "--output-dir", "invented", "--max-bytes", "0"], deps)).toBe(
+      2,
+    )
   })
   it("inspects and verifies local archives without a client, token or DB and only explicitly repairs", async () => {
     const { deps, stdout } = await setup()

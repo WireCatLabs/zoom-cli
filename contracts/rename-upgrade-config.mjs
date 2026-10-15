@@ -1,22 +1,44 @@
-import { readFileSync, writeFileSync } from "node:fs"
-import { join } from "node:path"
+// Test fixture adapter for the documented owner edit, never a product migration.
+import assert from "node:assert/strict"
+import { createHash } from "node:crypto"
+import { lstatSync, readFileSync, realpathSync, writeFileSync } from "node:fs"
+import { basename, join } from "node:path"
 
-// Model the user's explicit key rename between the refused old config and the store upgrade.
-if (!process.env.WIRECAT_CONTRACT_DENIED || !process.env.ZM_CONFIG_DIR) throw new Error("contract only")
-const path = join(process.env.ZM_CONFIG_DIR, "config.json")
-const names = {
-  clientId: "client_id",
-  filesFolder: "files_folder",
-  filesTimezone: "files_timezone",
-  accountProfile: "account_profile",
-  source: "source",
+const [action, root, expectedFingerprint] = process.argv.slice(2)
+assert.ok(action === "snapshot" || action === "convert")
+assert.ok(root && basename(root).startsWith("wirecat-contract-"))
+assert.equal(realpathSync(root), root)
+assert.equal(process.cwd(), root)
+assert.equal(process.env.HOME, root)
+assert.equal(process.env.ZM_CONFIG_DIR, join(root, "ZM", "CONFIG"))
+assert.equal(process.env.MESSAGING_STORE, join(root, "store.sqlite"))
+const path = join(root, "ZM", "CONFIG", "config.json")
+assert.ok(lstatSync(path).isFile())
+assert.equal(realpathSync(path), path)
+const before = readFileSync(path)
+const mode = lstatSync(path).mode
+const fingerprint = createHash("sha256").update(before).update(String(mode)).digest("hex")
+if (action === "snapshot") {
+  process.stdout.write(`${JSON.stringify({ fingerprint })}\n`)
+} else {
+  // The intervening refused candidate command must leave both bytes and permissions intact.
+  assert.equal(fingerprint, expectedFingerprint)
+  const config = JSON.parse(before.toString("utf8"))
+  const keys = {
+    clientId: "client_id",
+    filesFolder: "files_folder",
+    filesTimezone: "files_timezone",
+    accountProfile: "account_profile",
+    source: "source",
+  }
+  assert.ok(Object.hasOwn(config, "accountProfile"))
+  const converted = {}
+  for (const [key, value] of Object.entries(config)) {
+    assert.ok(Object.hasOwn(keys, key), "unexpected previous config key")
+    converted[keys[key]] = value
+  }
+  writeFileSync(path, `${JSON.stringify(converted, null, 2)}\n`)
+  assert.equal(lstatSync(path).mode, mode)
+  assert.deepEqual(JSON.parse(readFileSync(path, "utf8")), converted)
+  process.stdout.write(`${JSON.stringify({ renamed: true, preserved_values: true, preserved_mode: true })}\n`)
 }
-const old = JSON.parse(readFileSync(path, "utf8"))
-const current = Object.fromEntries(
-  Object.entries(old).map(([key, value]) => {
-    if (!Object.hasOwn(names, key)) throw new Error("unexpected previous config key")
-    return [names[key], value]
-  }),
-)
-writeFileSync(path, `${JSON.stringify(current, null, 2)}\n`, { mode: 0o600 })
-process.stdout.write('{"renamed":true}\n')

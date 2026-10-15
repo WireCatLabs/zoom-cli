@@ -489,10 +489,10 @@ it("config reads expose only supported public fields and parser failures are one
   await writeFile(
     setup.deps.configPath,
     JSON.stringify({
-      clientId: "example-client",
+      client_id: "example-client",
       source: "api",
-      filesFolder: null,
-      filesTimezone: "UTC",
+      files_folder: null,
+      files_timezone: "UTC",
       unexpected: "example-private-value",
     }),
   )

@@ -29,7 +29,7 @@ export const addLocalTranscriptionCommands = (
       .argument("<meeting>", "stored meeting id or meeting reference")
       .argument("<file>", "local PCM16 WAV file (16 or 48 kHz, mono/stereo)")
       .requiredOption("--model <model>", "installed speech model")
-      .option("--models-dir <directory>", "shared installed speech-model directory")
+      .option("--models-dir <dir>", "shared installed speech-model directory")
       .option("--max-bytes <bytes>", "largest audio file to read, in bytes (default 1 GiB)", bytes)
       .option("--max-duration <duration>", "longest audio to transcribe (default 4h)", duration)
       .option("--max-segments <n>", "most recognized segments (default 10000)", bytes)

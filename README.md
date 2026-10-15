@@ -77,7 +77,7 @@ never inferred person links. Stored meeting lists accept metadata queries, for e
 `meetings task-proposal --type promise` previews a follow-up task tied to that passage.
 
 **Keep the whole history.** *"Back up every recording since January."*
-`recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --destination ./zoom-archive --jsonl` downloads
+`recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl` downloads
 video, audio, transcripts and chat with SHA-256 manifests; `recordings schedule` runs it daily.
 
 More: [the local archive][docs/archive.md] · [search and evidence][docs/search.md] ·
@@ -141,7 +141,7 @@ More: [what is planned][gh/cli-meetings/blob/main/docs/dev/roadmap.md] · [Zoom 
 | Evidence and people | `meetings passage <reference>`, `meetings evidence <reference>`, `meetings context <person>`, `meetings link <reference>`, `meetings update <reference>`, `meetings task-proposal <reference> --type <type>` |
 | Search by meaning | `search meetings <query> --model <model>`, `meetings embeddings --model <model>` |
 | Local transcription | `meetings transcribe <meeting> <file> --model <model>` |
-| Cloud recordings | `recordings list`, `recordings show <meeting>`, `recordings download <meeting> --destination <directory>`, `recordings sync --since-time <date> --until-time <date> --destination <directory> --jsonl`, `recordings schedule create\|list\|show\|run\|disable` |
+| Cloud recordings | `recordings list`, `recordings show <meeting>`, `recordings download <meeting> --output-dir <dir>`, `recordings sync --since-time <date> --until-time <date> --output-dir <dir> --jsonl`, `recordings schedule create\|list\|show\|run\|disable` |
 | Local archive | `recordings archive show\|check\|locks\|recover <directory>`, `recordings archive transcript\|import <directory>`, `search meetings <query> --archive <directory>` |
 | Zoom meetings | `remote-meetings list\|show\|invitation`, `remote-meetings create\|update\|cancel` |
 | Agents | `serve --mcp`, `skill show`, `skill install [--for claude\|agents\|all]`, `commands --json`, `complete -- <words...>` |
@@ -205,7 +205,7 @@ More: [the local archive][docs/archive.md] · [Zoom on wirecat.dev][wirecat/en/d
 ## Archive cloud recordings
 
 ```sh
-zm recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --destination ./zoom-archive --jsonl
+zm recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl
 zm recordings archive check ./zoom-archive --offline --json
 zm search recordings ./zoom-archive "example plan" --offline --json
 ```

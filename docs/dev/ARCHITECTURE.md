@@ -206,7 +206,6 @@ The CLI preparation handler uses this adapter for one selected-series detail rea
 with the shared preparation service. Broad hosted/invited calendar discovery remains separate. The public [Zoom Meetings API](https://developers.zoom.us/docs/api/meetings/)
 describes the detail fields and required meeting:read:meeting scope.
 
-Command vocabulary checks use the development-only `@wirecat/cli-base-dev` alias at 0.30.0.
-Runtime remains on Base 0.28.2, matching Core 0.280.0; the alias does not enter published
-runtime dependencies. This permits current preparation vocabulary checks without adopting
-the separate breaking Base path and logging migration.
+Command vocabulary checks use the same canonical Base 0.31.1 package as the runtime. Core and
+Zoom must resolve one Base installation; installed-package proofs check that identity. No separate
+vocabulary alias or widened peer range is needed.

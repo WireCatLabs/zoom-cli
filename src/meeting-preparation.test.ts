@@ -251,7 +251,8 @@ it("accepts fixed windows and bounded context options, including standard field 
     "8192",
   ]
   expect(await run([...flags, "--json"], f.deps)).toBe(0)
-  expect(readAnswer(f.output.join(""))).toMatchObject({
+  const prepared = readAnswer(f.output.join(""))
+  expect(prepared).toMatchObject({
     limits: { meetings: 1, cues: 1, context_limit: 1, max_read_bytes: 4096, bytes: 8192 },
     history_window: { after: "2026-09-20T00:00:00.000Z" },
   })
@@ -260,7 +261,7 @@ it("accepts fixed windows and bounded context options, including standard field 
   expect(readAnswer(f.output.join(""))).toEqual({
     kind: "meeting_preparation",
     account_id: String(f.accountId),
-    coverage: expect.objectContaining({ context: expect.any(String) }),
+    coverage: prepared.coverage,
   })
 })
 

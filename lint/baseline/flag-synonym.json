@@ -1,6 +1,0 @@
-[
-  "recordings download --destination",
-  "recordings schedule create --destination",
-  "recordings sync --destination",
-  "watch --interval"
-]

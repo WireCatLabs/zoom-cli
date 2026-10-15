@@ -48,8 +48,13 @@ package integrity recorded in the lockfile.
 `pnpm contracts:upgrade` runs the pinned previous published package and this build against the
 same fresh synthetic state. Baseline packages have a separate frozen lockfile under
 `contracts/previous/`; they install only in full validation and do not add old CLI bins to the
-normal developer executable path. Plans assert retained data, migration/import repeatability and
-file preservation. `pnpm security:no-leak` scans the reviewed contract fixtures and testing guide;
+normal developer executable path. The previous 0.2.1 binary creates the profile and imports the
+transcript. The candidate must refuse its camelCase config without changing bytes or permissions.
+A fixture-only adapter then models the documented owner key renaming, preserving every value and
+the file mode. It runs only inside the contract runner's temporary root; it is not a product
+migration. Candidate commands then verify retained meeting IDs, transcript, repeat-import
+deduplication, search and exact export with overwrite refusal.
+`pnpm security:no-leak` scans the reviewed contract fixtures and testing guide;
 process diagnostics and recorded run logs are checked within the contract runner as well.
 These commands run only in release, monthly and manual full validation. See the
 [upgrade guide](https://github.com/WireCatLabs/cli-testing/blob/main/docs/ci/UPGRADES.md).

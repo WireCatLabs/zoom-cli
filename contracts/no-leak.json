@@ -8,6 +8,7 @@
     "docs/dev/TESTING.md",
     "contracts/previous/package.json",
     "contracts/previous/pnpm-lock.yaml",
-    "contracts/previous/pnpm-workspace.yaml"
+    "contracts/previous/pnpm-workspace.yaml",
+    "contracts/rename-upgrade-config.mjs"
   ]
 }

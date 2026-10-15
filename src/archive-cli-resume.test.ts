@@ -57,7 +57,7 @@ const setup = async () => {
 it("defaults configured profiles to durable downloads and explicitly disables or enables resume", async () => {
   const { deps, download, tokenAccess } = await setup()
   setConfig(deps.configPath, "account.profile", "AliceExample")
-  const args = ["recordings", "download", meeting.uuid, "--destination", "example", "--json"]
+  const args = ["recordings", "download", meeting.uuid, "--output-dir", "example", "--json"]
   for (const [flags, resume] of [
     [[], true],
     [["--no-resume"], false],
@@ -75,9 +75,9 @@ it("defaults configured profiles to durable downloads and explicitly disables or
 it("refuses downloads and syncs without a local profile before API, tokens or archive state", async () => {
   const { deps, directory, download, list, catalog, tokenAccess, errors } = await setup()
   for (const args of [
-    ["recordings", "download", meeting.uuid, "--destination", join(directory, "untouched"), "--json"],
-    ["recordings", "download", meeting.uuid, "--destination", join(directory, "untouched"), "--no-resume", "--json"],
-    ["recordings", "download", meeting.uuid, "--destination", join(directory, "untouched"), "--resume", "--json"],
+    ["recordings", "download", meeting.uuid, "--output-dir", join(directory, "untouched"), "--json"],
+    ["recordings", "download", meeting.uuid, "--output-dir", join(directory, "untouched"), "--no-resume", "--json"],
+    ["recordings", "download", meeting.uuid, "--output-dir", join(directory, "untouched"), "--resume", "--json"],
     [
       "recordings",
       "sync",
@@ -85,7 +85,7 @@ it("refuses downloads and syncs without a local profile before API, tokens or ar
       "2026-10-01",
       "--until-time",
       "2026-10-11",
-      "--destination",
+      "--output-dir",
       join(directory, "untouched"),
       "--resume",
       "--jsonl",
@@ -97,7 +97,7 @@ it("refuses downloads and syncs without a local profile before API, tokens or ar
       "2026-10-01",
       "--until-time",
       "2026-10-11",
-      "--destination",
+      "--output-dir",
       join(directory, "untouched"),
       "--checkpoint",
       join(directory, "untouched-checkpoint"),
@@ -125,7 +125,7 @@ it("captures account scope before an asynchronous download and refreshes it only
     return report
   })
   const program = createProgram(deps)
-  const args = ["recordings", "download", meeting.uuid, "--destination", "example", "--json"]
+  const args = ["recordings", "download", meeting.uuid, "--output-dir", "example", "--json"]
   await program.parseAsync(args, { from: "user" })
   download.mockImplementation(async () => report)
   await program.parseAsync([...args, "--no-resume"], { from: "user" })
@@ -155,7 +155,7 @@ it("uses paged account-bound discovery and an explicit durable checkpoint with r
     "2026-10-01",
     "--until-time",
     "2026-10-11",
-    "--destination",
+    "--output-dir",
     directory,
     "--checkpoint",
     checkpoint,
@@ -197,7 +197,7 @@ it("prevalidates bounds, dates, selections and resume conflicts before provider 
     "2026-10-01",
     "--until-time",
     "2026-10-11",
-    "--destination",
+    "--output-dir",
     directory,
     "--jsonl",
   ]
@@ -219,14 +219,14 @@ it("prevalidates bounds, dates, selections and resume conflicts before provider 
         "2026-02-30",
         "--until-time",
         "2026-10-11",
-        "--destination",
+        "--output-dir",
         directory,
         "--jsonl",
       ],
       deps,
     ),
   ).toBe(2)
-  expect(await run(["recordings", "download", meeting.uuid, "--destination", directory, "--file-ids", " "], deps)).toBe(
+  expect(await run(["recordings", "download", meeting.uuid, "--output-dir", directory, "--file-ids", " "], deps)).toBe(
     2,
   )
   expect(download).not.toHaveBeenCalled()
@@ -315,7 +315,7 @@ it("previews native schedules offline without persisting jobs, units or opening 
         "create",
         "--name",
         "Alice Example backup",
-        "--destination",
+        "--output-dir",
         join(directory, "archive"),
         "--since-time",
         "2026-10-01",

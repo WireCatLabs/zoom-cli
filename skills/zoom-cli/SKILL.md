@@ -2,7 +2,7 @@
 name: zoom-cli
 description: Archive Zoom cloud recordings, read stored meeting transcripts and summaries, or manage a Zoom meeting through zm. Use for Zoom CLI workflows, not joining calls or operating the desktop video client.
 metadata:
-  version: "0.14.0"
+  version: "0.16.0"
 ---
 
 # Zoom CLI
@@ -71,7 +71,7 @@ queries or skipped sources leave completeness false even when the command exits 
 
 `recordings list` / `show` inspect cloud assets. Prefer occurrence UUIDs for recurring meetings.
 Attending a meeting does not grant recording API access. `recordings sync --since-time <date>
---until-time <date> --destination <dir> --jsonl` archives bounded history; `download` handles one
+--until-time <date> --output-dir <dir> --jsonl` archives bounded history; `download` handles one
 occurrence. Existing files are never overwritten. Repeated runs skip verified manifest entries;
 completed files survive later failures, but incomplete transfers restart, not HTTP range-resume.
 `recordings archive check <dir> --offline` verifies local checksums. Inspect `archive locks` before

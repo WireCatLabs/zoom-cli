@@ -15,12 +15,19 @@ const oldFile = {
 }
 
 describe("config names", () => {
-  it("refuses camelCase files without rewriting them", () => {
+  it("reads a canonical snake_case file without rewriting it or changing its mode", () => {
     const path = configPath()
-    const text = JSON.stringify(oldFile)
-    writeFileSync(path, text, { mode: 0o600 })
-    expect(() => readConfig(path)).toThrow("zm config is invalid")
-    expect(readFileSync(path, "utf8")).toBe(text)
+    const file = {
+      client_id: "example-client",
+      source: "files",
+      files_folder: "example-folder",
+      files_timezone: "Europe/Madrid",
+      account_profile: "example",
+    }
+    writeFileSync(path, JSON.stringify(file), { mode: 0o600 })
+    const before = readFileSync(path, "utf8")
+    expect(readConfig(path)).toEqual(oldFile)
+    expect(readFileSync(path, "utf8")).toBe(before)
     expect(statSync(path).mode & 0o777).toBe(0o600)
   })
 
@@ -34,15 +41,29 @@ describe("config names", () => {
     expect(saved(path)).not.toHaveProperty("clientId")
   })
 
-  it("refuses both spellings of one setting with different values", () => {
+  it("refuses a legacy camelCase file without rewriting it", () => {
     const path = configPath()
-    writeFileSync(path, JSON.stringify({ ...oldFile, client_id: "example-other" }))
-    expect(() => readConfig(path)).toThrow("zm config is invalid")
+    writeFileSync(path, JSON.stringify(oldFile), { mode: 0o600 })
+    const before = readFileSync(path, "utf8")
+    expect(() => readConfig(path)).toThrow(/zm config is invalid/)
+    expect(readFileSync(path, "utf8")).toBe(before)
+    expect(statSync(path).mode & 0o777).toBe(0o600)
   })
 
-  it("refuses old names even when snake_case values match", () => {
+  it.each(["example-client", "example-other"])("refuses mixed spellings with client_id=%s", (client_id) => {
     const path = configPath()
-    writeFileSync(path, JSON.stringify({ ...oldFile, client_id: "example-client" }))
+    const before = JSON.stringify({ ...oldFile, client_id })
+    writeFileSync(path, before)
     expect(() => readConfig(path)).toThrow("zm config is invalid")
+    expect(readFileSync(path, "utf8")).toBe(before)
+  })
+
+  it("refuses invalid canonical configuration values", () => {
+    const path = configPath()
+    writeFileSync(
+      path,
+      JSON.stringify({ client_id: "has spaces", source: "api", files_folder: null, files_timezone: "UTC" }),
+    )
+    expect(() => readConfig(path)).toThrow(/zm config is invalid/)
   })
 })

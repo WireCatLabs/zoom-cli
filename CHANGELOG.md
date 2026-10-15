@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Changed — may break callers
+
+- **Flags take the shared names from cli-base 0.31.1.** `recordings download`, `recordings sync` and
+  `recordings schedule create` take `--output-dir <dir>` instead of `--destination`, and `watch` takes `--pause`
+  instead of `--interval`. The old names are gone. Value names follow the shared vocabulary too: `--at <hh:mm>`,
+  `--max-entries <n>`, `--models-dir <dir>`, `--start-time <time>`, `--title <title>`.
+
 ## 0.15.0 — 15.10.2026
 
 ### Changed — may break callers

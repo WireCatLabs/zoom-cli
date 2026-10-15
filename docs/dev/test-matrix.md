@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**234 ✅ · 1 ⛔ · 0 ❌** — 53 commands, 182 options.
+**244 ✅ · 1 ⛔ · 0 ❌** — 54 commands, 191 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -53,6 +53,15 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings projects evidence` | `--limit` | ✅ |  |
 | `meetings projects evidence` | `--cursor` | ✅ |  |
 | `meetings projects evidence` | `--max-read-bytes` | ✅ |  |
+| `meetings prepare` |  | ✅ |  |
+| `meetings prepare` | `--since-time` | ✅ |  |
+| `meetings prepare` | `--before-time` | ✅ |  |
+| `meetings prepare` | `--history-since-time` | ✅ |  |
+| `meetings prepare` | `--meetings` | ✅ |  |
+| `meetings prepare` | `--cues` | ✅ |  |
+| `meetings prepare` | `--context-limit` | ✅ |  |
+| `meetings prepare` | `--max-read-bytes` | ✅ |  |
+| `meetings prepare` | `--bytes` | ✅ |  |
 | `meetings update` |  | ✅ |  |
 | `meetings update` | `--event-id` | ✅ |  |
 | `meetings update` | `--expected-event-id` | ✅ |  |
@@ -119,14 +128,14 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `watch` |  | ✅ |  |
 | `watch` | `--since-time` | ✅ |  |
 | `watch` | `--lookback-days` | ✅ |  |
-| `watch` | `--interval` | ✅ |  |
+| `watch` | `--pause` | ✅ |  |
 | `recordings list` |  | ✅ |  |
 | `recordings list` | `--since-time` | ✅ |  |
 | `recordings list` | `--until-time` | ✅ |  |
 | `recordings sync` |  | ✅ |  |
 | `recordings sync` | `--since-time` | ✅ |  |
 | `recordings sync` | `--until-time` | ✅ |  |
-| `recordings sync` | `--destination` | ✅ |  |
+| `recordings sync` | `--output-dir` | ✅ |  |
 | `recordings sync` | `--max-bytes` | ✅ |  |
 | `recordings sync` | `--resume` | ✅ |  |
 | `recordings sync` | `--no-resume` | ✅ |  |
@@ -136,7 +145,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `recordings sync` | `--max-entries` | ✅ |  |
 | `recordings show` |  | ✅ |  |
 | `recordings download` |  | ✅ |  |
-| `recordings download` | `--destination` | ✅ |  |
+| `recordings download` | `--output-dir` | ✅ |  |
 | `recordings download` | `--file-ids` | ✅ |  |
 | `recordings download` | `--max-bytes` | ✅ |  |
 | `recordings download` | `--resume` | ✅ |  |
@@ -158,7 +167,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `recordings archive import` | `--max-total-bytes` | ✅ |  |
 | `recordings schedule create` |  | ✅ |  |
 | `recordings schedule create` | `--name` | ✅ |  |
-| `recordings schedule create` | `--destination` | ✅ |  |
+| `recordings schedule create` | `--output-dir` | ✅ |  |
 | `recordings schedule create` | `--since-time` | ✅ |  |
 | `recordings schedule create` | `--at` | ✅ |  |
 | `recordings schedule create` | `--timezone` | ✅ |  |
@@ -204,6 +213,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `serve` | `--mcp` | ✅ |  |
 | `serve` | `--unified-search` | ✅ |  |
 | `serve` | `--meeting-context` | ✅ |  |
+| `serve` | `--meeting-preparation` | ✅ |  |
 | `serve` | `--semantic` | ✅ |  |
 | `serve` | `--model` | ✅ |  |
 | `serve` | `--base-url` | ✅ |  |

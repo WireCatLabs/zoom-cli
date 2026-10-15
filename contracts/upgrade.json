@@ -45,6 +45,17 @@
       }
     },
     {
+      "id": "legacy-config-fingerprint",
+      "entry": "./rename-upgrade-config.mjs",
+      "args": ["snapshot", "{{root}}"],
+      "exit": 0,
+      "stream": "stdout",
+      "kind": "json",
+      "capture": {
+        "legacy_config_fingerprint": "/fingerprint"
+      }
+    },
+    {
       "id": "candidate-old-config-refused",
       "args": ["config", "show", "--json"],
       "exit": 3,
@@ -63,12 +74,14 @@
     {
       "id": "explicit-config-key-rename",
       "entry": "./rename-upgrade-config.mjs",
-      "args": [],
+      "args": ["convert", "{{root}}", "{{legacy_config_fingerprint}}"],
       "exit": 0,
       "stream": "stdout",
       "kind": "json",
       "json": {
-        "renamed": true
+        "renamed": true,
+        "preserved_values": true,
+        "preserved_mode": true
       }
     },
     {

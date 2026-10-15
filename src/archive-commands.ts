@@ -85,8 +85,8 @@ const change = ({ title, ...options }: ChangeOptions): MeetingChange =>
   )
 const changes = (command: Command): Command =>
   command
-    .option("--title <text>", "meeting title")
-    .option("--start-time <timestamp>", "ISO start time with timezone")
+    .option("--title <title>", "meeting title")
+    .option("--start-time <time>", "ISO start time with timezone")
     .option("--duration-minutes <minutes>", "positive meeting duration in minutes", positive)
     .option("--timezone <zone>", "IANA timezone")
     .option("--agenda <text>", "meeting agenda")
@@ -123,18 +123,18 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         .description("download a date range of recordings into an archive folder, a month at a time")
         .requiredOption("--since-time <time>", "first day, YYYY-MM-DD")
         .requiredOption("--until-time <time>", "last day, YYYY-MM-DD; at most ten years after the first")
-        .requiredOption("--destination <directory>", "explicit archive directory")
+        .requiredOption("--output-dir <dir>", "explicit archive directory")
         .option("--max-bytes <bytes>", "maximum bytes per recording file", positive),
     )
       .option("--checkpoint <file>", "explicit durable checkpoint file; implies resume")
       .option("--recheck-since-time <time>", "look again from this day, YYYY-MM-DD, for recordings that came late")
       .option("--max-pages <pages>", "catalog page limit from 1 through 10000 (default 1000)", discoveryLimit)
-      .option("--max-entries <entries>", "occurrence limit from 1 through 10000 (default 10000)", discoveryLimit)
+      .option("--max-entries <n>", "occurrence limit from 1 through 10000 (default 10000)", discoveryLimit)
       .action(
         async (options: {
           sinceTime: string
           untilTime: string
-          destination: string
+          outputDir: string
           maxBytes?: number
           resume?: boolean
           checkpoint?: string
@@ -150,12 +150,12 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
           recordingWindows(options.sinceTime, options.untilTime)
           if (options.recheckSinceTime !== undefined)
             recordingWindows(options.recheckSinceTime, options.recheckSinceTime)
-          validateDownloadOptions({ ...options, ...scope })
+          validateDownloadOptions({ ...options, destination: options.outputDir, ...scope })
           deps.api()
           for await (const receipt of syncRecordingArchive(deps.recordings(), {
             from: options.sinceTime,
             to: options.untilTime,
-            destination: options.destination,
+            destination: options.outputDir,
             ...scope,
             maxBytes: options.maxBytes,
             checkpointPath: options.checkpoint,
@@ -168,7 +168,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
             await deps.receipt(itemOf(receipt))
         },
       ),
-    "zm recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --destination ./archive --jsonl",
+    "zm recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./archive --jsonl",
     "local",
   )
   label(
@@ -188,13 +188,13 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         .command("download")
         .description("stream recording assets into a verified local archive")
         .argument("<meeting>", "meeting id or occurrence UUID")
-        .requiredOption("--destination <directory>", "explicit archive directory")
+        .requiredOption("--output-dir <dir>", "explicit archive directory")
         .option("--file-ids <ids>", "comma-separated recording file ids")
         .option("--max-bytes <bytes>", "per-file download byte limit (default 20 GiB)", positive),
     ).action(
-      async (id: string, options: { destination: string; fileIds?: string; maxBytes?: number; resume?: boolean }) => {
+      async (id: string, options: { outputDir: string; fileIds?: string; maxBytes?: number; resume?: boolean }) => {
         const request = {
-          destination: options.destination,
+          destination: options.outputDir,
           fileIds: options.fileIds?.split(",").map((one) => one.trim()),
           maxBytes: options.maxBytes,
           ...archiveScope(deps, options),
@@ -205,7 +205,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         deps.output(itemOf(await deps.recordings().download(id, request)))
       },
     ),
-    "zm recordings download example-occurrence --destination ./zoom-archive --json",
+    "zm recordings download example-occurrence --output-dir ./zoom-archive --json",
     "local",
   )
   const archive = recordings.command("archive").description("inspect archives without Zoom or a database")

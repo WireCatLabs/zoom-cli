@@ -49,8 +49,8 @@ it("validates watch options and offline policy before any account, keyring or ne
   for (const args of [
     ["invalid"],
     ["./downloads"],
-    ["--interval", "500ms"],
-    ["--interval", "25h"],
+    ["--pause", "500ms"],
+    ["--pause", "25h"],
     ["--lookback-days", "32"],
     ["--lookback-days", "1.5"],
     ["--since-time", "2026-02-30T10:00:00Z"],
