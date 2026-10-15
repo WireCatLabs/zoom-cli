@@ -78,6 +78,11 @@ store commands, distinguishes read from ingestion, validates the account before 
 and closes on every parse path. Read connectors must resolve an existing account; ingestion may
 register one. Connector failures must release any resource they opened before rejecting.
 
+`batch <file>` delegates parsing, registered meeting grammar, budgets and result formatting to
+Base/Core. The executable supplies bounded file/stdin input; the program opens one lazy store and
+uses its account-fixed `MeetingBatchReader`. Validation and budget refusal can finish without a
+connection. Buffered JSON, JSONL or compact text reaches stdout only after close succeeds.
+
 Profile labels map to `zm-profile:<label>` in the Zoom provider namespace. They group local data,
 not remote OAuth users. File and API sources share the selected account and its cursor; import
 does not advance it. The standalone connector respects the producer's MESSAGING_STORE override and

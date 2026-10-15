@@ -15,9 +15,17 @@ import {
   type SleepLike,
 } from "@wirecat/cli-base"
 import { metaOf } from "@wirecat/cli-base/commands"
-import { type Body, checkJson, itemOf, snakeKeys } from "@wirecat/cli-core/cli"
+import {
+  addMeetingBatchCommand,
+  type Body,
+  checkJson,
+  formatMeetingBatch,
+  itemOf,
+  snakeKeys,
+} from "@wirecat/cli-core/cli"
 import {
   importFiles,
+  type MeetingBatchReader,
   type MeetingProjectDiscoveryReader,
   type MeetingSource,
   type MeetingStore,
@@ -85,6 +93,7 @@ export interface StoreConnection {
   appendTranscriptsWithReceipt: MeetingTranscriptReceiptStore["appendTranscriptsWithReceipt"]
   meetingIntegration: MeetingIntegrationCapabilities
   meetingSearch: MeetingHitSearch
+  meetingBatch?: MeetingBatchReader
   meetingPreparation: MeetingPreparationBinding
   meetingProjectEvidence: MeetingProjectDiscoveryReader
   meetingTranscription: LocalTranscriptionCapabilities
@@ -115,6 +124,7 @@ export interface ProgramDeps {
   writeFile?: (path: string, content: string, options?: { signal?: AbortSignal }) => Promise<void>
   openBrowser: (url: string, browser?: string) => Promise<void>
   readPaste?: (signal: AbortSignal) => Promise<string>
+  readBatchInput?: (path: string, signal?: AbortSignal) => Promise<string>
   data: (text: string) => void
   diagnostic: (text: string) => void
   now?: () => number
@@ -230,12 +240,12 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .configureOutput({ writeOut: deps.data, writeErr: deps.diagnostic, outputError: () => {} })
   const formatOf = (): AnswerFormat =>
     program.opts().jsonl ? "jsonl" : program.opts().json || !deps.outputIsTTY ? "json" : "pretty"
-  const rendered = (body: Body, format = formatOf()) => {
+  const rendered = (body: Body, format = formatOf(), selectFields = true) => {
     if (!execution) throw new CliError("configuration_error", "command execution is not initialized")
     const answer = renderBody(execution.action, body, {
       format,
       meta: execution.meta(),
-      fields,
+      fields: selectFields ? fields : undefined,
       quiet: Boolean(program.opts().quiet),
       diagnostic: deps.diagnostic,
     })
@@ -788,6 +798,41 @@ export const createProgram = (deps: ProgramDeps): Command => {
     receipt,
     output,
     capabilities: meetingSemantic,
+  })
+  const batchReader = async (): Promise<MeetingBatchReader> => {
+    const reader = (await connected()).meetingBatch
+    if (!reader)
+      throw new CliError("configuration_error", "the selected store connector does not support meeting batches")
+    return reader
+  }
+  addMeetingBatchCommand(program, {
+    signal,
+    fields: () => fields,
+    meta: () => {
+      if (!execution) throw new CliError("configuration_error", "command execution is not initialized")
+      return execution.meta()
+    },
+    input: async (path, signal) => {
+      if (!deps.readBatchInput) throw new CliError("configuration_error", "batch input reader is unavailable")
+      return deps.readBatchInput(path, signal)
+    },
+    reader: {
+      index: async (options) => (await batchReader()).index(options),
+      search: async (query, options) => (await batchReader()).search(query, options),
+      passage: async (reference, options) => (await batchReader()).passage(reference, options),
+    },
+    output: (body, report, format) => {
+      const text =
+        format === "json"
+          ? rendered(body, program.opts().jsonl ? "jsonl" : "json", false)
+          : formatMeetingBatch(report, format)
+      if (Buffer.byteLength(text, "utf8") > 4194304)
+        throw new CliError("invalid_response", "batch rendered output exceeds 4194304 bytes", {
+          reason: "output.too-large",
+          max_bytes: 4194304,
+        })
+      buffer(text)
+    },
   })
   annotateMeetingCommands(program)
   const parseAsync = program.parseAsync.bind(program)

@@ -137,7 +137,8 @@ require('node:module').syncBuiltinESMExports();
 }, 120000)
 
 // These process-boundary checks share one retained, invented installation and database.
-describe("installed package", { concurrent: false, shuffle: false }, () => {
+// A case starts several real installed processes, each with its own bounded subprocess timeout.
+describe("installed package", { concurrent: false, shuffle: false, timeout: 15000 }, () => {
   let importedMeetingId: string
   it("ships a usable bin with the package version", () => {
     const pkg = JSON.parse(readFileSync(join(install, "node_modules/@wirecat/zoom-cli/package.json"), "utf8"))

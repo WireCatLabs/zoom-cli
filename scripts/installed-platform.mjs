@@ -95,9 +95,10 @@ const diagnostics = (text) =>
     "",
   )
 const checks = []
-const invoke = (args, status = 0, extra = {}) => {
+const invoke = (args, status = 0, extra = {}, input) => {
   const result = spawnSync(process.execPath, [...prefix, entry, ...args], {
     cwd: root,
+    input,
     env: { ...environment, ...extra },
     encoding: "utf8",
     timeout: 15000,
@@ -144,6 +145,11 @@ assert.equal(invoke(["--version"]).stdout.trim(), expectedVersion)
 invoke(["--help"])
 json("commands")
 invoke(["--json", "meetings", "prepare", "123", "--cues", "101"], 2)
+const invalidBatch = join(sandbox, "invalid-batch.json")
+writeFileSync(invalidBatch, '{"requests":[{"id":"write","command":["meetings","sync"],"args":[]}]}')
+invoke(["batch", invalidBatch, "--json"], 2)
+invoke(["batch", "-", "--json"], 2, {}, Buffer.from([0xff]))
+invoke(["batch", "-", "--json"], 2, {}, " ".repeat(262145))
 assert.equal(existsSync(environment.ZM_CONFIG_DIR), false)
 assert.equal(existsSync(environment.MESSAGING_STORE), false)
 const missingProfileArchive = join(sandbox, "missing-profile-archive")

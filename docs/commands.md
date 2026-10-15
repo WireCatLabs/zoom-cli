@@ -995,6 +995,25 @@ zm search recordings <directory> <query> [options]
 |---|---|
 | `--limit <n>` | how many hits, 1 through 1000 (default 100). |
 
+## `zm batch`
+
+run bounded stored meeting reads: search meetings and meetings passage
+
+**Changes local data.**
+
+```sh
+zm batch <file> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `file` | required | JSON request file, or - for stdin. |
+
+| Option | What it does |
+|---|---|
+| `--max-read-bytes <bytes>` | aggregate stored-text read ceilings, including one 4 MiB index pass; at most 67108864. |
+| `--format <format>` | text, markdown or json. One of: `text`, `markdown`, `json`. Default: `text`. |
+
 ## Exit codes
 
 Use the shared exit code rather than matching diagnostic text.

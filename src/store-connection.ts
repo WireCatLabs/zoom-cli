@@ -1,5 +1,5 @@
 import { CliError, isCliError } from "@wirecat/cli-base"
-import { validateMeetingContextChange } from "@wirecat/cli-core/meetings"
+import { type MeetingBatchReader, validateMeetingContextChange } from "@wirecat/cli-core/meetings"
 import type { MessageStore, StoreOptions } from "@wirecat/cli-core/store"
 import { profileAccountKey } from "./config.js"
 import { createLocalTranscriptionCapabilities } from "./local-transcription.js"
@@ -42,6 +42,14 @@ export const createStoreConnector =
         if (input.accountId !== accountId)
           throw new CliError("validation_error", `${what} account is selected by the connection`)
         return input
+      }
+      let cachedBatchReader: MeetingBatchReader | undefined
+      const batchReader = async () => {
+        if (!cachedBatchReader) {
+          const { createMeetingBatchReader } = await import("@wirecat/cli-core/services")
+          cachedBatchReader = createMeetingBatchReader(connected, accountId)
+        }
+        return cachedBatchReader
       }
       return {
         meetingPreparation: {
@@ -88,6 +96,11 @@ export const createStoreConnector =
           },
           { env: options.env, now: options.now },
         ),
+        meetingBatch: {
+          index: async (input) => (await batchReader()).index(input),
+          search: async (query, input) => (await batchReader()).search(query, input),
+          passage: async (reference, input) => (await batchReader()).passage(reference, input),
+        },
         meetingSearch: async (query, request) => {
           validateMeetingHitSearch(query, request)
           const { searchMeetingHits } = await import("@wirecat/cli-core/services")

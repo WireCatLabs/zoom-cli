@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `batch <file>` runs bounded stored word searches and passage reads with one store connection and
+  one bounded index pass. JSON/JSONL keeps independent request IDs, answers, errors, cursors and
+  coverage; text and Markdown reuse compact passages. File and stdin input are validated before
+  the store opens. Read and output budgets retain every input, including those not run.
+
 ## 0.20.1 — 15.10.2026
 
 ### Fixed

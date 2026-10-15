@@ -156,6 +156,56 @@ with `reference`, `before`, `after`, `bytes`, `max_read_bytes`, `expected_finger
 `format` (`json`, `text` or `markdown`). Its account is fixed by the server. Ask the agent to quote
 and cite the surrounding passage before suggesting a fact or follow-up task.
 
+## Read several queries or passages together
+
+When checking several names or cited lines, your agent can use one batch to keep each answer and
+its continuation together. It uses the selected profile and stored meetings, with one bounded
+index pass before word searches. It does not contact Zoom or run a model.
+
+Save a JSON file such as `requests.json`, replacing the fictional reference with a retained cue
+from your search results:
+
+```json
+{
+  "requests": [
+    {"id": "name", "command": ["search", "meetings"], "args": ["Research Example", "--limit", "10"]},
+    {"id": "alias", "command": ["search", "meetings"], "args": ["RES", "--limit", "10"]},
+    {"id": "passage", "command": ["meetings", "passage"], "args": ["meeting:3/15/20/4", "--before-n", "2"]}
+  ]
+}
+```
+
+```sh
+zm batch requests.json --json
+zm batch requests.json --format markdown
+cat requests.json | zm batch - --jsonl
+```
+
+Each result retains its `id`, `command`, `status` and `complete`. Successful results carry the normal
+answer in `answer`; failures carry `error`. Duplicate queries and overlapping passages stay separate.
+Pass a search result's cursor or a passage's expected fingerprint in that request's `args` when
+continuing. Only word `search meetings` and `meetings passage` are accepted; model, profile and
+write options cannot be nested inside the batch.
+
+A batch accepts at most 32 requests and 256 KiB of UTF-8 input. Its default stored-text allowance
+is 64 MiB: it reserves each request's full `--max-read-bytes` ceiling, plus 4 MiB once for indexing,
+without refunding unused bytes. These are conservative ceilings, not measured database I/O.
+Use smaller per-request ceilings or separate batches when needed. The batch-level
+`--max-read-bytes` can lower the aggregate allowance. Output is limited to 4 MiB and the global
+`--max-output-bytes` can lower it; a limit too small for result framing fails before any stored read.
+
+Check every status and the outer `meta.complete`: a budget refusal is `not_run`, while an executed
+request whose answer exceeded the output allowance is `error`; later requests are `not_run`.
+Partial results exit zero and retain all request IDs. Malformed input exits 2 before opening the
+store. JSONL emits one item per request and an end record carrying completeness and issues.
+Cancellation and final output failures fail the whole invocation without printing partial stdout.
+
+For compact JSON, `--json=ref,excerpt,source.title,source.started_at,source.url` selects fields inside
+each answer while preserving request IDs, errors and coverage. Passage answers use cue fields such
+as `items.ref,items.start_ms,items.speaker_name,items.text`. Text/Markdown includes passage timestamps,
+speakers and references, with coverage once per result. Inspect missing data and continuation before
+keeping a conclusion.
+
 ## Person context
 
 Person context uses stored identity links and account presence, without matching speaker names.
