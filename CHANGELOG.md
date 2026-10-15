@@ -31,7 +31,6 @@
   Core no longer converts camelCase files; rename older keys before upgrading. Reads do not rewrite
   configuration. Command setting selectors retain their existing behavior.
 
-
 ## 0.14.0 — 15.10.2026
 
 ### Changed — may break callers
