@@ -1204,6 +1204,48 @@
                       "scope": {
                         "enum": ["transcript", "chat", "summary"],
                         "type": "string"
+                      },
+                      "source": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "ref": {
+                            "pattern": "^[a-z]+:\\S+$",
+                            "type": "string"
+                          },
+                          "started_at": {
+                            "anyOf": [
+                              {
+                                "format": "date-time",
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "title": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "url": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": ["ref", "title", "started_at", "url"],
+                        "type": "object"
                       }
                     },
                     "required": ["ref", "meeting", "scope", "id", "excerpt", "offset_ms"],
