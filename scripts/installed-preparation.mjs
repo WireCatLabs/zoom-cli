@@ -26,7 +26,7 @@ sample.meeting.startedAt = now - 86400000
 sample.meeting.endedAt = sample.meeting.startedAt + 1000
 sample.meeting.series.externalId = "123"
 const saved = await store.meetings.saveMeeting(sample)
-await store.meetings.saveMeeting({ ...sample, meeting: { ...sample.meeting, accountId: foreignId } })
+const foreign = await store.meetings.saveMeeting({ ...sample, meeting: { ...sample.meeting, accountId: foreignId } })
 const reference = `meeting:${accountId}/${saved.meeting.id}`
 const project = await store.knowledge.addProject({ name: "Harbour Example", key: "HAR" })
 await store.knowledge.linkMeetingProject(key, String(saved.meeting.id), project.id)
@@ -195,6 +195,35 @@ assert.equal(framed.structuredContent.meta.truncated, true)
 assert.ok(Buffer.byteLength(JSON.stringify(framed.structuredContent.item)) <= 65536)
 assert.deepEqual(JSON.parse(framed.content[0].text), framed.structuredContent)
 assert.equal(closed, 3)
+const notesStore = await openStore({ path, now: () => now })
+let meetingNote
+try {
+  await notesStore.notes.editNote(projectNote.id, projectNote.text, 3)
+  meetingNote = await notesStore.notes.addNote({ text: "Review the meeting checklist", about: [reference] })
+  await notesStore.notes.addNote({
+    text: "Foreign meeting note",
+    about: [`meeting:${foreignId}/${foreign.meeting.id}`, project.ref],
+  })
+  await notesStore.notes.addNote({ text: "Related meeting note", about: [relatedReference, project.ref] })
+} finally {
+  await notesStore.close()
+}
+const directNotes = await callMeetingPreparationTool(
+  read,
+  { series_id: "123", meetings: 1, cues: 1, context_limit: 10, bytes: 65536 },
+  undefined,
+  {},
+  now,
+)
+assert.notEqual(directNotes.isError, true)
+assert.equal(directNotes.structuredContent.item.notes.selection, "owner-written-meeting/person/project-notes")
+const direct = directNotes.structuredContent.item.notes.items
+assert.equal(direct.length, 2)
+assert.equal(direct[0].ref, meetingNote.ref)
+assert.equal(direct[0].meeting, reference)
+assert.equal(direct[0].project, null)
+assert.equal(direct[1].ref, projectNote.ref)
+assert.equal(direct[1].meeting, null)
 console.log(
   JSON.stringify({
     cold_credentials: true,
@@ -204,6 +233,8 @@ console.log(
     cited_accepted_knowledge: true,
     knowledge_projection: true,
     cited_owner_notes: true,
+    cited_meeting_notes: true,
+    meeting_note_scope: true,
     notes_projection: true,
     mcp_framed_budget: true,
     bounded_output: true,

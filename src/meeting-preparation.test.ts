@@ -18,7 +18,7 @@ import { createStoreConnector } from "./store-connection.js"
 import { TokenManager } from "./tokens.js"
 
 const now = Date.parse("2026-10-14T12:00:00Z")
-const fixture = async (noteText = "Bring the written launch checklist") => {
+const fixture = async (noteText = "Bring the written launch checklist", meetingNotes = false) => {
   const directory = mkdtempSync(join(tmpdir(), "zm-test-preparation-"))
   const path = join(directory, "fixture.db")
   const env = { MESSAGING_STORE: path }
@@ -40,7 +40,7 @@ const fixture = async (noteText = "Bring the written launch checklist") => {
     },
   }
   const saved = await store.meetings.saveMeeting(input)
-  await store.meetings.saveMeeting({ ...input, meeting: { ...input.meeting, accountId: otherId } })
+  const foreign = await store.meetings.saveMeeting({ ...input, meeting: { ...input.meeting, accountId: otherId } })
   const reference = `meeting:${accountId}/${saved.meeting.id}`
   const project = await store.knowledge.addProject({ name: "Harbour Example", key: "HAR" })
   await store.knowledge.linkMeetingProject(key, String(saved.meeting.id), project.id)
@@ -74,6 +74,16 @@ const fixture = async (noteText = "Bring the written launch checklist") => {
   await store.knowledge.linkMeetingProject(key, String(related.meeting.id), project.id)
   await store.meetings.saveMeeting({ ...relatedInput, meeting: { ...relatedInput.meeting, accountId: otherId } })
   const relatedReference = `meeting:${accountId}/${related.meeting.id}`
+  const meetingNote = meetingNotes
+    ? await store.notes.addNote({ text: "Review the meeting-specific checklist", about: [reference] })
+    : undefined
+  if (meetingNotes) {
+    await store.notes.addNote({
+      text: "Foreign meeting note",
+      about: [`meeting:${otherId}/${foreign.meeting.id}`, project.ref],
+    })
+    await store.notes.addNote({ text: "Related meeting note", about: [relatedReference, project.ref] })
+  }
   await store.close()
   const network = vi.fn<typeof fetch>(
     async () => new Response(JSON.stringify({ id: 123, type: 2, start_time: "2026-10-15T10:00:00Z", duration: 30 })),
@@ -132,6 +142,7 @@ const fixture = async (noteText = "Bring the written launch checklist") => {
     reference,
     projectFact,
     projectNote,
+    meetingNote,
     relatedReference,
     mcp: {
       now: () => now,
@@ -197,6 +208,20 @@ it("CLI prepares the selected series with cited local context and closes before 
   expect(f.network).toHaveBeenCalledOnce()
   expect(f.errors).toEqual([])
   expect(f.output.join("")).not.toContain("invented-access")
+})
+
+it("CLI and MCP include direct meeting notes without importing notes from other meetings", async () => {
+  const f = await fixture(undefined, true)
+  expect(await run(["meetings", "prepare", "123", "--json"], f.deps)).toBe(0)
+  const notes = readAnswer(f.output.join("")).notes
+  expect(notes.selection).toBe("owner-written-meeting/person/project-notes")
+  expect(notes.items).toEqual([
+    expect.objectContaining({ ref: f.meetingNote?.ref, meeting: f.reference, person: null, project: null }),
+    expect.objectContaining({ ref: f.projectNote.ref, meeting: null, project: expect.any(String) }),
+  ])
+  const result = await readPreparationTool(f.mcp, { series_id: "123" }, new AbortController().signal)
+  expect("isError" in result && result.isError).not.toBe(true)
+  expect(result.structuredContent).toMatchObject({ item: { notes } })
 })
 
 it("refuses invalid fields, provider IDs and offline reads before store or credentials", async () => {

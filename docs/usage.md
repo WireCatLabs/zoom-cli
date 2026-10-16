@@ -34,7 +34,7 @@ You have an upcoming Zoom call and want the relevant earlier discussion beside i
 ```text prompt
 Prepare for the next Research Example planning call in Zoom. Identify the intended series first.
 Show the upcoming time, cited passages from earlier calls, confirmed project links, saved decisions,
-notes about linked people/projects and directly sourced follow-up tasks. Show candidates if several
+notes about earlier calls and linked people/projects, and directly sourced follow-up tasks. Show candidates if several
 series fit. Tell me what is missing or uncertain. Do not change anything.
 ```
 
@@ -71,12 +71,14 @@ you retrieve the full record and evidence through Memo before relying on it. Thi
 accepted facts; `knowledge.coverage` keeps `fact_evidence: not-revalidated` and
 `other_sources: not-queried` visible.
 
-`notes.items` adds owner-written notes and annotations about those linked people and confirmed
-global projects. Each includes a `note:` reference, title/text, revision, update time and a qualifying
-person/project reference. These are saved comments, separate from accepted facts. The command uses
-current revisions and confirmed associations; it excludes deleted notes, bot-authored notes,
-account-scoped subjects and revisions updated after the preparation start. Retrieve the referenced
-note in Memo when you need its full associations.
+`notes.items` adds owner-written notes and annotations about the included earlier calls, their
+explicitly linked people and confirmed global projects. Each includes a `note:` reference,
+title/text, revision, update time and a qualifying meeting/person/project reference. These are
+saved comments, separate from accepted facts. The command uses current revisions and confirmed
+associations. A meeting note must link to an included call in this profile; a shared project alone
+does not bring in notes about other meetings. Deleted notes, bot-authored notes, account-scoped
+person/project subjects and revisions updated after the preparation start are excluded. Retrieve
+the referenced note in Memo when you need its full associations.
 
 Check `notes.coverage.has_more` and `notes.coverage.output_limited` for additional or omitted notes.
 `source_evidence: not-revalidated` means the note's supporting sources have not been checked;

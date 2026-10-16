@@ -163,6 +163,12 @@ are checked in the same transaction. Only the selected identity moves; names nev
 Memo remains the shared notes, tags and memories interface over these same records. Zoom does not
 mount another set of those commands.
 
+Preparation reads owner notes through Core's optional preparation-notes port. The native adapter
+selects existing notes and confirmed associations within the included account/series/history
+anchors. Core validates references, bounds reads and output, and supplies the CLI/MCP schema.
+Zoom only binds the selected account and upcoming schedule; it owns no note query or persistence.
+Custom providers that omit the extended selection retain the legacy person/project note shape.
+
 `search meetings` uses the producer's word search and an opaque cursor that can continue within a
 transcript. The producer indexes newly stored records before each search, in committed batches;
 coverage reports pending indexing and unknown index/archive completeness. With `--model` the same

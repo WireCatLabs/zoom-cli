@@ -3,8 +3,8 @@
 See which meeting workflows you can use today and which need further development. The tool already
 retrieves available hosted data, imports transcripts, backs up recordings and searches cited passages.
 `meetings prepare` combines upcoming proof for one selected series with bounded stored context,
-including related calls, accepted person/project facts and owner notes through existing person links
-and confirmed projects.
+including related calls, accepted person/project facts and owner notes about included earlier calls,
+explicitly linked people and confirmed projects.
 An agent can combine these sources with Memo's projects, notes and people. Start with
 [meeting preparation](usage.md#prepare-for-an-upcoming-meeting) or [search and evidence](search.md).
 

@@ -110,7 +110,10 @@ Zoom app, retrieve absent transcripts or accept findings. Its `meeting_preparati
 cited cues, bounded related meetings through explicit person/confirmed project links, and explicit
 coverage. Accepted person/project facts appear in `knowledge`, with fact references and explicit
 unqueried-source/evidence limits. Owner notes and annotations appear separately in `notes`, retaining
-`note:` references, revisions and source/coverage limits. Imported documents, mail and messages remain
+`note:` references, revisions and source/coverage limits. Native notes use selection
+`owner-written-meeting/person/project-notes` and a nullable `meeting` reference to an included earlier
+call. Meeting-scoped notes require an included call; a shared project alone is insufficient.
+Imported documents, mail and messages remain
 unqueried. Related reads stay within the selected account and history window
 and perform no writes. See [preparation](usage.md#prepare-for-an-upcoming-meeting) for
 what it includes, what remains unqueried and how to check the result.

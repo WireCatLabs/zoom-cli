@@ -150,8 +150,10 @@ refs and association flags; inspect `knowledge.coverage.has_more` and `knowledge
 yield bytes to meeting evidence and their source evidence is not revalidated. Coverage keeps
 imported documents, mail, messages and project-alias candidates
 unqueried; without usable anchors, related history is unqueried too. Archive completeness stays
-unknown. `notes.items` contains bounded owner notes and annotations through explicit person/project
-associations; retain note refs, revision and update time. These comments are separate from accepted
+unknown. `notes.items` contains bounded owner notes and annotations about included earlier calls
+and through explicit person/project associations. Retain note refs, meeting/person/project refs,
+revision and update time. Meeting-scoped notes require an included same-account anchor; a shared
+project alone cannot include another meeting's notes. These comments are separate from accepted
 facts. Inspect `notes.coverage` for lookahead, truncation and sources that were not rechecked. Imported/file
 notes are outside that selection. Stored fact evidence is not revalidated. Inspect skipped sources and truncation.
 This command does not summarize, accept findings or create tasks. Use existing Memo workflows for
