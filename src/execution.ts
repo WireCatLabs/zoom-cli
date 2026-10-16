@@ -6,6 +6,7 @@ import {
   type OutputBuffer,
   type SleepLike,
 } from "@wirecat/cli-base"
+import { metaOf } from "@wirecat/cli-base/commands"
 import type { Meta } from "@wirecat/cli-base/standards"
 import type { Command } from "commander"
 import { readMetadata } from "./answers.js"
@@ -24,8 +25,8 @@ export const bytes = (text: string): number => {
   return Number(text)
 }
 export const commandDeadline = (action: Command): number | undefined => {
-  if (action.name() === "watch" || action.name() === "serve") return undefined
-  if (action.name() === "start" && action.parent?.name() === "session") return 300000
+  if (metaOf(action).lifetime === "persistent") return undefined
+  if (metaOf(action).lifetime === "interactive") return 300000
   if (
     action.name() === "download" ||
     action.name() === "sync" ||
