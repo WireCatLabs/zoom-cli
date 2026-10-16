@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Meeting preparation includes owner notes and annotations attached directly to included earlier
+  calls, through Core's shared preparation service. Notes about other accounts or unselected
+  meetings cannot enter through a shared project alone.
+
+### Changed — may break callers
+
+- Native preparation notes use selection `owner-written-meeting/person/project-notes` and include
+  a nullable `meeting` reference. Older custom store hosts keep their existing selection and shape.
+
 ## 0.21.3 — 16.10.2026
 
 ### Added
