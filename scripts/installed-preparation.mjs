@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { createRequire } from "node:module"
 import { join, resolve } from "node:path"
 import { pathToFileURL } from "node:url"
+import { checkPreparationProjects } from "./installed-preparation-projects.mjs"
 
 const root = resolve(process.argv[2])
 const require = createRequire(join(root, "node_modules/@wirecat/zoom-cli/package.json"))
@@ -227,8 +228,22 @@ assert.equal(direct[0].meeting, reference)
 assert.equal(direct[0].project, null)
 assert.equal(direct[1].ref, projectNote.ref)
 assert.equal(direct[1].meeting, null)
+const projectProof = await checkPreparationProjects({
+  load,
+  path,
+  now,
+  key,
+  sample,
+  project,
+  accountId,
+  foreignId,
+  read,
+  connector,
+  requestCount: () => requests,
+})
 console.log(
   JSON.stringify({
+    ...projectProof,
     cold_credentials: true,
     selected_account: true,
     cited_context: true,

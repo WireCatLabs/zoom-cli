@@ -88,19 +88,20 @@ export const preparationFixture = async (
   let candidateReference: string | undefined
   if (projectEvidence) {
     await store.knowledge.addVocabularyAlias({ kind: "project", id: project.id }, "Bureau Example")
-    await store.knowledge.addVocabularyAlias({ kind: "project", id: project.id }, "НББ")
+    await store.knowledge.addVocabularyAlias({ kind: "project", id: project.id }, "ПРИ")
     const candidateInput = {
       ...input,
       participants: [],
+      chat: [],
       meeting: {
         ...input.meeting,
         externalId: "invented-unlinked",
-        title: "НББ",
+        title: "ПРИ",
         series: { ...series, externalId: "789" },
       },
       transcripts: input.transcripts.map((t) => ({
         ...t,
-        rows: t.rows.map((row) => ({ ...row, text: "HAR Bureau Example НББ" })),
+        rows: t.rows.map((row) => ({ ...row, speakerParticipantPosition: null, text: "HAR Bureau Example ПРИ" })),
       })),
     }
     const candidate = await store.meetings.saveMeeting(candidateInput)

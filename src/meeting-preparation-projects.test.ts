@@ -20,7 +20,7 @@ it("prepares an explicitly selected project's cited aliases through CLI and stri
     "Harbour Example",
     "HAR",
     "Bureau Example",
-    "НББ",
+    "ПРИ",
   ])
   expect(item.project_evidence.pages[0].hits).toEqual([])
   for (const page of item.project_evidence.pages.slice(1)) {
@@ -29,7 +29,7 @@ it("prepares an explicitly selected project's cited aliases through CLI and stri
     expect(page.hits[0]).toMatchObject({
       meeting: f.candidateReference,
       ref: expect.stringContaining(`${f.candidateReference}/`),
-      source: { title: "НББ" },
+      source: { title: "ПРИ" },
       scope: "transcript",
       offset_ms: 0,
     })
