@@ -13,6 +13,11 @@
   `zm config is invalid`. The message now names the file and the first key that failed, such as
   `client_id` for an old camelCase file, and never the value. `doctor` still answers, reporting the
   problem under `config.error`; `config show` fails with the same message.
+- **`meetings sync` keeps scheduled meetings.** It looked up the instances of recurring meetings
+  only, so a scheduled meeting was saved under its listing id, and its participants, transcript and
+  summary were not found. Every listed meeting now resolves through Zoom's past instances, with the
+  instance's real start time. A meeting Zoom no longer has instances for is skipped, and the sync goes on.
+  This adds one request per listed meeting and needs `meeting:read:list_past_instances` for all of them.
 
 ## 0.21.2 — 16.10.2026
 

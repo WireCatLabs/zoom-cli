@@ -199,13 +199,15 @@ const apiFixture = (): typeof fetch => async (input, init) => {
           ],
       next_page_token: url.searchParams.has("next_page_token") ? "" : "example-next",
     })
-  if (url.pathname.endsWith("/instances"))
+  if (url.pathname === "/v2/past_meetings/100/instances")
     return response({
       meetings: [
         { uuid: "/example//occurrence", start_time: "2026-10-10T15:30:00Z" },
         { uuid: "old-example", start_time: "2026-01-01T00:00:00Z" },
       ],
     })
+  if (url.pathname === "/v2/past_meetings/101/instances")
+    return response({ meetings: [{ uuid: "example/once-instance", start_time: "2026-10-10T15:31:00Z" }] })
   if (url.pathname.endsWith("/participants"))
     return response({
       participants: [

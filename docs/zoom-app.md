@@ -99,7 +99,7 @@ permission; a granted scope authorizes an API call, not the existence of the req
 | Scope | Use |
 |---|---|
 | `meeting:read:list_meetings` | Find your hosted meeting records and list upcoming meetings |
-| `meeting:read:list_past_instances` | Retrieve separate occurrences of recurring meetings |
+| `meeting:read:list_past_instances` | Find the instance that ran for every listed meeting, recurring or not |
 | `cloud_recording:read:meeting_transcript` | Retrieve an available meeting transcript |
 | `meeting:read:list_past_participants` | Read participant records and their join/leave sessions |
 | `meeting:read:summary` | Retrieve an available Zoom AI summary |
