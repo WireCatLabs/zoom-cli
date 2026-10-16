@@ -257,6 +257,16 @@ assert.equal(writerLeaseResult.status, 0, `installed writer leases: ${writerLeas
 assert.equal(diagnostics(writerLeaseResult.stderr), "")
 assert.equal(existsSync(denied), false, "installed writer leases accessed external IO")
 const writerLeaseProof = JSON.parse(writerLeaseResult.stdout)
+const partialResult = spawnSync(
+  process.execPath,
+  [...prefix, fileURLToPath(new URL("./installed-recording-partials.mjs", import.meta.url)), root],
+  { cwd: root, env: environment, encoding: "utf8", timeout: 15000, maxBuffer: 4 * 1024 * 1024 },
+)
+assert.equal(partialResult.error, undefined)
+assert.equal(partialResult.status, 0, `installed recording partials: ${partialResult.stderr}`)
+assert.equal(diagnostics(partialResult.stderr), "")
+assert.equal(existsSync(denied), false, "installed recording partials accessed external IO")
+const partialProof = JSON.parse(partialResult.stdout)
 const upcomingResult = spawnSync(
   process.execPath,
   [...prefix, fileURLToPath(new URL("./installed-upcoming.mjs", import.meta.url)), root],
@@ -678,6 +688,7 @@ const proof = {
   scheduleOfflinePreview: true,
   recordingResume,
   writer_leases: writerLeaseProof,
+  native_partials: partialProof,
   upcoming_sdk: upcomingProof,
   preparation_sdk: preparationProof,
   meetingIntegration,

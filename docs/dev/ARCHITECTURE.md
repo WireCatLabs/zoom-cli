@@ -23,7 +23,8 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [recordings.ts](../../src/recordings.ts), [recording-archive.ts](../../src/recording-archive.ts) | asset discovery, streamed transfers, manifests and verified skipping |
 | [recording-sync.ts](../../src/recording-sync.ts), [recording-sync-store.ts](../../src/recording-sync-store.ts) | shared catalog/checkpoint orchestration and native durable progress |
 | [recording-writer-lease.ts](../../src/recording-writer-lease.ts) | Zoom marker layout and public error/cancellation mapping over Core native writer leases |
-| [recording-partial-store.ts](../../src/recording-partial-store.ts), [recording-promotion-store.ts](../../src/recording-promotion-store.ts) | verified partial bytes and owned final-promotion recovery |
+| [recording-partial-store.ts](../../src/recording-partial-store.ts) | Zoom partial names/defaults and cancellation mapping over Core native persistence |
+| [recording-promotion-store.ts](../../src/recording-promotion-store.ts) | owned final-promotion recovery and Zoom manifest mapping |
 | [recording-schedule.ts](../../src/recording-schedule.ts), [recording-schedule-store.ts](../../src/recording-schedule-store.ts), [recording-schedule-systemd.ts](../../src/recording-schedule-systemd.ts) | captured local jobs, native metadata and Linux user timers |
 | [archive-transcripts.ts](../../src/archive-transcripts.ts) | verified local WebVTT reads and bounded literal search |
 | [archive-import.ts](../../src/archive-import.ts) | fully verified plans and atomic per-occurrence transcript append |
@@ -97,8 +98,10 @@ recognized dead-process markers only. Local reads and checksum verification run 
 The shared SDK owns transfer range/validator rules, bounded catalog synchronization and checkpoint
 acknowledgements, native writer ownership and stale-owner recovery. Zoom binds its existing marker
 layout and errors through the public `./files` capability; each acquired lease owns its release,
-including after cancellation. Zoom owns trusted authenticated requests and native partial/publication
-layout. A missing or replaced writer marker is refused before asset download.
+including after cancellation. Core's `./persistence/native` entry owns partial-file verification,
+bounded checkpoints and handle cleanup. Zoom supplies its existing partial names, persistence choice,
+20 GiB default and cancellation mapping. Zoom owns trusted authenticated requests, publication
+journals and manifest mapping. A missing or replaced writer marker is refused before asset download.
 Downloads require an account scope; resume settings select durable partials. Prefix
 hashes and file identity are verified before append. A retained owned promotion journal allows safe
 recovery between final publication and manifest commitment. Untracked foreign files are preserved.
