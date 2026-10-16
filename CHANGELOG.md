@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-### Changed
+### Added
 
 - **zm starts about a fifth faster after its first run.** It keeps Node's compiled code in a cache, in the
   system's temporary folder (`NODE_COMPILE_CACHE` moves it). Same change as tg 0.62.0, memo 0.52.1 and drive 0.14.1.
