@@ -2,6 +2,16 @@
 set -eu
 
 cd "$(dirname "$0")/.."
+self=$(git hash-object bin/release)
+# The fold fast-forwards main, and sh reads this file as it goes: a newer bin/release would run half old, half new.
+# Run the new one from the start instead: the second run finds the fold already on main.
+rerun_if_changed() {
+  [ "$(git hash-object bin/release)" != "$self" ] || return 0
+  [ -z "${WIRECAT_RELEASE_RERUN:-}" ] || { echo "bin/release changed again while releasing — run it again" >&2; exit 1; }
+  echo "bin/release changed on main — running the new one"
+  export WIRECAT_RELEASE_RERUN=1
+  exec ./bin/release "$@"
+}
 [ "$#" -eq 0 ] || { echo "usage: bin/release" >&2; exit 2; }
 git fetch -q origin
 [ "$(git branch --show-current)" = main ] || { echo "run from main" >&2; exit 1; }
@@ -18,6 +28,7 @@ folded=""
 npm view "@wirecat/zoom-cli@$version" version --prefer-online >/dev/null 2>&1 ||
   folded=$(npx -y -p @wirecat/cli-base@0.36.0 cli-dev changelog fold --land --version "$version")
 [ -z "$folded" ] || echo "$folded"
+rerun_if_changed "$@"
 top=$(sed -n '/^## /{p;q;}' CHANGELOG.md)
 case "$top" in
   "## $version — "*) ;;
