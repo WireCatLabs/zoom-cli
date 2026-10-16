@@ -369,6 +369,11 @@ it("publishes usable serve/login discovery examples and forwards MCP per-tool bo
   expect(JSON.parse(output.at(-1) ?? "{}").commands[0].examples).toEqual(["zm serve --mcp"])
   expect(await run(["commands", "session", "start", "--json"], deps)).toBe(0)
   expect(JSON.parse(output.at(-1) ?? "{}").commands[0].examples).toEqual(["zm session start --interactive"])
+  expect(JSON.parse(output.at(-1) ?? "{}").commands[0].lifetime).toBe("interactive")
+  expect(await run(["commands", "watch", "--json"], deps)).toBe(0)
+  expect(JSON.parse(output.at(-1) ?? "{}").commands[0].lifetime).toBe("persistent")
+  expect(await run(["commands", "serve", "--json"], deps)).toBe(0)
+  expect(JSON.parse(output.at(-1) ?? "{}").commands[0].lifetime).toBe("persistent")
   deps.serveMcp = vi.fn(async ({ maxResultBytes }) => {
     expect(maxResultBytes).toBe(0)
   })

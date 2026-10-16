@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Added
+
+- Adopt Core 0.297.0 and Base 0.40.0 in one shared Base identity. Command discovery declares
+  watch/MCP as persistent and login as interactive; deadlines read this shared metadata while
+  retaining the existing bounded-command defaults and explicit timeout override.
+
 ### Fixed
 
 - **Release scripts report observed lock holders separately from stale release labels.** Shared
