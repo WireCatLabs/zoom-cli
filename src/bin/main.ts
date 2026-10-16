@@ -9,9 +9,11 @@ import { profileAccountKey, readConfig } from "../config.js"
 import { loginService, zmPaths } from "../folders.js"
 import { writeExportFile } from "../output-file.js"
 import { reportFailure, run } from "../program.js"
+import { lazyRunLog } from "../run-log.js"
 import { createStoreConnector } from "../store-connection.js"
 import { writeStream } from "../streaming.js"
-import { TokenManager } from "../tokens.js"
+import { TOKEN_LOG_ALLOW, TokenManager } from "../tokens.js"
+import { VERSION } from "../version.js"
 
 const args = process.argv.slice(2)
 const outputIsTTY = Boolean(process.stdout.isTTY)
@@ -32,9 +34,16 @@ const onPipeError = (error: NodeJS.ErrnoException) => {
 process.once("SIGINT", cancel)
 process.once("SIGTERM", cancel)
 process.stdout.on("error", onPipeError)
+let tokenRun: ReturnType<typeof lazyRunLog> | undefined
 try {
   const paths = zmPaths()
   const configPath = join(paths.config, "config.json")
+  tokenRun = lazyRunLog({
+    runsDir: join(paths.state, "runs"),
+    command: "oauth token",
+    version: VERSION,
+    allow: TOKEN_LOG_ALLOW,
+  })
   const connectStore = createStoreConnector({ env: process.env })
   const tokens = new TokenManager({
     get clientId() {
@@ -43,6 +52,7 @@ try {
     keyring: systemKeyring,
     service: loginService(paths.config),
     fetch,
+    log: tokenRun.log,
   })
   process.exitCode = await run(args, {
     configPath,
@@ -115,6 +125,7 @@ try {
 } catch (error) {
   process.exitCode = reportFailure(error, args, { diagnostic: (text) => process.stderr.write(text), outputIsTTY })
 } finally {
+  await tokenRun?.finish(process.exitCode ? "failed" : "success").catch(() => {})
   process.removeListener("SIGINT", cancel)
   process.removeListener("SIGTERM", cancel)
   if (brokenPipe) process.exitCode = 0

@@ -1,5 +1,5 @@
-import type { KeyringStore } from "@wirecat/cli-base"
-import { CliError } from "@wirecat/cli-base"
+import type { KeyringStore, Logger } from "@wirecat/cli-base"
+import { CliError, isCliError } from "@wirecat/cli-base"
 import { checkCancelled, object } from "./errors.js"
 
 export interface Tokens {
@@ -15,7 +15,15 @@ export interface TokenOptions {
   fetch: typeof fetch
   now?: () => number
   signal?: AbortSignal
+  log?: Logger
 }
+/** Keys a token record carries beyond cli-base's own; names only, nothing from the token itself. */
+export const TOKEN_LOG_ALLOW = ["rotated", "saved", "pid"] as const
+export const TOKEN_LOG_EVENT = "zoom.token.exchange"
+// The command deadline aborts with a "timeout" CliError and Ctrl-C with "cancelled"; without a
+// parent abort, only the request's own 30 s limit can have fired.
+const abortReason = (parent?: AbortSignal): string =>
+  !parent?.aborted ? "timeout" : isCliError(parent.reason) ? parent.reason.code : "cancelled"
 export class TokenManager {
   private refreshState = new Map<string, Promise<Tokens>>()
   constructor(readonly options: TokenOptions) {}
@@ -31,6 +39,7 @@ export class TokenManager {
       service: parent.service,
       fetch: fetcher,
       now: parent.now,
+      log: parent.log,
       signal: signal && parent.signal ? AbortSignal.any([signal, parent.signal]) : (signal ?? parent.signal),
     })
     scoped.refreshState = this.refreshState
@@ -79,6 +88,15 @@ export class TokenManager {
     const signal = this.options.signal
       ? AbortSignal.any([this.options.signal, AbortSignal.timeout(30000)])
       : AbortSignal.timeout(30000)
+    const parent = this.options.signal
+    const record = (level: keyof Logger, fields: Record<string, unknown>) =>
+      this.options.log?.[level]({
+        event: TOKEN_LOG_EVENT,
+        operation: params.grant_type ?? "unknown",
+        pid: process.pid,
+        ...(signal.aborted ? { reason: abortReason(parent) } : {}),
+        ...fields,
+      })
     let response: Response
     try {
       response = await this.options.fetch("https://zoom.us/oauth/token", {
@@ -89,20 +107,24 @@ export class TokenManager {
         redirect: "error",
       })
     } catch {
+      record("warn", { outcome: "no_response" })
       throw new CliError(
         "outcome_unknown",
         "Zoom token exchange did not finish; run zm session start again before retrying",
       )
     }
-    if (!response.ok)
+    if (!response.ok) {
+      record("warn", { outcome: "rejected", status: response.status })
       throw new CliError(
         "authentication_error",
         `Zoom token request failed (HTTP ${response.status}); run zm session start again`,
       )
+    }
     let body: Record<string, unknown>
     try {
       body = object(await response.json())
     } catch {
+      record("error", { outcome: "unreadable_response", status: response.status })
       throw new CliError(
         "outcome_unknown",
         "Zoom returned an invalid token response; run zm session start again before retrying",
@@ -119,18 +141,27 @@ export class TokenManager {
       !Number.isFinite((this.options.now?.() ?? Date.now()) + body.expires_in * 1000) ||
       (body.scope !== undefined && typeof body.scope !== "string") ||
       (body.refresh_token !== undefined && typeof body.refresh_token !== "string")
-    )
+    ) {
+      record("error", { outcome: "invalid_response", status: response.status })
       throw new CliError(
         "outcome_unknown",
         "Zoom returned an invalid token response; run zm session start again before retrying",
       )
+    }
+    const rotated = previous ? { rotated: refreshToken !== previous.refreshToken } : {}
     const tokens = {
       accessToken: body.access_token,
       refreshToken,
       expiresAt: (this.options.now?.() ?? Date.now()) + body.expires_in * 1000,
       scopes: typeof body.scope === "string" ? body.scope.split(/\s+/).filter(Boolean) : (previous?.scopes ?? []),
     }
-    this.save(tokens, clientId)
+    try {
+      this.save(tokens, clientId)
+    } catch (error) {
+      record("error", { outcome: "save_failed", status: response.status, ...rotated, saved: false })
+      throw error
+    }
+    record("info", { outcome: "saved", status: response.status, ...rotated, saved: true })
     return tokens
   }
   async tokens(): Promise<Tokens> {

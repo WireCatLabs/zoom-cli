@@ -6,6 +6,10 @@
 
 - **zm starts about a fifth faster after its first run.** It keeps Node's compiled code in a cache, in the
   system's temporary folder (`NODE_COMPILE_CACHE` moves it). Same change as tg 0.62.0, memo 0.52.1 and drive 0.14.1.
+- **Token requests record their outcome.** Each login or refresh writes one record to
+  `<state dir>/runs/<date>/<run>/events.jsonl`: the HTTP status, whether a new refresh token arrived,
+  whether the keyring save worked, a timeout or cancellation, and the process id. No token, hash or
+  part of one is written. A command that requests no token leaves no run behind.
 
 ### Fixed
 

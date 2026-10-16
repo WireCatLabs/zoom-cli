@@ -677,6 +677,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
                 fetch: fetchWithSignal(deps.tokens.options.fetch),
                 now: deps.now,
                 signal: signal(),
+                log: deps.tokens.options.log,
               }),
               fetchWithSignal(deps.fetch),
               remoteOptions,
