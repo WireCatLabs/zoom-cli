@@ -493,7 +493,7 @@ it("reads canonical configuration without an optional profile and validates opti
       account_profile: [],
     }),
   )
-  expect(() => readConfig(deps.configPath)).toThrow(/not a valid config: account_profile$/)
+  expect(() => readConfig(deps.configPath)).toThrow(/account_profile has the wrong type$/)
 })
 
 it("refreshes profile and source configuration between sequential direct parses", async () => {
