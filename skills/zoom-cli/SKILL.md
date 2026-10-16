@@ -84,7 +84,9 @@ queries or skipped sources leave completeness false even when the command exits 
 Attending a meeting does not grant recording API access. `recordings sync --since-time <date>
 --until-time <date> --output-dir <dir> --jsonl` archives bounded history; `download` handles one
 occurrence. Existing files are never overwritten. Repeated runs skip verified manifest entries;
-completed files survive later failures, but incomplete transfers restart, not HTTP range-resume.
+completed files survive later failures. Interrupted transfers resume a verified prefix only when
+a strong validator and the returned byte range agree; changed representations restart safely.
+`--no-resume` uses ephemeral partials. Keep account/profile and archive destination consistent.
 `recordings archive check <dir> --offline` verifies local checksums. Inspect `archive locks` before
 `recover`; recovery previews stale local dead-process locks, and `--yes` removes only authorized ones.
 

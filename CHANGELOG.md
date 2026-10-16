@@ -4,12 +4,16 @@
 
 ### Added
 
-- Adopt Core 0.297.0 and Base 0.40.0 in one shared Base identity. Command discovery declares
+- Adopt Core 0.299.0 and Base 0.40.0 in one shared Base identity. Command discovery declares
   watch/MCP as persistent and login as interactive; deadlines read this shared metadata while
   retaining the existing bounded-command defaults and explicit timeout override.
 
 ### Fixed
 
+- Recording partial files use Core's shared native persistence adapter while retaining existing
+  names, checkpoint bytes, resume defaults and Zoom cancellation errors. A final-sync cancellation
+  cannot return a completion receipt. Other meeting providers can use the same adapter.
+- Agent archive guidance now describes verified range resume and safe restart accurately.
 - **Release scripts report observed lock holders separately from stale release labels.** Shared
   diagnostics no longer attribute a live lock to a previous run; wait for the holders to finish, then
   retry.

@@ -3,6 +3,7 @@ import { mkdtemp, readdir, readFile, symlink, writeFile } from "node:fs/promises
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { recordingTransferStorageContract } from "@wirecat/cli-core/meetings/testing"
+import { NativeRecordingPartialStore } from "@wirecat/cli-core/persistence/native"
 import { expect, it } from "vitest"
 import { RecordingPartialStore } from "./recording-partial-store.js"
 
@@ -180,3 +181,49 @@ it("round-trips allowed escaped identifiers within the bounded metadata budget",
   }
   expect((await new RecordingPartialStore(root, scope).load(scope))?.offset).toBe(3)
 })
+
+it("uses Core native persistence to resume independently written legacy Zoom checkpoints", async () => {
+  const root = await directory()
+  const key = createHash("sha256")
+    .update(JSON.stringify([locator.provider, locator.account, locator.occurrenceId, locator.assetId]))
+    .digest("hex")
+  const sha256 = createHash("sha256").update("abc").digest("hex")
+  const path = join(root, `.zoom-partial-${key}.part`)
+  const metadata = JSON.stringify({ locator, offset: 3, sha256, validator: '"example-v1"', total: 6 })
+  await writeFile(path, "abc")
+  await writeFile(join(root, `.zoom-partial-${key}.json`), metadata)
+  const storage = new RecordingPartialStore(root, locator)
+  expect(storage).toBeInstanceOf(NativeRecordingPartialStore)
+  expect(storage.path).toBe(path)
+  const partial = await storage.load(locator)
+  const writer = await storage.open(locator, { resume: partial ?? undefined, validator: '"example-v1"', total: 6 })
+  try {
+    await writer.write(Buffer.from("def"))
+    await writer.finish()
+  } finally {
+    await writer.close()
+  }
+  expect(await readFile(path, "utf8")).toBe("abcdef")
+  expect(storage.completed?.offset).toBe(6)
+})
+
+it.each(["cancelled", "timeout"])(
+  "retains Zoom's %s error mapping and cancellation-independent close",
+  async (code) => {
+    const root = await directory()
+    const controller = new AbortController()
+    const storage = new RecordingPartialStore(root, locator, controller.signal)
+    const writer = await storage.open(locator, { validator: '"example-v1"', total: 6 })
+    try {
+      await writer.write(Buffer.from("abc"))
+      await writer.checkpoint()
+      controller.abort(code === "timeout" ? new DOMException("example timeout", "TimeoutError") : undefined)
+      await expect(writer.write(Buffer.from("def"))).rejects.toMatchObject({ code })
+      await expect(writer.finish()).rejects.toMatchObject({ code })
+      expect(storage.completed).toBeNull()
+    } finally {
+      await expect(writer.close()).resolves.toBeUndefined()
+    }
+    expect(await new RecordingPartialStore(root, locator).load(locator)).toMatchObject({ offset: 3 })
+  },
+)

@@ -16,9 +16,9 @@ An agent can combine these sources with Memo's projects, notes and people. Start
   messages and project-name/alias candidates, then build a brief with explicit evidence and gaps.
   The current selected-series command includes accepted global person/project facts and owner notes but leaves
   those other sources unqueried; it returns stored context without generating a summary.
-- Further shared native archive storage so another meeting provider can reuse partial downloads
-  and publication recovery. Writer ownership and stale recovery already use the shared native lease
-  capability; partial/publication layouts remain provider-owned.
+- Make recovery after an interrupted final save reusable across meeting providers. Writer
+  ownership, stale-lock recovery and resumable partial downloads already use shared storage.
+  Existing Zoom archive files remain compatible.
 
 Project aliases, tags and notes already belong to Memo and the shared store. Another meeting
 provider uses the shared meeting capabilities; a production Google Meet or Teams connector is not

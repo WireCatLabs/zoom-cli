@@ -117,3 +117,16 @@ recovery, owned release and a verified archive. `installed-platform.mjs` require
 Linux/Windows Node 22/24 installation, with explicit temporary HOME/store/WIRECAT_STATE_DIR and its
 existing network/keyring guard. Candidate-file dependency checks are labelled separately and never
 substitute for immutable released-package proof.
+
+## Shared native partial storage
+
+`recording-partial-store.test.ts` retains the transfer contract and existing resume/failure cases
+against the thin Zoom binding to Core native persistence. An independently written legacy Zoom
+checkpoint proves the existing locator hash, filenames and metadata bytes resume without migration.
+Core separately owns short-I/O, malformed metadata, cancellation and handle-cleanup fault tests.
+
+`installed-recording-partials.mjs` runs inside every existing Linux/Windows Node 22/24 installed
+check. It uses Core's public native entry with a fictional second provider, recovers trailing bytes,
+and resumes an independently seeded legacy Zoom checkpoint through the installed Zoom API. Its
+transport is injected and its accounts, media and directories are invented. The platform proof
+retains `native_partials`; the existing external-I/O/keyring guard remains active.
