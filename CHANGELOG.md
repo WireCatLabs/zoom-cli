@@ -7,6 +7,13 @@
 - **zm starts about a fifth faster after its first run.** It keeps Node's compiled code in a cache, in the
   system's temporary folder (`NODE_COMPILE_CACHE` moves it). Same change as tg 0.62.0, memo 0.52.1 and drive 0.14.1.
 
+### Fixed
+
+- **An invalid config names its file and first bad key.** Every command used to print only
+  `zm config is invalid`. The message now names the file and the first key that failed, such as
+  `client_id` for an old camelCase file, and never the value. `doctor` still answers, reporting the
+  problem under `config.error`; `config show` fails with the same message.
+
 ## 0.21.2 — 16.10.2026
 
 ### Added

@@ -385,7 +385,20 @@ export const createProgram = (deps: ProgramDeps): Command => {
     fields: () => fields,
     raw: buffer,
     doctor: () => {
-      const config = getConfig()
+      let config: ZoomConfig
+      try {
+        config = getConfig()
+      } catch (error) {
+        if (!isCliError(error)) throw error
+        return {
+          version: VERSION,
+          runtime: { node: process.versions.node },
+          config: { readable: false, path: deps.configPath, error: error.message },
+          dataProfile: null,
+          authentication: { configured: null, state: "not_checked" },
+          database: "not_checked",
+        }
+      }
       return {
         version: VERSION,
         runtime: { node: process.versions.node },

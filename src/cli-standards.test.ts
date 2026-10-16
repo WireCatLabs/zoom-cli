@@ -126,6 +126,24 @@ describe("portable CLI discovery and diagnostics", () => {
       database: "not_checked",
     })
   })
+  it("answers doctor with an old camelCase config, naming its first key and no value", async () => {
+    const { deps, stdout, stderr } = await setup()
+    await writeFile(
+      deps.configPath,
+      JSON.stringify({ clientId: "example-old-client", source: "api", filesTimezone: "UTC" }),
+    )
+    expect(await run(["--json", "doctor"], deps)).toBe(0)
+    expect(readAnswer(stdout[0] ?? "{}")).toMatchObject({
+      config: { readable: false, error: `${deps.configPath} is not a valid config: client_id` },
+      authentication: { state: "not_checked" },
+    })
+    expect(await run(["--json", "config", "show"], deps)).toBe(3)
+    expect(JSON.parse(stderr[0] ?? "{}").error).toMatchObject({
+      code: "configuration_error",
+      message: `${deps.configPath} is not a valid config: client_id`,
+    })
+    expect([...stdout, ...stderr].join("")).not.toContain("example-old-client")
+  })
   it("inspects cached OAuth status without refresh and keeps local profiles distinct", async () => {
     const { deps, stdout } = await setup()
     expect(await run(["--json", "session", "status"], deps)).toBe(0)
