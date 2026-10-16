@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto"
-import { type FileHandle, link, lstat, mkdir, open, readdir, realpath, rename, unlink } from "node:fs/promises"
+import { type FileHandle, lstat, mkdir, open, readdir, realpath, rename, unlink } from "node:fs/promises"
 import { join } from "node:path"
 import { CliError, isCliError } from "@wirecat/cli-base"
 import { retryableStatus, statusToCode } from "@wirecat/cli-base/http"
@@ -7,7 +7,7 @@ import { openOrdinaryFile, syncDirectory, type WriterLease } from "@wirecat/cli-
 import { type RecordingTransferSource, transferRecording } from "@wirecat/cli-core/meetings"
 import { checkCancelled, string } from "./errors.js"
 import { RecordingPartialStore } from "./recording-partial-store.js"
-import { readRecordingPromotion, writeRecordingPromotion } from "./recording-promotion-store.js"
+import { recordingPromotion, recordingPublication } from "./recording-promotion-store.js"
 import { acquireArchiveWriter } from "./recording-writer-lease.js"
 
 export { type ArchiveLockInfo, inspectArchiveLocks, recoverArchiveLocks } from "./recording-writer-lease.js"
@@ -432,6 +432,7 @@ export const archiveRecording = async (
         startedAt: asset.startedAt,
         endedAt: asset.endedAt,
       }
+      const publication = recordingPublication(root, locator, promotionMeeting, metadata, maxBytes, signal)
       let present = false
       try {
         await lstat(join(root, path))
@@ -440,27 +441,19 @@ export const archiveRecording = async (
         if (!missing(error)) throw error
       }
       if (present) {
-        const intent = persistent ? await readRecordingPromotion(root, locator, promotionMeeting, metadata) : null
-        if (!intent || intent.file.size > maxBytes)
+        if (!persistent)
           throw new CliError(
             "validation_error",
             "recording path already exists without a verified manifest or scoped recovery record",
           )
-        const completed = await storage.load(locator)
-        if (
-          !completed ||
-          completed.offset !== intent.file.size ||
-          completed.sha256 !== intent.file.sha256 ||
-          completed.validator !== intent.validator ||
-          (completed.total !== null && completed.total !== intent.file.size)
+        const intent = await publication.recover(
+          storage.path,
+          () => storage.load(locator),
+          async (value) => {
+            manifest.files.push(value.file)
+            await writeManifest(root, manifest)
+          },
         )
-          throw new CliError("validation_error", "recording recovery checkpoint does not prove this completed asset")
-        const local = await fingerprint(join(root, path), signal, intent.file.size)
-        if (local.size !== intent.file.size || local.sha256 !== intent.file.sha256)
-          throw new CliError("validation_error", "recording recovery final checksum does not match")
-        manifest.files.push(intent.file)
-        await writeManifest(root, manifest)
-        await unlink(storage.path)
         report.skipped.push(intent.file)
         continue
       }
@@ -479,9 +472,13 @@ export const archiveRecording = async (
             throw new CliError("invalid_response", "recording download size does not match Zoom metadata")
           checkCancelled(signal)
           if (persistent && storage.completed)
-            await writeRecordingPromotion(root, locator, promotionMeeting, entry, storage.completed)
+            await publication.write(recordingPromotion(locator, promotionMeeting, entry, storage.completed))
           checkCancelled(signal)
-          await link(temp, join(root, path))
+          await publication.publish(temp, entry, async () => {
+            if (!entry) throw new CliError("invalid_response", "recording transfer did not produce a verified receipt")
+            manifest.files.push(entry)
+            await writeManifest(root, manifest)
+          })
           break
         } catch (error) {
           if (!persistent) await unlink(temp).catch(() => undefined)
@@ -499,9 +496,6 @@ export const archiveRecording = async (
         }
       }
       if (!entry) throw new CliError("invalid_response", "recording transfer did not produce a verified receipt")
-      manifest.files.push(entry)
-      await writeManifest(root, manifest)
-      await unlink(temp)
       await remember(entry.path, entry.sha256)
       report.downloaded.push(entry)
     }

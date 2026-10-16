@@ -101,11 +101,13 @@ acknowledgements, native writer ownership and stale-owner recovery. Zoom binds i
 layout and errors through the public `./files` capability; each acquired lease owns its release,
 including after cancellation. Core's `./persistence/native` entry owns partial-file verification,
 bounded checkpoints and handle cleanup. Zoom supplies its existing partial names, persistence choice,
-20 GiB default and cancellation mapping. Zoom owns trusted authenticated requests, publication
-journals and manifest mapping. A missing or replaced writer marker is refused before asset download.
+20 GiB default and cancellation mapping. Zoom owns trusted authenticated requests, its journal
+codec and durable manifest mapping; Core owns native journal I/O and final-file publication. A missing or replaced writer marker is refused before asset download.
 Downloads require an account scope; resume settings select durable partials. Prefix
 hashes and file identity are verified before append. A retained owned promotion journal allows safe
-recovery between final publication and manifest commitment. Untracked foreign files are preserved.
+recovery between final publication and manifest commitment. Zoom validates its legacy journal shape;
+the shared native adapter verifies bytes and scope, syncs the final before the manifest callback and
+removes only the verified owned partial after durable commitment. Untracked foreign files are preserved.
 Checkpoints record prior successful callbacks, not current file integrity or provider completeness.
 
 Daily jobs use shared pure schedule plans and UTC discovery windows. The host stores captured public

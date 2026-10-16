@@ -267,6 +267,16 @@ assert.equal(partialResult.status, 0, `installed recording partials: ${partialRe
 assert.equal(diagnostics(partialResult.stderr), "")
 assert.equal(existsSync(denied), false, "installed recording partials accessed external IO")
 const partialProof = JSON.parse(partialResult.stdout)
+const publicationResult = spawnSync(
+  process.execPath,
+  [...prefix, fileURLToPath(new URL("./installed-recording-publication.mjs", import.meta.url)), root],
+  { cwd: root, env: environment, encoding: "utf8", timeout: 15000, maxBuffer: 4 * 1024 * 1024 },
+)
+assert.equal(publicationResult.error, undefined)
+assert.equal(publicationResult.status, 0, `installed recording publication: ${publicationResult.stderr}`)
+assert.equal(diagnostics(publicationResult.stderr), "")
+assert.equal(existsSync(denied), false, "installed recording publication accessed external IO")
+const publicationProof = JSON.parse(publicationResult.stdout)
 const upcomingResult = spawnSync(
   process.execPath,
   [...prefix, fileURLToPath(new URL("./installed-upcoming.mjs", import.meta.url)), root],
@@ -689,6 +699,7 @@ const proof = {
   recordingResume,
   writer_leases: writerLeaseProof,
   native_partials: partialProof,
+  native_publication: publicationProof,
   upcoming_sdk: upcomingProof,
   preparation_sdk: preparationProof,
   meetingIntegration,
