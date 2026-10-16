@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `meetings prepare --project <name-key-or-alias>` and MCP `project` add cited word matches for one existing project, including unlinked meetings in the selected profile/history window. Up to four bounded name pages retain unconfirmed status, index coverage and continuation; matches never assign project membership.
+
 ## 0.22.1 — 17.10.2026
 
 ### Fixed

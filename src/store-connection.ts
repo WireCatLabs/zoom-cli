@@ -56,7 +56,11 @@ export const createStoreConnector =
           scope: key,
           create: async (upcoming) => {
             const { createMeetingPreparationService } = await import("@wirecat/cli-core/services")
-            const service = createMeetingPreparationService(key, accountId, { meetings, upcoming })
+            const service = createMeetingPreparationService(key, accountId, {
+              meetings,
+              upcoming,
+              projectDiscovery: { vocabulary: connected.knowledge, search: meetings },
+            })
             return service.prepare.bind(service)
           },
         },

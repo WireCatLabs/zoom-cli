@@ -85,13 +85,40 @@ Check `notes.coverage.has_more` and `notes.coverage.output_limited` for addition
 `other_sources: not-queried` keeps imported documents, mail and messages outside this result's coverage.
 Selecting `--json=notes.items.ref` keeps that coverage visible beside the references.
 
+If you know which existing project to investigate, ask the agent to select it by its saved name,
+key or alias. For example:
+
+```text prompt
+Prepare the next Research Example planning call. Also look for cited mentions of our existing
+Research Example project and its saved aliases in earlier meetings from this profile. Keep word
+matches separate from confirmed project links, and tell me where more results remain.
+```
+
+For a terminal request, add `--project`:
+
+```sh
+zm meetings prepare 123456789 --project RES --json
+```
+
+`project_evidence.pages` keeps each matched name or alias beside cited passages, offsets and source
+meeting titles. It searches the same profile and history window, including calls with no project
+link. A word match is a candidate to inspect; it does not establish that a meeting belongs to the
+project. The same passage may match several names, which is not extra corroboration.
+
+At most four search pages are included. An empty page can still lead to an alias with matches.
+When `project_evidence.continuation` is present, use its project, frozen query, limit and read budget
+with `meetings projects evidence`; pass its cursor when non-null. A null cursor means start without
+`--cursor`. This continues the stored search without reading the upcoming Zoom schedule again.
+Check pending indexing and unknown completeness even when the pages are empty. Changed vocabulary
+or scope invalidates the cursor; restart the selected-project search instead of guessing a new cursor.
+
 If the upcoming time appears without earlier calls, pull the relevant period through the Zoom API
 so the store has its exact series links. Imported transcript files may not contain that provider
 series ID. Preparation does not match calls by similar titles or participant names.
 
 Coverage distinguishes missing stored history, undated occurrences, extra rows and output limits.
 Archive completeness remains unknown. Imported documents, mail, messages and
-project-name/alias candidates remain unqueried; without usable prior occurrences, related history
+projects you did not select remain unqueried; without usable prior occurrences, related history
 also remains unqueried. Stored fact evidence is not revalidated. Use
 [search and evidence](search.md) to investigate those gaps. Preparation does not generate a summary,
 record a decision, accept a finding or create a task.
@@ -103,6 +130,9 @@ reads and `--bytes` bounds the entire preparation item. Exact-series evidence ta
 `related.has_more` and `related.output_limited` identify extra or omitted related context.
 Accepted knowledge has independent `knowledge.coverage.has_more` and `knowledge.coverage.output_limited` flags;
 it returns at most twenty facts (or a smaller `--context-limit`) and yields bytes to meeting evidence.
+Optional project-evidence pages yield bytes first, before notes, accepted knowledge and meeting evidence.
+Each of their at most four pages makes one vocabulary read and one word read, each bounded by
+`--max-read-bytes`; these limits do not bound database scan/sort work.
 Notes have their own lookahead and output-limit flags, with at most twenty entries (or a smaller
 `--context-limit`). They fit after accepted facts and meeting evidence. Additional rows may remain
 when a bound is reached.

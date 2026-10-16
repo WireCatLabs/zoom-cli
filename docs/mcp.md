@@ -103,7 +103,7 @@ For broader meeting context across projects, notes and documents, continue with
 [search and evidence](search.md#notes-tags-and-memories-with-memo); connect Memo separately where needed.
 
 With `zm serve --mcp --meeting-preparation`, the agent can call `meeting_prepare` with `series_id`
-and optional ISO `after`, `until`, `history_after`, plus `meetings`, `cues`, `context_limit`,
+and optional `project` plus ISO `after`, `until`, `history_after`, plus `meetings`, `cues`, `context_limit`,
 `max_read_bytes` and `bytes`. The server selects the account and reads Zoom schedule details, requiring
 `meeting:read:meeting`. This opt-in tool is unavailable with `--offline`; it does not change your
 Zoom app, retrieve absent transcripts or accept findings. Its `meeting_preparation` item retains
@@ -118,8 +118,20 @@ unqueried. Related reads stay within the selected account and history window
 and perform no writes. See [preparation](usage.md#prepare-for-an-upcoming-meeting) for
 what it includes, what remains unqueried and how to check the result.
 
+Optional `project` selects one existing project by name, key or alias. `project_evidence` returns
+up to four bounded word-search pages across this account and history window. It preserves matched
+names, cue/meeting citations and source titles separately from confirmed project associations;
+no association is created. Repeated references across names are the same evidence.
+`project_evidence.continuation` gives arguments for the existing `meeting_project_evidence` tool:
+keep its `project`, frozen `query`, `limit`, `max_read_bytes` and non-null `cursor`; omit `cursor`
+when null. The `command` field names the CLI equivalent, not another MCP argument. Continue even
+when the last page is empty and coverage says more remains. Each page reads vocabulary and word
+hits separately within `max_read_bytes`; at most eight such reads are added. No index refresh occurs.
+An unselected project is not inferred from titles, participant names or passages. Broad unqueried
+project coverage remains visible because only one project was selected.
+
 Preparation's `bytes` bounds the item after hidden characters are made visible, which can take more
-space than CLI JSON. Notes yield first, then accepted knowledge, related calls and exact history;
+space than CLI JSON. Optional project-evidence pages yield first, then notes, then accepted knowledge, related calls and exact history;
 inspect `meta.truncated` and each section's coverage for omissions. Cue `content_bytes` counts the
 escaped cues the MCP client receives. Metadata that cannot fit returns `validation_error`; increase
 `bytes` or narrow the selected context.
