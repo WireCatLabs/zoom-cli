@@ -20,11 +20,11 @@ const fixture = async () => {
   const env = { MESSAGING_STORE: path }
   const store = await openStore({ path, env, now: () => 3000 })
   try {
-    const selected = await store.saveAccount(
+    const selected = await store.accounts.saveAccount(
       { provider: "zoom", account: "zm-profile:AliceExample" },
       { name: "Alice Example" },
     )
-    const foreign = await store.saveAccount(
+    const foreign = await store.accounts.saveAccount(
       { provider: "zoom", account: "zm-profile:BobSample" },
       { name: "Bob Sample" },
     )

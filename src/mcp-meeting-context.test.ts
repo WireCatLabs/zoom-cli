@@ -11,8 +11,10 @@ it("discovers opt-in context without IO, rejects account overrides, and closes b
   const read = vi.fn().mockResolvedValue({ items: [], coverage: { complete: false }, source: "meeting:3/15" })
   const proposal = vi.fn().mockResolvedValue({ applied: false, persistence: "proposal-only", source: "meeting:3/15" })
   const personStore = {
-    personByUid: vi.fn(async () => undefined),
-    personSeenInAccounts: vi.fn(async () => true),
+    people: {
+      personByUid: vi.fn(async () => undefined),
+      personSeenInAccounts: vi.fn(async () => true),
+    },
     involvements: {
       rebuild: vi.fn(() => 0),
       drain: vi.fn(() => ({ recomputed: 0, pending: 0 })),

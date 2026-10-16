@@ -16,14 +16,16 @@ const setup = () => ({
     transcripts: vi.fn(),
     transcriptRows: vi.fn(),
   }),
-  saveAccount: vi.fn(async () => 3),
-  storedAccount: vi.fn(async () => ({
-    id: 3,
-    provider: "zoom",
-    account: "zm-profile:example",
-    name: "example",
-    scope: "personal" as const,
-  })),
+  accounts: {
+    saveAccount: vi.fn(async () => 3),
+    storedAccount: vi.fn(async () => ({
+      id: 3,
+      provider: "zoom",
+      account: "zm-profile:example",
+      name: "example",
+      scope: "personal" as const,
+    })),
+  },
   close: vi.fn(async () => {}),
 })
 const request = {

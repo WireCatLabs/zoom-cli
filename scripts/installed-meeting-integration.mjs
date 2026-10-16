@@ -22,8 +22,8 @@ const fixture = async (root, phase, input) => {
       )
       const key = { provider: "zoom", account: "zm-profile:invented-platform" }
       const foreignKey = { provider: "zoom", account: "zm-profile:invented-foreign-platform" }
-      const accountId = (await store.storedAccount(key)).id
-      const foreignAccountId = (await store.storedAccount(foreignKey)).id
+      const accountId = (await store.accounts.storedAccount(key)).id
+      const foreignAccountId = (await store.accounts.storedAccount(foreignKey)).id
       const meeting = sampleMeeting()
       meeting.meeting.accountId = accountId
       meeting.meeting.externalId = "AliceExample-installed-integration"
@@ -56,7 +56,7 @@ const fixture = async (root, phase, input) => {
       await store.knowledge.addVocabularyAlias({ kind: "topic", id: String(topic.id) }, "costs")
       await store.knowledge.setMainTopic(key, { type: "meeting", id: String(saved.meeting.id) }, "budget")
       await store.savePeople(foreignKey, [{ id: "BobSample-installed-target", name: "Bob Sample" }])
-      const target = await store.personOf({ provider: "zoom", id: "BobSample-installed-target" })
+      const target = await store.people.personOf({ provider: "zoom", id: "BobSample-installed-target" })
       assert.ok(target)
       const event = await store.meetings.createEvent({ ...sampleEvent(), origin: "owner" }, 3000)
       return {
@@ -73,7 +73,7 @@ const fixture = async (root, phase, input) => {
     const person = await store.meetings.participantPerson({ accountId, meetingId, participantId })
     const meeting = await store.meetings.meetingMetadata({ accountId, meetingId })
     const revisions = await store.meetings.transcripts({ accountId, meetingId, includeHistorical: true, limit: 10 })
-    const present = await store.personSeenInAccounts(personUid, [accountId])
+    const present = await store.people.personSeenInAccounts(personUid, [accountId])
     const involvement = store.involvements
       .forPerson(Number(personUid))
       .some((item) => item.subjectType === "meeting" && item.subjectId === meetingId)

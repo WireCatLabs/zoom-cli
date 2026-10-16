@@ -28,8 +28,8 @@ const fixture = async () => {
   const store = await openStore({ path, env, now: () => 3000 })
   try {
     const key = { provider: "zoom", account: "zm-profile:AliceExample" }
-    const accountId = await store.saveAccount(key, { name: "Alice Example" })
-    const foreignId = await store.saveAccount(
+    const accountId = await store.accounts.saveAccount(key, { name: "Alice Example" })
+    const foreignId = await store.accounts.saveAccount(
       { provider: "zoom", account: "zm-profile:BobSample" },
       { name: "Bob Sample" },
     )
@@ -37,10 +37,10 @@ const fixture = async () => {
     input.meeting.accountId = accountId
     input.participants[0].identity.associatePerson = false
     const meeting = await store.meetings.saveMeeting(input)
-    await store.savePeople({ provider: "zoom", account: "zm-profile:BobSample" }, [
+    await store.people.savePeople({ provider: "zoom", account: "zm-profile:BobSample" }, [
       { id: "BobSample", name: "Bob Sample" },
     ])
-    const target = await store.personOf({ provider: "zoom", id: "BobSample" })
+    const target = await store.people.personOf({ provider: "zoom", id: "BobSample" })
     if (!target) throw new Error("missing invented person")
     const event = await store.meetings.createEvent({ ...sampleEvent(), origin: "owner" }, 3000)
     return { path, env, directory, accountId, foreignId, meeting, target, event }
@@ -109,8 +109,11 @@ it("connects actual published context services to an existing scoped account wit
   }
   const reopened = await openStore({ path: value.path, env: value.env })
   try {
-    expect(await reopened.personSeenInAccounts(value.target.uid, [value.accountId])).toBe(true)
-    expect((await reopened.storedAccounts()).map((account) => account.id)).toEqual([value.accountId, value.foreignId])
+    expect(await reopened.people.personSeenInAccounts(value.target.uid, [value.accountId])).toBe(true)
+    expect((await reopened.accounts.storedAccounts()).map((account) => account.id)).toEqual([
+      value.accountId,
+      value.foreignId,
+    ])
     expect(
       await reopened.meetings.meetingMetadata({ accountId: value.accountId, meetingId: value.meeting.meeting.id }),
     ).toMatchObject({ eventId: value.event.id })

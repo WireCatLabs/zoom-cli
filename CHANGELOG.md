@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed — may break callers
+
+- Adopt Core 0.307.0's shared store areas for selected-account lookup, ingestion, person context and explicit event/person linking. Library hosts supplying person-context ports now put them under `people`; commands and account boundaries stay the same; installed checks use the same public APIs. Legacy configuration diagnostics now name the first renamed setting and its replacement without printing values.
+
 ## 0.22.0 — 17.10.2026
 
 ### Added

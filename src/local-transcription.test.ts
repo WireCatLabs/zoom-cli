@@ -258,7 +258,7 @@ it("persists local revisions through the published native receipt port and survi
   let expected: Awaited<ReturnType<typeof store.meetings.meeting>>
   let meetingId = 0
   try {
-    const accountId = await store.saveAccount(
+    const accountId = await store.accounts.saveAccount(
       { provider: "example", account: "AliceExample" },
       { name: "Alice Example" },
     )

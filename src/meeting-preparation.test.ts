@@ -24,8 +24,11 @@ const fixture = async (noteText = "Bring the written launch checklist", meetingN
   const env = { MESSAGING_STORE: path }
   const store = await openStore({ path, env, now: () => now })
   const key = { provider: "zoom", account: profileAccountKey("AliceExample") }
-  const accountId = await store.saveAccount(key, { name: "Alice Example" })
-  const otherId = await store.saveAccount({ ...key, account: profileAccountKey("BobSample") }, { name: "Bob Sample" })
+  const accountId = await store.accounts.saveAccount(key, { name: "Alice Example" })
+  const otherId = await store.accounts.saveAccount(
+    { ...key, account: profileAccountKey("BobSample") },
+    { name: "Bob Sample" },
+  )
   const sample = sampleMeeting()
   const series = sample.meeting.series
   if (!series) throw new Error("Missing invented series")
