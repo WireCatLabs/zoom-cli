@@ -4,6 +4,7 @@
 
 ### Added
 
+- Adopt registry Core 0.304.0 with Base 0.40.0. Config diagnostics name the first invalid key, a fixed reason and the remaining-problem count without exposing values; meeting sync preserves available parts when another part fails and keeps the cursor for retry.
 - **zm starts about a fifth faster after its first run.** It keeps Node's compiled code in a cache, in the
   system's temporary folder (`NODE_COMPILE_CACHE` moves it). Same change as tg 0.62.0, memo 0.52.1 and drive 0.14.1.
 - **Token requests record their outcome.** Each login or refresh writes one record to
@@ -22,9 +23,6 @@
   summary were not found. Every listed meeting now resolves through Zoom's past instances, with the
   instance's real start time. A meeting Zoom no longer has instances for is skipped, and the sync goes on.
   This adds one request per listed meeting and needs `meeting:read:list_past_instances` for all of them.
-
-### Fixed
-
 - **`bin/release` restarts itself once when the release brings a newer `bin/release`**: folding the changelog
   fast-forwards `main`, and the shell went on reading the old script from the byte it had reached, so the rest of the
   run was a mix of old and new text. It now starts the new script over; a second change during that run stops it
