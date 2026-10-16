@@ -341,7 +341,7 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
         `
       const { openStore } = await import('@wirecat/cli-core/store');
       const store = await openStore();
-      try { console.log(JSON.stringify(await store.storedAccounts())); }
+      try { console.log(JSON.stringify(await store.accounts.storedAccounts())); }
       finally { await store.close(); }
     `,
       ],

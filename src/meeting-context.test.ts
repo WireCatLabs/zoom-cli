@@ -124,8 +124,10 @@ it("binds public producer evidence and person context to the selected account be
   api.proposeMeetingTask.mockResolvedValue(proposal)
   const meeting = vi.fn()
   const full = {
-    personByUid: vi.fn(async () => undefined),
-    personSeenInAccounts: vi.fn(async () => true),
+    people: {
+      personByUid: vi.fn(async () => undefined),
+      personSeenInAccounts: vi.fn(async () => true),
+    },
     involvements: {
       rebuild: vi.fn(() => 0),
       drain: vi.fn(() => ({ recomputed: 0, pending: 0 })),

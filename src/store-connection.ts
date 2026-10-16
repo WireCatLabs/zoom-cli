@@ -34,8 +34,8 @@ export const createStoreConnector =
       const key = { provider: "zoom", account: externalId }
       const accountId =
         intent === "ingestion"
-          ? await connected.saveAccount(key, { name: profile })
-          : (await connected.storedAccount(key)).id
+          ? await connected.accounts.saveAccount(key, { name: profile })
+          : (await connected.accounts.storedAccount(key)).id
       if (!Number.isSafeInteger(accountId) || accountId < 1)
         throw new CliError("configuration_error", "the selected meeting account is unavailable")
       const ownAccount = <T extends { accountId: number }>(input: T, what: string): T => {
@@ -118,7 +118,7 @@ export const createStoreConnector =
             await api.resolveMeetingReference(meetings, accountId, source.reference, { signal: mutation.signal })
             const service = await api.createMeetingContextService(
               {
-                storedAccount: connected.storedAccount.bind(connected),
+                accounts: connected.accounts,
                 meetings,
                 notes: connected.notes,
                 knowledge: connected.knowledge,

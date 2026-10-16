@@ -52,7 +52,7 @@ it("reuses one connection, closes before stdout and emits independent real store
   const f = await setup(),
     path = join(f.directory, "store.db")
   const store = await openStore({ path, env: { MESSAGING_STORE: path } })
-  const accountId = await store.saveAccount(
+  const accountId = await store.accounts.saveAccount(
     { provider: "zoom", account: "zm-profile:AliceExample" },
     { name: "Alice Example" },
   )

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **An old camelCase config names the key to rename.** Adopts Core 0.307.0: zm now answers
+  `clientId is an unknown setting; rename it to client_id (and 3 more problems)` instead of
+  `client_id is missing`, which did not say how to fix the file. Still one key, never a value.
+
 ## 0.22.0 — 17.10.2026
 
 ### Added

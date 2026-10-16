@@ -45,7 +45,9 @@ describe("config names", () => {
     const path = configPath()
     writeFileSync(path, JSON.stringify(oldFile), { mode: 0o600 })
     const before = readFileSync(path, "utf8")
-    expect(() => readConfig(path)).toThrow(`${path}: client_id is missing (and 3 more problems)`)
+    expect(() => readConfig(path)).toThrow(
+      `${path}: clientId is an unknown setting; rename it to client_id (and 3 more problems)`,
+    )
     expect(() => readConfig(path)).not.toThrow(/example-client|Europe/)
     expect(readFileSync(path, "utf8")).toBe(before)
     expect(statSync(path).mode & 0o777).toBe(0o600)
@@ -55,7 +57,9 @@ describe("config names", () => {
     const path = configPath()
     const before = JSON.stringify({ ...oldFile, client_id })
     writeFileSync(path, before)
-    expect(() => readConfig(path)).toThrow(`${path}: files_folder is missing (and 2 more problems)`)
+    expect(() => readConfig(path)).toThrow(
+      `${path}: clientId is an unknown setting; rename it to client_id (and 2 more problems)`,
+    )
     expect(readFileSync(path, "utf8")).toBe(before)
   })
 

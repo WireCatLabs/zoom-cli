@@ -20,7 +20,7 @@ const fixture = async () => {
   const env = { MESSAGING_STORE: path }
   const store = await openStore({ path, env, now: () => 3000 })
   try {
-    const accountId = await store.saveAccount(
+    const accountId = await store.accounts.saveAccount(
       { provider: "zoom", account: "zm-profile:AliceExample" },
       { name: "Alice Example" },
     )

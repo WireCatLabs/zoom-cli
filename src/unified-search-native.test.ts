@@ -12,8 +12,14 @@ it("native public unified service scopes meetings, reports unsupported phrases a
   const store = await openStore({ path })
   let selected = 0
   try {
-    selected = await store.saveAccount({ provider: "zoom", account: "zm-profile:example" }, { name: "Alice Example" })
-    const other = await store.saveAccount({ provider: "zoom", account: "zm-profile:other" }, { name: "Bob Sample" })
+    selected = await store.accounts.saveAccount(
+      { provider: "zoom", account: "zm-profile:example" },
+      { name: "Alice Example" },
+    )
+    const other = await store.accounts.saveAccount(
+      { provider: "zoom", account: "zm-profile:other" },
+      { name: "Bob Sample" },
+    )
     for (const [index, accountId] of [selected, selected, other].entries()) {
       const input = sampleMeeting()
       input.meeting.accountId = accountId
