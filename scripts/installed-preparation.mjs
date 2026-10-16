@@ -18,8 +18,11 @@ const now = Date.parse("2026-10-14T12:00:00Z")
 const path = join(root, "preparation-sdk.db")
 const key = { provider: "zoom", account: profileAccountKey("AliceExample") }
 const store = await openStore({ path, now: () => now })
-const accountId = await store.saveAccount(key, { name: "Alice Example" })
-const foreignId = await store.saveAccount({ ...key, account: profileAccountKey("BobSample") }, { name: "Bob Sample" })
+const accountId = await store.accounts.saveAccount(key, { name: "Alice Example" })
+const foreignId = await store.accounts.saveAccount(
+  { ...key, account: profileAccountKey("BobSample") },
+  { name: "Bob Sample" },
+)
 const sample = sampleMeeting()
 sample.meeting.accountId = accountId
 sample.meeting.startedAt = now - 86400000

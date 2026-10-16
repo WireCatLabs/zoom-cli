@@ -130,8 +130,7 @@ export const createMeetingContextCapabilities = (
       const api = await load()
       checkCancelled(options.signal)
       const personStore: PersonMeetingReadStore = {
-        personByUid: store.personByUid.bind(store),
-        personSeenInAccounts: store.personSeenInAccounts.bind(store),
+        people: store.people,
         involvements: store.involvements,
         meetings,
       }

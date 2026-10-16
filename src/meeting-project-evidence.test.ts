@@ -25,11 +25,11 @@ const fixture = async () => {
   let time = Date.parse("2026-10-14T12:00:00Z")
   const now = () => time
   const store = await openStore({ path, env, now })
-  const selected = await store.saveAccount(
+  const selected = await store.accounts.saveAccount(
     { provider: "zoom", account: profileAccountKey("AliceExample") },
     { name: "Alice Example" },
   )
-  const foreign = await store.saveAccount(
+  const foreign = await store.accounts.saveAccount(
     { provider: "zoom", account: profileAccountKey("BobSample") },
     { name: "Bob Sample" },
   )
