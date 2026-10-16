@@ -134,13 +134,13 @@ describe("portable CLI discovery and diagnostics", () => {
     )
     expect(await run(["--json", "doctor"], deps)).toBe(0)
     expect(readAnswer(stdout[0] ?? "{}")).toMatchObject({
-      config: { readable: false, error: `${deps.configPath} is not a valid config: client_id` },
+      config: { readable: false, error: `${deps.configPath}: client_id is missing (and 3 more problems)` },
       authentication: { state: "not_checked" },
     })
     expect(await run(["--json", "config", "show"], deps)).toBe(3)
     expect(JSON.parse(stderr[0] ?? "{}").error).toMatchObject({
       code: "configuration_error",
-      message: `${deps.configPath} is not a valid config: client_id`,
+      message: `${deps.configPath}: client_id is missing (and 3 more problems)`,
     })
     expect([...stdout, ...stderr].join("")).not.toContain("example-old-client")
   })

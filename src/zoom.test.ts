@@ -563,7 +563,7 @@ describe("zm", () => {
     await writeFile(deps.configPath, "invalid")
     expect(() => readConfig(deps.configPath)).toThrow(/not valid JSON/)
     await writeFile(deps.configPath, "{}")
-    expect(() => readConfig(deps.configPath)).toThrow(/not a valid config: client_id/)
+    expect(() => readConfig(deps.configPath)).toThrow(/client_id is missing/)
   })
   it("imports a folder through the real command and lists its meeting in memory", async () => {
     const { deps, stdout } = await programSetup()
@@ -626,7 +626,7 @@ it("config reads expose only supported public fields and parser failures are one
       unexpected: "example-private-value",
     }),
   )
-  expect(() => readConfig(setup.deps.configPath)).toThrow(`${setup.deps.configPath} is not a valid config: unexpected`)
+  expect(() => readConfig(setup.deps.configPath)).toThrow(`${setup.deps.configPath}: unexpected is an unknown setting`)
   expect(() => readConfig(setup.deps.configPath)).not.toThrow(/example-private-value/)
   expect(await run(["unknown-command"], setup.deps)).toBe(2)
   expect(setup.stdout).toEqual([])
