@@ -2,8 +2,10 @@ import { mkdtemp, truncate, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
+import { pull } from "@wirecat/cli-core/meetings"
+import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { describe, expect, it } from "vitest"
-import { ZoomApiSource } from "./api.js"
+import { encodeUuid, ZoomApiSource } from "./api.js"
 import { FilesSource, fileMeeting, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { TokenManager } from "./tokens.js"
 
@@ -223,6 +225,79 @@ it("deduplicates recurring occurrence UUIDs and includes the exact since boundar
         : response({ meetings: [{ id: "example-series", type: 8 }] }),
     ).meetings("2026-10-01"),
   ).rejects.toThrow(/occurrences/)
+})
+
+it("resolves a scheduled meeting through its instance uuid and real start time", async () => {
+  const instance = "Ex4mpleInst/ance+one=="
+  const requested: string[] = []
+  const source = new ZoomApiSource(tokens(), async (input) => {
+    const url = new URL(String(input))
+    requested.push(url.pathname)
+    if (url.pathname === "/v2/users/me/meetings")
+      return response({
+        meetings: [
+          {
+            id: 91000000001,
+            uuid: "example-listing-uuid==",
+            topic: "Example scheduled review",
+            type: 2,
+            start_time: "2026-10-10T09:00:00Z",
+            duration: 45,
+          },
+        ],
+      })
+    if (url.pathname === "/v2/past_meetings/91000000001/instances")
+      return response({ meetings: [{ uuid: instance, start_time: "2026-10-10T09:07:00Z" }] })
+    if (url.pathname.endsWith("/participants")) return response({ participants: [{ id: "alice-example" }] })
+    if (url.pathname.endsWith("/transcript")) return response({ code: 3322 }, 404)
+    if (url.pathname.endsWith("/meeting_summary")) return response({ code: 3001 }, 404)
+    throw new Error("unscripted request")
+  })
+  const [meeting] = await source.meetings("2026-10-01T00:00:00Z")
+  expect(meeting?.series?.kind).toBe("scheduled")
+  expect(meeting?.occurrence).toMatchObject({
+    id: instance,
+    startedAt: "2026-10-10T09:07:00.000Z",
+    endedAt: "2026-10-10T09:52:00.000Z",
+  })
+  const store = memoryMeetingStore()
+  const result = await pull(source, store, { accountId: 1, since: "2026-10-01T00:00:00Z", now: Date.UTC(2026, 9, 11) })
+  expect(result).toMatchObject({ meetings: 1, warnings: [] })
+  expect(requested).toContain(`/v2/past_meetings/${encodeUuid(instance)}/participants`)
+  expect(requested.join(" ")).not.toContain("example-listing-uuid")
+})
+
+it("skips a listed meeting whose instances are gone or empty and syncs the rest", async () => {
+  const source = new ZoomApiSource(tokens(), async (input) => {
+    const path = new URL(String(input)).pathname
+    if (path === "/v2/users/me/meetings")
+      return response({
+        meetings: [
+          { id: 91000000002, uuid: "example-gone", type: 2 },
+          { id: 91000000003, uuid: "example-empty", type: 8 },
+          { id: 91000000004, uuid: "example-kept", type: 1, topic: "Example kept", duration: 5 },
+        ],
+      })
+    if (path === "/v2/past_meetings/91000000002/instances") return response({ code: 3001 }, 404)
+    if (path === "/v2/past_meetings/91000000003/instances") return response({ meetings: [] })
+    if (path === "/v2/past_meetings/91000000004/instances")
+      return response({ meetings: [{ uuid: "example/kept-instance", start_time: "2026-10-10T11:00:00Z" }] })
+    if (path.endsWith("/participants")) return response({ participants: [] })
+    if (path.endsWith("/transcript")) return response({ code: 3322 }, 404)
+    if (path.endsWith("/meeting_summary")) return response({ code: 3001 }, 404)
+    throw new Error("unscripted request")
+  })
+  const store = memoryMeetingStore()
+  const result = await pull(source, store, { accountId: 1, since: "2026-10-01T00:00:00Z", now: Date.UTC(2026, 9, 11) })
+  expect(result).toMatchObject({ meetings: 1, warnings: [] })
+  expect((await store.meetings()).map((saved) => saved.title)).toEqual(["Example kept"])
+  await expect(
+    new ZoomApiSource(tokens(), async (input) =>
+      String(input).includes("/instances")
+        ? response({ code: 124 }, 401)
+        : response({ meetings: [{ id: 91000000005, type: 2 }] }),
+    ).meetings("2026-10-01"),
+  ).rejects.toThrow(/HTTP 401/)
 })
 
 it("uses edited legacy detail text without restoring the original sections or overview", async () => {

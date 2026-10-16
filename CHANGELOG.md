@@ -6,6 +6,22 @@
 
 - **zm starts about a fifth faster after its first run.** It keeps Node's compiled code in a cache, in the
   system's temporary folder (`NODE_COMPILE_CACHE` moves it). Same change as tg 0.62.0, memo 0.52.1 and drive 0.14.1.
+- **Token requests record their outcome.** Each login or refresh writes one record to
+  `<state dir>/runs/<date>/<run>/events.jsonl`: the HTTP status, whether a new refresh token arrived,
+  whether the keyring save worked, a timeout or cancellation, and the process id. No token, hash or
+  part of one is written. A command that requests no token leaves no run behind.
+
+### Fixed
+
+- **An invalid config names its file and first bad key.** Every command used to print only
+  `zm config is invalid`. The message now names the file and the first key that failed, such as
+  `client_id` for an old camelCase file, and never the value. `doctor` still answers, reporting the
+  problem under `config.error`; `config show` fails with the same message.
+- **`meetings sync` keeps scheduled meetings.** It looked up the instances of recurring meetings
+  only, so a scheduled meeting was saved under its listing id, and its participants, transcript and
+  summary were not found. Every listed meeting now resolves through Zoom's past instances, with the
+  instance's real start time. A meeting Zoom no longer has instances for is skipped, and the sync goes on.
+  This adds one request per listed meeting and needs `meeting:read:list_past_instances` for all of them.
 
 ### Fixed
 

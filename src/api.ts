@@ -75,6 +75,24 @@ export class ZoomApiSource implements MeetingSource {
     } while (next)
     return rows
   }
+  // A listed row's uuid is the meeting's, not the instance that ran, for every type: participants,
+  // transcript and summary answer only for the instance uuid. This runs before the pull loop's
+  // per-meeting guard, so a series Zoom no longer knows must not fail the whole sync.
+  private async instances(seriesId: string): Promise<Record<string, unknown>[]> {
+    let body: Record<string, unknown> | null
+    try {
+      body = await this.request(
+        `/past_meetings/${encodeURIComponent(seriesId)}/instances`,
+        "meeting:read:list_past_instances",
+      )
+    } catch (error) {
+      if (isCliError(error) && error.code === statusToCode(404)) return []
+      throw error
+    }
+    if (!body || !Array.isArray(body.meetings))
+      throw new CliError("invalid_response", "Zoom returned invalid occurrences")
+    return body.meetings.map(object)
+  }
   async meetings(since: string): Promise<SourceMeeting[]> {
     const lower = Date.parse(since)
     if (!Number.isFinite(lower)) throw new CliError("validation_error", "expected an ISO since timestamp")
@@ -90,16 +108,7 @@ export class ZoomApiSource implements MeetingSource {
         throw new CliError("invalid_response", "Zoom meeting is missing its series id")
       const seriesId = String(row.id)
       const recurring = row.type === 3 || row.type === 8
-      let instances: Record<string, unknown>[] = [row]
-      if (recurring) {
-        const body = await this.request(
-          `/past_meetings/${encodeURIComponent(seriesId)}/instances`,
-          "meeting:read:list_past_instances",
-        )
-        if (!body || !Array.isArray(body.meetings))
-          throw new CliError("invalid_response", "Zoom returned invalid occurrences")
-        instances = body.meetings.map(object)
-      }
+      const instances = await this.instances(seriesId)
       for (const instance of instances) {
         const startedAt = time(instance.start_time)
         const id = requiredString(instance.uuid)

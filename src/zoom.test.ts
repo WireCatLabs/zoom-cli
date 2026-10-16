@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto"
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readdir, readFile, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { brokenKeyring, memoryKeyring } from "@wirecat/cli-base"
+import { brokenKeyring, CliError, memoryKeyring } from "@wirecat/cli-base"
 import { importFiles, pull } from "@wirecat/cli-core/meetings"
 import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { describe, expect, it } from "vitest"
@@ -13,7 +13,8 @@ import { number, object, string } from "./errors.js"
 import { FilesSource, fileMeeting, importFile, readDownloadedFiles } from "./files.js"
 import { login, REDIRECT } from "./login.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
-import { TokenManager } from "./tokens.js"
+import { lazyRunLog } from "./run-log.js"
+import { TOKEN_LOG_ALLOW, TokenManager } from "./tokens.js"
 
 const scopes = [
   "meeting:read:list_meetings",
@@ -96,6 +97,133 @@ describe("tokens", () => {
     for (const body of [{}, { access_token: "example", refresh_token: "example", expires_in: -1 }, null])
       await expect(tokenManager(async () => response(body)).exchange({})).rejects.toThrow()
     await expect(tokenManager(async () => response({}, 401)).exchange({})).rejects.toThrow(/HTTP 401/)
+  })
+})
+describe("token refresh log", () => {
+  const secrets = /example-(access|refresh|rotated|issued)/
+  const loggedRun = async () => {
+    const runsDir = join(await temporary(), "runs")
+    return { runsDir, run: lazyRunLog({ runsDir, command: "oauth token", version: "0.0.0", allow: TOKEN_LOG_ALLOW }) }
+  }
+  const events = async (runsDir: string) => {
+    const [day] = await readdir(runsDir)
+    const [id] = (await readdir(join(runsDir, day ?? ""))).filter((name) => name !== "index.jsonl")
+    const text = await readFile(join(runsDir, day ?? "", id ?? "", "events.jsonl"), "utf8")
+    return {
+      text,
+      records: text
+        .trimEnd()
+        .split("\n")
+        .map((line) => JSON.parse(line)),
+    }
+  }
+  it("writes nothing until a token exchange happens", async () => {
+    const { runsDir, run } = await loggedRun()
+    const tokens = authorize(new TokenManager({ ...tokenManager().options, log: run.log }))
+    await tokens.tokens()
+    await run.finish("success")
+    await expect(readdir(runsDir)).rejects.toThrow()
+  })
+  it("records each refresh outcome with status, rotation, save and pid, never token material", async () => {
+    const { runsDir, run } = await loggedRun()
+    const keyring = memoryKeyring()
+    const replies = [
+      response({ access_token: "example-issued-1", refresh_token: "example-rotated-1", expires_in: 1 }),
+      response({ reason: "example-refresh rejected" }, 400),
+      response({ access_token: "example-issued-2", refresh_token: "example-rotated-1", expires_in: 1 }),
+    ]
+    const tokens = new TokenManager({
+      ...tokenManager().options,
+      keyring,
+      log: run.log,
+      now: () => 0,
+      fetch: async () => replies.shift() ?? response({}, 500),
+    })
+    authorize(tokens, 0)
+    await tokens.tokens()
+    await expect(tokens.tokens()).rejects.toThrow(/HTTP 400/)
+    keyring.set = () => {
+      throw new Error("example locked keyring")
+    }
+    await expect(tokens.tokens()).rejects.toThrow(/could not save/)
+    const controller = new AbortController()
+    const cancelled = new TokenManager({
+      ...tokens.options,
+      fetch: async () => {
+        controller.abort()
+        throw new Error("example aborted")
+      },
+    }).withSignal(controller.signal)
+    await expect(cancelled.tokens()).rejects.toThrow(/did not finish/)
+    const deadline = new AbortController()
+    const expired = new TokenManager({
+      ...tokens.options,
+      fetch: async () => {
+        deadline.abort(new CliError("timeout", "example deadline"))
+        throw new Error("example aborted")
+      },
+    }).withSignal(deadline.signal)
+    await expect(expired.tokens()).rejects.toThrow(/did not finish/)
+    await run.finish("failed")
+    const { text, records } = await events(runsDir)
+    expect(records.map((record) => [record.body, record.attributes])).toEqual([
+      [
+        "zoom.token.exchange",
+        {
+          event: "zoom.token.exchange",
+          operation: "refresh_token",
+          pid: process.pid,
+          outcome: "saved",
+          status: 200,
+          rotated: true,
+          saved: true,
+        },
+      ],
+      [
+        "zoom.token.exchange",
+        {
+          event: "zoom.token.exchange",
+          operation: "refresh_token",
+          pid: process.pid,
+          outcome: "rejected",
+          status: 400,
+        },
+      ],
+      [
+        "zoom.token.exchange",
+        {
+          event: "zoom.token.exchange",
+          operation: "refresh_token",
+          pid: process.pid,
+          outcome: "save_failed",
+          status: 200,
+          rotated: false,
+          saved: false,
+        },
+      ],
+      [
+        "zoom.token.exchange",
+        {
+          event: "zoom.token.exchange",
+          operation: "refresh_token",
+          pid: process.pid,
+          reason: "cancelled",
+          outcome: "no_response",
+        },
+      ],
+      [
+        "zoom.token.exchange",
+        {
+          event: "zoom.token.exchange",
+          operation: "refresh_token",
+          pid: process.pid,
+          reason: "timeout",
+          outcome: "no_response",
+        },
+      ],
+    ])
+    expect(text).not.toMatch(secrets)
+    expect(text).not.toContain("not allowed")
   })
 })
 describe("PKCE login", () => {
@@ -199,13 +327,15 @@ const apiFixture = (): typeof fetch => async (input, init) => {
           ],
       next_page_token: url.searchParams.has("next_page_token") ? "" : "example-next",
     })
-  if (url.pathname.endsWith("/instances"))
+  if (url.pathname === "/v2/past_meetings/100/instances")
     return response({
       meetings: [
         { uuid: "/example//occurrence", start_time: "2026-10-10T15:30:00Z" },
         { uuid: "old-example", start_time: "2026-01-01T00:00:00Z" },
       ],
     })
+  if (url.pathname === "/v2/past_meetings/101/instances")
+    return response({ meetings: [{ uuid: "example/once-instance", start_time: "2026-10-10T15:31:00Z" }] })
   if (url.pathname.endsWith("/participants"))
     return response({
       participants: [
@@ -431,9 +561,9 @@ describe("zm", () => {
     ])
       expect(() => setConfig(deps.configPath, key ?? "", value ?? "")).toThrow()
     await writeFile(deps.configPath, "invalid")
-    expect(() => readConfig(deps.configPath)).toThrow(/invalid/)
+    expect(() => readConfig(deps.configPath)).toThrow(/not valid JSON/)
     await writeFile(deps.configPath, "{}")
-    expect(() => readConfig(deps.configPath)).toThrow(/invalid/)
+    expect(() => readConfig(deps.configPath)).toThrow(/not a valid config: client_id/)
   })
   it("imports a folder through the real command and lists its meeting in memory", async () => {
     const { deps, stdout } = await programSetup()
@@ -496,7 +626,8 @@ it("config reads expose only supported public fields and parser failures are one
       unexpected: "example-private-value",
     }),
   )
-  expect(() => readConfig(setup.deps.configPath)).toThrow("zm config is invalid")
+  expect(() => readConfig(setup.deps.configPath)).toThrow(`${setup.deps.configPath} is not a valid config: unexpected`)
+  expect(() => readConfig(setup.deps.configPath)).not.toThrow(/example-private-value/)
   expect(await run(["unknown-command"], setup.deps)).toBe(2)
   expect(setup.stdout).toEqual([])
   expect(setup.stderr).toHaveLength(1)

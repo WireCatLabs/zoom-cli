@@ -45,7 +45,8 @@ describe("config names", () => {
     const path = configPath()
     writeFileSync(path, JSON.stringify(oldFile), { mode: 0o600 })
     const before = readFileSync(path, "utf8")
-    expect(() => readConfig(path)).toThrow(/zm config is invalid/)
+    expect(() => readConfig(path)).toThrow(`${path} is not a valid config: client_id`)
+    expect(() => readConfig(path)).not.toThrow(/example-client|Europe/)
     expect(readFileSync(path, "utf8")).toBe(before)
     expect(statSync(path).mode & 0o777).toBe(0o600)
   })
@@ -54,7 +55,7 @@ describe("config names", () => {
     const path = configPath()
     const before = JSON.stringify({ ...oldFile, client_id })
     writeFileSync(path, before)
-    expect(() => readConfig(path)).toThrow("zm config is invalid")
+    expect(() => readConfig(path)).toThrow(`${path} is not a valid config: files_folder`)
     expect(readFileSync(path, "utf8")).toBe(before)
   })
 
@@ -64,6 +65,13 @@ describe("config names", () => {
       path,
       JSON.stringify({ client_id: "has spaces", source: "api", files_folder: null, files_timezone: "UTC" }),
     )
-    expect(() => readConfig(path)).toThrow(/zm config is invalid/)
+    expect(() => readConfig(path)).toThrow(`${path} is not a valid config: client_id`)
+    expect(() => readConfig(path)).not.toThrow(/has spaces/)
+  })
+
+  it("names a broken JSON file by its path alone", () => {
+    const path = configPath()
+    writeFileSync(path, "{ example")
+    expect(() => readConfig(path)).toThrow(`${path} is not valid JSON`)
   })
 })

@@ -51,6 +51,15 @@ same operating-system account/session where the keyring is available; a headless
 lack it. The tool does not fall back to a plaintext token file. After repairing keyring access,
 run login again and check `zm session status --json`.
 
+### Commands stop with "Zoom token request failed"
+
+Each token request records its outcome in `~/.local/share/zm/runs/<date>/<run>/events.jsonl` (the
+`runs` folder under `ZM_STATE_DIR` when it is set). A record holds the HTTP status, whether Zoom sent
+a new refresh token, whether the keyring save worked, a timeout or cancellation, and the process id.
+It never holds a token. Two records with different process ids close together suggest two commands
+refreshing at once. Read them with `cat ~/.local/share/zm/runs/*/*/events.jsonl`, then run
+`zm session start` again. Runs older than 30 days are removed.
+
 ### A required scope is missing
 
 The error names the exact permission. The app owner adds it in **Scopes** and saves; then the user
@@ -61,7 +70,8 @@ remote verification and meeting changes have [separate permissions](zoom-app.md#
 ## Configuration
 
 Use `zm config show` to confirm the public client, source and profile. A malformed configuration
-still allows `--help` and `--version`; configuration commands report its error. Changing the profile
+still allows `--help` and `--version`; `zm config show` reports its file and first bad key, and
+`zm doctor` reports it under `config.error`. Changing the profile
 label does not change the logged-in Zoom user. If the terminal and MCP app see different data,
 check their `ZM_CONFIG_DIR` and `MESSAGING_STORE` values.
 

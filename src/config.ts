@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs"
-import { CliError, saveConfigFile } from "@wirecat/cli-base"
+import { CliError, isCliError, saveConfigFile } from "@wirecat/cli-base"
 import { loadSnakeCaseConfig } from "@wirecat/cli-core/cli"
 import * as v from "valibot"
 
@@ -36,10 +36,17 @@ const ConfigFile = v.strictObject({
   account_profile: v.optional(v.nullable(v.pipe(v.string(), v.regex(profilePattern)))),
 })
 
+// The loader's issue text quotes the offending value ("received …"), which can be the client id.
+const keyOnly = (message: string): string => {
+  const [head, first] = message.split("\n")
+  const key = first?.trim().split(":")[0]
+  return key ? `${head?.replace(/:$/, "")}: ${key}` : message
+}
+
 export const readConfig = (path: string): ZoomConfig => {
   try {
     const file = loadSnakeCaseConfig(path, ConfigFile, () => {
-      if (existsSync(path)) throw new Error("unreadable")
+      if (existsSync(path)) throw new CliError("configuration_error", `${path} could not be read`)
       return {
         client_id: null,
         source: "api" as const,
@@ -55,8 +62,9 @@ export const readConfig = (path: string): ZoomConfig => {
       filesTimezone: file.files_timezone,
       accountProfile: file.account_profile ?? null,
     }
-  } catch {
-    throw new CliError("configuration_error", "zm config is invalid")
+  } catch (error) {
+    if (isCliError(error)) throw new CliError("configuration_error", keyOnly(error.message))
+    throw new CliError("configuration_error", `${path} could not be read`)
   }
 }
 

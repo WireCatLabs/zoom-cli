@@ -118,6 +118,7 @@ it("uses shared cursor lookback to discover a late API transcript with fresh sou
     expiresAt: Date.UTC(2040, 0, 1),
     scopes: [
       "meeting:read:list_meetings",
+      "meeting:read:list_past_instances",
       "meeting:read:list_past_participants",
       "cloud_recording:read:meeting_transcript",
       "meeting:read:summary",
@@ -161,6 +162,8 @@ it("uses shared cursor lookback to discover a late API transcript with fresh sou
         ],
       })
     }
+    if (path === "/v2/past_meetings/123456789/instances")
+      return response({ meetings: [{ uuid: "example/instance-late", start_time: "2026-10-09T10:02:00Z" }] })
     if (path.endsWith("/participants")) return response({ participants: [] })
     if (path.endsWith("/transcript"))
       return cycles === 0
