@@ -130,3 +130,10 @@ check. It uses Core's public native entry with a fictional second provider, reco
 and resumes an independently seeded legacy Zoom checkpoint through the installed Zoom API. Its
 transport is injected and its accounts, media and directories are invented. The platform proof
 retains `native_partials`; the existing external-I/O/keyring guard remains active.
+
+`scripts/installed-recording-publication.mjs` checks the shared native publication adapter with a
+fictional provider, an interrupted commitment and a no-overwrite conflict. It separately seeds legacy
+Zoom partial/checkpoint/promotion bytes without using the journal writer, then recovers through the
+installed Zoom package without a recording download. Each installed platform retains these checks
+under `native_publication` in its proof. Native filesystem fault injection stays in Core's tests;
+consumer tests check observable compatibility and host metadata validation.

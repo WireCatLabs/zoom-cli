@@ -14,6 +14,7 @@
 
 ### Fixed
 
+- Recording downloads use Core’s shared publication and recovery adapter. Existing Zoom journal and archive formats remain compatible; final files are verified and synced before manifest commitment, and interrupted recovery preserves unrelated files.
 - **An invalid config names its file and first bad key.** Every command used to print only
   `zm config is invalid`. The message now names the file and the first key that failed, such as
   `client_id` for an old camelCase file, and never the value. `doctor` still answers, reporting the

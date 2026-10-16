@@ -8,6 +8,10 @@ and confirmed projects.
 An agent can combine these sources with Memo's projects, notes and people. Start with
 [meeting preparation](usage.md#prepare-for-an-upcoming-meeting) or [search and evidence](search.md).
 
+Recording backups use shared storage for writer ownership, resumable downloads and recovery after
+an interrupted final save. Existing Zoom archive files remain compatible; each provider keeps its
+own archive metadata format.
+
 ## Planned work
 
 - Dedicated reviewed findings intake: an agent proposes cited facts, decisions and project tasks, with
@@ -16,9 +20,6 @@ An agent can combine these sources with Memo's projects, notes and people. Start
   messages and project-name/alias candidates, then build a brief with explicit evidence and gaps.
   The current selected-series command includes accepted global person/project facts and owner notes but leaves
   those other sources unqueried; it returns stored context without generating a summary.
-- Make recovery after an interrupted final save reusable across meeting providers. Writer
-  ownership, stale-lock recovery and resumable partial downloads already use shared storage.
-  Existing Zoom archive files remain compatible.
 
 Project aliases, tags and notes already belong to Memo and the shared store. Another meeting
 provider uses the shared meeting capabilities; a production Google Meet or Teams connector is not
