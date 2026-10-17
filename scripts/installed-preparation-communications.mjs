@@ -113,7 +113,7 @@ export const checkPreparationCommunications = async ({ load, path, now, key, con
   const projected = projectFields(answer, ["communications.items.ref"])
   assert.deepEqual(projected.item.communications.coverage, section.coverage)
   assert.equal(digest(), before)
-  const mcp = await callMeetingPreparationTool(read, input, undefined, {}, now)
+  const mcp = await callMeetingPreparationTool(read, input, undefined, {}, now, { communications: true })
   assert.notEqual(mcp.isError, true)
   assert.deepEqual(mcp.structuredContent.item.communications, section)
   assert.equal(closes, 2)

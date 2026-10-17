@@ -96,6 +96,22 @@ it("refuses invalid fields, provider IDs and offline reads before store or crede
   expect(f.output).toEqual([])
 })
 
+it("raw MCP refuses communications without a captured grant before protected reads", async () => {
+  const f = await fixture()
+  const load = vi.spyOn(f.tokens, "load")
+  const result = await readPreparationTool(
+    f.mcp,
+    { series_id: "123", communications: { sources: [{ id: "unconfigured" }], query: "launch" } },
+    new AbortController().signal,
+  )
+  expect(result).toMatchObject({ isError: true })
+  expect(JSON.stringify(result)).toContain("validation_error")
+  expect(JSON.stringify(result)).toContain("communications")
+  expect(f.connectStore).not.toHaveBeenCalled()
+  expect(load).not.toHaveBeenCalled()
+  expect(f.network).not.toHaveBeenCalled()
+})
+
 it("refuses unconfigured communications before store access or credentials, without output", async () => {
   const f = await fixture()
   const load = vi.spyOn(f.tokens, "load")
