@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- The roadmap points to the delivered reviewed meeting-findings workflow in Memo 0.58.0 instead of listing that shared capability as future work.
+
 ## 0.23.1 — 17.10.2026
 
 ### Fixed
