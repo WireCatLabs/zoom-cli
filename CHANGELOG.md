@@ -6,6 +6,10 @@
 
 - `meetings prepare --project <name-key-or-alias>` and MCP `project` add cited word matches for one existing project, including unlinked meetings in the selected profile/history window. Up to four bounded name pages retain unconfirmed status, index coverage and continuation; matches never assign project membership.
 
+### Changed — may break callers
+
+- Library hosts upgrading from 0.22.0 supply person lookup methods under `people` when calling `createMeetingContextCapabilities`. This follows the Core store-area adoption introduced in 0.22.1; the command interface and selected-account rules are unchanged.
+
 ## 0.22.1 — 17.10.2026
 
 ### Fixed
@@ -13,10 +17,6 @@
 - **An old camelCase config names the key to rename.** Adopts Core 0.307.0: zm now answers
   `clientId is an unknown setting; rename it to client_id (and 3 more problems)` instead of
   `client_id is missing`, which did not say how to fix the file. Still one key, never a value.
-
-### Changed — may break callers
-
-- Library hosts upgrading from 0.22.0 supply person lookup methods under `people` when calling `createMeetingContextCapabilities`, following Core 0.307.0's store areas. The command interface and selected-account rules are unchanged.
 
 ## 0.22.0 — 17.10.2026
 
