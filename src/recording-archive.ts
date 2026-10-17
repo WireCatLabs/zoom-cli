@@ -1,9 +1,9 @@
-import { createHash, randomUUID } from "node:crypto"
-import { type FileHandle, lstat, mkdir, open, readdir, realpath, rename, unlink } from "node:fs/promises"
+import { createHash } from "node:crypto"
+import { type FileHandle, lstat, mkdir, readdir, realpath, unlink } from "node:fs/promises"
 import { join } from "node:path"
 import { CliError, isCliError } from "@wirecat/cli-base"
 import { retryableStatus, statusToCode } from "@wirecat/cli-base/http"
-import { openOrdinaryFile, syncDirectory, type WriterLease } from "@wirecat/cli-core/files"
+import { openOrdinaryFile, type WriterLease, writeFileAtomic } from "@wirecat/cli-core/files"
 import { type RecordingTransferSource, transferRecording } from "@wirecat/cli-core/meetings"
 import { checkCancelled, string } from "./errors.js"
 import { RecordingPartialStore } from "./recording-partial-store.js"
@@ -128,19 +128,10 @@ const readVerified = async (root: string): Promise<Verified> => {
   return { version: 1, files: {} }
 }
 const writeVerified = async (root: string, verified: Verified) => {
-  const temp = join(root, `.zoom-verified-${randomUUID()}.tmp`)
   try {
-    await open(temp, "wx", 0o600).then(async (file) => {
-      try {
-        await file.writeFile(JSON.stringify(verified))
-      } finally {
-        await file.close()
-      }
-    })
-    await rename(temp, join(root, verifiedName))
+    await writeFileAtomic(join(root, verifiedName), JSON.stringify(verified))
   } catch {
     // Only a cache: losing it costs one rehash on the next run.
-    await unlink(temp).catch(() => undefined)
   }
 }
 const onlyKeys = (value: object, keys: string[]) => Object.keys(value).every((key) => keys.includes(key))
@@ -222,22 +213,8 @@ const readManifest = async (path: string, signal?: AbortSignal): Promise<Archive
     await file.close()
   }
 }
-const writeManifest = async (root: string, manifest: ArchiveManifest) => {
-  const temp = join(root, `.zoom-manifest-${randomUUID()}.tmp`)
-  const file = await open(temp, "wx", 0o600)
-  try {
-    try {
-      await file.writeFile(`${JSON.stringify(manifest, null, 2)}\n`)
-      await file.sync()
-    } finally {
-      await file.close()
-    }
-    await rename(temp, join(root, manifestName(manifest.meeting.uuid)))
-    await syncDirectory(root)
-  } finally {
-    await unlink(temp).catch(() => undefined)
-  }
-}
+const writeManifest = (root: string, manifest: ArchiveManifest) =>
+  writeFileAtomic(join(root, manifestName(manifest.meeting.uuid)), `${JSON.stringify(manifest, null, 2)}\n`)
 class DownloadFailure extends CliError {
   constructor(readonly response: Response) {
     super(statusToCode(response.status), `Recording download failed (HTTP ${response.status})`)

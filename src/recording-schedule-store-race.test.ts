@@ -12,7 +12,7 @@ vi.mock("node:fs/promises", async (original) => {
   return {
     ...fs,
     open: async (...args: Parameters<typeof fs.open>) => {
-      if (race.mode === "replace" && String(args[0]).includes(".zoom-schedule-")) {
+      if (race.mode === "replace" && String(args[0]).endsWith(".tmp")) {
         race.mode = ""
         await fs.rename(race.path, `${race.path}.retained-original`)
         await fs.writeFile(race.path, "foreign invented replacement")

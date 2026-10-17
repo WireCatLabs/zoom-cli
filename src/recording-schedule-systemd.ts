@@ -1,9 +1,7 @@
 import { execFile } from "node:child_process"
-import { randomUUID } from "node:crypto"
-import { link, open, unlink } from "node:fs/promises"
 import { isAbsolute, join } from "node:path"
 import { CliError, isCliError } from "@wirecat/cli-base"
-import { openOrdinaryFile, syncDirectory } from "@wirecat/cli-core/files"
+import { openOrdinaryFile, syncDirectory, writeFileAtomic } from "@wirecat/cli-core/files"
 import { checkCancelled } from "./errors.js"
 import {
   parseRecordingScheduleJob,
@@ -102,21 +100,7 @@ const writeUnit = async (directory: string, name: string, content: string, signa
     return
   }
   checkCancelled(signal)
-  const temp = join(directory, `.zoom-schedule-unit-${randomUUID()}.tmp`)
-  const handle = await open(temp, "wx", 0o600)
-  try {
-    try {
-      await handle.writeFile(content)
-      await handle.sync()
-    } finally {
-      await handle.close()
-    }
-    checkCancelled(signal)
-    await link(temp, path)
-    await syncDirectory(directory)
-  } finally {
-    await unlink(temp).catch(() => undefined)
-  }
+  await writeFileAtomic(path, content, { overwrite: false, beforePublish: () => checkCancelled(signal) })
 }
 export const createSystemdRecordingArchiveScheduler = (options: {
   unitDirectory: string
