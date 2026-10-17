@@ -6,6 +6,10 @@
 
 - `meetings prepare` can include cited literal matches from explicitly configured message, mail and document sources. Profile-local selections, captured MCP source IDs, bounded pages and retained coverage keep scope and gaps visible; preparation opens the existing store read-only.
 
+### Changed — may break callers
+
+- Preparation opens an existing compatible shared store read-only and refuses missing or old schemas. Upgrade the shared store through a normal stored-meeting read before retrying. Custom store connectors receive `preparation` intent and optional captured source context; preserve that read-only policy and close the connection on every exit.
+
 ### Fixed
 
 - Adopt compatible registry Core 0.326.0 and Base 0.43.1 for shared bounded meeting-context contracts, read-only store opening and registered communications flag roles. Use one shared Base runtime identity.
