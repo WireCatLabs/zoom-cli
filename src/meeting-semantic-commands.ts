@@ -1,6 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { type Body, itemOf, LOCAL_WRITE } from "@wirecat/cli-core/cli"
+import { type Body, FETCH, itemOf } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { bytes } from "./execution.js"
 
@@ -129,6 +129,6 @@ export const addMeetingEmbeddingCommand = (
         if (options.yes) await deps.receipt(itemOf(result))
         else deps.output(itemOf(result))
       }),
-    { origin: "handwritten", effects: LOCAL_WRITE, examples: ["zm meetings embeddings --model e5-small --json"] },
+    { origin: "handwritten", effects: FETCH, examples: ["zm meetings embeddings --model e5-small --json"] },
   )
 }

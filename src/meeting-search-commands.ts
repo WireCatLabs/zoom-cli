@@ -1,6 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { type Body, itemOf, LOCAL_READ } from "@wirecat/cli-core/cli"
+import { type Body, FETCH, itemOf, LOCAL_READ, NO_EFFECTS } from "@wirecat/cli-core/cli"
 import { meetingHitsList } from "@wirecat/cli-core/meetings"
 import {
   createMeetingSearchCommand,
@@ -146,13 +146,15 @@ export const addMeetingSearchCommands = (
     .option("--max-text-bytes <bytes>", "by meaning: most transcript text to read (default 4 MiB)", bytes)
   annotate(command, {
     origin: "handwritten",
-    effects: LOCAL_READ,
+    effects: FETCH,
     examples: [
       'zm search meetings "example plan" --since-time 2026-09-01 --json',
       'zm search meetings "example plan" --model e5-small --json',
     ],
   })
-  const search = program.commands.find((child) => child.name() === "search") ?? program.command("search")
+  const search =
+    program.commands.find((child) => child.name() === "search") ??
+    annotate(program.command("search"), { effects: NO_EFFECTS })
   const recordings = search
     .command("recordings")
     .description("find words in the transcripts of a downloaded archive folder, before any import")

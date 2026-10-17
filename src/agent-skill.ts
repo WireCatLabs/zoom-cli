@@ -1,6 +1,6 @@
 import { annotate } from "@wirecat/cli-base/commands"
 import { type SkillEnvironment, skillCommand } from "@wirecat/cli-base/skill"
-import { LOCAL_READ, LOCAL_WRITE } from "@wirecat/cli-core/cli"
+import { LOCAL_READ, LOCAL_WRITE, NO_EFFECTS } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { VERSION } from "./version.js"
 
@@ -17,5 +17,5 @@ export const addZoomSkillCommands = (
       examples: [install ? "zm skill install --for agents --json" : "zm skill show --json"],
     })
   }
-  program.addCommand(command)
+  program.addCommand(annotate(command, { effects: NO_EFFECTS }))
 }

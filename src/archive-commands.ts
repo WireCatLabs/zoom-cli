@@ -1,6 +1,16 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { type Body, itemOf, LOCAL_READ, LOCAL_WRITE, REMOTE_WRITE } from "@wirecat/cli-core/cli"
+import type { Effects } from "@wirecat/cli-base/standards"
+import {
+  type Body,
+  FETCH,
+  itemOf,
+  LOCAL_READ,
+  LOCAL_WRITE,
+  NO_EFFECTS,
+  REMOTE_READ,
+  REMOTE_WRITE,
+} from "@wirecat/cli-core/cli"
 import { recordingWindows } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
 import { wholeList } from "./answer-output.js"
@@ -42,12 +52,8 @@ export interface ArchiveCommandsDeps {
   outputIsTTY?: boolean
   now: () => number
 }
-const label = (command: Command, example: string, mutation: "none" | "local" | "remote" = "none") =>
-  annotate(command, {
-    origin: "handwritten",
-    effects: mutation === "none" ? LOCAL_READ : mutation === "local" ? LOCAL_WRITE : REMOTE_WRITE,
-    examples: [example],
-  })
+const label = (command: Command, example: string, effects: Effects) =>
+  annotate(command, { origin: "handwritten", effects, examples: [example] })
 const positive = (text: string): number => {
   const value = bytes(text)
   if (value === 0) throw new CliError("validation_error", "expected a positive number")
@@ -99,7 +105,9 @@ const mutation = (options: MutationOptions & { yes?: boolean }, deps: ArchiveCom
   return { apply: options.yes, dryRun: options.dryRun, signal: deps.signal(), occurrenceId: options.occurrenceId }
 }
 export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps): void => {
-  const recordings = program.command("recordings").description("cloud recording assets and verified local archives")
+  const recordings = annotate(program.command("recordings"), { effects: NO_EFFECTS }).description(
+    "cloud recording assets and verified local archives",
+  )
   label(
     recordings
       .command("list")
@@ -116,6 +124,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         deps.output(wholeList("recordings list", await deps.recordings().list({ from, to, signal: deps.signal() })))
       }),
     "zm recordings list --since-time 2026-10-01 --until-time 2026-10-10 --json",
+    REMOTE_READ,
   )
   label(
     resumable(
@@ -170,7 +179,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         },
       ),
     "zm recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./archive --jsonl",
-    "local",
+    FETCH,
   )
   label(
     recordings
@@ -182,6 +191,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         deps.output(itemOf(await deps.recordings().show(id, { signal: deps.signal() })))
       }),
     "zm recordings show example-occurrence --json",
+    REMOTE_READ,
   )
   label(
     resumable(
@@ -207,9 +217,11 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
       },
     ),
     "zm recordings download example-occurrence --output-dir ./zoom-archive --json",
-    "local",
+    FETCH,
   )
-  const archive = recordings.command("archive").description("inspect archives without Zoom or a database")
+  const archive = annotate(recordings.command("archive"), { effects: NO_EFFECTS }).description(
+    "inspect archives without Zoom or a database",
+  )
   const transcriptOptions = (command: Command) =>
     command
       .option("--uuid <uuid>", "select an occurrence UUID")
@@ -231,6 +243,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
       await deps.outputItems(deps.transcripts.read(directory, selected(options)))
     }),
     "zm recordings archive transcript ./zoom-archive --uuid example-occurrence --json",
+    LOCAL_READ,
   )
   label(
     archive
@@ -243,6 +256,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         ),
       ),
     "zm recordings archive show ./zoom-archive --json",
+    LOCAL_READ,
   )
   label(
     archive
@@ -255,6 +269,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         ),
       ),
     "zm recordings archive check ./zoom-archive --json",
+    LOCAL_READ,
   )
   label(
     archive
@@ -267,6 +282,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         ),
       ),
     "zm recordings archive locks ./zoom-archive --json",
+    LOCAL_READ,
   )
   label(
     archive
@@ -286,12 +302,12 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         ),
       ),
     "zm recordings archive recover ./zoom-archive --dry-run --json",
-    "local",
+    LOCAL_WRITE,
   )
 
-  const remote = program
-    .command("remote-meetings")
-    .description("upcoming Zoom meetings; stored meeting reads remain under meetings")
+  const remote = annotate(program.command("remote-meetings"), { effects: NO_EFFECTS }).description(
+    "upcoming Zoom meetings; stored meeting reads remain under meetings",
+  )
   label(
     remote
       .command("list")
@@ -301,6 +317,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         deps.output(wholeList("remote-meetings list", await deps.remoteMeetings().list({ signal: deps.signal() })))
       }),
     "zm remote-meetings list --json",
+    REMOTE_READ,
   )
   label(
     remote
@@ -312,6 +329,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         deps.output(itemOf(await deps.remoteMeetings().show(id, { signal: deps.signal() })))
       }),
     "zm remote-meetings show 123456789 --json",
+    REMOTE_READ,
   )
   label(
     remote
@@ -323,6 +341,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         deps.output(itemOf(await deps.remoteMeetings().invitation(id, { signal: deps.signal() })))
       }),
     "zm remote-meetings invitation 123456789 --json",
+    REMOTE_READ,
   )
   label(
     changes(remote.command("create").description("preview a meeting creation; --yes performs it once")).action(
@@ -330,7 +349,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         deps.output(itemOf(await deps.remoteMeetings().create(change(options), mutation(options, deps)))),
     ),
     'zm remote-meetings create --title "Example planning" --start-time 2026-10-10T15:30:00Z --dry-run --json',
-    "remote",
+    REMOTE_WRITE,
   )
   label(
     changes(
@@ -342,7 +361,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
       deps.output(itemOf(await deps.remoteMeetings().update(id, change(options), mutation(options, deps)))),
     ),
     'zm remote-meetings update 123456789 --title "Example planning" --dry-run --json',
-    "remote",
+    REMOTE_WRITE,
   )
   label(
     remote
@@ -356,6 +375,6 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         deps.output(itemOf(await deps.remoteMeetings().cancel(id, mutation(options, deps)))),
       ),
     "zm remote-meetings cancel 123456789 --dry-run --json",
-    "remote",
+    REMOTE_WRITE,
   )
 }

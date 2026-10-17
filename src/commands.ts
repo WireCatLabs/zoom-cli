@@ -9,10 +9,9 @@ import {
   metaOf,
 } from "@wirecat/cli-base/commands"
 import { formatSuggestions, suggest } from "@wirecat/cli-base/completion"
-import { type Body, itemOf, LOCAL_READ, NO_EFFECTS } from "@wirecat/cli-core/cli"
+import { type Body, itemOf, LOCAL_READ, NO_EFFECTS, REMOTE_READ } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { wholeList } from "./answer-output.js"
-import { commandEffects } from "./command-effects.js"
 import { VERSION } from "./version.js"
 
 const CONTRACT = 3
@@ -58,7 +57,7 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
           exit_codes,
         })
       }),
-    { effects: LOCAL_READ, examples: ["zm commands --json"] },
+    { effects: NO_EFFECTS, examples: ["zm commands --json"] },
   )
   annotate(
     program
@@ -74,7 +73,7 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
         if (program.opts().json || program.opts().jsonl) deps.output(wholeList("complete", suggestions))
         else deps.raw(`${formatSuggestions(suggestions)}\n`)
       }),
-    { effects: LOCAL_READ, examples: ["zm complete -- meetings s"] },
+    { effects: NO_EFFECTS, examples: ["zm complete -- meetings s"] },
   )
   annotate(
     program
@@ -83,7 +82,9 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
       .action(() => deps.output(itemOf(deps.doctor()))),
     { effects: LOCAL_READ, examples: ["zm doctor --json"] },
   )
-  const session = program.command("session").description("the saved Zoom login, separate from local data profiles")
+  const session = annotate(program.command("session"), { effects: NO_EFFECTS }).description(
+    "the saved Zoom login, separate from local data profiles",
+  )
   annotate(
     session
       .command("status")
@@ -92,7 +93,7 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
       .action(async (options: { check?: boolean }) =>
         deps.output(itemOf(await deps.sessionStatus(options.check === true))),
       ),
-    { effects: LOCAL_READ, examples: ["zm session status --json", "zm session status --check --json"] },
+    { effects: REMOTE_READ, examples: ["zm session status --json", "zm session status --check --json"] },
   )
 }
 
@@ -103,18 +104,10 @@ export const annotateMeetingCommands = (program: Command): void => {
       const found = command.commands.find((child) => child.name() === part)
       if (found) command = found
     }
-    if (command.commands.length) {
-      annotate(command, { effects: NO_EFFECTS })
-      continue
-    }
+    if (command.commands.length) continue
     const path = item.path.join(" ")
-    const effects = commandEffects(command) ?? metaOf(command).effects
-    if (!effects) throw new CliError("configuration_error", `command effects are missing: ${path}`)
-    annotate(command, {
-      origin: "handwritten",
-      effects,
-      ...(item.examples ? {} : { examples: [exampleFor(path)] }),
-    })
+    if (!metaOf(command).effects) throw new CliError("configuration_error", `command effects are missing: ${path}`)
+    annotate(command, { origin: "handwritten", ...(item.examples ? {} : { examples: [exampleFor(path)] }) })
   }
 }
 const exampleFor = (path: string): string => {
