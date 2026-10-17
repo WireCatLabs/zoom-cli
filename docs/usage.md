@@ -142,7 +142,15 @@ the brief. Increase the relevant bound when the coverage identifies truncation.
 ## Include selected messages, mail and documents
 
 First [select the source accounts or folders](configuration.md#select-communications-for-preparation).
-Then name each source explicitly and supply a literal word query:
+Then ask your agent to include those sources:
+
+```text prompt
+Prepare the next Research Example planning call using the message, mail and document sources
+I configured for this profile. Look for the word "launch". Keep each dated statement with its
+source, preserve disagreements, and tell me which sources or indexes were incomplete.
+```
+
+For a terminal request, name each source explicitly and supply a literal word query:
 
 ```sh
 zm meetings prepare 123456789 --context-source project-notes --context-query "launch" --json
