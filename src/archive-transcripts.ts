@@ -5,7 +5,7 @@ import { CliError, isCliError } from "@wirecat/cli-base"
 import { openOrdinaryFile } from "@wirecat/cli-core/files"
 import { parseVtt, type TranscriptLine } from "@wirecat/cli-core/meetings"
 import { checkCancelled } from "./errors.js"
-import { type ArchivedFile, type ArchiveManifest, inspectArchive } from "./recording-archive.js"
+import { type ArchivedFile, type ArchiveManifest, inspectArchive } from "./recording-manifest.js"
 
 export interface ArchiveTranscriptOptions {
   uuid?: string

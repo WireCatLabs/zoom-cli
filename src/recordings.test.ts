@@ -4,7 +4,8 @@ import { mkdir, mkdtemp, readdir, readFile, symlink, writeFile } from "node:fs/p
 import { hostname, tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, expect, it } from "vitest"
-import { inspectArchive, inspectArchiveLocks, recoverArchiveLocks, verifyArchive } from "./recording-archive.js"
+import { inspectArchiveLocks, recoverArchiveLocks } from "./recording-archive.js"
+import { inspectArchive, verifyArchive } from "./recording-manifest.js"
 import { ZoomRecordings } from "./recordings.js"
 import { ZoomRemote } from "./remote-http.js"
 

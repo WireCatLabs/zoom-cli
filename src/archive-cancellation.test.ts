@@ -3,7 +3,7 @@ import { mkdtemp, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { expect, it, vi } from "vitest"
-import { verifyArchive } from "./recording-archive.js"
+import { verifyArchive } from "./recording-manifest.js"
 
 const opening = vi.hoisted(() => ({
   path: "",

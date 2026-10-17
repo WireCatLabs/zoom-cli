@@ -18,10 +18,11 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [meeting-preparation.ts](../../src/meeting-preparation.ts), [meeting-preparation-mcp.ts](../../src/meeting-preparation-mcp.ts) | per-call account/credential binding and close-before-output over Core preparation services and adapters |
 | [meeting-mcp-command.ts](../../src/meeting-mcp-command.ts), [meeting-read-command-bindings.ts](../../src/meeting-read-command-bindings.ts) | native command composition without expanding the main program |
 | [upcoming-meetings.ts](../../src/upcoming-meetings.ts), [occurrence-schedule.ts](../../src/occurrence-schedule.ts) | bounded Zoom occurrence proof over the shared scoped reader |
-| [remote-http.ts](../../src/remote-http.ts) | authenticated Zoom dispatch, retry and opt-in shared JSON byte bounds |
+| [remote-http.ts](../../src/remote-http.ts) | authenticated Zoom dispatch, retry, opt-in shared JSON byte bounds and the one download path (host check on every redirect) |
 | [commands.ts](../../src/commands.ts) | shared command metadata, completion and local diagnostics |
 | [zm.ts](../../src/bin/zm.ts) | process, browser, stdin and system keyring wiring |
-| [recordings.ts](../../src/recordings.ts), [recording-archive.ts](../../src/recording-archive.ts) | asset discovery, streamed transfers, manifests and verified skipping |
+| [recordings.ts](../../src/recordings.ts), [recording-archive.ts](../../src/recording-archive.ts) | asset discovery, streamed transfers and verified skipping |
+| [recording-manifest.ts](../../src/recording-manifest.ts) | archive manifests, the verified-size cache, archive inspection and verification |
 | [recording-sync.ts](../../src/recording-sync.ts), [recording-sync-store.ts](../../src/recording-sync-store.ts) | shared catalog/checkpoint orchestration and native durable progress |
 | [recording-writer-lease.ts](../../src/recording-writer-lease.ts) | Zoom marker layout and public error/cancellation mapping over Core native writer leases |
 | [recording-partial-store.ts](../../src/recording-partial-store.ts) | Zoom partial names/defaults and cancellation mapping over Core native persistence |

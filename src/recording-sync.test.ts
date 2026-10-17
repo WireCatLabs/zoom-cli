@@ -3,7 +3,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { RecordingCatalog } from "@wirecat/cli-core/meetings"
 import { expect, it, vi } from "vitest"
-import { inspectArchive, verifyArchive } from "./recording-archive.js"
+import { inspectArchive, verifyArchive } from "./recording-manifest.js"
 import { type ArchiveSyncReceipt, syncRecordingArchive } from "./recording-sync.js"
 import {
   type ArchiveReport,
