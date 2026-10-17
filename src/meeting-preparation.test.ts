@@ -96,8 +96,9 @@ it("refuses invalid fields, provider IDs and offline reads before store or crede
   expect(f.output).toEqual([])
 })
 
-it("refuses communications context, which zm does not bind, without output", async () => {
+it("refuses unconfigured communications before store access or credentials, without output", async () => {
   const f = await fixture()
+  const load = vi.spyOn(f.tokens, "load")
   for (const option of [
     [],
     ["--context-since-time", "2026-10-01T00:00:00Z"],
@@ -110,9 +111,12 @@ it("refuses communications context, which zm does not bind, without output", asy
         f.deps,
       ),
     ).not.toBe(0)
-    expect(f.errors.join("")).toContain("Communications are unavailable")
+    expect(f.errors.join("")).toContain("configure context.sources")
   }
   expect(f.output).toEqual([])
+  expect(f.connectStore).not.toHaveBeenCalled()
+  expect(f.network).not.toHaveBeenCalled()
+  expect(load).not.toHaveBeenCalled()
 })
 
 it("fact-reference projection retains knowledge pagination and coverage", async () => {
