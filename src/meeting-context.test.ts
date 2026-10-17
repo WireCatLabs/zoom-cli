@@ -16,7 +16,8 @@ import {
   validateTaskProposal,
 } from "./meeting-context.js"
 import type { MeetingEmbeddingOptions } from "./meeting-semantic-commands.js"
-import { type ProgramDeps, run, type StoreConnection } from "./program.js"
+import { type ProgramDeps, run } from "./program.js"
+import type { StoreConnection } from "./store-connection.js"
 import { writeStream } from "./streaming.js"
 import { TokenManager } from "./tokens.js"
 

@@ -1,14 +1,51 @@
 import { CliError, isCliError } from "@wirecat/cli-base"
-import { type MeetingBatchReader, validateMeetingContextChange } from "@wirecat/cli-core/meetings"
+import {
+  type MeetingBatchReader,
+  type MeetingProjectDiscoveryReader,
+  type MeetingStore,
+  type MeetingTranscriptReceiptStore,
+  validateMeetingContextChange,
+} from "@wirecat/cli-core/meetings"
 import type { MessageStore, StoreOptions } from "@wirecat/cli-core/store"
 import { profileAccountKey } from "./config.js"
-import { createLocalTranscriptionCapabilities } from "./local-transcription.js"
-import { createMeetingContextCapabilities } from "./meeting-context.js"
-import { integrationReference } from "./meeting-integration.js"
-import { validateMeetingHitSearch } from "./meeting-search-commands.js"
+import { createLocalTranscriptionCapabilities, type LocalTranscriptionCapabilities } from "./local-transcription.js"
+import { createMeetingContextCapabilities, type MeetingContextCapabilities } from "./meeting-context.js"
+import { integrationReference, type MeetingIntegrationCapabilities } from "./meeting-integration.js"
+import type { MeetingPreparationBinding } from "./meeting-preparation.js"
+import { type MeetingHitSearch, validateMeetingHitSearch } from "./meeting-search-commands.js"
 import { createMeetingSemanticCapabilities } from "./meeting-semantic.js"
-import type { StoreConnection, StoreConnectRequest } from "./program.js"
-import { validateUnifiedSearch } from "./unified-search.js"
+import type { MeetingSemanticCapabilities } from "./meeting-semantic-commands.js"
+import { type UnifiedSearch, validateUnifiedSearch } from "./unified-search.js"
+
+export interface StoreConnection {
+  store: MeetingStore
+  accountId: number
+  close: () => Promise<void>
+  appendTranscriptsWithReceipt: MeetingTranscriptReceiptStore["appendTranscriptsWithReceipt"]
+  meetingIntegration: MeetingIntegrationCapabilities
+  meetingSearch: MeetingHitSearch
+  meetingBatch?: MeetingBatchReader
+  meetingPreparation: MeetingPreparationBinding
+  meetingProjectEvidence: MeetingProjectDiscoveryReader
+  meetingTranscription: LocalTranscriptionCapabilities
+  unifiedSearch: UnifiedSearch
+  meetingContext: MeetingContextCapabilities
+  meetingSemantic: MeetingSemanticCapabilities
+}
+export interface StoreConnectRequest {
+  profile: string
+  externalId: string
+  intent: "read" | "ingestion"
+}
+export const connectSelectedProfile = (
+  connect: (request: StoreConnectRequest) => Promise<StoreConnection>,
+  profile: string | null | undefined,
+  intent: StoreConnectRequest["intent"],
+): Promise<StoreConnection> => {
+  if (!profile)
+    throw new CliError("configuration_error", "select a local profile with zm config set account.profile <label>")
+  return connect({ profile, externalId: profileAccountKey(profile), intent })
+}
 
 export interface StoreConnectionOptions extends StoreOptions {
   openStore?: (options: StoreOptions) => Promise<MessageStore>

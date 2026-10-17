@@ -2,7 +2,7 @@ import { CliError } from "@wirecat/cli-base"
 import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { fakeStore } from "../scripts/testing/connection.js"
-import type { StoreConnectRequest } from "./program.js"
+import type { StoreConnectRequest } from "./store-connection.js"
 import { createStoreConnector } from "./store-connection.js"
 
 const mocked = vi.hoisted(() => ({ openStore: vi.fn(), loaded: vi.fn() }))

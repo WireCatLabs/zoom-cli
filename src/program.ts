@@ -26,10 +26,8 @@ import {
 import {
   importFiles,
   type MeetingBatchReader,
-  type MeetingProjectDiscoveryReader,
   type MeetingSource,
   type MeetingStore,
-  type MeetingTranscriptReceiptStore,
   pull,
 } from "@wirecat/cli-core/meetings"
 import { addMeetingCommands, addMeetingPassageCommand } from "@wirecat/cli-core/meetings/cli"
@@ -54,18 +52,15 @@ import { bytes, duration, type ExecutionState, resetCliOptions, startExecution }
 import { FilesSource, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { addIngestionSearchCommands } from "./ingestion-search-commands.js"
 import { liftJsonFields } from "./json-fields.js"
-import type { LocalTranscriptionCapabilities } from "./local-transcription.js"
 import { addLocalTranscriptionCommands } from "./local-transcription-commands.js"
 import { login } from "./login.js"
-import type { MeetingContextCapabilities } from "./meeting-context.js"
 import { addMeetingContextCommands } from "./meeting-context-commands.js"
-import type { MeetingIntegrationCapabilities } from "./meeting-integration.js"
 import { addMeetingIntegrationCommands } from "./meeting-integration-commands.js"
 import { addZoomMcpCommand, type ZoomMcpServeOptions } from "./meeting-mcp-command.js"
-import type { MeetingPreparationBinding, ZoomPreparationOptions } from "./meeting-preparation.js"
+import type { ZoomPreparationOptions } from "./meeting-preparation.js"
 import { addMeetingReadBindings } from "./meeting-read-command-bindings.js"
-import { addMeetingSearchCommands, type MeetingHitSearch } from "./meeting-search-commands.js"
-import { addMeetingEmbeddingCommand, type MeetingSemanticCapabilities } from "./meeting-semantic-commands.js"
+import { addMeetingSearchCommands } from "./meeting-search-commands.js"
+import { addMeetingEmbeddingCommand } from "./meeting-semantic-commands.js"
 import { createRecordingScheduleService, type RecordingScheduleService } from "./recording-schedule.js"
 import { addRecordingScheduleCommands } from "./recording-schedule-commands.js"
 import { fileRecordingScheduleStore } from "./recording-schedule-store.js"
@@ -80,32 +75,13 @@ import {
 } from "./recordings.js"
 import type { RemoteOptions } from "./remote-http.js"
 import { ZoomRemoteMeetings } from "./remote-meetings.js"
+import { connectSelectedProfile, type StoreConnection, type StoreConnectRequest } from "./store-connection.js"
 import { emitReceipt } from "./streaming.js"
 import { TokenManager } from "./tokens.js"
-import { runUnifiedSearch, type UnifiedSearch } from "./unified-search.js"
+import { runUnifiedSearch } from "./unified-search.js"
 import { VERSION } from "./version.js"
 import { addWatchCommand } from "./watch-commands.js"
 
-export interface StoreConnection {
-  store: MeetingStore
-  accountId: number
-  close: () => Promise<void>
-  appendTranscriptsWithReceipt: MeetingTranscriptReceiptStore["appendTranscriptsWithReceipt"]
-  meetingIntegration: MeetingIntegrationCapabilities
-  meetingSearch: MeetingHitSearch
-  meetingBatch?: MeetingBatchReader
-  meetingPreparation: MeetingPreparationBinding
-  meetingProjectEvidence: MeetingProjectDiscoveryReader
-  meetingTranscription: LocalTranscriptionCapabilities
-  unifiedSearch: UnifiedSearch
-  meetingContext: MeetingContextCapabilities
-  meetingSemantic: MeetingSemanticCapabilities
-}
-export interface StoreConnectRequest {
-  profile: string
-  externalId: string
-  intent: "read" | "ingestion"
-}
 export interface ProgramDeps {
   configPath: string
   tokens: TokenManager
@@ -209,10 +185,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
   const openStore = async (intent: StoreConnectRequest["intent"]): Promise<StoreConnection> => {
     if (!deps.connectStore) return unavailable()
     const profile = getConfig().accountProfile
-    if (!profile)
-      throw new CliError("configuration_error", "select a local profile with zm config set account.profile <label>")
     try {
-      return await deps.connectStore({ profile, externalId: profileAccountKey(profile), intent })
+      return await connectSelectedProfile(deps.connectStore, profile, intent)
     } catch (error) {
       if (isCliError(error)) throw error
       throw new CliError("configuration_error", "could not open the shared meeting store")

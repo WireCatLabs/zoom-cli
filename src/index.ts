@@ -56,7 +56,7 @@ export type {
   MeetingSemanticCapabilities,
   MeetingSemanticOptions,
 } from "./meeting-semantic-commands.js"
-export { createProgram, type ProgramDeps, run, type StoreConnection, type StoreConnectRequest } from "./program.js"
+export { createProgram, type ProgramDeps, run } from "./program.js"
 export {
   createRecordingScheduleService,
   parseRecordingScheduleJob,
@@ -100,7 +100,12 @@ export {
   type RemoteMeeting,
   ZoomRemoteMeetings,
 } from "./remote-meetings.js"
-export { createStoreConnector, type StoreConnectionOptions } from "./store-connection.js"
+export {
+  createStoreConnector,
+  type StoreConnection,
+  type StoreConnectionOptions,
+  type StoreConnectRequest,
+} from "./store-connection.js"
 export { TokenManager, type TokenOptions, type Tokens } from "./tokens.js"
 export { runUnifiedSearch, type UnifiedSearch, type UnifiedSearchRequest } from "./unified-search.js"
 export { createZoomUpcomingMeetingReader, type ZoomUpcomingCredentials } from "./upcoming-meetings.js"

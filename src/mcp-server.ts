@@ -38,7 +38,7 @@ import type { ZoomPreparationOptions } from "./meeting-preparation.js"
 import { readPreparationTool } from "./meeting-preparation-mcp.js"
 import { readProjectEvidenceTool } from "./meeting-project-evidence-mcp.js"
 import { type MeetingModelOptions, validateMeetingModel, validateMeetingSemantic } from "./meeting-semantic-commands.js"
-import type { StoreConnection } from "./program.js"
+import type { StoreConnection } from "./store-connection.js"
 import { runUnifiedSearch, unifiedSearchAnswer } from "./unified-search.js"
 import { VERSION } from "./version.js"
 

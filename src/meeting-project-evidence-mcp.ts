@@ -4,7 +4,7 @@ import { callMeetingProjectEvidenceTool } from "@wirecat/cli-core/meetings/mcp"
 import type { Command } from "commander"
 import { hostFailureContext } from "./answer-policy.js"
 import { readMetadata, toolAnswer } from "./answers.js"
-import type { StoreConnection } from "./program.js"
+import type { StoreConnection } from "./store-connection.js"
 
 /** The shared adapter validates before this host opens a connection, and output follows cleanup. */
 export const readProjectEvidenceTool = async (
