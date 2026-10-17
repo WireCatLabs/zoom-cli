@@ -239,6 +239,7 @@ zm meetings prepare <series-id> [options]
 
 | Option | What it does |
 |---|---|
+| `--project <project>` | include unconfirmed word evidence for one existing project name, key or alias. |
 | `--since-time <time>` | window start as ISO timestamp with zone (default now). |
 | `--before-time <time>` | exclusive window end as ISO timestamp (default seven days after start). |
 | `--history-since-time <time>` | history start as ISO timestamp (default thirty days before start). |
