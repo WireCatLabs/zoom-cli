@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Added
+
+- `meetings prepare` lists Core's `--context-source`, `--context-query`, `--context-since-time` and
+  `--context-before-time`. zm binds no communications source yet, so they refuse with "Communications are
+  unavailable in this preparation host".
+
 ### Fixed
 
 - Adopt compatible registry Core 0.326.0 and Base 0.43.1 for shared bounded meeting-context contracts, read-only store opening and registered communications flag roles. Use one shared Base runtime identity.

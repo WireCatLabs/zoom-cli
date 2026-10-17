@@ -96,6 +96,25 @@ it("refuses invalid fields, provider IDs and offline reads before store or crede
   expect(f.output).toEqual([])
 })
 
+it("refuses communications context, which zm does not bind, without output", async () => {
+  const f = await fixture()
+  for (const option of [
+    [],
+    ["--context-since-time", "2026-10-01T00:00:00Z"],
+    ["--context-before-time", "2026-10-10T00:00:00Z"],
+  ]) {
+    f.errors.length = 0
+    expect(
+      await run(
+        ["meetings", "prepare", "123", "--context-source", "chat-1", "--context-query", "plan", ...option, "--json"],
+        f.deps,
+      ),
+    ).not.toBe(0)
+    expect(f.errors.join("")).toContain("Communications are unavailable")
+  }
+  expect(f.output).toEqual([])
+})
+
 it("fact-reference projection retains knowledge pagination and coverage", async () => {
   const f = await fixture()
   expect(await run(["meetings", "prepare", "123", "--json=knowledge.items.ref"], f.deps)).toBe(0)

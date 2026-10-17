@@ -7,10 +7,11 @@ keyring and the meetings module's memory store. OAuth tests use local loopback r
 with invented codes; they do not open a browser or connect to Zoom. Token refresh verifies that no
 client secret or authorization header is sent.
 
-Every build, test and product CLI invocation uses fresh temporary state on the same command line:
+`pnpm test` sandboxes itself (see "Command coverage"). Every other product CLI invocation from a branch uses
+fresh temporary state on the same command line:
 
 ```sh
-T=$(mktemp -d -p /var/tmp) && HOME=$T MESSAGING_STORE=$T/store WIRECAT_STATE_DIR=$T/state pnpm test
+T=$(mktemp -d -p /var/tmp) && HOME=$T MESSAGING_STORE=$T/store WIRECAT_STATE_DIR=$T/state node dist/bin/zm.js --help
 ```
 
 Never run a branch build against the owner's database, keyring or model directory. Domain assertions
@@ -63,12 +64,16 @@ These commands run only in release, monthly and manual full validation. See the
 
 ## Command coverage
 
-Each test file gets a private `zm-test-suite-*` temporary root from `scripts/testing/temp-state.ts`, which
-points `TMPDIR`, `TMP` and `TEMP` at it. Subprocesses inherit it, and the variables are restored afterwards.
-Stack-ordered cleanup runs after the file's resource-closing hooks and removes that root; an interrupted
-process may leave a root behind. The sandbox moves only the temporary directory, which is less than
-[WC-TEST-1](https://github.com/WireCatLabs/cli-base/blob/main/docs/standards/testing.md#wc-test-1--point-every-path-a-test-could-write-at-a-temporary-directory)
-asks: it does not move config, state or store paths, so a test that needs one passes its own.
+cli-base's shared setup (`@wirecat/cli-base/testing/setup`) runs first in every test file. It points the
+temporary, home, XDG and Windows folders, every `*_CONFIG_DIR`, `*_STATE_DIR` and `*_CACHE_DIR`, and
+`MESSAGING_STORE` at a fresh `wirecat-test-*` directory
+([WC-TEST-1](https://github.com/WireCatLabs/cli-base/blob/main/docs/standards/testing.md#wc-test-1--point-every-path-a-test-could-write-at-a-temporary-directory),
+[WC-STORE-14](https://github.com/WireCatLabs/cli-base/blob/main/docs/standards/store.md#wc-store-14--tests-never-open-the-owners-store)).
+It replaces the OS keyring with one that throws, so tests pass `memoryKeyring()`, and refuses every connection
+except to this machine
+([WC-TEST-3](https://github.com/WireCatLabs/cli-base/blob/main/docs/standards/testing.md#wc-test-3--no-test-contacts-a-provider-or-the-network)).
+No zm test calls `allowNetwork()`. Subprocesses inherit the sandbox. Stack-ordered hooks remove it after the
+file's own resource-closing hooks; an interrupted process may leave one behind.
 Command traces remain under `coverage/argv.jsonl`, with one previous run retained as
 `coverage/argv.previous.jsonl`, instead of accumulating temporary backup directories.
 

@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**248 ✅ · 1 ⛔ · 0 ❌** — 55 commands, 194 options.
+**252 ✅ · 1 ⛔ · 0 ❌** — 55 commands, 198 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -54,6 +54,10 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings projects evidence` | `--cursor` | ✅ |  |
 | `meetings projects evidence` | `--max-read-bytes` | ✅ |  |
 | `meetings prepare` |  | ✅ |  |
+| `meetings prepare` | `--context-source` | ✅ |  |
+| `meetings prepare` | `--context-query` | ✅ |  |
+| `meetings prepare` | `--context-since-time` | ✅ |  |
+| `meetings prepare` | `--context-before-time` | ✅ |  |
 | `meetings prepare` | `--project` | ✅ |  |
 | `meetings prepare` | `--since-time` | ✅ |  |
 | `meetings prepare` | `--before-time` | ✅ |  |
