@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Adopt registry Core 0.315.0 and Base 0.40.2, including shared answer redaction and read-only serve protection. pnpm upgrade instructions exempt the tool scope from the minimum release age so an upgrade can install the current release.
+
 ## 0.23.1 — 17.10.2026
 
 ### Fixed
