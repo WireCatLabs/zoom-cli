@@ -1,41 +1,20 @@
-import { homedir } from "node:os"
-import { dirname, join } from "node:path"
 import {
   CliError,
   createDeadline,
   createOutputBuffer,
   createRenderer,
-  errorObjectOf,
-  errorRecordOf,
-  exitCodeOfError,
   isCliError,
   projectFields,
-  realSleep,
-  renderError,
   type SleepLike,
 } from "@wirecat/cli-base"
 import { metaOf } from "@wirecat/cli-base/commands"
-import {
-  addMeetingBatchCommand,
-  type Body,
-  checkJson,
-  formatMeetingBatch,
-  itemOf,
-  snakeKeys,
-} from "@wirecat/cli-core/cli"
-import {
-  importFiles,
-  type MeetingBatchReader,
-  type MeetingSource,
-  type MeetingStore,
-  pull,
-} from "@wirecat/cli-core/meetings"
-import { addMeetingCommands, addMeetingPassageCommand } from "@wirecat/cli-core/meetings/cli"
+import { type Body, checkJson, snakeKeys } from "@wirecat/cli-core/cli"
+import type { MeetingSource, MeetingStore } from "@wirecat/cli-core/meetings"
+import { addMeetingCommands } from "@wirecat/cli-core/meetings/cli"
 import { Command, CommanderError } from "commander"
 import { addZoomSkillCommands } from "./agent-skill.js"
 import { type AnswerFormat, bodyOf, renderBody, wholeList } from "./answer-output.js"
-import { hostFailureContext } from "./answer-policy.js"
-import { ZoomApiSource } from "./api.js"
+import { commandSelection, hostFailureContext, reportFailure } from "./answer-policy.js"
 import {
   type ArchiveService,
   type ArchiveTranscriptService,
@@ -43,30 +22,20 @@ import {
   type RecordingsService,
   type RemoteMeetingsService,
 } from "./archive-commands.js"
-import { applyArchiveImport, preflightArchiveImport } from "./archive-import.js"
 import { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
-import { addStandardCommands, annotateMeetingCommands } from "./commands.js"
-import { profileAccountKey, readConfig, setConfig, type ZoomConfig } from "./config.js"
+import { annotateMeetingCommands } from "./commands.js"
+import { profileAccountKey, readConfig } from "./config.js"
 import { checkCancelled } from "./errors.js"
 import { bytes, duration, type ExecutionState, resetCliOptions, startExecution } from "./execution.js"
-import { FilesSource, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
-import { addIngestionSearchCommands } from "./ingestion-search-commands.js"
+import { importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { liftJsonFields } from "./json-fields.js"
-import { addLocalTranscriptionCommands } from "./local-transcription-commands.js"
-import { login } from "./login.js"
-import { addMeetingContextCommands } from "./meeting-context-commands.js"
-import { addMeetingIntegrationCommands } from "./meeting-integration-commands.js"
 import { addZoomMcpCommand, type ZoomMcpServeOptions } from "./meeting-mcp-command.js"
 import type { ZoomPreparationOptions } from "./meeting-preparation.js"
-import { addMeetingReadBindings } from "./meeting-read-command-bindings.js"
-import { addMeetingSearchCommands } from "./meeting-search-commands.js"
-import { addMeetingEmbeddingCommand } from "./meeting-semantic-commands.js"
-import { createRecordingScheduleService, type RecordingScheduleService } from "./recording-schedule.js"
+import { configuredMeetingSource } from "./meeting-source.js"
+import type { RecordingScheduleService } from "./recording-schedule.js"
 import { addRecordingScheduleCommands } from "./recording-schedule-commands.js"
-import { fileRecordingScheduleStore } from "./recording-schedule-store.js"
-import { createSystemdRecordingArchiveScheduler } from "./recording-schedule-systemd.js"
+import { zoomRecordingSchedule } from "./recording-schedule-setup.js"
 import {
-  getZoomProfile,
   inspectArchive,
   inspectArchiveLocks,
   recoverArchiveLocks,
@@ -75,12 +44,20 @@ import {
 } from "./recordings.js"
 import type { RemoteOptions } from "./remote-http.js"
 import { ZoomRemoteMeetings } from "./remote-meetings.js"
-import { connectSelectedProfile, type StoreConnection, type StoreConnectRequest } from "./store-connection.js"
+import { addConfigCommands, addSessionCommands } from "./setup-commands.js"
+import { addStoreCommands } from "./store-commands.js"
+import {
+  connectSelectedProfile,
+  type StoreConnection,
+  type StoreConnectRequest,
+  storeUnavailable,
+  unavailableStore,
+} from "./store-connection.js"
 import { emitReceipt } from "./streaming.js"
-import { TokenManager } from "./tokens.js"
-import { runUnifiedSearch } from "./unified-search.js"
+import type { TokenManager } from "./tokens.js"
 import { VERSION } from "./version.js"
 import { addWatchCommand } from "./watch-commands.js"
+import { createWatchService } from "./watch-service.js"
 
 export interface ProgramDeps {
   configPath: string
@@ -112,25 +89,6 @@ export interface ProgramDeps {
   sleep?: SleepLike
   serveMcp?: (options: ZoomMcpServeOptions) => Promise<void>
   streamData?: (text: string, signal: AbortSignal) => Promise<void>
-}
-const unavailable = async (): Promise<never> => {
-  throw new CliError("configuration_error", "the shared SQLite meeting store is not available yet")
-}
-const unavailableStore: MeetingStore = {
-  saveMeeting: unavailable,
-  account: unavailable,
-  meetings: unavailable,
-  meeting: unavailable,
-  participants: unavailable,
-  search: unavailable,
-  events: unavailable,
-  eventCandidates: unavailable,
-  createEvent: unavailable,
-  createEventSeries: unavailable,
-  setEventSeries: unavailable,
-  linkMeeting: unavailable,
-  cursor: unavailable,
-  setCursor: unavailable,
 }
 const answerExitCodes = new WeakMap<Command, number>()
 
@@ -183,7 +141,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     return selectedAccountId
   }
   const openStore = async (intent: StoreConnectRequest["intent"]): Promise<StoreConnection> => {
-    if (!deps.connectStore) return unavailable()
+    if (!deps.connectStore) return storeUnavailable()
     const profile = getConfig().accountProfile
     try {
       return await connectSelectedProfile(deps.connectStore, profile, intent)
@@ -263,61 +221,14 @@ export const createProgram = (deps: ProgramDeps): Command => {
     }
     output(wholeList("list", items))
   }
-  const cfg = program.command("config").description("local Zoom configuration")
-  cfg
-    .command("show")
-    .description("show local configuration")
-    .action(() => {
-      output(itemOf(getConfig()))
-    })
-  cfg
-    .command("set")
-    .description("set a configuration value")
-    .argument("<key>", "setting name, such as account.profile")
-    .argument("<value>", "new value")
-    .action((key: string, value: string) => {
-      output(itemOf(setConfig(deps.configPath, key, value)))
-    })
-  let activeSource: Promise<MeetingSource> | undefined
-  const getSource = (): Promise<MeetingSource> => {
-    if (deps.source) return Promise.resolve(deps.source)
-    activeSource ??= (async () => {
-      const config = getConfig()
-      if (config.source === "api") return new ZoomApiSource(tokens(), fetchWithSignal(deps.fetch))
-      if (!config.filesFolder) throw new CliError("configuration_error", "set files.folder before pulling from files")
-      return new FilesSource(await (deps.readFiles ?? readDownloadedFiles)(config.filesFolder), config.filesTimezone)
-    })()
-    return activeSource
-  }
-  const source: MeetingSource = {
-    get provider() {
-      return deps.source?.provider ?? "zoom"
-    },
-    get name() {
-      return deps.source?.name ?? (getConfig().source === "api" ? "api" : "file")
-    },
-    get transcriptFormat() {
-      return deps.source ? deps.source.transcriptFormat : "vtt"
-    },
-    async meetings(since) {
-      return (await getSource()).meetings(since)
-    },
-    async participants(id) {
-      return (await getSource()).participants(id)
-    },
-    async transcript(id) {
-      return (await getSource()).transcript(id)
-    },
-    async chat(id) {
-      return (await getSource()).chat(id)
-    },
-    async summary(id) {
-      return (await getSource()).summary(id)
-    },
-    async files(id) {
-      return (await getSource()).files(id)
-    },
-  }
+  addConfigCommands(program, { configPath: deps.configPath, getConfig, output })
+  const configured = configuredMeetingSource({
+    deps,
+    getConfig,
+    tokens,
+    fetch: () => fetchWithSignal(deps.fetch),
+  })
+  const source = configured.source
   const meetingCommands: Parameters<typeof addMeetingCommands>[1] = {
     get store() {
       return guardedStore(selectedStore ?? unavailableStore)
@@ -348,105 +259,28 @@ export const createProgram = (deps: ProgramDeps): Command => {
     command.commands.length ? command.commands.flatMap(leaves) : [command]
   // The meeting reads cli-core mounts read the store opened before their action; zoom's own commands open it lazily.
   const storeCommands = new Set(program.commands.filter((group) => !before.has(group)).flatMap(leaves))
-  addStandardCommands(program, {
+  addSessionCommands(program, {
+    deps,
+    getConfig,
     output,
-    discovery: (value) =>
-      createRenderer({
-        format: formatOf(),
-        color: false,
-        streams: { data: (text) => buffer(`${text}\n`), diagnostic: deps.diagnostic },
-      }).result(value),
+    buffer,
+    formatOf,
     fields: () => fields,
-    raw: buffer,
-    doctor: () => {
-      let config: ZoomConfig
-      try {
-        config = getConfig()
-      } catch (error) {
-        if (!isCliError(error)) throw error
-        return {
-          version: VERSION,
-          runtime: { node: process.versions.node },
-          config: { readable: false, path: deps.configPath, error: error.message },
-          dataProfile: null,
-          authentication: { configured: null, state: "not_checked" },
-          database: "not_checked",
-        }
-      }
-      return {
-        version: VERSION,
-        runtime: { node: process.versions.node },
-        config: { readable: true, path: deps.configPath, source: config.source },
-        dataProfile: config.accountProfile,
-        authentication: { configured: config.clientId !== null, state: "not_checked" },
-        database: "not_checked",
-      }
-    },
-    sessionStatus: async (check) => {
-      const config = getConfig()
-      if (!config.clientId)
-        return { configured: false, state: "not_configured", dataProfile: config.accountProfile, verified: false }
-      if (check) {
-        if (program.opts().offline)
-          throw new CliError("configuration_error", "session verification requires network access; remove --offline")
-        api()
-        return {
-          configured: true,
-          state: "verified",
-          dataProfile: config.accountProfile,
-          verified: true,
-          profile: await (deps.checkSession
-            ? deps.checkSession({ signal: signal() })
-            : getZoomProfile(tokens(), fetchWithSignal(deps.fetch), { signal: signal() })),
-        }
-      }
-      const saved = deps.tokens.load()
-      return {
-        configured: true,
-        state: saved ? (saved.expiresAt > (deps.now?.() ?? Date.now()) ? "saved" : "expired") : "missing",
-        dataProfile: config.accountProfile,
-        verified: false,
-        ...(saved ? { expiresAt: saved.expiresAt, scopes: saved.scopes } : {}),
-      }
-    },
+    api,
+    tokens,
+    fetch: () => fetchWithSignal(deps.fetch),
+    signal,
   })
-  const session = program.commands.find((command) => command.name() === "session")
-  if (!session) throw new CliError("configuration_error", "session command group is unavailable")
-  session
-    .command("start")
-    .description("log in to Zoom through your browser")
-    .option("--browser <program>", "browser program")
-    .action(async (opts: { browser?: string }) => {
-      const config = getConfig()
-      if (!config.clientId)
-        throw new CliError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
-      const globals = program.opts()
-      if (globals.offline) throw new CliError("configuration_error", "login requires network access; remove --offline")
-      const headless =
-        deps.interactive === false ||
-        Boolean(deps.env?.CI) ||
-        (deps.interactive !== undefined &&
-          (globals.json || globals.jsonl || deps.outputIsTTY === false) &&
-          !globals.interactive)
-      if (globals.input === false || headless)
-        throw new CliError("configuration_error", "login requires browser approval; remove --no-input")
-      output(
-        itemOf(
-          await login({
-            tokens: tokens(),
-            signal: signal(),
-            openBrowser: (url) => deps.openBrowser(url, opts.browser),
-            readPaste: deps.readPaste,
-            showUrl: (url) => {
-              if (!program.opts().quiet) deps.diagnostic(`Open this URL to approve Zoom login:\n${url}\n`)
-            },
-          }),
-        ),
-      )
-    })
-  let watchConfig: ZoomConfig | undefined
-  let watchSince: string | undefined
   const watchSleep = deps.sleep
+  const watch = createWatchService({
+    deps,
+    getConfig,
+    tokens,
+    fetch: () => fetchWithSignal(deps.fetch),
+    offline: () => Boolean(program.opts().offline),
+    openStore,
+    guardedStore,
+  })
   const receipt = async (body: Body) => {
     const text = rendered(body)
     const operation = signal() as AbortSignal
@@ -465,133 +299,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
     receipt,
     outputIsTTY: deps.outputIsTTY,
     sleep: watchSleep ? (ms, abort) => watchSleep(ms, abort, "retry") : undefined,
-    prepare: (target, folder, flags) => {
-      const config = { ...getConfig() }
-      const source = target ?? config.source
-      const plan = {
-        source,
-        since: flags.sinceTime,
-        lookbackDays: flags.lookbackDays ?? 0,
-        intervalMs: flags.pause,
-        folder: folder ?? config.filesFolder ?? undefined,
-      }
-      if (source === "files") {
-        if (flags.sinceTime !== undefined || flags.lookbackDays !== undefined)
-          throw new CliError("validation_error", "--since-time and --lookback-days apply only to API watching")
-        if (!plan.folder?.trim())
-          throw new CliError("configuration_error", "set files.folder or provide a folder for file watching")
-      } else {
-        if (folder !== undefined) throw new CliError("validation_error", "API watching does not accept a folder")
-        if (program.opts().offline)
-          throw new CliError("configuration_error", "API watching requires network access; remove --offline")
-        if (!deps.source) {
-          if (!config.clientId)
-            throw new CliError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
-          if (tokens().options.clientId !== config.clientId)
-            throw new CliError(
-              "configuration_error",
-              "the OAuth client changed before watch started; retry with matching configuration",
-            )
-        }
-      }
-      if (!deps.store && !config.accountProfile)
-        throw new CliError("configuration_error", "select a local profile with zm config set account.profile <label>")
-      watchConfig = config
-      watchSince = plan.since
-      return plan
-    },
-    ingest: async (plan, operation) => {
-      checkCancelled(operation)
-      const config = watchConfig
-      if (!config) throw new CliError("configuration_error", "watch configuration is unavailable")
-      let cycle: StoreConnection | undefined
-      let failure: unknown
-      let result: Awaited<ReturnType<typeof importFiles>> | undefined
-      try {
-        if (!deps.store) cycle = await openStore("ingestion")
-        checkCancelled(operation)
-        const accountId = cycle?.accountId ?? deps.accountId
-        if (!Number.isSafeInteger(accountId) || !accountId || accountId < 1)
-          throw new CliError("configuration_error", "the selected meeting account is unavailable")
-        const store = guardedStore(cycle?.store ?? deps.store ?? unavailableStore)
-        if (plan.source === "files") {
-          const files = validateDownloadedFiles(
-            await (deps.readFiles ?? readDownloadedFiles)(plan.folder ?? ""),
-            config.filesTimezone,
-          )
-          checkCancelled(operation)
-          result = await importFiles(
-            files.map((file) => importFile(file, accountId, config.filesTimezone)),
-            store,
-            deps.now?.(),
-          )
-        } else {
-          const original =
-            deps.source ??
-            new ZoomApiSource(tokens(), fetchWithSignal(deps.fetch), {
-              now: deps.now,
-              sleep: (ms, abort) => (deps.sleep ?? realSleep)(ms, AbortSignal.any([operation, abort]), "retry"),
-            })
-          let sourceFailure: CliError | undefined
-          const source = new Proxy(original, {
-            get(target, key, receiver) {
-              const method = Reflect.get(target, key, receiver)
-              return typeof method === "function"
-                ? async (...args: unknown[]) => {
-                    if (sourceFailure) throw sourceFailure
-                    checkCancelled(operation)
-                    try {
-                      const value = await method.apply(target, args)
-                      checkCancelled(operation)
-                      return value
-                    } catch (error) {
-                      if (isCliError(error) && error.code === "outcome_unknown") {
-                        sourceFailure = error
-                        throw error
-                      }
-                      checkCancelled(operation)
-                      throw error
-                    }
-                  }
-                : method
-            },
-          })
-          let cursorAdvanced = false
-          const trackingStore = new Proxy(store, {
-            get(target, key, receiver) {
-              if (key === "setCursor")
-                return async (...args: Parameters<MeetingStore["setCursor"]>) => {
-                  await target.setCursor(...args)
-                  cursorAdvanced = true
-                }
-              return Reflect.get(target, key, receiver)
-            },
-          })
-          result = await pull(source, trackingStore, {
-            accountId,
-            since: watchSince,
-            lookbackMs: plan.lookbackDays * 86400000,
-            now: deps.now?.(),
-          })
-          if (sourceFailure) throw sourceFailure
-          checkCancelled(operation)
-          if (cursorAdvanced) watchSince = undefined
-        }
-      } catch (error) {
-        failure = error
-      } finally {
-        if (cycle) {
-          try {
-            await cycle.close()
-          } catch {
-            failure ??= new CliError("configuration_error", "could not close the shared meeting store")
-          }
-        }
-      }
-      if (failure) throw failure
-      if (!result) return unavailable()
-      return result
-    },
+    prepare: watch.prepare,
+    ingest: watch.ingest,
   })
   const retrySleep = deps.sleep
   const remoteOptions: RemoteOptions = {
@@ -621,64 +330,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
       recover: recoverArchiveLocks,
     },
   })
-  let recordingSchedule = deps.recordingSchedule
   addRecordingScheduleCommands(program, {
-    service: () => {
-      if (!recordingSchedule) {
-        const env = deps.env ?? process.env
-        const configDir = dirname(deps.configPath)
-        recordingSchedule = createRecordingScheduleService({
-          store: fileRecordingScheduleStore(join(configDir, "recording-schedules")),
-          backend: createSystemdRecordingArchiveScheduler({
-            unitDirectory: join(env.XDG_CONFIG_HOME ?? join(env.HOME ?? homedir(), ".config"), "systemd", "user"),
-          }),
-          recordings: (job) => {
-            const selected = readConfig(deps.configPath)
-            if (
-              dirname(deps.configPath) !== job.capture.configDir ||
-              selected.accountProfile !== job.capture.profile ||
-              selected.clientId !== job.capture.clientId
-            )
-              throw new CliError(
-                "configuration_error",
-                "archive schedule requires its saved profile and Zoom client id; select those settings before running",
-              )
-            return new ZoomRecordings(
-              new TokenManager({
-                clientId: job.capture.clientId,
-                keyring: deps.tokens.options.keyring,
-                service: `zoom-cli:${job.capture.configDir}`,
-                fetch: fetchWithSignal(deps.tokens.options.fetch),
-                now: deps.now,
-                signal: signal(),
-                log: deps.tokens.options.log,
-              }),
-              fetchWithSignal(deps.fetch),
-              remoteOptions,
-            )
-          },
-          now: deps.now,
-        })
-      }
-      return recordingSchedule
-    },
-    capture: () => {
-      const selected = getConfig()
-      if (!selected.accountProfile || !selected.clientId)
-        throw new CliError(
-          "configuration_error",
-          "archive schedules require a configured local profile and Zoom client id",
-        )
-      if (!deps.recordingScheduleTarget)
-        throw new CliError("configuration_error", "archive scheduler requires an explicit runtime and CLI path")
-      return {
-        profile: selected.accountProfile,
-        clientId: selected.clientId,
-        configDir: dirname(deps.configPath),
-        runtime: deps.recordingScheduleTarget.runtime,
-        cliPath: deps.recordingScheduleTarget.cliPath,
-      }
-    },
+    ...zoomRecordingSchedule({ deps, getConfig, withSignal: fetchWithSignal, signal, remoteOptions }),
     offline: () => Boolean(program.opts().offline),
     signal,
     output,
@@ -711,115 +364,21 @@ export const createProgram = (deps: ProgramDeps): Command => {
     remoteOptions,
   }
   addZoomMcpCommand(program, { fields: () => fields, signal, serve: deps.serveMcp, preparation: preparationOptions })
-  addIngestionSearchCommands(program, {
+  addStoreCommands(program, {
+    deps,
+    connected,
+    openStore,
+    preparation: preparationOptions,
     signal,
     output,
     outputItems,
     receipt,
-    preflight: preflightArchiveImport,
-    apply: async function* (plan) {
-      if (plan.occurrences === 0) return
-      const connection = await connected("ingestion")
-      for await (const item of applyArchiveImport(plan, connection, {
-        accountId: connection.accountId,
-        now: deps.now?.(),
-        signal: signal(),
-      }))
-        yield item
-    },
-    search: async (request) => runUnifiedSearch((await connected()).unifiedSearch, request),
-  })
-  addMeetingReadBindings(program, {
-    project: {
-      read: async (project, request) => (await connected()).meetingProjectEvidence(project, request),
-      signal,
-      now: deps.now,
-      output: (value) => output(bodyOf(value)),
-    },
-    preparation: {
-      ...preparationOptions,
-      connect: () => openStore("read"),
-    },
-  })
-  addMeetingIntegrationCommands(program, {
-    signal,
-    output,
-    receipt,
-    integration: async () => (await connected()).meetingIntegration,
-  })
-  addLocalTranscriptionCommands(program, {
-    signal,
-    output,
-    receipt,
-    capabilities: async () => (await connected()).meetingTranscription,
-  })
-  const meetingContext = async () => (await connected()).meetingContext
-  addMeetingContextCommands(program, {
-    signal,
-    output,
-    context: meetingContext,
-  })
-  addMeetingPassageCommand(program, {
-    signal,
-    read: async (reference, options) => {
-      if (fields && options.format !== "json")
-        throw new CliError("validation_error", "passage field selection requires --json or --format json")
-      return (await meetingContext()).passage(reference, options)
-    },
-    output: (result, format) => {
-      if (format === "json") buffer(rendered(bodyOf(result.packet), program.opts().jsonl ? "jsonl" : "json"))
-      else buffer(result.content)
-    },
-  })
-  const meetingSemantic = async () => (await connected()).meetingSemantic
-  addMeetingSearchCommands(program, {
-    signal,
-    offline: () => Boolean(program.opts().offline),
-    output,
-    words: async () => (await connected()).meetingSearch,
-    meaning: meetingSemantic,
-    archive: (deps.archiveTranscripts ?? { search: searchArchiveTranscripts }).search,
-  })
-  addMeetingEmbeddingCommand(program, {
-    signal,
-    offline: () => Boolean(program.opts().offline),
-    receipt,
-    output,
-    capabilities: meetingSemantic,
-  })
-  const batchReader = async (): Promise<MeetingBatchReader> => {
-    const reader = (await connected()).meetingBatch
-    if (!reader)
-      throw new CliError("configuration_error", "the selected store connector does not support meeting batches")
-    return reader
-  }
-  addMeetingBatchCommand(program, {
-    signal,
+    buffer,
+    rendered,
     fields: () => fields,
     meta: () => {
       if (!execution) throw new CliError("configuration_error", "command execution is not initialized")
       return execution.meta()
-    },
-    input: async (path, signal) => {
-      if (!deps.readBatchInput) throw new CliError("configuration_error", "batch input reader is unavailable")
-      return deps.readBatchInput(path, signal)
-    },
-    reader: {
-      index: async (options) => (await batchReader()).index(options),
-      search: async (query, options) => (await batchReader()).search(query, options),
-      passage: async (reference, options) => (await batchReader()).passage(reference, options),
-    },
-    output: (body, report, format) => {
-      const text =
-        format === "json"
-          ? rendered(body, program.opts().jsonl ? "jsonl" : "json", false)
-          : formatMeetingBatch(report, format)
-      if (Buffer.byteLength(text, "utf8") > 4194304)
-        throw new CliError("invalid_response", "batch rendered output exceeds 4194304 bytes", {
-          reason: "output.too-large",
-          max_bytes: 4194304,
-        })
-      buffer(text)
     },
   })
   annotateMeetingCommands(program)
@@ -830,11 +389,10 @@ export const createProgram = (deps: ProgramDeps): Command => {
     parsing = true
     answerExitCodes.set(program, 0)
     config = undefined
-    activeSource = undefined
+    configured.reset()
     execution = undefined
     activeTokens = undefined
-    watchConfig = undefined
-    watchSince = undefined
+    watch.reset()
     const lifted = liftJsonFields(program, args)
     fields = lifted.fields
     let result = program
@@ -915,37 +473,4 @@ export const run = async (args: string[], deps: ProgramDeps): Promise<number> =>
       hostFailureContext(program, metaOf(selected.action).effects),
     )
   }
-}
-
-export const reportFailure = (
-  failure: unknown,
-  args: readonly string[],
-  deps: Pick<ProgramDeps, "diagnostic" | "outputIsTTY">,
-  command = "zm",
-  context: import("@wirecat/cli-base").FailureContext = hostFailureContext(),
-): number => {
-  const end = args.indexOf("--")
-  const flags = args.slice(0, end < 0 ? undefined : end)
-  const machine = flags.some((word) => word === "--json" || word === "--jsonl")
-  const object = errorObjectOf(failure, context)
-  const record = flags.includes("--debug")
-    ? errorRecordOf(failure, object, { command, service: "zm", version: VERSION })
-    : undefined
-  const interactive = deps.outputIsTTY === true && !machine
-  deps.diagnostic(`${renderError(object, { cli: "zm", interactive, ...(record ? { record } : {}) })}\n`)
-  return exitCodeOfError(object)
-}
-
-const commandSelection = (program: Command, args: readonly string[]) => {
-  const words: string[] = []
-  let current = program
-  for (const word of args) {
-    if (word === "--") break
-    if (word.startsWith("-")) continue
-    const next = current.commands.find((command) => command.name() === word || command.aliases().includes(word))
-    if (!next) break
-    words.push(word)
-    current = next
-  }
-  return { path: words.length ? words.join(" ") : "zm", action: current }
 }

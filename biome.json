@@ -23,7 +23,7 @@
         "noExcessiveLinesPerFile": {
           "level": "error",
           "options": {
-            "maxLines": 1000
+            "maxLines": 500
           }
         }
       }
@@ -107,7 +107,7 @@
       }
     },
     {
-      "includes": ["**/*.test.ts", "test/**", "**/generated/**"],
+      "includes": ["**/*.test.ts", "test/**", "**/generated/**", "scripts/installed-*.mjs"],
       "linter": {
         "rules": {
           "style": {

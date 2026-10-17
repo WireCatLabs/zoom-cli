@@ -13,7 +13,11 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [api.ts](../../src/api.ts) | pagination, occurrence UUIDs, participant sessions and downloads |
 | [files.ts](../../src/files.ts) | file contents, legacy names and source metadata |
 | [config.ts](../../src/config.ts) | public client and file-source settings |
-| [program.ts](../../src/program.ts) | shared commands, output and injected store dependency |
+| [program.ts](../../src/program.ts) | the command tree, output, per-run state and the injected store dependency |
+| [setup-commands.ts](../../src/setup-commands.ts) | `config`, doctor, session status and browser login |
+| [store-commands.ts](../../src/store-commands.ts) | Zoom's commands over the shared store, each opening it only when its action runs |
+| [meeting-source.ts](../../src/meeting-source.ts) | the API or folder source the config names, built on first use |
+| [recording-schedule-setup.ts](../../src/recording-schedule-setup.ts) | saved schedule jobs, Linux user timers and per-job credentials |
 | [meeting-project-evidence-commands.ts](../../src/meeting-project-evidence-commands.ts), [meeting-project-evidence-mcp.ts](../../src/meeting-project-evidence-mcp.ts) | thin account/resource bindings over Core project discovery and registered schemas |
 | [meeting-preparation.ts](../../src/meeting-preparation.ts), [meeting-preparation-mcp.ts](../../src/meeting-preparation-mcp.ts) | per-call account/credential binding and close-before-output over Core preparation services and adapters |
 | [meeting-mcp-command.ts](../../src/meeting-mcp-command.ts), [meeting-read-command-bindings.ts](../../src/meeting-read-command-bindings.ts) | native command composition without expanding the main program |
@@ -23,7 +27,7 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [zm.ts](../../src/bin/zm.ts) | process, browser, stdin and system keyring wiring |
 | [recordings.ts](../../src/recordings.ts), [recording-archive.ts](../../src/recording-archive.ts) | asset discovery, streamed transfers and verified skipping |
 | [recording-manifest.ts](../../src/recording-manifest.ts) | archive manifests, the verified-size cache, archive inspection and verification |
-| [recording-sync.ts](../../src/recording-sync.ts), [recording-sync-store.ts](../../src/recording-sync-store.ts) | shared catalog/checkpoint orchestration and native durable progress |
+| [recording-sync.ts](../../src/recording-sync.ts), [recording-sync-store.ts](../../src/recording-sync-store.ts) | shared catalog/checkpoint orchestration and durable progress under a cli-core file lock |
 | [recording-writer-lease.ts](../../src/recording-writer-lease.ts) | Zoom marker layout and public error/cancellation mapping over Core native writer leases |
 | [recording-partial-store.ts](../../src/recording-partial-store.ts) | Zoom partial names/defaults and cancellation mapping over Core native persistence |
 | [recording-promotion-store.ts](../../src/recording-promotion-store.ts) | owned final-promotion recovery and Zoom manifest mapping |
@@ -36,11 +40,11 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [meeting-search-commands.ts](../../src/meeting-search-commands.ts) | `search meetings`: the shared word search, plus meaning and archive sources |
 | [local-transcription.ts](../../src/local-transcription.ts) | native media verification and shared transcription/speech port adaptation |
 | [meeting-semantic.ts](../../src/meeting-semantic.ts) | explicit model selection and public vector/model service adaptation |
-| [store-connection.ts](../../src/store-connection.ts) | lazy public shared-store/account adapter, without SQL |
+| [store-connection.ts](../../src/store-connection.ts) | lazy public shared-store/account adapter and the selected-profile connect request, without SQL |
 | [mcp-server.ts](../../src/mcp-server.ts) | official SDK transport and shared read-only meeting tools |
 | [answer-output.ts](../../src/answer-output.ts), [answers.ts](../../src/answers.ts) | commands answer with cli-core `itemOf`/`listOf` bodies printed by `renderAnswer`; `bodyOf` adapts the plain values cli-core meeting commands and MCP tools return; run metadata and MCP envelopes |
-| [command-effects.ts](../../src/command-effects.ts), [answer-policy.ts](../../src/answer-policy.ts) | Zoom effect declarations bound to shared retry and next-step policies |
-| [streaming.ts](../../src/streaming.ts), [watch-commands.ts](../../src/watch-commands.ts) | bounded receipts, writable completion and serial API or folder ingestion |
+| [command-effects.ts](../../src/command-effects.ts), [answer-policy.ts](../../src/answer-policy.ts) | Zoom effect declarations bound to shared retry and next-step policies; failure rendering |
+| [streaming.ts](../../src/streaming.ts), [watch-commands.ts](../../src/watch-commands.ts), [watch-service.ts](../../src/watch-service.ts) | bounded receipts, writable completion and serial API or folder ingestion |
 
 The API uses the signed-in participant `id` when present, else email, else registrant id. Session
 `user_id` is retained inside sessions, never used as a stable person id. Guests without these keys

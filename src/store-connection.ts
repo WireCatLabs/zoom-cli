@@ -37,6 +37,25 @@ export interface StoreConnectRequest {
   externalId: string
   intent: "read" | "ingestion"
 }
+export const storeUnavailable = async (): Promise<never> => {
+  throw new CliError("configuration_error", "the shared SQLite meeting store is not available yet")
+}
+export const unavailableStore: MeetingStore = {
+  saveMeeting: storeUnavailable,
+  account: storeUnavailable,
+  meetings: storeUnavailable,
+  meeting: storeUnavailable,
+  participants: storeUnavailable,
+  search: storeUnavailable,
+  events: storeUnavailable,
+  eventCandidates: storeUnavailable,
+  createEvent: storeUnavailable,
+  createEventSeries: storeUnavailable,
+  setEventSeries: storeUnavailable,
+  linkMeeting: storeUnavailable,
+  cursor: storeUnavailable,
+  setCursor: storeUnavailable,
+}
 export const connectSelectedProfile = (
   connect: (request: StoreConnectRequest) => Promise<StoreConnection>,
   profile: string | null | undefined,
