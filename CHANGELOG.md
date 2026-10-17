@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Align the shared runtime with registry Core 0.322.0 and Base 0.40.4, using one runtime Base identity for common validation and output helpers.
 - The architecture guide derives the shared vocabulary version from the runtime pin instead of naming an outdated Base version.
 - The roadmap points to the delivered reviewed meeting-findings workflow in Memo 0.58.0 instead of listing that shared capability as future work.
 
