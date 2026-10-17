@@ -68,7 +68,7 @@ export class ZoomApiSource implements MeetingSource {
       const query = new URLSearchParams({ page_size: "100", ...(next ? { next_page_token: next } : {}) })
       const body = await this.request(`${path}${path.includes("?") ? "&" : "?"}${query}`, scope)
       if (!body || !Array.isArray(body[key])) throw new CliError("invalid_response", "Zoom returned an invalid list")
-      rows.push(...body[key].map(object))
+      for (const row of body[key]) rows.push(object(row))
       next = string(body.next_page_token) ?? ""
       if (next && seen.has(next)) throw new CliError("invalid_response", "Zoom repeated a pagination token")
       seen.add(next)
