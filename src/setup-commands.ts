@@ -1,6 +1,6 @@
 import { CliError, createRenderer, isCliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { type Body, itemOf, REMOTE_WRITE } from "@wirecat/cli-core/cli"
+import { type Body, itemOf, LOCAL_READ, LOCAL_WRITE, NO_EFFECTS, REMOTE_WRITE } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import type { AnswerFormat } from "./answer-output.js"
 import { addStandardCommands } from "./commands.js"
@@ -15,15 +15,13 @@ export const addConfigCommands = (
   program: Command,
   { configPath, getConfig, output }: { configPath: string; getConfig: () => ZoomConfig; output: (body: Body) => void },
 ): void => {
-  const cfg = program.command("config").description("local Zoom configuration")
-  cfg
-    .command("show")
+  const cfg = annotate(program.command("config"), { effects: NO_EFFECTS }).description("local Zoom configuration")
+  annotate(cfg.command("show"), { effects: LOCAL_READ })
     .description("show local configuration")
     .action(() => {
       output(itemOf(getConfig()))
     })
-  cfg
-    .command("set")
+  annotate(cfg.command("set"), { effects: LOCAL_WRITE })
     .description("set a configuration value")
     .argument("<key>", "setting name, such as account.profile")
     .argument("<value>", "new value")

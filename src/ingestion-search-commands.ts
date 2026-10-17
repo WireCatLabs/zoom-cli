@@ -1,6 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { type Body, itemOf, LOCAL_READ, LOCAL_WRITE } from "@wirecat/cli-core/cli"
+import { type Body, itemOf, LOCAL_READ, LOCAL_WRITE, NO_EFFECTS } from "@wirecat/cli-core/cli"
 import type { MeetingSearchCursor, ResourceWithMeetings } from "@wirecat/cli-core/services"
 import type { Command } from "commander"
 import type { ArchiveImportPlan, applyArchiveImport, preflightArchiveImport } from "./archive-import.js"
@@ -62,7 +62,9 @@ export const addIngestionSearchCommands = (program: Command, deps: Deps): void =
       ),
     { origin: "handwritten", effects: LOCAL_WRITE, examples: ["zm recordings archive import ./archive --jsonl"] },
   )
-  const search = program.command("search").description("opt-in shared store search; meetings by default")
+  const search = annotate(program.command("search"), { effects: NO_EFFECTS }).description(
+    "opt-in shared store search; meetings by default",
+  )
   annotate(
     search
       .command("all")

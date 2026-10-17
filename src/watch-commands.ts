@@ -1,6 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { type Body, itemOf, LOCAL_WRITE } from "@wirecat/cli-core/cli"
+import { type Body, FETCH, itemOf } from "@wirecat/cli-core/cli"
 import { type RunReport, type WatchSleep, watchMeetingIngestion } from "@wirecat/cli-core/meetings"
 import { Argument, type Command } from "commander"
 import { duration } from "./execution.js"
@@ -68,7 +68,7 @@ export const addWatchCommand = (program: Command, deps: WatchCommandDeps): void 
     })
   annotate(command, {
     origin: "handwritten",
-    effects: LOCAL_WRITE,
+    effects: FETCH,
     examples: ["zm watch files ./downloads --pause 10s --jsonl", "zm watch api --lookback-days 2 --jsonl"],
     lifetime: "persistent",
   })

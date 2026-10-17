@@ -10,7 +10,6 @@ import {
 import { metaOf } from "@wirecat/cli-base/commands"
 import { type Body, checkJson, snakeKeys } from "@wirecat/cli-core/cli"
 import type { MeetingSource, MeetingStore } from "@wirecat/cli-core/meetings"
-import { addMeetingCommands } from "@wirecat/cli-core/meetings/cli"
 import { Command, CommanderError } from "commander"
 import { addZoomSkillCommands } from "./agent-skill.js"
 import { type AnswerFormat, bodyOf, renderBody, wholeList } from "./answer-output.js"
@@ -29,6 +28,7 @@ import { checkCancelled } from "./errors.js"
 import { bytes, duration, type ExecutionState, resetCliOptions, startExecution } from "./execution.js"
 import { importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { liftJsonFields } from "./json-fields.js"
+import { addZoomMeetingCommands } from "./meeting-commands.js"
 import { type ContextCapture, captureContextSources } from "./meeting-communications-binding.js"
 import { addZoomMcpCommand, type ZoomMcpServeOptions } from "./meeting-mcp-command.js"
 import type { ZoomPreparationOptions } from "./meeting-preparation.js"
@@ -233,7 +233,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     fetch: () => fetchWithSignal(deps.fetch),
   })
   const source = configured.source
-  const meetingCommands: Parameters<typeof addMeetingCommands>[1] = {
+  const meetingCommands: Parameters<typeof addZoomMeetingCommands>[1] = {
     get store() {
       return guardedStore(selectedStore ?? unavailableStore)
     },
@@ -258,7 +258,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
       : undefined,
   }
   const before = new Set(program.commands)
-  addMeetingCommands(program, meetingCommands)
+  addZoomMeetingCommands(program, meetingCommands)
   const leaves = (command: Command): Command[] =>
     command.commands.length ? command.commands.flatMap(leaves) : [command]
   // The meeting reads cli-core mounts read the store opened before their action; zoom's own commands open it lazily.

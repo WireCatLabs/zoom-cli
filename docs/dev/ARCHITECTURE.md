@@ -18,6 +18,7 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [store-commands.ts](../../src/store-commands.ts) | Zoom's commands over the shared store, each opening it only when its action runs |
 | [meeting-source.ts](../../src/meeting-source.ts) | the API or folder source the config names, built on first use |
 | [recording-schedule-setup.ts](../../src/recording-schedule-setup.ts) | saved schedule jobs, Linux user timers and per-job credentials |
+| [meeting-commands.ts](../../src/meeting-commands.ts) | Core's stored-meeting commands, with the effects Core leaves undeclared |
 | [meeting-project-evidence-commands.ts](../../src/meeting-project-evidence-commands.ts), [meeting-project-evidence-mcp.ts](../../src/meeting-project-evidence-mcp.ts) | thin account/resource bindings over Core project discovery and registered schemas |
 | [meeting-preparation.ts](../../src/meeting-preparation.ts), [meeting-preparation-mcp.ts](../../src/meeting-preparation-mcp.ts) | per-call account/credential binding and close-before-output over Core preparation services and adapters |
 | [meeting-mcp-command.ts](../../src/meeting-mcp-command.ts), [meeting-read-command-bindings.ts](../../src/meeting-read-command-bindings.ts) | native command composition without expanding the main program |
@@ -44,7 +45,7 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [store-connection.ts](../../src/store-connection.ts) | lazy public shared-store/account adapter and the selected-profile connect request, without SQL |
 | [mcp-server.ts](../../src/mcp-server.ts) | official SDK transport and shared read-only meeting tools |
 | [answer-output.ts](../../src/answer-output.ts), [answers.ts](../../src/answers.ts) | commands answer with cli-core `itemOf`/`listOf` bodies printed by `renderAnswer`; `bodyOf` adapts the plain values cli-core meeting commands and MCP tools return; run metadata and MCP envelopes |
-| [command-effects.ts](../../src/command-effects.ts), [answer-policy.ts](../../src/answer-policy.ts) | Zoom effect declarations bound to shared retry and next-step policies; failure rendering |
+| [answer-policy.ts](../../src/answer-policy.ts) | each command's declared effects ([WC-CMD-17](https://github.com/WireCatLabs/cli-base/blob/main/docs/standards/commands.md#wc-cmd-17--declare-effects-on-every-command)) bound to shared retry and next-step policies; failure rendering |
 | [streaming.ts](../../src/streaming.ts), [watch-commands.ts](../../src/watch-commands.ts), [watch-service.ts](../../src/watch-service.ts) | bounded receipts, writable completion and serial API or folder ingestion |
 
 The API uses the signed-in participant `id` when present, else email, else registrant id. Session

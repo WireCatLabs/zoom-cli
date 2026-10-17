@@ -1,6 +1,7 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { type Body, itemOf, LOCAL_READ, LOCAL_WRITE } from "@wirecat/cli-core/cli"
+import type { Effects } from "@wirecat/cli-base/standards"
+import { type Body, FETCH, itemOf, LOCAL_READ, LOCAL_WRITE, NO_EFFECTS } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { wholeList } from "./answer-output.js"
 import { bytes } from "./execution.js"
@@ -28,9 +29,11 @@ export const addRecordingScheduleCommands = (
   }
   const recordings = program.commands.find((command) => command.name() === "recordings")
   if (!recordings) throw new CliError("configuration_error", "recording command group is unavailable")
-  const schedule = recordings.command("schedule").description("local archive jobs and Linux user systemd timers")
-  const label = (command: Command, example: string, mutates = false) =>
-    annotate(command, { origin: "handwritten", effects: mutates ? LOCAL_WRITE : LOCAL_READ, examples: [example] })
+  const schedule = annotate(recordings.command("schedule"), { effects: NO_EFFECTS }).description(
+    "local archive jobs and Linux user systemd timers",
+  )
+  const label = (command: Command, example: string, effects: Effects) =>
+    annotate(command, { origin: "handwritten", effects, examples: [example] })
   label(
     schedule
       .command("create")
@@ -79,7 +82,7 @@ export const addRecordingScheduleCommands = (
         },
       ),
     "zm recordings schedule create --name daily --output-dir /home/AliceExample/archive --since-time 2026-01-01 --at 03:15 --timezone UTC --json",
-    true,
+    LOCAL_WRITE,
   )
   label(
     schedule
@@ -89,6 +92,7 @@ export const addRecordingScheduleCommands = (
         deps.output(wholeList("recordings schedule list", await deps.service().list({ signal: deps.signal() })))
       }),
     "zm recordings schedule list --offline --json",
+    LOCAL_READ,
   )
   label(
     schedule
@@ -99,6 +103,7 @@ export const addRecordingScheduleCommands = (
         deps.output(itemOf(await deps.service().show(id, { signal: deps.signal() })))
       }),
     "zm recordings schedule show example-job --offline --json",
+    LOCAL_READ,
   )
   label(
     schedule
@@ -113,7 +118,7 @@ export const addRecordingScheduleCommands = (
           await deps.receipt(itemOf(receipt))
       }),
     "zm recordings schedule run example-job --jsonl",
-    true,
+    FETCH,
   )
   label(
     schedule
@@ -128,6 +133,6 @@ export const addRecordingScheduleCommands = (
         )
       }),
     "zm recordings schedule disable example-job --yes --json",
-    true,
+    LOCAL_WRITE,
   )
 }
