@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
-import { lstat, mkdir, open, realpath, rmdir, unlink } from "node:fs/promises"
+import { lstat, mkdir, open, rmdir, unlink } from "node:fs/promises"
 import { hostname } from "node:os"
-import { basename, dirname, join, resolve } from "node:path"
+import { dirname, join, resolve } from "node:path"
 import { CliError } from "@wirecat/cli-base"
 import { openOrdinaryFile, writeFileAtomic } from "@wirecat/cli-core/files"
 import {
@@ -162,9 +162,7 @@ export function fileRecordingSyncCheckpointStore(path: string): RecordingSyncChe
       const content = JSON.stringify(state)
       if (Buffer.byteLength(content) > maxBytes)
         throw new CliError("validation_error", "archive checkpoint exceeds its byte limit")
-      // The real folder: the directory sync after the rename refuses to follow a symlinked archive folder.
-      const folder = await realpath(dirname(checkpointPath))
-      await writeFileAtomic(join(folder, basename(checkpointPath)), content, {
+      await writeFileAtomic(checkpointPath, content, {
         beforePublish: () => own(jobId, token),
       })
     },
