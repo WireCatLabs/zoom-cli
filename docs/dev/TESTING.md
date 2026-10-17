@@ -62,6 +62,10 @@ process diagnostics and recorded run logs are checked within the contract runner
 These commands run only in release, monthly and manual full validation. See the
 [upgrade guide](https://github.com/WireCatLabs/cli-testing/blob/main/docs/ci/UPGRADES.md).
 
+The installed preparation proof also captures explicit message, mail and document selections through
+the published host API. It checks three conflicting dated statements, an excluded account, retained
+coverage under projection, SDK/MCP parity, closed connections and an unchanged database digest.
+
 ## Command coverage
 
 cli-base's shared setup (`@wirecat/cli-base/testing/setup`) runs first in every test file. It points the

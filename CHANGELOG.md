@@ -4,9 +4,7 @@
 
 ### Added
 
-- `meetings prepare` lists Core's `--context-source`, `--context-query`, `--context-since-time` and
-  `--context-before-time`. zm binds no communications source yet, so they refuse with "Communications are
-  unavailable in this preparation host".
+- `meetings prepare` can include cited literal matches from explicitly configured message, mail and document sources. Profile-local selections, captured MCP source IDs, bounded pages and retained coverage keep scope and gaps visible; preparation opens the existing store read-only.
 
 ### Fixed
 

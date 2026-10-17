@@ -113,8 +113,7 @@ unqueried-source/evidence limits. Owner notes and annotations appear separately 
 `note:` references, revisions and source/coverage limits. Native notes use selection
 `owner-written-meeting/person/project-notes` and a nullable `meeting` reference to an included earlier
 call. Meeting-scoped notes require an included call; a shared project alone is insufficient.
-Imported documents, mail and messages remain
-unqueried. Related reads stay within the selected account and history window
+Documents, mail and messages remain unqueried unless configured communications IDs are requested. Related reads stay within the selected account and history window
 and perform no writes. See [preparation](usage.md#prepare-for-an-upcoming-meeting) for
 what it includes, what remains unqueried and how to check the result.
 
@@ -135,3 +134,27 @@ space than CLI JSON. Optional project-evidence pages yield first, then notes, th
 inspect `meta.truncated` and each section's coverage for omissions. Cue `content_bytes` counts the
 escaped cues the MCP client receives. Metadata that cannot fit returns `validation_error`; increase
 `bytes` or narrow the selected context.
+
+## Selected communications in meeting preparation
+
+Configure [source selections](configuration.md#select-communications-for-preparation) before starting
+`zm serve --mcp --meeting-preparation`. Tool discovery lists only the source IDs captured for the
+selected profile, without opening the database. The tool omits communications input when no sources
+are configured. Restart the server after configuration changes, including revocations.
+
+For example, add this input to an existing `meeting_prepare` request:
+
+```json
+{
+  "series_id": "123456789",
+  "communications": {
+    "sources": [{ "id": "project-notes" }],
+    "query": "launch"
+  }
+}
+```
+
+Optional `communications.after` and `communications.before` are ISO timestamps with a zone. Each
+source may include `cursor` from its prior coverage. The shared handler validates unknown fields and
+selection IDs before credentials, database opening or Zoom reads. Check `communications.coverage`
+alongside the excerpts; see [limits and continuation](usage.md#include-selected-messages-mail-and-documents).

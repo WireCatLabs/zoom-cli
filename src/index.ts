@@ -16,6 +16,7 @@ export {
   searchArchiveTranscripts,
 } from "./archive-transcripts.js"
 export { profileAccountKey, readConfig, setConfig, type ZoomConfig } from "./config.js"
+export type { ConfiguredContextSource } from "./context-sources.js"
 export {
   type DownloadedFile,
   FilesSource,
@@ -34,6 +35,7 @@ export {
 } from "./local-transcription.js"
 export { type LoginOptions, login, REDIRECT } from "./login.js"
 export { createMeetingMcpServer, type MeetingMcpOptions, serveMeetingMcp } from "./mcp-server.js"
+export { type ContextCapture, type ContextMetadata, captureContextSources } from "./meeting-communications-binding.js"
 export {
   createMeetingContextCapabilities,
   type EvidenceOptions,
@@ -46,6 +48,7 @@ export {
   createZoomPreparationReader,
   type MeetingPreparationBinding,
   type PreparationConnection,
+  type PreparationStoreRequest,
   type ZoomPreparationOptions,
 } from "./meeting-preparation.js"
 export type { MeetingHitSearch, MeetingHitSearchOptions } from "./meeting-search-commands.js"

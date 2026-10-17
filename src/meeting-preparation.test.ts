@@ -60,7 +60,7 @@ it("CLI prepares the selected series with cited local context and closes before 
   })
   expect(item.notes.items).toHaveLength(1)
   expect(f.connectStore).toHaveBeenCalledOnce()
-  expect(f.connectStore).toHaveBeenCalledWith(expect.objectContaining({ intent: "read" }))
+  expect(f.connectStore).toHaveBeenCalledWith(expect.objectContaining({ intent: "preparation" }))
   expect(f.network).toHaveBeenCalledOnce()
   expect(f.errors).toEqual([])
   expect(f.output.join("")).not.toContain("invented-access")
@@ -289,7 +289,7 @@ it("accepts fixed windows and bounded context options, including standard field 
 it("the public reader validates before credentials and closes on cancellation during binding", async () => {
   const f = await fixture()
   const credentials = vi.fn(() => f.tokens)
-  const connect = vi.fn(f.mcp.connectStore)
+  const connect = vi.fn(() => f.mcp.connectStore())
   const reader = createZoomPreparationReader({ credentials, fetch: f.network, connect })
   await expect(
     reader("123", { after: now, until: now + 1000, historyAfter: now - 1000, cues: 101 }),

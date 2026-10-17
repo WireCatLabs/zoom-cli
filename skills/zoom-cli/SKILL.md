@@ -78,6 +78,25 @@ knowledge and project associations. `meetings context person:<id>` follows expli
 Follow `item.meetings.next_cursor` as `--meeting-cursor` with the same query/account; unsupported
 queries or skipped sources leave completeness false even when the command exits successfully.
 
+## Prepare with selected communications
+
+Only use communications IDs explicitly configured for the selected profile through
+`zm config set context.sources`. A grant covers one whole message/mail account or document folder;
+do not broaden scope for an agent. `zm config show` reveals the configured selections. A document
+folder can use provider `folder` and account `notes:<folder-id>` from `memo folders list`.
+
+`meetings prepare <series-id> --context-source <id> --context-query '<words>'` adds cited literal
+matches. Repeat the source flag as needed. Default communications history is fourteen days before
+the preparation start; explicit time bounds allow at most ninety days. Do not infer confirmed
+project membership or resolve conflicting statements from word matches alone.
+
+Keep `communications.coverage` with the excerpts, including index state, unknown completeness,
+read limits and per-source continuation. Resume `--context-source ID=CURSOR` only with the same
+query/window; restart without the cursor when `restart_required` says so. Preparation opens an
+existing compatible database read-only and does not fill missing indexes or import missing data.
+MCP `meeting_prepare` accepts the same selection via `communications.sources` and `query`; its
+server captures selection IDs at startup, so restart after changing or revoking configuration.
+
 ## Archive and ingestion
 
 `recordings list` / `show` inspect cloud assets. Prefer occurrence UUIDs for recurring meetings.

@@ -4,14 +4,7 @@ import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js"
 import { CallToolRequestSchema, ListToolsRequestSchema, type Tool } from "@modelcontextprotocol/sdk/types.js"
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv"
 import { CliError, type ErrorCode, errorObjectOf, isCliError, mcpErrorResult } from "@wirecat/cli-base"
-import {
-  agentResult,
-  LOCAL_READ,
-  meetingPreparationTool,
-  snakeKeys,
-  UNTRUSTED,
-  UNTRUSTED_INSTRUCTION,
-} from "@wirecat/cli-core/cli"
+import { agentResult, LOCAL_READ, snakeKeys, UNTRUSTED, UNTRUSTED_INSTRUCTION } from "@wirecat/cli-core/cli"
 import { type MeetingStore, SAVE_INSTRUCTION } from "@wirecat/cli-core/meetings"
 import {
   callMeetingPassageTool,
@@ -34,8 +27,8 @@ import {
   validateTaskKind,
   validateTaskProposal,
 } from "./meeting-context.js"
-import type { ZoomPreparationOptions } from "./meeting-preparation.js"
-import { readPreparationTool } from "./meeting-preparation-mcp.js"
+import type { PreparationStoreRequest, ZoomPreparationOptions } from "./meeting-preparation.js"
+import { preparationToolFor, readPreparationTool } from "./meeting-preparation-mcp.js"
 import { readProjectEvidenceTool } from "./meeting-project-evidence-mcp.js"
 import { type MeetingModelOptions, validateMeetingModel, validateMeetingSemantic } from "./meeting-semantic-commands.js"
 import type { StoreConnection } from "./store-connection.js"
@@ -44,7 +37,7 @@ import { VERSION } from "./version.js"
 
 export interface MeetingMcpOptions {
   /** Resolve the selected profile with read intent; each call owns a fresh connection. */
-  connectStore: () => Promise<StoreConnection>
+  connectStore: (request?: PreparationStoreRequest) => Promise<StoreConnection>
   commandRegistry?: Command
   version?: string
   now?: () => number
@@ -65,6 +58,10 @@ const crashed = () => mcpErrorResult(errorObjectOf(undefined, hostFailureContext
 
 /** SDK protocol handling; shared meeting tools own all read behavior and validation. */
 const buildServer = (options: MeetingMcpOptions) => {
+  const context = options.preparation?.context?.()
+  const preparation = options.preparation
+    ? { ...options.preparation, context: context ? () => context : undefined }
+    : undefined
   const semanticModel = options.semanticModel ? Object.freeze({ ...options.semanticModel }) : undefined
   const maxResultBytes = options.maxResultBytes ?? 4 * 1024 * 1024
   if (!Number.isSafeInteger(maxResultBytes) || maxResultBytes < 0)
@@ -79,7 +76,7 @@ const buildServer = (options: MeetingMcpOptions) => {
     return { ...tool, inputSchema: { ...tool.inputSchema, type: "object" as const, properties } } satisfies Tool
   })
   tools.push(meetingProjectEvidenceTool)
-  if (options.preparation) tools.push(meetingPreparationTool)
+  if (preparation) tools.push(preparationToolFor(context))
   const meaningArguments = {
     by_meaning: { type: "boolean" },
     max_chunks: { type: "integer", minimum: 1, maximum: 10000 },
@@ -226,7 +223,7 @@ const buildServer = (options: MeetingMcpOptions) => {
     const checked = validate(args)
     if (!checked.valid) return failure("validation_error", `invalid meeting tool arguments: ${checked.errorMessage}`)
     if (request.params.name === "meeting_prepare") {
-      const result = await readPreparationTool(options, args, signal)
+      const result = await readPreparationTool({ ...options, preparation }, args, signal)
       return cancelled() ? failure("cancelled", "meeting read was cancelled") : result
     }
     if (request.params.name === "meeting_project_evidence") {

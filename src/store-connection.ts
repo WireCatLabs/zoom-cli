@@ -9,12 +9,14 @@ import {
 import type { MessageStore, StoreOptions } from "@wirecat/cli-core/store"
 import { profileAccountKey } from "./config.js"
 import { createLocalTranscriptionCapabilities, type LocalTranscriptionCapabilities } from "./local-transcription.js"
+import type { ContextCapture } from "./meeting-communications-binding.js"
 import { createMeetingContextCapabilities, type MeetingContextCapabilities } from "./meeting-context.js"
 import { integrationReference, type MeetingIntegrationCapabilities } from "./meeting-integration.js"
 import type { MeetingPreparationBinding } from "./meeting-preparation.js"
 import { type MeetingHitSearch, validateMeetingHitSearch } from "./meeting-search-commands.js"
 import { createMeetingSemanticCapabilities } from "./meeting-semantic.js"
 import type { MeetingSemanticCapabilities } from "./meeting-semantic-commands.js"
+import { profilePattern } from "./profile.js"
 import { type UnifiedSearch, validateUnifiedSearch } from "./unified-search.js"
 
 export interface StoreConnection {
@@ -35,7 +37,8 @@ export interface StoreConnection {
 export interface StoreConnectRequest {
   profile: string
   externalId: string
-  intent: "read" | "ingestion"
+  intent: "read" | "ingestion" | "preparation"
+  context?: ContextCapture
 }
 export const storeUnavailable = async (): Promise<never> => {
   throw new CliError("configuration_error", "the shared SQLite meeting store is not available yet")
@@ -60,10 +63,11 @@ export const connectSelectedProfile = (
   connect: (request: StoreConnectRequest) => Promise<StoreConnection>,
   profile: string | null | undefined,
   intent: StoreConnectRequest["intent"],
+  context?: ContextCapture,
 ): Promise<StoreConnection> => {
   if (!profile)
     throw new CliError("configuration_error", "select a local profile with zm config set account.profile <label>")
-  return connect({ profile, externalId: profileAccountKey(profile), intent })
+  return connect({ profile, externalId: profileAccountKey(profile), intent, ...(context ? { context } : {}) })
 }
 
 export interface StoreConnectionOptions extends StoreOptions {
@@ -73,18 +77,25 @@ export interface StoreConnectionOptions extends StoreOptions {
 export const createStoreConnector =
   (options: StoreConnectionOptions = {}) =>
   async (request: StoreConnectRequest): Promise<StoreConnection> => {
-    const { profile, externalId, intent } = request ?? {}
+    const { profile, externalId, intent, context } = request ?? {}
     if (
       typeof profile !== "string" ||
-      !/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(profile) ||
+      !profilePattern.test(profile) ||
       externalId !== profileAccountKey(profile) ||
-      (intent !== "read" && intent !== "ingestion")
+      (intent !== "read" && intent !== "ingestion" && intent !== "preparation") ||
+      (context !== undefined &&
+        (intent !== "preparation" || typeof context.resolve !== "function" || typeof context.assert !== "function"))
     )
       throw new CliError("validation_error", "expected a selected Zoom profile and read or ingestion intent")
     let store: MessageStore | undefined
     try {
       const open = options.openStore ?? (await import("@wirecat/cli-core/store")).openStore
-      store = await open({ path: options.path, env: options.env, now: options.now })
+      store = await open({
+        path: options.path,
+        env: options.env,
+        now: options.now,
+        ...(intent === "preparation" ? { readOnly: true } : {}),
+      })
       const connected = store
       const meetings = connected.meetings
       const key = { provider: "zoom", account: externalId }
@@ -112,7 +123,21 @@ export const createStoreConnector =
           scope: key,
           create: async (upcoming) => {
             const { createMeetingPreparationService } = await import("@wirecat/cli-core/services")
+            const reader = connected.contextEvidence
+            if (context && !reader)
+              throw new CliError("configuration_error", "the installed store does not support bounded communications")
+            const communications =
+              context && reader
+                ? {
+                    reader,
+                    selections: await context.resolve({
+                      storedAccount: connected.accounts.storedAccount.bind(connected.accounts),
+                      accountById: connected.meetings.account.bind(connected.meetings),
+                    }),
+                  }
+                : undefined
             const service = createMeetingPreparationService(key, accountId, {
+              ...(communications ? { communications } : {}),
               meetings,
               upcoming,
               projectDiscovery: { vocabulary: connected.knowledge, search: meetings },

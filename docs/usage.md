@@ -117,8 +117,8 @@ so the store has its exact series links. Imported transcript files may not conta
 series ID. Preparation does not match calls by similar titles or participant names.
 
 Coverage distinguishes missing stored history, undated occurrences, extra rows and output limits.
-Archive completeness remains unknown. Imported documents, mail, messages and
-projects you did not select remain unqueried; without usable prior occurrences, related history
+Archive completeness remains unknown. Documents, mail and messages remain unqueried unless you
+explicitly request configured communications sources. Projects you did not select remain unqueried; without usable prior occurrences, related history
 also remains unqueried. Stored fact evidence is not revalidated. Use
 [search and evidence](search.md) to investigate those gaps. Preparation does not generate a summary,
 record a decision, accept a finding or create a task.
@@ -138,6 +138,41 @@ Notes have their own lookahead and output-limit flags, with at most twenty entri
 when a bound is reached.
 Skipped unavailable sources set `meta.complete=false`; inspect their references before relying on
 the brief. Increase the relevant bound when the coverage identifies truncation.
+
+## Include selected messages, mail and documents
+
+First [select the source accounts or folders](configuration.md#select-communications-for-preparation).
+Then name each source explicitly and supply a literal word query:
+
+```sh
+zm meetings prepare 123456789 --context-source project-notes --context-query "launch" --json
+```
+
+Repeat `--context-source` for other configured IDs. The query takes up to sixteen literal words;
+it does not run semantic search or infer a project. The default communications window covers the
+fourteen days before the preparation start time. Set `--context-since-time` and
+`--context-before-time` to ISO timestamps with a zone for a different window, at most ninety days
+long and ending no later than the preparation start time. Undated rows are not searched.
+
+`communications.items` contains at most twenty cited excerpts, shared fairly across sources.
+Statements remain separate with their own dates and references: a later statement does not silently
+replace an earlier one, and a matching word does not establish a project or person link.
+`communications.coverage` retains the frozen query, window, source identities, index status,
+undated-row notices, read usage and continuation even with JSON field projection. Inspect it when
+there are no excerpts: an empty or limited result does not prove that nothing was discussed.
+
+Each source reads one bounded page. If its coverage has `next_cursor`, repeat the same request with
+`--context-source ID=CURSOR` for that source. Keep the query, window and source identity unchanged.
+If `restart_required` is true or a cursor is refused, restart without that source's cursor; do not
+treat an omitted excerpt as read. Source failures and read limits are reported in coverage, with
+`meta.complete=false` where applicable. Archive completeness remains unknown.
+
+Communications share a 512 KiB, sixteen-dispatch read budget, bounded further by `--max-read-bytes`.
+The output budget may remove excerpts while preserving coverage. Preparation opens an existing
+compatible database read-only: it does not fill search indexes, migrate an old schema, import
+missing records or save findings. Use the producing tool's import/index commands separately when
+coverage identifies missing indexed data. A refused old schema needs a normal store upgrade before
+preparation can read it.
 
 ## Choose local or remote data
 

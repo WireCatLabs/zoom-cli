@@ -9,6 +9,7 @@ import { searchArchiveTranscripts } from "./archive-transcripts.js"
 import type { ExecutionState } from "./execution.js"
 import { addIngestionSearchCommands } from "./ingestion-search-commands.js"
 import { addLocalTranscriptionCommands } from "./local-transcription-commands.js"
+import type { ContextCapture } from "./meeting-communications-binding.js"
 import { addMeetingContextCommands } from "./meeting-context-commands.js"
 import { addMeetingIntegrationCommands } from "./meeting-integration-commands.js"
 import type { ZoomPreparationOptions } from "./meeting-preparation.js"
@@ -24,7 +25,7 @@ export interface StoreCommandContext {
   /** The one connection a command run shares; opened on first use. */
   connected: (intent?: StoreConnectRequest["intent"]) => Promise<StoreConnection>
   /** A connection of its own, which the caller closes. */
-  openStore: (intent: StoreConnectRequest["intent"]) => Promise<StoreConnection>
+  openStore: (intent: StoreConnectRequest["intent"], context?: ContextCapture) => Promise<StoreConnection>
   preparation: ZoomPreparationOptions
   signal: () => AbortSignal | undefined
   output: (body: Body) => void
@@ -79,7 +80,7 @@ export const addStoreCommands = (program: Command, context: StoreCommandContext)
     },
     preparation: {
       ...preparation,
-      connect: () => openStore("read"),
+      connect: (context) => openStore("preparation", context),
     },
   })
   addMeetingIntegrationCommands(program, {

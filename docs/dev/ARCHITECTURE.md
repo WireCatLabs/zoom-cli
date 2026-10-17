@@ -40,6 +40,7 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [meeting-search-commands.ts](../../src/meeting-search-commands.ts) | `search meetings`: the shared word search, plus meaning and archive sources |
 | [local-transcription.ts](../../src/local-transcription.ts) | native media verification and shared transcription/speech port adaptation |
 | [meeting-semantic.ts](../../src/meeting-semantic.ts) | explicit model selection and public vector/model service adaptation |
+| [context-sources.ts](../../src/context-sources.ts), [meeting-communications-binding.ts](../../src/meeting-communications-binding.ts) | profile-local source grants and captured immutable identities over narrow metadata ports; Core owns querying, budgets and evidence assembly |
 | [store-connection.ts](../../src/store-connection.ts) | lazy public shared-store/account adapter and the selected-profile connect request, without SQL |
 | [mcp-server.ts](../../src/mcp-server.ts) | official SDK transport and shared read-only meeting tools |
 | [answer-output.ts](../../src/answer-output.ts), [answers.ts](../../src/answers.ts) | commands answer with cli-core `itemOf`/`listOf` bodies printed by `renderAnswer`; `bodyOf` adapts the plain values cli-core meeting commands and MCP tools return; run metadata and MCP envelopes |

@@ -1,5 +1,6 @@
 import { addMeetingPreparationCommand } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
+import type { ContextCapture } from "./meeting-communications-binding.js"
 import {
   createZoomPreparationReader,
   type PreparationConnection,
@@ -11,7 +12,7 @@ export const addMeetingReadBindings = (
   program: Command,
   deps: {
     project: Parameters<typeof addProjectEvidenceCommand>[1]
-    preparation: ZoomPreparationOptions & { connect: () => Promise<PreparationConnection> }
+    preparation: ZoomPreparationOptions & { connect: (context?: ContextCapture) => Promise<PreparationConnection> }
   },
 ) => {
   addProjectEvidenceCommand(program, deps.project)
