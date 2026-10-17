@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- The architecture guide derives the shared vocabulary version from the runtime pin instead of naming an outdated Base version.
 - The roadmap points to the delivered reviewed meeting-findings workflow in Memo 0.58.0 instead of listing that shared capability as future work.
 
 ## 0.23.1 — 17.10.2026
