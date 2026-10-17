@@ -1,7 +1,9 @@
 # Testing
 
-Run lint, typecheck, coverage, docs checks, build and Bun smoke. Tests script the HTTP transport and
-use cli-base's memory keyring and the meetings module's memory store. OAuth tests use local loopback requests
+Use focused local checks for the changed behavior. Commits run staged lint and secrets;
+main CI owns the full Linux suite, coverage, docs/build and Bun checks. Releases additionally run
+the installed-platform checks below. Tests script the HTTP transport and use cli-base's memory
+keyring and the meetings module's memory store. OAuth tests use local loopback requests
 with invented codes; they do not open a browser or connect to Zoom. Token refresh verifies that no
 client secret or authorization header is sent.
 
