@@ -20,3 +20,5 @@
 - 2026-10-14: retain `.worktrees/standards-contract3` and `/var/tmp/core-answer-policy-preview-yXn8ui` until the owner approves cleanup; migration and local dependency-preview evidence.
 
 - 2026-10-14: retain `.worktrees/occurrence-adapter` until owner-approved cleanup; provider occurrence SDK adapter.
+
+- 2026-10-17: Remove the owned `zoom-cli-store-areas` worktree and `refactor/core-store-areas` branches after duplicate PR 137 was closed in favor of merged PR 136. Preserve validation logs; remove only completed `/var/tmp/zoom-store-areas-XXXXXX` task homes. Owner authorized cleanup of unneeded worktrees, branches and temporary files.

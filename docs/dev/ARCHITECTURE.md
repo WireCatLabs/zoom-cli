@@ -249,3 +249,9 @@ and field projection; native installed tests verify the binding without adding p
 Command vocabulary checks use the same canonical Base 0.33.0 package as the runtime. Core and
 Zoom must resolve one Base installation; installed-package proofs check that identity. No separate
 vocabulary alias or widened peer range is needed.
+
+Preparation's optional selected-project binding supplies Core's existing vocabulary resolution and
+word-search ports. Core owns name-lane traversal, account/history scope, coverage, continuation and
+output priority; Zoom adds no alias matching, index maintenance or membership writes. Requests
+without a selected project retain their earlier reads. See the
+[shared preparation SDK](https://github.com/WireCatLabs/cli-core/blob/main/docs/dev/MEETING-PREPARATION.md#word-evidence-for-a-selected-project).

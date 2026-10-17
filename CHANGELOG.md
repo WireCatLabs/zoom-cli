@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `meetings prepare --project <name-key-or-alias>` and MCP `project` add cited word matches for one existing project, including unlinked meetings in the selected profile/history window. Up to four bounded name pages retain unconfirmed status, index coverage and continuation; matches never assign project membership.
+
+### Changed — may break callers
+
+- Library hosts upgrading from 0.22.0 supply person lookup methods under `people` when calling `createMeetingContextCapabilities`. This follows the Core store-area adoption introduced in 0.22.1; the command interface and selected-account rules are unchanged.
+
 ## 0.22.1 — 17.10.2026
 
 ### Fixed

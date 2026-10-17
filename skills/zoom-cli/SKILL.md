@@ -148,7 +148,7 @@ and output-limit flags. `knowledge.items` adds cited accepted facts about explic
 and confirmed global projects, including decisions outside these meetings. Preserve fact/subject/project
 refs and association flags; inspect `knowledge.coverage.has_more` and `knowledge.coverage.output_limited`. These facts
 yield bytes to meeting evidence and their source evidence is not revalidated. Coverage keeps
-imported documents, mail, messages and project-alias candidates
+imported documents, mail, messages and unselected project vocabularies
 unqueried; without usable anchors, related history is unqueried too. Archive completeness stays
 unknown. `notes.items` contains bounded owner notes and annotations about included earlier calls
 and through explicit person/project associations. Retain note refs, meeting/person/project refs,
@@ -158,3 +158,12 @@ facts. Inspect `notes.coverage` for lookahead, truncation and sources that were 
 notes are outside that selection. Stored fact evidence is not revalidated. Inspect skipped sources and truncation.
 This command does not summarize, accept findings or create tasks. Use existing Memo workflows for
 reviewed writes, retaining meeting evidence and preconditions.
+
+Add `--project <existing-name-key-or-alias>` only for an explicitly selected project. Keep
+`project_evidence.pages` apart from confirmed memberships: each page retains its matched name,
+references and unknown/pending index coverage. Repeated refs across aliases are not independent
+corroboration. At most four pages fit; candidate pages yield bytes before notes and accepted context.
+Use `project_evidence.continuation` with `meetings projects evidence` / `meeting_project_evidence`,
+keeping its frozen project/query/limit/read budget and non-null cursor; omit a null cursor to restart.
+Do not pass its CLI `command` field as an MCP argument. Empty pages can have continuation. This reads
+existing words without refreshing the index, inferring a project or confirming membership.

@@ -4,7 +4,8 @@ See which meeting workflows you can use today and which need further development
 retrieves available hosted data, imports transcripts, backs up recordings and searches cited passages.
 `meetings prepare` combines upcoming proof for one selected series with bounded stored context,
 including related calls, accepted person/project facts and owner notes about included earlier calls,
-explicitly linked people and confirmed projects.
+explicitly linked people and confirmed projects. An optional selected existing project adds cited
+name/key/alias word matches, kept separate from confirmed membership.
 An agent can combine these sources with Memo's projects, notes and people. Start with
 [meeting preparation](usage.md#prepare-for-an-upcoming-meeting) or [search and evidence](search.md).
 
@@ -17,9 +18,9 @@ own archive metadata format.
 - Dedicated reviewed findings intake: an agent proposes cited facts, decisions and project tasks, with
   repeatable intake that avoids duplicate records.
 - Broader meeting preparation: discover candidate series and inspect imported documents, mail,
-  messages and project-name/alias candidates, then build a brief with explicit evidence and gaps.
+  messages and possible projects without requiring a project selection, then build a brief with explicit evidence and gaps.
   The current selected-series command includes accepted global person/project facts and owner notes but leaves
-  those other sources unqueried; it returns stored context without generating a summary.
+  those other sources and unselected project vocabularies unqueried; it returns stored context without generating a summary.
 
 Project aliases, tags and notes already belong to Memo and the shared store. Another meeting
 provider uses the shared meeting capabilities; a production Google Meet or Teams connector is not
