@@ -251,7 +251,7 @@ associations and excludes deleted/scoped subjects and later revisions. Its UTF-8
 lookahead before hydration. References, revision, explicit source gaps and coverage survive CLI/MCP
 and field projection; native installed tests verify the binding without adding provider policy or SQL.
 
-Command vocabulary checks use the same canonical Base 0.33.0 package as the runtime. Core and
+Command vocabulary checks use the same exact cli-base pin as the runtime in `package.json`. Core and
 Zoom must resolve one Base installation; installed-package proofs check that identity. No separate
 vocabulary alias or widened peer range is needed.
 
