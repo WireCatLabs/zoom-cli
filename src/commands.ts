@@ -113,8 +113,6 @@ export const annotateMeetingCommands = (program: Command): void => {
     annotate(command, {
       origin: "handwritten",
       effects,
-      ...(path === "watch" || path === "serve" ? { lifetime: "persistent" as const } : {}),
-      ...(path === "session start" ? { lifetime: "interactive" as const } : {}),
       ...(item.examples ? {} : { examples: [exampleFor(path)] }),
     })
   }

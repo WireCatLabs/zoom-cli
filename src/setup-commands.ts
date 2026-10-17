@@ -1,5 +1,6 @@
 import { CliError, createRenderer, isCliError } from "@wirecat/cli-base"
-import { type Body, itemOf } from "@wirecat/cli-core/cli"
+import { annotate } from "@wirecat/cli-base/commands"
+import { type Body, itemOf, REMOTE_WRITE } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import type { AnswerFormat } from "./answer-output.js"
 import { addStandardCommands } from "./commands.js"
@@ -123,7 +124,7 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
   })
   const session = program.commands.find((command) => command.name() === "session")
   if (!session) throw new CliError("configuration_error", "session command group is unavailable")
-  session
+  const start = session
     .command("start")
     .description("log in to Zoom through your browser")
     .option("--browser <program>", "browser program")
@@ -155,4 +156,5 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
         ),
       )
     })
+  annotate(start, { effects: REMOTE_WRITE, lifetime: "interactive" })
 }

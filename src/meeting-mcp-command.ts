@@ -1,4 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
+import { annotate } from "@wirecat/cli-base/commands"
+import { FETCH } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { bytes } from "./execution.js"
 import type { ZoomPreparationOptions } from "./meeting-preparation.js"
@@ -22,8 +24,7 @@ export const addZoomMcpCommand = (
     preparation: ZoomPreparationOptions
   },
 ) =>
-  program
-    .command("serve")
+  annotate(program.command("serve"), { effects: FETCH, lifetime: "persistent" })
     .description("serve read-only meeting tools over MCP stdio")
     .requiredOption("--mcp", "use the MCP JSON-RPC protocol")
     .option("--unified-search", "include selected-profile meetings-only unified search")
