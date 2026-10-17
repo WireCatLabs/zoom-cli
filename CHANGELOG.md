@@ -1,14 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.23.1 — 17.10.2026
 
 ### Fixed
 
 - Adopt registry Core 0.315.0 and Base 0.40.2, including shared answer redaction and read-only serve protection. pnpm upgrade instructions exempt the tool scope from the minimum release age so an upgrade can install the current release.
-
-## 0.23.1 — 17.10.2026
-
-### Fixed
 
 - **A sync whose participants call fails keeps the meeting's participant count.** Adopts Core 0.311.0: `meetings sync`
   and `watch` used to overwrite a stored count with nothing when Zoom's participants list could not be read.
