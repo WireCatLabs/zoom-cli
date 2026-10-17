@@ -33,8 +33,13 @@ a transcript to an AI service. This guide explains those boundaries before you c
 
 ## What agents can do
 
-- The MCP server is read-only, fixed to the selected local account, and exposes no file exports,
-  remote mutations, embedding generation or task creation.
+- The MCP server is read-only and exposes no file exports, remote mutations, embedding generation
+  or task creation. Meeting reads use the selected Zoom profile.
+- Optional preparation can also read the message accounts, mail accounts and document folders you
+  [explicitly select for that profile](configuration.md#select-communications-for-preparation).
+  A grant covers the whole account or folder; only requested source IDs are resolved and searched.
+  Restart the MCP server after changing or revoking selections. Preparation opens an existing
+  compatible store read-only, without migration or index maintenance.
 - Local audio transcription uses an already installed model on your machine and downloads none.
 - Remote meeting changes, meeting links, transcription, archive job creation,
   explicit `meetings embeddings` generation and lock recovery preview by default and need `--yes`; `--dry-run` wins where
