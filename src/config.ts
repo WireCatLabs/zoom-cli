@@ -2,6 +2,10 @@ import { existsSync } from "node:fs"
 import { CliError, isCliError, saveConfigFile } from "@wirecat/cli-base"
 import { loadSnakeCaseConfig } from "@wirecat/cli-core/cli"
 import * as v from "valibot"
+import { type ConfiguredContextSource, contextSourcesSchema, replaceContextSources } from "./context-sources.js"
+import { profilePattern } from "./profile.js"
+
+export { profileAccountKey } from "./profile.js"
 
 export interface ZoomConfig {
   clientId: string | null
@@ -9,9 +13,8 @@ export interface ZoomConfig {
   filesFolder: string | null
   filesTimezone: string
   accountProfile: string | null
+  contextSources?: ConfiguredContextSource[]
 }
-const profilePattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/
-export const profileAccountKey = (profile: string): string => `zm-profile:${profile}`
 
 const ConfigFile = v.strictObject({
   client_id: v.nullable(
@@ -34,6 +37,7 @@ const ConfigFile = v.strictObject({
     }),
   ),
   account_profile: v.optional(v.nullable(v.pipe(v.string(), v.regex(profilePattern)))),
+  context_sources: v.optional(contextSourcesSchema),
 })
 
 // The loader's issue text quotes the offending value ("received …"), which can be the client id.
@@ -61,6 +65,7 @@ export const readConfig = (path: string): ZoomConfig => {
       filesFolder: file.files_folder,
       filesTimezone: file.files_timezone,
       accountProfile: file.account_profile ?? null,
+      ...(file.context_sources === undefined ? {} : { contextSources: file.context_sources }),
     }
   } catch (error) {
     if (isCliError(error)) throw new CliError("configuration_error", keyOnly(error.message))
@@ -75,11 +80,15 @@ const saveConfig = (path: string, config: ZoomConfig): void =>
     files_folder: config.filesFolder,
     files_timezone: config.filesTimezone,
     account_profile: config.accountProfile,
+    ...(config.contextSources === undefined ? {} : { context_sources: config.contextSources }),
   })
 
 export const setConfig = (path: string, key: string, value: string): ZoomConfig => {
   const config = readConfig(path)
   switch (key) {
+    case "context.sources":
+      config.contextSources = replaceContextSources(value, config.accountProfile, config.contextSources)
+      break
     case "zoom.client_id":
     case "zoom.clientId":
       if (!value.trim() || /\s/.test(value))

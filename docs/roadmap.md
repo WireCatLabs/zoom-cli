@@ -6,6 +6,8 @@ retrieves available hosted data, imports transcripts, backs up recordings and se
 including related calls, accepted person/project facts and owner notes about included earlier calls,
 explicitly linked people and confirmed projects. An optional selected existing project adds cited
 name/key/alias word matches, kept separate from confirmed membership.
+Explicit configured communications selections add bounded, cited literal matches from stored
+message accounts, mail accounts and document folders, with source coverage and continuation.
 An agent can combine these sources with Memo's projects, notes and people. Start with
 [meeting preparation](usage.md#prepare-for-an-upcoming-meeting) or [search and evidence](search.md).
 
@@ -27,8 +29,8 @@ these findings or generate a summary.
 
 - Broader meeting preparation: discover candidate series and inspect imported documents, mail,
   messages and possible projects without requiring a project selection, then build a brief with explicit evidence and gaps.
-  The current selected-series command includes accepted global person/project facts and owner notes but leaves
-  those other sources and unselected project vocabularies unqueried; it returns stored context without generating a summary.
+  The current selected-series command includes accepted global person/project facts, owner notes and explicitly
+  selected communications sources, but leaves unselected sources and project vocabularies unqueried; it returns stored context without generating a summary.
 
 Project aliases, tags and notes already belong to Memo and the shared store. Another meeting
 provider uses the shared meeting capabilities; a production Google Meet or Teams connector is not

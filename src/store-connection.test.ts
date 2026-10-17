@@ -35,6 +35,19 @@ beforeEach(() => {
 })
 
 describe("persistent account connector", () => {
+  it("opens preparation with native read-only enforcement and leaves normal indexed reads unchanged", async () => {
+    const store = fixture()
+    const openStore = vi.fn(async (_options: import("@wirecat/cli-core/store").StoreOptions) => fakeStore(store))
+    const connect = createStoreConnector({ openStore })
+    const preparation = await connect({ ...request, intent: "preparation" })
+    expect(openStore).toHaveBeenLastCalledWith(expect.objectContaining({ readOnly: true }))
+    await preparation.close()
+    const read = await connect(request)
+    expect(openStore.mock.calls[1]?.[0]).not.toHaveProperty("readOnly")
+    await read.close()
+    expect(store.accounts.saveAccount).not.toHaveBeenCalled()
+  })
+
   it("captures selected profile and read intent before an asynchronous adapter opens", async () => {
     const selected = { ...request }
     const store = fixture()

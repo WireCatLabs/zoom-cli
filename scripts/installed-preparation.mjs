@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { createRequire } from "node:module"
 import { join, resolve } from "node:path"
 import { pathToFileURL } from "node:url"
+import { checkPreparationCommunications } from "./installed-preparation-communications.mjs"
 import { checkPreparationProjects } from "./installed-preparation-projects.mjs"
 
 const root = resolve(process.argv[2])
@@ -68,7 +69,7 @@ let credentials = 0,
   requests = 0,
   closed = 0
 const connector = createStoreConnector({ path, now: () => now })
-const read = createZoomPreparationReader({
+const readOptions = {
   credentials: () => ({
     withSignal: () => ({
       tokens: async () => {
@@ -91,7 +92,7 @@ const read = createZoomPreparationReader({
     const connection = await connector({
       profile: "AliceExample",
       externalId: key.account,
-      intent: "read",
+      intent: "preparation",
     })
     return {
       ...connection,
@@ -101,7 +102,8 @@ const read = createZoomPreparationReader({
       },
     }
   },
-})
+}
+const read = createZoomPreparationReader(readOptions)
 assert.equal(credentials, 0)
 await assert.rejects(readMeetingPreparation(read, { series_id: "123", account_id: foreignId }, undefined, now), {
   code: "validation_error",
@@ -241,9 +243,11 @@ const projectProof = await checkPreparationProjects({
   connector,
   requestCount: () => requests,
 })
+const communicationsProof = await checkPreparationCommunications({ load, path, now, key, connector, readOptions })
 console.log(
   JSON.stringify({
     ...projectProof,
+    ...communicationsProof,
     cold_credentials: true,
     selected_account: true,
     cited_context: true,

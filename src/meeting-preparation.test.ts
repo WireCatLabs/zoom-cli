@@ -60,7 +60,7 @@ it("CLI prepares the selected series with cited local context and closes before 
   })
   expect(item.notes.items).toHaveLength(1)
   expect(f.connectStore).toHaveBeenCalledOnce()
-  expect(f.connectStore).toHaveBeenCalledWith(expect.objectContaining({ intent: "read" }))
+  expect(f.connectStore).toHaveBeenCalledWith(expect.objectContaining({ intent: "preparation" }))
   expect(f.network).toHaveBeenCalledOnce()
   expect(f.errors).toEqual([])
   expect(f.output.join("")).not.toContain("invented-access")
@@ -96,8 +96,9 @@ it("refuses invalid fields, provider IDs and offline reads before store or crede
   expect(f.output).toEqual([])
 })
 
-it("refuses communications context, which zm does not bind, without output", async () => {
+it("refuses unconfigured communications before store access or credentials, without output", async () => {
   const f = await fixture()
+  const load = vi.spyOn(f.tokens, "load")
   for (const option of [
     [],
     ["--context-since-time", "2026-10-01T00:00:00Z"],
@@ -110,9 +111,12 @@ it("refuses communications context, which zm does not bind, without output", asy
         f.deps,
       ),
     ).not.toBe(0)
-    expect(f.errors.join("")).toContain("Communications are unavailable")
+    expect(f.errors.join("")).toContain("configure context.sources")
   }
   expect(f.output).toEqual([])
+  expect(f.connectStore).not.toHaveBeenCalled()
+  expect(f.network).not.toHaveBeenCalled()
+  expect(load).not.toHaveBeenCalled()
 })
 
 it("fact-reference projection retains knowledge pagination and coverage", async () => {
@@ -289,7 +293,7 @@ it("accepts fixed windows and bounded context options, including standard field 
 it("the public reader validates before credentials and closes on cancellation during binding", async () => {
   const f = await fixture()
   const credentials = vi.fn(() => f.tokens)
-  const connect = vi.fn(f.mcp.connectStore)
+  const connect = vi.fn(() => f.mcp.connectStore())
   const reader = createZoomPreparationReader({ credentials, fetch: f.network, connect })
   await expect(
     reader("123", { after: now, until: now + 1000, historyAfter: now - 1000, cues: 101 }),

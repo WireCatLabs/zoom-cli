@@ -14,6 +14,7 @@ Set a value with `zm config set <key> <value>` and see them all with `zm config 
 | `account.profile` | [Local label](sessions.md#select-a-local-profile) for stored meetings; unset by default, required for store operations |
 | `source` | Where `meetings sync` and `watch` read from: `api` (default) or `files` |
 | `files.folder` | Transcript folder for file-source pull/watch; unset by default |
+| `context.sources` | JSON array of explicitly selected message, mail or document accounts for this profile; empty by default ([setup below](#select-communications-for-preparation)) |
 | `files.timezone` | the IANA zone of downloaded transcript filenames, for example `Europe/Madrid`; default UTC |
 
 Check `zm config show` after editing. Switching `account.profile` does not switch the authenticated
@@ -57,3 +58,35 @@ Directories otherwise follow the platform convention. The default shared databas
 ([where meetings are stored](archive.md#where-meetings-are-stored)). Use the same environment in your
 terminal and MCP entry; otherwise they can read different profiles or stores. Continue with
 [sessions](sessions.md) to verify authorization separately from these public settings.
+
+## Select communications for preparation
+
+Preparation can search accounts already imported into the shared database. Select the local Zoom
+profile first, then save up to eight source selections for it. Each entry needs an ID, kind,
+provider and account. Message and mail identities must match their stored provider/account exactly;
+copy those identities from the producing tool's account settings or canonical references. Do not
+use a display name in place of an account identity.
+
+```sh
+zm config set account.profile research
+zm config set context.sources '[{"id":"project-notes","kind":"document","provider":"folder","account":"notes:5"}]'
+zm config show
+```
+
+This example uses an invented folder ID. Run `memo folders list` and substitute the ID of the
+folder you choose. `notes:5` resolves that existing folder's stored identity; it does not create
+or import a folder. A document source selects one folder, a message source one messaging account,
+and a mail source one mail account. These grants cover the selected account or folder; there is
+currently no chat, sender or path restriction within it. Do not grant a whole account if that scope
+is broader than you intend.
+
+The setting replaces the selections for the current profile, preserving other profiles. Use `[]`
+to revoke this profile's selections. Duplicate IDs and identities, unknown fields and more than
+eight entries are refused. The JSON file stores the flat array as `context_sources`, adding the
+selected `profile` to each entry. Continue using `config set` to avoid hand-editing that layout.
+
+Only an explicit preparation request resolves and searches its requested sources. An unavailable
+configured source that you did not request does not block other selections. Normal meeting reads do not acquire
+cross-account access. An MCP server captures source definitions at startup and pins each requested source's stored
+identity on first use; restart it after changing or revoking selections. Missing or mismatched
+identities fail closed. No source is selected automatically.

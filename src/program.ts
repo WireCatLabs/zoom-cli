@@ -29,6 +29,7 @@ import { checkCancelled } from "./errors.js"
 import { bytes, duration, type ExecutionState, resetCliOptions, startExecution } from "./execution.js"
 import { importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { liftJsonFields } from "./json-fields.js"
+import { type ContextCapture, captureContextSources } from "./meeting-communications-binding.js"
 import { addZoomMcpCommand, type ZoomMcpServeOptions } from "./meeting-mcp-command.js"
 import type { ZoomPreparationOptions } from "./meeting-preparation.js"
 import { configuredMeetingSource } from "./meeting-source.js"
@@ -140,11 +141,14 @@ export const createProgram = (deps: ProgramDeps): Command => {
       throw new CliError("configuration_error", "the selected meeting account is unavailable")
     return selectedAccountId
   }
-  const openStore = async (intent: StoreConnectRequest["intent"]): Promise<StoreConnection> => {
+  const openStore = async (
+    intent: StoreConnectRequest["intent"],
+    context?: ContextCapture,
+  ): Promise<StoreConnection> => {
     if (!deps.connectStore) return storeUnavailable()
     const profile = getConfig().accountProfile
     try {
-      return await connectSelectedProfile(deps.connectStore, profile, intent)
+      return await connectSelectedProfile(deps.connectStore, profile, intent, context)
     } catch (error) {
       if (isCliError(error)) throw error
       throw new CliError("configuration_error", "could not open the shared meeting store")
@@ -355,7 +359,13 @@ export const createProgram = (deps: ProgramDeps): Command => {
       env: deps.env,
     }
   })
+  let capturedContext: ContextCapture | undefined
   const preparationOptions: ZoomPreparationOptions = {
+    context: () => {
+      const config = getConfig()
+      capturedContext ??= captureContextSources(config.contextSources, config.accountProfile)
+      return capturedContext
+    },
     credentials: () => {
       api()
       return tokens()

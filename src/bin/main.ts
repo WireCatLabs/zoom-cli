@@ -8,6 +8,7 @@ import { CliError, catchCrashes, isCliError, readBatchInput, systemKeyring } fro
 import { reportFailure } from "../answer-policy.js"
 import { readConfig } from "../config.js"
 import { loginService, zmPaths } from "../folders.js"
+import { captureContextSources } from "../meeting-communications-binding.js"
 import { writeExportFile } from "../output-file.js"
 import { run } from "../program.js"
 import { lazyRunLog } from "../run-log.js"
@@ -62,17 +63,14 @@ try {
     connectStore,
     serveMcp: async (options) => {
       const { serveMeetingMcp } = await import("../mcp-server.js")
-      let profileCaptured = false
-      let profile: string | null | undefined
+      const config = readConfig(configPath)
+      const profile = config.accountProfile
+      const context = captureContextSources(config.contextSources, profile)
       await serveMeetingMcp({
         ...options,
-        connectStore: async () => {
-          if (!profileCaptured) {
-            profile = readConfig(configPath).accountProfile
-            profileCaptured = true
-          }
-          return connectSelectedProfile(connectStore, profile, "read")
-        },
+        ...(options.preparation ? { preparation: { ...options.preparation, context: () => context } } : {}),
+        connectStore: async (preparation) =>
+          connectSelectedProfile(connectStore, profile, preparation ? "preparation" : "read", preparation?.context),
       })
     },
     fetch,
