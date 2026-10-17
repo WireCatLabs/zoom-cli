@@ -65,6 +65,16 @@ account APIs. Only store commands open a connection; ingestion registers a profi
 storedAccount without registration. Setup failures close the store before rejecting. Tests inject a
 meeting port or use fresh invented databases; memory storage is never a production fallback.
 
+Preparation has a separate connection intent that uses Core's native read-only opener. It refuses
+an absent or incompatible database without migration or index maintenance. Ordinary indexed search
+keeps its normal index-refresh path. Source configuration captures profile-local IDs; a request
+narrows that capture before credentials or opening. Only requested identities are resolved, and
+successful pins retain detached immutable values rather than connections. Each preparation call
+owns a fresh connection and Core read ledger. MCP captures definitions at startup and pins each
+requested source on first use, so configuration changes require a restart. Core owns source reads,
+query/window checks, budgets, citations, continuation and coverage; this host contains no SQL or
+alternative assembler.
+
 Transcript downloads validate each redirect destination before sending bearer credentials and
 share a bounded timeout across the download. Stable participant sessions are deduplicated; guests
 without stable identity keys stay separate. Files with equal normalized occurrence keys must have
