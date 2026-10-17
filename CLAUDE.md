@@ -5,7 +5,8 @@ logic and database work in cli-core. Never include real meeting names, ids,
 emails or transcript text in fixtures, docs or commits. Tests use invented people and an injected
 memory keyring, never the owner's account or store.
 
-Read [architecture](docs/dev/ARCHITECTURE.md) and [testing](docs/dev/TESTING.md) before changes.
+The [WireCat CLI standards](https://github.com/WireCatLabs/cli-base/blob/main/docs/standards/README.md) apply here and win over this file; it keeps only
+zoom's own rules. Read [architecture](docs/dev/ARCHITECTURE.md) and [testing](docs/dev/TESTING.md) before changes.
 Token values stay in the keyring. A login listener closes on success, failure and timeout.
 No live check or real import before the owner authorizes it and the shared store adapter exists.
 
@@ -19,10 +20,5 @@ vulnerabilities are reported as the
 
 ## Development check budget
 
-Local commits check only staged lint and secrets. There is no pre-push check.
-Config integrity, repository lint, Markdown, and secret detection run in PR CI.
-The bounded `ci:quick` step adds typechecking for CLI packages or synthetic unit tests for the docs site.
-Full tests, coverage and builds also run once on each merge to `main` (Linux only, no publishing).
-Browser and platform suites run for releases, explicit manual validation, and monthly nonpublishing
-validation. See the
-[shared policy](https://github.com/WireCatLabs/community/blob/main/standards/README.md#ci-and-hooks).
+Hooks, pull request CI and full validation follow the handbook's
+[CI rules](https://github.com/WireCatLabs/cli-base/blob/main/docs/standards/ci.md). Here `ci:quick` is `pnpm typecheck`.

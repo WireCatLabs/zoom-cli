@@ -24,9 +24,8 @@ export const commandEffects = (command: Command): Effects | undefined => {
   )
     return LOCAL_READ
   if (["config set", "skill install", "meetings import", "meetings export"].includes(path)) return LOCAL_WRITE
-  if (path === "session start") return REMOTE_WRITE
   if (["meetings prepare", "session status", "recordings list", "recordings show"].includes(path)) return REMOTE_READ
-  if (["watch", "serve", "meetings sync", "search meetings", "meetings embeddings"].includes(path)) return FETCH
+  if (["watch", "meetings sync", "search meetings", "meetings embeddings"].includes(path)) return FETCH
   if (["recordings download", "recordings sync", "recordings schedule run"].includes(path)) return FETCH
   if (path.startsWith("remote-meetings "))
     return ["list", "show", "invitation"].includes(command.name()) ? REMOTE_READ : REMOTE_WRITE

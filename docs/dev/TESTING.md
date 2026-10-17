@@ -20,8 +20,8 @@ platform proofs validate every product answer and keep helper/embedding-fixture 
 
 Integration cases exercise command import and transcript search, grouped participant sessions,
 API occurrence ids, missing scopes, corrected/idempotent imports, time zones and daylight-saving
-ambiguity. Temporary config and transcript fixtures live under `/tmp/zm-test-*`; they contain only
-invented values and are retained until cleanup is approved.
+ambiguity. Temporary config and transcript fixtures are `zm-test-*` directories inside the test file's
+temporary root (see "Command coverage"). They contain only invented values and are removed with that root.
 
 The acceptance suite packs and installs the actual package in a fresh `zm-test-package-*` directory
 and runs its installed bin. It overrides config/state/cache/store paths and installs a process guard
@@ -63,9 +63,12 @@ These commands run only in release, monthly and manual full validation. See the
 
 ## Command coverage
 
-Each test file gets a private `zm-test-suite-*` temporary root. Its temporary-file environment is
-inherited by subprocesses and restored afterwards. Stack-ordered cleanup runs after the file's
-resource-closing hooks and removes that root; an interrupted process may leave a root behind.
+Each test file gets a private `zm-test-suite-*` temporary root from `scripts/testing/temp-state.ts`, which
+points `TMPDIR`, `TMP` and `TEMP` at it. Subprocesses inherit it, and the variables are restored afterwards.
+Stack-ordered cleanup runs after the file's resource-closing hooks and removes that root; an interrupted
+process may leave a root behind. The sandbox moves only the temporary directory, which is less than
+[WC-TEST-1](https://github.com/WireCatLabs/cli-base/blob/main/docs/standards/testing.md#wc-test-1--point-every-path-a-test-could-write-at-a-temporary-directory)
+asks: config, state and store paths are still set per test.
 Command traces remain under `coverage/argv.jsonl`, with one previous run retained as
 `coverage/argv.previous.jsonl`, instead of accumulating temporary backup directories.
 

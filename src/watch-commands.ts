@@ -70,5 +70,6 @@ export const addWatchCommand = (program: Command, deps: WatchCommandDeps): void 
     origin: "handwritten",
     effects: LOCAL_WRITE,
     examples: ["zm watch files ./downloads --pause 10s --jsonl", "zm watch api --lookback-days 2 --jsonl"],
+    lifetime: "persistent",
   })
 }
