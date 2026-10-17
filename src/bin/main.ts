@@ -5,12 +5,13 @@ import { createInterface } from "node:readline/promises"
 import { addAbortSignal } from "node:stream"
 import { fileURLToPath } from "node:url"
 import { CliError, catchCrashes, isCliError, readBatchInput, systemKeyring } from "@wirecat/cli-base"
-import { profileAccountKey, readConfig } from "../config.js"
+import { reportFailure } from "../answer-policy.js"
+import { readConfig } from "../config.js"
 import { loginService, zmPaths } from "../folders.js"
 import { writeExportFile } from "../output-file.js"
-import { reportFailure, run } from "../program.js"
+import { run } from "../program.js"
 import { lazyRunLog } from "../run-log.js"
-import { createStoreConnector } from "../store-connection.js"
+import { connectSelectedProfile, createStoreConnector } from "../store-connection.js"
 import { writeStream } from "../streaming.js"
 import { TOKEN_LOG_ALLOW, TokenManager } from "../tokens.js"
 import { VERSION } from "../version.js"
@@ -70,12 +71,7 @@ try {
             profile = readConfig(configPath).accountProfile
             profileCaptured = true
           }
-          if (!profile)
-            throw new CliError(
-              "configuration_error",
-              "select a local profile with zm config set account.profile <label>",
-            )
-          return connectStore({ profile, externalId: profileAccountKey(profile), intent: "read" })
+          return connectSelectedProfile(connectStore, profile, "read")
         },
       })
     },

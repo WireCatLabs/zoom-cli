@@ -2,13 +2,8 @@ import { mkdtemp, readdir, readFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, expect, it } from "vitest"
-import {
-  archiveRecording,
-  type DownloadOptions,
-  inspectArchive,
-  validateDownloadOptions,
-  verifyArchive,
-} from "./recording-archive.js"
+import { archiveRecording, type DownloadOptions, validateDownloadOptions } from "./recording-archive.js"
+import { inspectArchive, verifyArchive } from "./recording-manifest.js"
 import type { RecordingMeeting } from "./recordings.js"
 import { ZoomRemote } from "./remote-http.js"
 

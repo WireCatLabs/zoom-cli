@@ -10,7 +10,8 @@ import { readAnswer, readJsonlPage, readReceipt } from "../scripts/testing/answe
 import { fakeConnection } from "../scripts/testing/connection.js"
 import { setConfig } from "./config.js"
 import type { LocalTranscriptionOptions } from "./local-transcription.js"
-import { type ProgramDeps, run, type StoreConnection } from "./program.js"
+import { type ProgramDeps, run } from "./program.js"
+import type { StoreConnection } from "./store-connection.js"
 import { TokenManager } from "./tokens.js"
 
 const setup = async () => {

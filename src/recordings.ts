@@ -195,15 +195,10 @@ export class ZoomRecordings {
   }
 }
 
-export type {
-  ArchivedFile,
-  ArchiveLockInfo,
-  ArchiveManifest,
-  ArchiveReport,
-  ArchiveVerification,
-  DownloadOptions,
-} from "./recording-archive.js"
-export { inspectArchive, inspectArchiveLocks, recoverArchiveLocks, verifyArchive } from "./recording-archive.js"
+export type { ArchiveLockInfo, ArchiveReport, DownloadOptions } from "./recording-archive.js"
+export { inspectArchiveLocks, recoverArchiveLocks } from "./recording-archive.js"
+export type { ArchivedFile, ArchiveManifest, ArchiveVerification } from "./recording-manifest.js"
+export { inspectArchive, verifyArchive } from "./recording-manifest.js"
 
 export interface ZoomProfile {
   id: string

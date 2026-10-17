@@ -14,7 +14,33 @@ export interface RemoteRequest {
   body?: unknown
   maxResponseBytes?: number
 }
+export interface DownloadRequest {
+  accessToken: string
+  signal: AbortSignal
+  /** The noun in the error messages: "transcript" or "recording". */
+  what: string
+  headers?: Record<string, string>
+  /** The error for a request that could not be sent or answered; it may throw a cancellation instead. */
+  unreachable: () => CliError
+}
 export const operationSignal = (signal?: AbortSignal): AbortSignal => signal ?? AbortSignal.timeout(3600000)
+const downloadTarget = (input: string, what: string, base?: URL): URL => {
+  let target: URL
+  try {
+    target = new URL(input, base)
+  } catch {
+    throw new CliError("invalid_response", `Zoom returned an unexpected ${what} download host`)
+  }
+  if (
+    target.protocol !== "https:" ||
+    target.username ||
+    target.password ||
+    (target.port && target.port !== "443") ||
+    !/(^|\.)zoom\.(us|com)$/.test(target.hostname)
+  )
+    throw new CliError("invalid_response", `Zoom returned an unexpected ${what} download host`)
+  return target
+}
 export class ZoomRemote {
   constructor(
     readonly tokens: Pick<TokenManager, "tokens">,
@@ -53,6 +79,29 @@ export class ZoomRemote {
         continue
       }
       return response
+    }
+  }
+  /** Follows Zoom's redirects to a file, checking every hop's host; the caller judges the final response. */
+  async download(url: string, request: DownloadRequest): Promise<Response> {
+    const { accessToken, signal, what, headers = {}, unreachable } = request
+    let target = downloadTarget(url, what)
+    for (let redirects = 0; ; redirects++) {
+      let response: Response
+      try {
+        if (signal.aborted) throw signal.reason
+        response = await this.fetcher(target, {
+          headers: { authorization: `Bearer ${accessToken}`, ...headers },
+          redirect: "manual",
+          signal,
+        })
+      } catch {
+        throw unreachable()
+      }
+      if (![301, 302, 303, 307, 308].includes(response.status)) return response
+      const location = response.headers.get("location")
+      await response.body?.cancel()
+      if (!location || redirects >= 5) throw new CliError("invalid_response", `Zoom returned invalid ${what} redirects`)
+      target = downloadTarget(location, what, target)
     }
   }
   request(path: string, scope: string, options: RemoteRequest = {}): Promise<Record<string, unknown>> {

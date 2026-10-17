@@ -50,7 +50,7 @@ export class ZoomApiSource implements MeetingSource {
   private readonly remote: ZoomRemote
   constructor(
     private readonly tokens: TokenManager,
-    private readonly fetcher: typeof fetch,
+    fetcher: typeof fetch,
     options: RemoteOptions = {},
   ) {
     this.remote = new ZoomRemote(tokens, fetcher, options)
@@ -230,80 +230,49 @@ export class ZoomApiSource implements MeetingSource {
       3322,
     )
     if (!body) return null
-    const validateTarget = (value: string, base?: URL): URL => {
-      let target: URL
-      try {
-        target = new URL(value, base)
-      } catch {
-        throw new CliError("invalid_response", "Zoom returned an unexpected transcript download host")
-      }
-      if (
-        target.protocol !== "https:" ||
-        target.username ||
-        target.password ||
-        (target.port && target.port !== "443") ||
-        !/(^|\.)zoom\.(us|com)$/.test(target.hostname)
-      )
-        throw new CliError("invalid_response", "Zoom returned an unexpected transcript download host")
-      return target
-    }
-    let target = validateTarget(requiredString(body.download_url))
+    const url = requiredString(body.download_url)
     const tokens = await this.tokens.tokens()
+    // One deadline covers every redirect and the streamed body.
     const signal = AbortSignal.timeout(30000)
-    for (let redirects = 0; ; redirects++) {
-      // One deadline covers every redirect and the streamed body.
-      let response: Response
-      try {
-        response = await this.fetcher(target, {
-          headers: { authorization: `Bearer ${tokens.accessToken}` },
-          signal,
-          redirect: "manual",
-        })
-      } catch {
-        throw new CliError("provider_error", "Transcript download could not be completed")
-      }
-      if ([301, 302, 303, 307, 308].includes(response.status)) {
-        const location = response.headers.get("location")
-        await response.body?.cancel()
-        if (!location || redirects >= 5)
-          throw new CliError("invalid_response", "Zoom returned invalid transcript redirects")
-        target = validateTarget(location, target)
-        continue
-      }
-      if (!response.ok)
-        throw new CliError(statusToCode(response.status), `Transcript download failed (HTTP ${response.status})`)
-      const maxBytes = TRANSCRIPT_MAX_BYTES
-      const reader = response.body?.getReader()
-      if (!reader) throw new CliError("invalid_response", "Zoom returned an invalid transcript")
-      const chunks: Uint8Array[] = []
-      let size = 0
-      try {
-        for (;;) {
-          const { done, value } = await reader.read()
-          if (done) break
-          size += value.byteLength
-          if (size > maxBytes) {
-            await reader.cancel()
-            throw new CliError("invalid_response", "Zoom transcript exceeds the download size limit")
-          }
-          chunks.push(value)
+    const response = await this.remote.download(url, {
+      accessToken: tokens.accessToken,
+      signal,
+      what: "transcript",
+      unreachable: () => new CliError("provider_error", "Transcript download could not be completed"),
+    })
+    if (!response.ok)
+      throw new CliError(statusToCode(response.status), `Transcript download failed (HTTP ${response.status})`)
+    const maxBytes = TRANSCRIPT_MAX_BYTES
+    const reader = response.body?.getReader()
+    if (!reader) throw new CliError("invalid_response", "Zoom returned an invalid transcript")
+    const chunks: Uint8Array[] = []
+    let size = 0
+    try {
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        size += value.byteLength
+        if (size > maxBytes) {
+          await reader.cancel()
+          throw new CliError("invalid_response", "Zoom transcript exceeds the download size limit")
         }
-      } catch (error) {
-        if (isCliError(error)) throw error
-        throw new CliError("provider_error", "Transcript download could not be completed")
+        chunks.push(value)
       }
-      const bytes = new Uint8Array(size)
-      let offset = 0
-      for (const chunk of chunks) {
-        bytes.set(chunk, offset)
-        offset += chunk.byteLength
-      }
-      const content = new TextDecoder().decode(bytes)
-      try {
-        return parseVtt(content)
-      } catch {
-        throw new CliError("invalid_response", "Zoom returned an invalid transcript")
-      }
+    } catch (error) {
+      if (isCliError(error)) throw error
+      throw new CliError("provider_error", "Transcript download could not be completed")
+    }
+    const bytes = new Uint8Array(size)
+    let offset = 0
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset)
+      offset += chunk.byteLength
+    }
+    const content = new TextDecoder().decode(bytes)
+    try {
+      return parseVtt(content)
+    } catch {
+      throw new CliError("invalid_response", "Zoom returned an invalid transcript")
     }
   }
 

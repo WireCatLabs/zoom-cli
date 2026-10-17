@@ -1,8 +1,7 @@
-import { randomUUID } from "node:crypto"
-import { link, lstat, mkdir, open, readdir, rename, unlink } from "node:fs/promises"
+import { lstat, mkdir, readdir } from "node:fs/promises"
 import { isAbsolute, join, parse, relative, sep } from "node:path"
 import { CliError, isCliError } from "@wirecat/cli-base"
-import { openOrdinaryFile, syncDirectory } from "@wirecat/cli-core/files"
+import { openOrdinaryFile, writeFileAtomic } from "@wirecat/cli-core/files"
 import { checkCancelled } from "./errors.js"
 import {
   parseRecordingScheduleJob,
@@ -106,17 +105,11 @@ export const fileRecordingScheduleStore = (directory: string): RecordingSchedule
           JSON.stringify(existing.job.capture) !== JSON.stringify(job.capture))
       )
         throw new CliError("validation_error", "archive schedule file belongs to another captured job")
-      const temp = join(directory, `.zoom-schedule-${randomUUID()}.tmp`)
-      const handle = await open(temp, "wx", 0o600)
-      try {
-        try {
-          await handle.writeFile(content)
-          await handle.sync()
-        } finally {
-          await handle.close()
-        }
-        checkCancelled(options.signal)
-        if (existing) {
+      await writeFileAtomic(target, content, {
+        overwrite: existing !== null,
+        beforePublish: async () => {
+          checkCancelled(options.signal)
+          if (!existing) return
           const current = await lstat(target, { bigint: true })
           if (
             !current.isFile() ||
@@ -127,12 +120,8 @@ export const fileRecordingScheduleStore = (directory: string): RecordingSchedule
             (current.dev !== 0n && current.dev !== existing.stat.dev && process.platform !== "win32")
           )
             throw new CliError("validation_error", "archive schedule file changed before replacement")
-          await rename(temp, target)
-        } else await link(temp, target)
-        await syncDirectory(directory)
-      } finally {
-        await unlink(temp).catch(() => undefined)
-      }
+        },
+      })
     },
   }
 }

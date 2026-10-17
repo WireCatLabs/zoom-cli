@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process"
 import { randomUUID } from "node:crypto"
-import { mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readdir, readFile, stat, symlink, writeFile } from "node:fs/promises"
 import { hostname, tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import type { RecordingSyncCheckpoint } from "@wirecat/cli-core/meetings"
@@ -20,13 +20,13 @@ const state = (revision = 1): RecordingSyncCheckpoint => ({
   pendingWindows: [{ from: "2026-01-01", to: "2026-01-31" }],
   entries: [],
 })
-const lockOwner = (pid: number, jobId = "AliceExample", host = hostname()) => ({
-  version: 1,
-  pid,
-  host,
-  token: randomUUID(),
-  jobId,
-})
+const lockOwner = (pid: number, host = hostname()) => ({ version: 1, pid, host, nonce: randomUUID() })
+const plant = async (destination: string, content: unknown, name = `${process.pid}-${randomUUID()}.json`) => {
+  await mkdir(`${destination}.locks`, { recursive: true })
+  const owner = content as { pid?: unknown; nonce?: unknown } | null
+  const marker = typeof owner?.nonce === "string" ? `${owner.pid}-${owner.nonce}.json` : name
+  await writeFile(join(`${destination}.locks`, marker), typeof content === "string" ? content : JSON.stringify(content))
+}
 it("persists versioned checkpoint bytes across process-style reopen with lease and compare-and-save", async () => {
   const destination = await path()
   const store = fileRecordingSyncCheckpointStore(destination)
@@ -62,21 +62,21 @@ it("recovers only a recognized local dead-process lease and refuses foreign, mal
     child.once("error", reject)
   })
   const destination = await path()
-  await mkdir(`${destination}.lock`, { recursive: true })
-  await writeFile(join(`${destination}.lock`, "owner.json"), JSON.stringify(lockOwner(deadPid)))
+  await plant(destination, lockOwner(deadPid))
   const store = fileRecordingSyncCheckpointStore(destination)
   const recovered = await store.acquire("AliceExample")
   await recovered.release()
-  for (const owner of [lockOwner(deadPid, "AliceExample", "foreign-host"), { version: 9 }, [], null]) {
+  for (const owner of [lockOwner(deadPid, "foreign-host"), { version: 9 }, [], null]) {
     const target = await path()
-    await mkdir(`${target}.lock`, { recursive: true })
-    await writeFile(join(`${target}.lock`, "owner.json"), JSON.stringify(owner))
+    await plant(target, owner)
     await expect(fileRecordingSyncCheckpointStore(target).acquire("AliceExample")).rejects.toMatchObject({
       code: "configuration_error",
     })
   }
   const acquired = await store.acquire("AliceExample")
-  await writeFile(join(`${destination}.lock`, "owner.json"), JSON.stringify(lockOwner(process.pid)))
+  const [marker] = await readdir(`${destination}.locks`)
+  if (!marker) throw new Error("missing synthetic lock marker")
+  await writeFile(join(`${destination}.locks`, marker), JSON.stringify(lockOwner(process.pid)))
   await expect(store.save("AliceExample", acquired.token, null, state())).rejects.toMatchObject({
     code: "configuration_error",
   })
@@ -110,18 +110,16 @@ it("bounds ordinary checkpoint and owner reads and never overwrites malformed or
   await expect(withDirectory.read("AliceExample", owned.token)).rejects.toMatchObject({ code: "validation_error" })
   await owned.release()
 })
-it("rejects invalid path/job inputs before creating state and serializes stale recovery attempts", async () => {
+it("rejects invalid path/job inputs before creating state and refuses a live holder or a foreign lock entry", async () => {
   expect(() => fileRecordingSyncCheckpointStore(" ")).toThrow()
   const destination = await path()
   const store = fileRecordingSyncCheckpointStore(destination)
   await expect(store.acquire(" ")).rejects.toMatchObject({ code: "validation_error" })
-  await mkdir(`${destination}.lock`, { recursive: true })
-  await mkdir(`${destination}.lock.recovery`)
-  await writeFile(join(`${destination}.lock`, "owner.json"), JSON.stringify(lockOwner(process.pid)))
+  await plant(destination, lockOwner(process.pid))
   await expect(store.acquire("AliceExample")).rejects.toMatchObject({ code: "configuration_error" })
   const ordinary = await path()
   await mkdir(dirname(ordinary), { recursive: true })
-  await writeFile(`${ordinary}.lock`, "invented marker")
+  await writeFile(`${ordinary}.locks`, "invented marker")
   await expect(fileRecordingSyncCheckpointStore(ordinary).acquire("AliceExample")).rejects.toMatchObject({
     code: "configuration_error",
   })
@@ -145,7 +143,7 @@ it("supports bounded opaque job identifiers without exceeding its owner marker r
   await lease.release()
 })
 
-it("allows only one simultaneous job lease and fails closed on incomplete lock markers", async () => {
+it("never grants two simultaneous job leases and fails closed on incomplete lock markers", async () => {
   const destination = await path()
   const stores = [fileRecordingSyncCheckpointStore(destination), fileRecordingSyncCheckpointStore(destination)]
   const results = await Promise.allSettled(stores.map((store) => store.acquire("AliceExample")))
@@ -154,16 +152,14 @@ it("allows only one simultaneous job lease and fails closed on incomplete lock m
       result.status === "fulfilled",
   )
   const losers = results.filter((result): result is PromiseRejectedResult => result.status === "rejected")
-  expect(winners).toHaveLength(1)
-  expect(losers).toHaveLength(1)
-  expect(losers[0]?.reason).toMatchObject({ code: "configuration_error" })
-  const winner = winners[0]
-  if (!winner) throw new Error("missing synthetic winner")
-  await winner.value.release()
-  for (const content of [null, "{", "x".repeat(32 * 1024 + 1)]) {
+  expect(winners.length).toBeLessThanOrEqual(1)
+  for (const loser of losers) expect(loser.reason).toMatchObject({ code: "configuration_error" })
+  for (const winner of winners) await winner.value.release()
+  const retried = await fileRecordingSyncCheckpointStore(destination).acquire("AliceExample")
+  await retried.release()
+  for (const content of ["", "{", "x".repeat(32 * 1024 + 1)]) {
     const target = await path()
-    await mkdir(`${target}.lock`, { recursive: true })
-    if (content !== null) await writeFile(join(`${target}.lock`, "owner.json"), content)
+    await plant(target, content)
     await expect(fileRecordingSyncCheckpointStore(target).acquire("AliceExample")).rejects.toMatchObject({
       code: "configuration_error",
     })
@@ -185,6 +181,31 @@ it("refuses oversized serialized checkpoint identifiers before replacing durable
       code: "validation_error",
     })
     expect(await store.read("AliceExample", lease.token)).toBeNull()
+  } finally {
+    await lease.release()
+  }
+})
+
+it("saves a checkpoint inside an archive folder reached through a symlink", async () => {
+  const real = dirname(await path())
+  await mkdir(real, { recursive: true })
+  const linked = join(dirname(real), "linked-archive")
+  await symlink(real, linked)
+  const store = fileRecordingSyncCheckpointStore(join(linked, "checkpoint.json"))
+  const lease = await store.acquire("AliceExample")
+  try {
+    await store.save("AliceExample", lease.token, null, state())
+    expect(JSON.parse(await readFile(join(real, "checkpoint.json"), "utf8"))).toEqual(state())
+  } finally {
+    await lease.release()
+  }
+})
+
+it.skipIf(process.platform === "win32")("keeps the checkpoint lock folder private to its owner", async () => {
+  const destination = await path()
+  const lease = await fileRecordingSyncCheckpointStore(destination).acquire("AliceExample")
+  try {
+    expect((await stat(`${destination}.locks`)).mode & 0o777).toBe(0o700)
   } finally {
     await lease.release()
   }

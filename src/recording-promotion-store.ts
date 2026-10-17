@@ -1,6 +1,6 @@
 import { type RecordingAssetLocator, type RecordingPartial, strongRecordingValidator } from "@wirecat/cli-core/meetings"
 import { NativeRecordingPublication } from "@wirecat/cli-core/persistence/native"
-import type { ArchivedFile, ArchiveManifest } from "./recording-archive.js"
+import type { ArchivedFile, ArchiveManifest } from "./recording-manifest.js"
 
 export interface RecordingPromotion {
   version: 1
