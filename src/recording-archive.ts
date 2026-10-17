@@ -238,23 +238,6 @@ const writeManifest = async (root: string, manifest: ArchiveManifest) => {
     await unlink(temp).catch(() => undefined)
   }
 }
-const targetUrl = (input: string, base?: URL): URL => {
-  let target: URL
-  try {
-    target = new URL(input, base)
-  } catch {
-    throw new CliError("invalid_response", "Zoom returned an unexpected recording download host")
-  }
-  if (
-    target.protocol !== "https:" ||
-    target.username ||
-    target.password ||
-    (target.port && target.port !== "443") ||
-    !/(^|\.)zoom\.(us|com)$/.test(target.hostname)
-  )
-    throw new CliError("invalid_response", "Zoom returned an unexpected recording download host")
-  return target
-}
 class DownloadFailure extends CliError {
   constructor(readonly response: Response) {
     super(statusToCode(response.status), `Recording download failed (HTTP ${response.status})`)
@@ -268,31 +251,19 @@ const transferSource = (
   signal: AbortSignal,
 ): RecordingTransferSource => ({
   open: async ({ offset, validator }) => {
-    let target = targetUrl(url)
-    let response: Response
-    for (let redirects = 0; ; redirects++) {
-      checkCancelled(signal)
-      try {
-        response = await remote.fetcher(target, {
-          headers: {
-            authorization: `Bearer ${accessToken}`,
-            "accept-encoding": "identity",
-            ...(offset !== undefined ? { range: `bytes=${offset}-`, "if-range": validator ?? "" } : {}),
-          },
-          redirect: "manual",
-          signal,
-        })
-      } catch {
+    const response = await remote.download(url, {
+      accessToken,
+      signal,
+      what: "recording",
+      headers: {
+        "accept-encoding": "identity",
+        ...(offset !== undefined ? { range: `bytes=${offset}-`, "if-range": validator ?? "" } : {}),
+      },
+      unreachable: () => {
         checkCancelled(signal)
-        throw new CliError("network_error", "Recording download could not be completed")
-      }
-      if (![301, 302, 303, 307, 308].includes(response.status)) break
-      const location = response.headers.get("location")
-      await response.body?.cancel()
-      if (!location || redirects >= 5)
-        throw new CliError("invalid_response", "Zoom returned invalid recording redirects")
-      target = targetUrl(location, target)
-    }
+        return new CliError("network_error", "Recording download could not be completed")
+      },
+    })
     if (![200, 206, 416].includes(response.status)) {
       await response.body?.cancel()
       throw new DownloadFailure(response)
