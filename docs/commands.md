@@ -239,6 +239,10 @@ zm meetings prepare <series-id> [options]
 
 | Option | What it does |
 |---|---|
+| `--context-source <id=cursor>` | authorized communications selection ID, optionally ID=cursor; repeat. Default: ``. |
+| `--context-query <words>` | literal words to find within the selected communications. |
+| `--context-since-time <time>` | communications window start as zoned ISO timestamp (default fourteen days before end). |
+| `--context-before-time <time>` | exclusive communications end as zoned ISO timestamp (default preparation start). |
 | `--project <project>` | include unconfirmed word evidence for one existing project name, key or alias. |
 | `--since-time <time>` | window start as ISO timestamp with zone (default now). |
 | `--before-time <time>` | exclusive window end as ISO timestamp (default seven days after start). |
