@@ -85,7 +85,8 @@ to revoke this profile's selections. Duplicate IDs and identities, unknown field
 eight entries are refused. The JSON file stores the flat array as `context_sources`, adding the
 selected `profile` to each entry. Continue using `config set` to avoid hand-editing that layout.
 
-Only an explicit preparation request searches these sources. Normal meeting reads do not acquire
-cross-account access. An MCP server captures source definitions at startup and pins their stored
-identities on first use; restart it after changing or revoking selections. Missing or mismatched
+Only an explicit preparation request resolves and searches its requested sources. An unavailable
+configured source that you did not request does not block other selections. Normal meeting reads do not acquire
+cross-account access. An MCP server captures source definitions at startup and pins each requested source's stored
+identity on first use; restart it after changing or revoking selections. Missing or mismatched
 identities fail closed. No source is selected automatically.

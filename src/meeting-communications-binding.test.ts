@@ -10,7 +10,7 @@ const definition: ConfiguredContextSource = {
   account: "AliceExample",
 }
 const metadata = (): ContextMetadata => ({
-  storedAccount: vi.fn<ContextMetadata["storedAccount"]>(async (key) => ({ ...key, id: 7, name: "Alice Example" })),
+  storedAccount: vi.fn<ContextMetadata["storedAccount"]>(async (key) => ({ ...key, id: 7 })),
   accountById: vi.fn(async () => null),
 })
 
@@ -38,7 +38,7 @@ it("fails closed for missing configuration, foreign metadata and folder aliases,
   expect(() => captureContextSources([], "ResearchExample").assert(["work"])).toThrow(/configure/)
   const lookup = metadata(),
     capture = captureContextSources([definition], "ResearchExample")
-  vi.mocked(lookup.storedAccount).mockResolvedValueOnce({ provider: "foreign", account: "other", id: 7, name: null })
+  vi.mocked(lookup.storedAccount).mockResolvedValueOnce({ provider: "foreign", account: "other", id: 7 })
   await expect(capture.resolve(lookup)).rejects.toMatchObject({ code: "configuration_error" })
   expect(await capture.resolve(lookup)).toHaveLength(1)
   const folder = captureContextSources(
@@ -52,10 +52,30 @@ it("fails closed for missing configuration, foreign metadata and folder aliases,
     provider: "folder",
     account: "invented-folder-key",
     id: 5,
-    name: null,
   })
   expect(await folder.resolve(lookup)).toMatchObject([
     { source: { kind: "document", provider: "folder", account: "invented-folder-key" } },
   ])
   expect(lookup.accountById).toHaveBeenCalledWith(5)
+})
+
+it("resolves only requested definitions and shares pinned identities between narrowed captures", async () => {
+  const captured = captureContextSources(
+    [definition, { ...definition, id: "unavailable", account: "MissingExample" }],
+    "ResearchExample",
+  )
+  const lookup = metadata()
+  vi.mocked(lookup.storedAccount).mockImplementation(async (key) => {
+    if (key.account !== "AliceExample") throw new Error("unrequested missing account")
+    return { ...key, id: 7 }
+  })
+  const first = await captured.select(["work"]).resolve(lookup)
+  const later = metadata()
+  const second = await captured.select(["work"]).resolve(later)
+  expect(second[0]).toBe(first[0])
+  expect(later.storedAccount).not.toHaveBeenCalled()
+  expect(lookup.storedAccount).toHaveBeenCalledOnce()
+  expect(() => captured.select(["foreign"])).toThrow(/unauthorized/)
+  expect(() => captured.select(["work"]).select(["unavailable"])).toThrow(/unauthorized/)
+  await expect(captured.select(["unavailable"]).resolve(lookup)).rejects.toMatchObject({ code: "configuration_error" })
 })

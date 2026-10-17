@@ -37,14 +37,14 @@ export const createZoomPreparationReader =
     zoomMeetingPath(seriesId)
     request = validateMeetingPreparationRequest(seriesId, request)
     checkCancelled(request.signal)
-    const context = request.communications ? deps.context?.() : undefined
+    let context = request.communications ? deps.context?.() : undefined
     if (request.communications) {
       if (!context)
         throw new CliError(
           "configuration_error",
           "configure context.sources for this profile before requesting communications",
         )
-      context.assert(request.communications.sources.map((source) => source.id))
+      context = context.select(request.communications.sources.map((source) => source.id))
     }
     const credentials = deps.credentials()
     const connection = await (context ? deps.connect(context) : deps.connect())

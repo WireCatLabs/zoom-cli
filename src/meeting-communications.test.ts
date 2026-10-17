@@ -128,3 +128,24 @@ it("exposes only captured MCP selection IDs and cannot expand after source confi
     await server.close()
   }
 })
+
+it("does not let an unavailable unrequested configured source block a valid source", async () => {
+  const f = await communicationsFixture()
+  setConfig(
+    f.deps.configPath,
+    "context.sources",
+    JSON.stringify(
+      f.sources.map((source) => (source.id === "project-files" ? { ...source, account: "notes:9000000" } : source)),
+    ),
+  )
+  expect(
+    await run(
+      ["meetings", "prepare", "123", "--context-source", "work-messages", "--context-query", "launch", "--json"],
+      f.deps,
+    ),
+  ).toBe(0)
+  const section = readAnswer(f.output.join("")).communications
+  expect(section.items).toHaveLength(1)
+  expect(section.coverage.sources).toHaveLength(1)
+  expect(section.coverage.sources[0]).toMatchObject({ selection_id: "work-messages", state: "searched" })
+})
