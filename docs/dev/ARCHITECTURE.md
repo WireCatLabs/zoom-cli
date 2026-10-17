@@ -27,7 +27,7 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [zm.ts](../../src/bin/zm.ts) | process, browser, stdin and system keyring wiring |
 | [recordings.ts](../../src/recordings.ts), [recording-archive.ts](../../src/recording-archive.ts) | asset discovery, streamed transfers and verified skipping |
 | [recording-manifest.ts](../../src/recording-manifest.ts) | archive manifests, the verified-size cache, archive inspection and verification |
-| [recording-sync.ts](../../src/recording-sync.ts), [recording-sync-store.ts](../../src/recording-sync-store.ts) | shared catalog/checkpoint orchestration and durable progress under a cli-core file lock |
+| [recording-sync.ts](../../src/recording-sync.ts), [recording-sync-store.ts](../../src/recording-sync-store.ts) | shared catalog/checkpoint orchestration, atomic writes and the published checkpoint lease format |
 | [recording-writer-lease.ts](../../src/recording-writer-lease.ts) | Zoom marker layout and public error/cancellation mapping over Core native writer leases |
 | [recording-partial-store.ts](../../src/recording-partial-store.ts) | Zoom partial names/defaults and cancellation mapping over Core native persistence |
 | [recording-promotion-store.ts](../../src/recording-promotion-store.ts) | owned final-promotion recovery and Zoom manifest mapping |
@@ -260,3 +260,9 @@ word-search ports. Core owns name-lane traversal, account/history scope, coverag
 output priority; Zoom adds no alias matching, index maintenance or membership writes. Requests
 without a selected project retain their earlier reads. See the
 [shared preparation SDK](https://github.com/WireCatLabs/cli-core/blob/main/docs/dev/MEETING-PREPARATION.md#word-evidence-for-a-selected-project).
+
+Checkpoint lease markers retain the published `.lock/owner.json` and `.lock.recovery` protocol.
+Moving them to a separate `.locks` directory lets older and newer processes both acquire ownership.
+This host-format compatibility adapter keeps recognized local stale recovery and foreign/unrecognized
+refusal until the shared lock adapter supports the existing protocol. Checkpoint file publication
+already uses Core atomic writes; archive writer/partial/publication leases remain shared in Core.
