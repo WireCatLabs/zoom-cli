@@ -17,6 +17,7 @@ export const addMeetingReadBindings = (
 ) => {
   addProjectEvidenceCommand(program, deps.project)
   addMeetingPreparationCommand(program, {
+    communications: true,
     read: createZoomPreparationReader(deps.preparation),
     signal: deps.project.signal,
     now: deps.project.now,

@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.24.0 — 17.10.2026
+## 0.24.0 — 18.10.2026
 
 ### Added
 
@@ -13,7 +13,7 @@
 ### Fixed
 
 - Publishing can wait for the shared writer lock with `WIRECAT_RELEASE_WAIT_SECONDS`; the default still refuses an occupied lock immediately.
-- Adopt compatible registry Core 0.326.0 and Base 0.43.1 for shared bounded meeting-context contracts, read-only store opening and registered communications flag roles. Use one shared Base runtime identity.
+- Adopt compatible registry Core 0.332.0 and Base 0.43.2 for shared bounded meeting-context contracts, read-only store opening and registered communications flag roles. Use one shared Base runtime identity. Core’s portable mail bindings keep selected-source preparation working on supported Node 22.16; Zoom explicitly enables the shared communications CLI and MCP capability.
 
 ## 0.23.2 — 17.10.2026
 

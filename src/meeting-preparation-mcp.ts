@@ -17,7 +17,8 @@ const schemaObject = (value: unknown): Record<string, unknown> => {
   return value as Record<string, unknown>
 }
 export const preparationToolFor = (context?: ContextCapture) => {
-  const inputSchema = structuredClone(meetingPreparationTool.inputSchema)
+  const shared = meetingPreparationTool({ communications: !!context?.ids.length })
+  const inputSchema = structuredClone(shared.inputSchema)
   const properties = schemaObject(schemaObject(inputSchema).properties)
   if (context?.ids.length) {
     const sources = schemaObject(schemaObject(schemaObject(properties.communications).properties).sources)
@@ -25,9 +26,9 @@ export const preparationToolFor = (context?: ContextCapture) => {
     id.enum = [...context.ids]
   } else delete properties.communications
   return {
-    ...meetingPreparationTool,
+    ...shared,
     inputSchema,
-    description: `${meetingPreparationTool.description} ${context?.ids.length ? `Configured communications IDs: ${context.ids.join(", ")}.` : "No communications sources are configured for this profile."}`,
+    description: `${shared.description} ${context?.ids.length ? `Configured communications IDs: ${context.ids.join(", ")}.` : "No communications sources are configured for this profile."}`,
   }
 }
 
@@ -54,6 +55,7 @@ export const readPreparationTool = async (
     signal,
     hostFailureContext(deps.commandRegistry, REMOTE_READ),
     deps.now?.(),
+    { communications: !!deps.preparation?.context?.().ids.length },
   )
   if ("isError" in result && result.isError) return result
   if (signal.aborted)
