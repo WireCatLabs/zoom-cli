@@ -43,8 +43,8 @@ importers:
         specifier: ^5.0.3
         version: 5.0.3(vitest@5.0.3)
       '@wirecat/cli-testing':
-        specifier: 0.4.0
-        version: 0.4.0(zod@4.6.5)
+        specifier: 0.5.2
+        version: 0.5.2(zod@4.6.5)
       cspell:
         specifier: 10.3.6
         version: 10.3.6
@@ -1004,8 +1004,8 @@ packages:
       '@napi-rs/canvas':
         optional: true
 
-  '@wirecat/cli-testing@0.4.0':
-    resolution: {integrity: sha512-/4fywtTtox8c5HrASNGqR5mM0w7pfF83u6iY2Wj/xWqxH49//a99eQFqLyf1ViH7s45yXMqd9T3dA7QRMnUmow==}
+  '@wirecat/cli-testing@0.5.2':
+    resolution: {integrity: sha512-a3thuo45+RydMl/8Sfr4Maf4Klzyfgr/Nu07ipZhQBtPuLKsozF4rdlzLdWCFYi/zkec4ZptDNJwToJgEexryA==}
     engines: {node: ^22.16.0 || >=24}
     hasBin: true
 
@@ -3123,7 +3123,7 @@ snapshots:
       - typescript
       - zod
 
-  '@wirecat/cli-testing@0.4.0(zod@4.6.5)':
+  '@wirecat/cli-testing@0.5.2(zod@4.6.5)':
     dependencies:
       '@modelcontextprotocol/sdk': 1.32.1(zod@4.6.5)
     transitivePeerDependencies:

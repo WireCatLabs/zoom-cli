@@ -65,7 +65,7 @@
     "@cspell/dict-ru_ru": "2.3.3",
     "@types/node": "^22.20.5",
     "@vitest/coverage-v8": "^5.0.3",
-    "@wirecat/cli-testing": "0.4.0",
+    "@wirecat/cli-testing": "0.5.2",
     "cspell": "10.3.6",
     "lefthook": "2.1.16",
     "markdownlint-cli2": "0.23.3",

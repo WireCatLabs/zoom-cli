@@ -42,7 +42,7 @@ tool schemas. Plans and snapshots live in `contracts/`; changes require explicit
 full validation; ordinary PR/local checks retain their existing budget. See the
 [shared guide](https://github.com/WireCatLabs/cli-testing/blob/main/docs/ci/CONTRACTS.md).
 
-The development dependency pins `@wirecat/cli-testing` 0.4.0 from npm, with its
+The development dependency pins `@wirecat/cli-testing` 0.5.2 from npm, with its
 package integrity recorded in the lockfile.
 
 ### Stateful and upgrade checks
