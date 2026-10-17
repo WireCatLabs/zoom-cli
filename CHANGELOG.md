@@ -12,6 +12,7 @@
 
 ### Fixed
 
+- Publishing can wait for the shared writer lock with `WIRECAT_RELEASE_WAIT_SECONDS`; the default still refuses an occupied lock immediately.
 - Adopt compatible registry Core 0.326.0 and Base 0.43.1 for shared bounded meeting-context contracts, read-only store opening and registered communications flag roles. Use one shared Base runtime identity.
 
 ## 0.23.2 — 17.10.2026

@@ -3,7 +3,15 @@
 Release from a clean main equal to origin/main after the implementation and release-preparation
 PRs have passed CI. Date the top changelog section with the package version and release day.
 `bin/release` takes the machine-wide release lock and dispatches the GitHub workflow; it never reads
-an npm token or publishes locally. Concurrent releases of another CLI wait for that lock.
+an npm token or publishes locally. By default it refuses an occupied lock immediately. To wait in
+the shared queue, set a nonnegative timeout in seconds:
+
+```sh
+WIRECAT_RELEASE_WAIT_SECONDS=900 bin/release
+```
+
+The existing shared helper validates that timeout and owns the same lock for the whole release.
+A timeout exits without dispatching; never remove another publisher's lock.
 
 The wrapper passes the full commit it checked to the workflow. A publishing run refuses a different
 commit before validation or artifact creation. If main moves between checking and dispatch, refresh
