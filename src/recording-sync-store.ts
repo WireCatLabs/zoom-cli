@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto"
-import { chmod, mkdir, realpath } from "node:fs/promises"
+import { lstat, mkdir, open, realpath, rmdir, unlink } from "node:fs/promises"
+import { hostname } from "node:os"
 import { basename, dirname, join, resolve } from "node:path"
-import { CliError, isCliError } from "@wirecat/cli-base"
-import { acquireLock, type FileLock, openOrdinaryFile, writeFileAtomic } from "@wirecat/cli-core/files"
+import { CliError } from "@wirecat/cli-base"
+import { openOrdinaryFile, writeFileAtomic } from "@wirecat/cli-core/files"
 import {
   parseRecordingSyncCheckpoint,
   type RecordingSyncCheckpoint,
@@ -11,6 +12,7 @@ import {
 } from "@wirecat/cli-core/meetings"
 
 const maxBytes = 8 * 1024 ** 2
+const ownerByteLimit = 32 * 1024
 const code = (error: unknown): string | undefined => (error as NodeJS.ErrnoException)?.code
 const conflict = (message: string): never => {
   throw new CliError("configuration_error", message)
@@ -33,33 +35,61 @@ const boundedJson = async (path: string, limit: number): Promise<unknown> => {
     await file.close()
   }
 }
+interface Owner {
+  version: 1
+  pid: number
+  host: string
+  token: string
+  jobId: string
+}
+const ownerOf = (value: unknown): Owner => {
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    return conflict("archive checkpoint lock is unrecognized")
+  const row = value as Partial<Owner>
+  if (
+    row.version !== 1 ||
+    !Number.isSafeInteger(row.pid) ||
+    Number(row.pid) <= 0 ||
+    typeof row.host !== "string" ||
+    !row.host ||
+    typeof row.token !== "string" ||
+    !/^[a-f0-9-]{36}$/.test(row.token) ||
+    typeof row.jobId !== "string" ||
+    !row.jobId
+  )
+    return conflict("archive checkpoint lock is unrecognized")
+  return row as Owner
+}
+const alive = (pid: number): boolean => {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (error) {
+    return code(error) !== "ESRCH"
+  }
+}
 export function fileRecordingSyncCheckpointStore(path: string): RecordingSyncCheckpointStore {
   if (typeof path !== "string" || !path.trim())
     throw new CliError("validation_error", "archive checkpoint path is required")
   const checkpointPath = resolve(path)
-  // Not the old `.lock`: a directory left there by an older zm holds an owner.json the new lock reads as a holder.
-  const lockPath = `${checkpointPath}.locks`
-  const leases = new Map<string, { jobId: string; lock: FileLock }>()
-  const own = async (jobId: string, token: string): Promise<void> => {
-    const held = leases.get(token)
-    if (!held || held.jobId !== jobId) return conflict("archive checkpoint lease is not owned")
-    if (!(await held.lock.held())) return conflict("archive checkpoint lease changed")
-  }
-  const lock = async (): Promise<FileLock> => {
+  // Published writers use owner.json and .lock.recovery; changing this protocol permits concurrent owners.
+  const lockPath = `${checkpointPath}.lock`
+  const marker = join(lockPath, "owner.json")
+  const recoveryPath = `${lockPath}.recovery`
+  const owners = new Map<string, Owner>()
+  const readOwner = async (): Promise<Owner> => {
     try {
-      // acquireLock makes its folder with the default mode; the checkpoint lock has always been private.
-      await mkdir(lockPath, { recursive: true, mode: 0o700 })
-      const held = await acquireLock(lockPath)
-      await chmod(lockPath, 0o700)
-      return held
-    } catch (error) {
-      if (isCliError(error) && error.details.reason === "file.locked")
-        return conflict("archive checkpoint job is already active or owned by another host")
-      if (isCliError(error)) return conflict(error.message)
-      if (code(error) === "EEXIST" || code(error) === "ENOTDIR")
-        return conflict("archive checkpoint lock must be an ordinary directory")
-      throw error
+      return ownerOf(await boundedJson(marker, ownerByteLimit))
+    } catch {
+      return conflict("archive checkpoint lock is missing, incomplete or unrecognized")
     }
+  }
+  const own = async (jobId: string, token: string): Promise<void> => {
+    const held = owners.get(token)
+    if (!held || held.jobId !== jobId) return conflict("archive checkpoint lease is not owned")
+    const actual = await readOwner()
+    if (actual.token !== token || actual.jobId !== jobId || actual.host !== held.host || actual.pid !== held.pid)
+      return conflict("archive checkpoint lease changed")
   }
   const read = async (): Promise<RecordingSyncCheckpoint | null> => {
     try {
@@ -74,15 +104,48 @@ export function fileRecordingSyncCheckpointStore(path: string): RecordingSyncChe
       if (typeof jobId !== "string" || !jobId.trim() || jobId.length > 4096)
         throw new CliError("validation_error", "archive checkpoint job id is required")
       await mkdir(dirname(checkpointPath), { recursive: true, mode: 0o700 })
-      const held = await lock()
-      const token = randomUUID()
-      leases.set(token, { jobId, lock: held })
+      try {
+        await mkdir(lockPath, { mode: 0o700 })
+      } catch (error) {
+        if (code(error) !== "EEXIST") throw error
+        const folder = await lstat(lockPath)
+        if (!folder.isDirectory() || folder.isSymbolicLink())
+          return conflict("archive checkpoint lock must be an ordinary directory")
+        try {
+          await mkdir(recoveryPath, { mode: 0o700 })
+        } catch (error) {
+          if (code(error) === "EEXIST") return conflict("archive checkpoint recovery is already active")
+          throw error
+        }
+        try {
+          const prior = await readOwner()
+          if (prior.host !== hostname() || alive(prior.pid))
+            return conflict("archive checkpoint job is already active or owned by another host")
+          const verified = await readOwner()
+          if (verified.token !== prior.token) return conflict("archive checkpoint lock changed during stale recovery")
+          await unlink(marker)
+          await rmdir(lockPath)
+          await mkdir(lockPath, { mode: 0o700 })
+        } finally {
+          await rmdir(recoveryPath)
+        }
+      }
+      const owner: Owner = { version: 1, pid: process.pid, host: hostname(), token: randomUUID(), jobId }
+      const file = await open(marker, "wx", 0o600)
+      try {
+        await file.writeFile(JSON.stringify(owner))
+        await file.sync()
+      } finally {
+        await file.close()
+      }
+      owners.set(owner.token, owner)
       return {
-        token,
+        token: owner.token,
         async release() {
-          await own(jobId, token)
-          await held.release()
-          leases.delete(token)
+          await own(jobId, owner.token)
+          await unlink(marker)
+          await rmdir(lockPath)
+          owners.delete(owner.token)
         },
       }
     },

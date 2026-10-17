@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Checkpoint leases keep the published `.lock/owner.json` protocol and stale-local recovery so older and newer writers cannot hold the same checkpoint concurrently. Shared atomic checkpoint writes retain the new cleanup and symlink-folder fixes.
+
 ## 0.23.0 — 17.10.2026
 
 ### Added
