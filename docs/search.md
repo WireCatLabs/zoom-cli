@@ -301,5 +301,8 @@ Before saving notes, tags or facts, ask your agent to show the existing project 
 then propose the links it intends to add. Review possible tag synonyms rather than creating another
 label for the same subject. Memo is installed separately and must use the same database path.
 
-Searching by meaning instead of by words is covered in [topic search](topic-search.md). For an upcoming
-call, combine these cited passages with [the Zoom schedule](remote-meetings.md).
+Searching by meaning instead of by words is covered in [topic search](topic-search.md).
+For an upcoming call, select the provider series from [the Zoom schedule](remote-meetings.md), then
+[prepare its context](usage.md#prepare-for-an-upcoming-meeting). Add `--project RES` for one existing
+project to include cited name/alias candidates separately from confirmed links; inspect its
+continuation and coverage before treating the result as complete.

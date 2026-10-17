@@ -14,6 +14,10 @@
   `clientId is an unknown setting; rename it to client_id (and 3 more problems)` instead of
   `client_id is missing`, which did not say how to fix the file. Still one key, never a value.
 
+### Changed — may break callers
+
+- Library hosts upgrading from 0.22.0 supply person lookup methods under `people` when calling `createMeetingContextCapabilities`, following Core 0.307.0's store areas. The command interface and selected-account rules are unchanged.
+
 ## 0.22.0 — 17.10.2026
 
 ### Added
