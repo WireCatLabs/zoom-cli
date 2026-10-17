@@ -69,7 +69,8 @@ references, update time and `shared_person`/`shared_project` flags. It uses the 
 as anchors and excludes proposed, reversed, deleted and later-updated facts. The fact reference lets
 you retrieve the full record and evidence through Memo before relying on it. This section contains
 accepted facts; `knowledge.coverage` keeps `fact_evidence: not-revalidated` and
-`other_sources: not-queried` visible.
+`other_sources: not-queried` visible. When communications are explicitly requested,
+`other_sources: see-communications` points to that separate source coverage instead.
 
 `notes.items` adds owner-written notes and annotations about the included earlier calls, their
 explicitly linked people and confirmed global projects. Each includes a `note:` reference,
@@ -82,7 +83,9 @@ the referenced note in Memo when you need its full associations.
 
 Check `notes.coverage.has_more` and `notes.coverage.output_limited` for additional or omitted notes.
 `source_evidence: not-revalidated` means the note's supporting sources have not been checked;
-`other_sources: not-queried` keeps imported documents, mail and messages outside this result's coverage.
+`other_sources: not-queried` keeps imported documents, mail and messages outside this result's coverage
+unless communications are explicitly requested. Then `other_sources: see-communications` points to
+their separate coverage; these excerpts do not become owner-written notes.
 Selecting `--json=notes.items.ref` keeps that coverage visible beside the references.
 
 If you know which existing project to investigate, ask the agent to select it by its saved name,
