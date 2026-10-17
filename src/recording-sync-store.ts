@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { mkdir, realpath } from "node:fs/promises"
+import { chmod, mkdir, realpath } from "node:fs/promises"
 import { basename, dirname, join, resolve } from "node:path"
 import { CliError, isCliError } from "@wirecat/cli-base"
 import { acquireLock, type FileLock, openOrdinaryFile, writeFileAtomic } from "@wirecat/cli-core/files"
@@ -47,7 +47,11 @@ export function fileRecordingSyncCheckpointStore(path: string): RecordingSyncChe
   }
   const lock = async (): Promise<FileLock> => {
     try {
-      return await acquireLock(lockPath)
+      // acquireLock makes its folder with the default mode; the checkpoint lock has always been private.
+      await mkdir(lockPath, { recursive: true, mode: 0o700 })
+      const held = await acquireLock(lockPath)
+      await chmod(lockPath, 0o700)
+      return held
     } catch (error) {
       if (isCliError(error) && error.details.reason === "file.locked")
         return conflict("archive checkpoint job is already active or owned by another host")

@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process"
 import { randomUUID } from "node:crypto"
-import { mkdir, mkdtemp, readdir, readFile, symlink, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readdir, readFile, stat, symlink, writeFile } from "node:fs/promises"
 import { hostname, tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import type { RecordingSyncCheckpoint } from "@wirecat/cli-core/meetings"
@@ -196,6 +196,16 @@ it("saves a checkpoint inside an archive folder reached through a symlink", asyn
   try {
     await store.save("AliceExample", lease.token, null, state())
     expect(JSON.parse(await readFile(join(real, "checkpoint.json"), "utf8"))).toEqual(state())
+  } finally {
+    await lease.release()
+  }
+})
+
+it.skipIf(process.platform === "win32")("keeps the checkpoint lock folder private to its owner", async () => {
+  const destination = await path()
+  const lease = await fileRecordingSyncCheckpointStore(destination).acquire("AliceExample")
+  try {
+    expect((await stat(`${destination}.locks`)).mode & 0o777).toBe(0o700)
   } finally {
     await lease.release()
   }
