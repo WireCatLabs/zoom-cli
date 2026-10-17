@@ -92,7 +92,8 @@ project membership or resolve conflicting statements from word matches alone.
 
 Keep `communications.coverage` with the excerpts, including index state, unknown completeness,
 read limits and per-source continuation. Resume `--context-source ID=CURSOR` only with the same
-query/window; restart without the cursor when `restart_required` says so. Preparation opens an
+query/window; copy the returned coverage window into explicit time bounds when continuing a request
+that used defaults. Restart without the cursor when `restart_required` says so. Preparation opens an
 existing compatible database read-only and does not fill missing indexes or import missing data.
 MCP `meeting_prepare` accepts the same selection via `communications.sources` and `query`; its
 server captures selection IDs at startup, so restart after changing or revoking configuration.

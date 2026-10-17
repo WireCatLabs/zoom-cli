@@ -162,7 +162,10 @@ undated-row notices, read usage and continuation even with JSON field projection
 there are no excerpts: an empty or limited result does not prove that nothing was discussed.
 
 Each source reads one bounded page. If its coverage has `next_cursor`, repeat the same request with
-`--context-source ID=CURSOR` for that source. Keep the query, window and source identity unchanged.
+`--context-source ID=CURSOR` for that source. Keep the query, window and source identity unchanged. Copy `coverage.window.after` and
+`coverage.window.before` into explicit `--context-since-time` and `--context-before-time` flags
+on continuation requests: a fresh default window uses the new current time and cannot replay the
+old cursor.
 If `restart_required` is true or a cursor is refused, restart without that source's cursor; do not
 treat an omitted excerpt as read. Source failures and read limits are reported in coverage, with
 `meta.complete=false` where applicable. Archive completeness remains unknown.

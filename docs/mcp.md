@@ -155,6 +155,8 @@ For example, add this input to an existing `meeting_prepare` request:
 ```
 
 Optional `communications.after` and `communications.before` are ISO timestamps with a zone. Each
-source may include `cursor` from its prior coverage. The shared handler validates unknown fields and
+source may include `cursor` from its prior coverage. On continuation, set explicit
+`communications.after` and `communications.before` from the returned coverage window, including
+when the first request used defaults; a new default window does not match the old cursor. The shared handler validates unknown fields and
 selection IDs before credentials, database opening or Zoom reads. Check `communications.coverage`
 alongside the excerpts; see [limits and continuation](usage.md#include-selected-messages-mail-and-documents).
