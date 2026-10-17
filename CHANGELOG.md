@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **A sync whose participants call fails keeps the meeting's participant count.** Adopts Core 0.311.0: `meetings sync`
+  and `watch` used to overwrite a stored count with nothing when Zoom's participants list could not be read.
+
 ## 0.23.0 — 17.10.2026
 
 ### Fixed
