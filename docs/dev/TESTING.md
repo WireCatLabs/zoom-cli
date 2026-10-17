@@ -68,7 +68,7 @@ points `TMPDIR`, `TMP` and `TEMP` at it. Subprocesses inherit it, and the variab
 Stack-ordered cleanup runs after the file's resource-closing hooks and removes that root; an interrupted
 process may leave a root behind. The sandbox moves only the temporary directory, which is less than
 [WC-TEST-1](https://github.com/WireCatLabs/cli-base/blob/main/docs/standards/testing.md#wc-test-1--point-every-path-a-test-could-write-at-a-temporary-directory)
-asks: config, state and store paths are still set per test.
+asks: it does not move config, state or store paths, so a test that needs one passes its own.
 Command traces remain under `coverage/argv.jsonl`, with one previous run retained as
 `coverage/argv.previous.jsonl`, instead of accumulating temporary backup directories.
 
