@@ -70,7 +70,7 @@ series’ next occurrence and gathers cited context. `meetings people`, `search 
 search that also matches English, Spanish and Russian word forms) and `meetings context person:<id>`
 bring back past meetings with the same people. Inventory date hints alone do not prove the next call.
 Participant discovery accepts `--limit`, `--scan-limit`, `--max-read-bytes` and `--cursor`;
-follow `page.next_cursor` even after an empty scan page. It returns observed `identity_id` candidates,
+follow `item.page.next_cursor` even after an empty scan page. It returns observed `identity_id` candidates,
 never inferred person links. Stored meeting lists accept metadata queries, for example
 `zm meetings list 'started_at:[2026-09-01 TO 2026-10-01]' --json`.
 
@@ -146,6 +146,7 @@ More: [what is planned][gh/zoom-cli/blob/main/docs/roadmap.md] · [Zoom on wirec
 | Read stored meetings | `meetings list`, `meetings show <meeting>`, `meetings transcript <meeting>`, `meetings summary <meeting>`, `meetings export <meeting> --format markdown\|vtt`, `events list` |
 | Search | `search meetings <query>`, `meetings people <query>`, `search all <query>` |
 | Evidence and people | `meetings passage <reference>`, `meetings evidence <reference>`, `meetings context <person>`, `meetings link <reference>`, `meetings update <reference>`, `meetings task-proposal <reference> --type <type>` |
+| Several reads at once | `batch <file>` runs bounded `search meetings` and `meetings passage` requests from a JSON file |
 | Search by meaning | `search meetings <query> --model <model>`, `meetings embeddings --model <model>` |
 | Local transcription | `meetings transcribe <meeting> <file> --model <model>` |
 | Cloud recordings | `recordings list`, `recordings show <meeting>`, `recordings download <meeting> --output-dir <dir>`, `recordings sync --since-time <date> --until-time <date> --output-dir <dir> --jsonl`, `recordings schedule create\|list\|show\|run\|disable` |
@@ -183,7 +184,8 @@ More: [your Zoom app][docs/zoom-app.md] · [login and sessions][docs/sessions.md
 
 `account.profile` is a label (1–64 letters, digits, dots, underscores or hyphens) that groups the
 meetings you store; use separate labels for data you want kept apart. Import and pull register the
-profile; read commands never do, so pull or import first.
+profile; read commands never do, so pull or import first. Unlike `tg` and `max`, `zm` takes no
+profile argument: the profile is the `account.profile` setting.
 
 Meetings live in the shared WireCat database `wirecat.db`, next to data from other WireCat tools.
 `MESSAGING_STORE` selects another path. Store opens preserve legacy `messages.db` files and their
@@ -266,9 +268,11 @@ with `["serve", "--mcp"]`:
 { "mcpServers": { "zoom": { "command": "zm", "args": ["serve", "--mcp"] } } }
 ```
 
-The server has seven read-only tools: meeting list and show, transcripts, summaries, exports, text
-search and participant search. `--meeting-context`, `--unified-search` and `--semantic --model <model>`
-enable cited passages, shared search and ranking of existing semantic vectors. It reads only the selected profile, and never exposes
+The server has eight read-only tools: meeting list and show, transcripts, summaries, exports, text
+search, participant search and evidence for project names. Optional flags add more:
+`--meeting-context` (cited passages), `--unified-search` (shared search), `--meeting-inventory`,
+`--meeting-preparation`, `--meeting-project-candidates` and `--semantic --model <model>` (ranking of
+existing semantic vectors); [MCP and skills][docs/mcp.md] lists the tools each one adds. It reads only the selected profile, and never exposes
 file exports, Zoom changes, embedding generation or task creation. A desktop app may need the full
 path from `command -v zm` (Linux/macOS) or `where.exe zm` (Windows), and the same `ZM_CONFIG_DIR` or `MESSAGING_STORE` in the entry's `env`.
 
@@ -307,6 +311,8 @@ More: [usage][docs/usage.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
 | `source` | `api` or `files` for `meetings sync` and `watch` |
 | `files.folder`, `files.timezone` | the transcript folder and the zone of its filenames |
 | `ZM_CONFIG_DIR` | another configuration directory (also changes the keyring entry) |
+| `ZM_STATE_DIR`, `ZM_CACHE_DIR` | another state (recorded runs) or cache directory |
+| `WIRECAT_STATE_DIR` | another WireCat folder; the default database is `~/.local/share/WireCat/wirecat.db` |
 | `MESSAGING_STORE` | another shared database path |
 | `OPENAI_API_KEY` | only for an OpenAI embedding endpoint you select |
 

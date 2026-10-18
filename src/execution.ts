@@ -16,7 +16,7 @@ export const duration = (text: string): number => {
   const unit = { ms: 1, s: 1000, m: 60000, h: 3600000 }[match?.[2] ?? "ms"]
   const value = Number(match?.[1]) * (unit ?? 1)
   if (!match || !Number.isSafeInteger(value) || value <= 0 || value > 2147483647)
-    throw new CliError("validation_error", "timeout must be a positive duration such as 30s, 5m or 1h")
+    throw new CliError("validation_error", "expected a positive duration such as 30s, 5m or 1h")
   return value
 }
 export const bytes = (text: string): number => {

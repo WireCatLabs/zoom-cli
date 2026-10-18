@@ -1,8 +1,6 @@
 ---
 name: zoom-cli
 description: Archive Zoom cloud recordings, read stored meeting transcripts and summaries, or manage a Zoom meeting through zm. Use for Zoom CLI workflows, not joining calls or operating the desktop video client.
-metadata:
-  version: "0.26.0"
 ---
 
 # Zoom CLI

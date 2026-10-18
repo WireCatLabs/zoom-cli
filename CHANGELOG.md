@@ -10,6 +10,12 @@
   says to add `--interactive`; with no interactive terminal or under CI it says to run the login in one.
 - The installation and sessions guides check `session status` for `state: saved`. They said `logged_in: true`, which
   only `session start` prints.
+- `meetings sync` without `zoom.client_id` now says to set the client ID, not to run `session start` first.
+- A bad `--pause` (such as `0s`) no longer says "timeout must be"; it says what duration is expected.
+- The skill source no longer carries a stale `version`; `skill install` stamps the package version.
+- Guides now say that `zm` takes no profile argument, how to remove the login from the keyring, why several Zoom
+  users on one machine need separate `ZM_CONFIG_DIR`, and where files go; the Memo examples in the search guide match
+  current Memo options; the MCP tool count and optional flags are complete.
 
 ## 0.27.1 — 18.10.2026
 

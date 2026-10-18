@@ -211,6 +211,11 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(() => checkCancelled(typed.signal)).toThrow("example deadline")
     checkCancelled()
   })
+  it("names the real option for a bad --pause", async () => {
+    const { deps, stderr } = await setup()
+    expect(await run(["watch", "files", ".", "--pause", "0s", "--jsonl"], deps)).toBe(2)
+    expect(JSON.parse(stderr.at(-1) ?? "{}").error.message).toContain("expected a positive duration")
+  })
   it("rejects real headless/CI/machine login before opening a browser", async () => {
     const { deps, stdout, stderr } = await setup()
     const message = () => JSON.parse(stderr.at(-1) ?? "{}").error.message
