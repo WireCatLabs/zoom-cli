@@ -12,7 +12,7 @@ import { type Body, checkJson, snakeKeys } from "@wirecat/cli-core/cli"
 import type { MeetingSource, MeetingStore } from "@wirecat/cli-core/meetings"
 import { Command, CommanderError } from "commander"
 import { addZoomSkillCommands } from "./agent-skill.js"
-import { type AnswerFormat, bodyOf, renderBody, wholeList } from "./answer-output.js"
+import { type AnswerFormat, bodyOf, renderBody, usageMessage, wholeList } from "./answer-output.js"
 import { commandSelection, hostFailureContext, reportFailure } from "./answer-policy.js"
 import {
   type ArchiveService,
@@ -486,7 +486,7 @@ export const run = async (args: string[], deps: ProgramDeps): Promise<number> =>
       : unknownOutcome
         ? new CliError("outcome_unknown", "operation outcome is unknown; verify stored state before retrying")
         : error instanceof CommanderError
-          ? new CliError("validation_error", "command failed; use --help for usage")
+          ? new CliError("validation_error", usageMessage(error))
           : error
     const selected = commandSelection(program, args)
     return reportFailure(
