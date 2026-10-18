@@ -35,7 +35,8 @@ zm meetings passage meeting:1/42/57/118 --format markdown  # the line and its co
 
 > **Agent:** You last spoke on 2 October in "Pricing review". You promised Bob a revised quote by
 > Friday (`meeting:1/42/57/118`), and he asked whether the annual plan includes onboarding
-> (`meeting:1/42/57/131`). Neither comes up in a later meeting.
+> (`meeting:1/42/57/131`). I found no later update in the stored meetings I searched; missing
+> history may change that.
 
 ## Quick start
 
@@ -71,6 +72,11 @@ Participant discovery accepts `--limit`, `--scan-limit`, `--max-read-bytes` and 
 follow `page.next` even after an empty scan page. It returns observed `identity_id` candidates,
 never inferred person links. Stored meeting lists accept metadata queries, for example
 `zm meetings list 'started_at:[2026-09-01 TO 2026-10-01]' --json`.
+
+**Find the project behind a call.** *"Which of my saved projects might this meeting concern?"*
+`meetings projects scan <ref>` compares one bounded page of local meeting evidence with existing
+project names, keys and aliases. It returns cited suggestions and ambiguity for review, saving no
+project link. The agent can check proposed labels against Memo's existing vocabulary too.
 
 **Follow up after it.** *"What did I promise in today's call?"* The agent reads
 `meetings transcript` and `meetings summary`, cites passages with `meetings evidence`, and

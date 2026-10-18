@@ -68,10 +68,35 @@ be explicit. Never infer that a linked participant spoke a particular cue.
 `meetings projects evidence <project>` searches one existing canonical project's name/key/aliases,
 including meetings without confirmed membership. Keep its coverage and frozen continuation; it
 reads the existing index and neither refreshes it nor assigns project membership.
+When the project is unknown, `meetings projects scan <parent-ref> --json` compares one bounded
+local evidence page with existing global project names/keys/aliases. This reads the shared project
+catalog explicitly, never creates membership, and needs no model or network. Keep `metadata-title`
+hints apart from transcript citations and retain ambiguity, fingerprints, omitted matches and both
+candidate/evidence coverage. Defaults: 20 cues, 10 candidates, 128 projects/64 KiB catalog, 32 KiB
+cue packet, 16 KiB item; hard maxima: 100 cues, 10 candidates, 64 KiB stored bytes per read and
+64 KiB item. Over-budget catalogs refuse; select a known project for evidence search instead.
+Resume with `evidence.coverage.next_cursor`, the same parent ref and `--cursor`; a title/project may
+repeat. Candidate truncation needs larger limit/bytes, separately from cue continuation. No cues
+with byte truncation and no cursor means an oversized cue, not an absence of discussion. Native MCP
+`meeting_project_candidates` requires `serve --mcp --meeting-project-candidates` and the same bounded
+arguments. Confirm reviewed links through `memo projects meetings link` with the exact stored meeting ID
+and `--account zoom:zm-profile:<label>`. An existing proposal needs its own Memo fingerprint;
+candidate/vocabulary fingerprints do not substitute for it. The scan itself saves nothing.
+
 `search meetings` filters by dates, identity/person, event/series, project, tag or topic. Project
 filters require confirmed membership; tags/topics require explicit labels. Use memo for shared
 knowledge and project associations. `meetings context person:<id>` follows explicit identity links.
 `meetings task-proposal <ref> --type question|request|mention|promise` returns a proposal, not a saved task.
+
+For tag suggestions, the agent selects evidence and proposes a small list; no built-in model is
+invoked. Reuse Memo's released `vocabulary list 'kind:tag'`, `vocabulary check <name> --kind tag`
+and `vocabulary check --kind tag` with explicit catalog/comparison bounds. Preflight reuses exact
+canonical names/aliases and flags lexical alternatives; an incomplete audit is not uniqueness
+proof, and `create` is not approval to create. Similarity is a review hint, not a reason to merge.
+Keep supporting meeting/cue refs, vocabulary/creation fingerprints and uncertain synonyms. Apply
+only reviewed existing labels through Memo with `--meeting <id> --account zoom:zm-profile:<label>`;
+new names/aliases require the existing reviewed vocabulary workflow. Do not add another label
+store or automatically accept a creation fingerprint. No tag write is part of Zoom preparation.
 
 `meetings list` takes metadata queries such as `started_at:[2026-09-01 TO 2026-10-01]`.
 `search all` defaults to meetings; broader messages/mail/notes selection is explicit with `--only`.

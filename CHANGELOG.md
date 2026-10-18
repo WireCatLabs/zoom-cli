@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Added
+
+- `meetings projects scan <ref>` suggests existing projects from bounded stored title/transcript evidence. Citations, ambiguity and separate evidence/output coverage remain visible; it opens the selected account read-only and saves no links. MCP exposes `meeting_project_candidates` only with `serve --mcp --meeting-project-candidates`.
+- The SDK exports `createZoomSeriesInventoryReader` for one bounded scheduled-meeting page, reusing Core’s account/window-bound discovery contract. It retains past recurring date hints, bounds HTTP bytes before parsing and discards join links; choosing an exact series still requires the existing upcoming proof. CLI/MCP inventory exposure is separate future work.
+
 ### Changed — may break callers
 
 - Adopt published Core 0.334.0 and Base 0.44.1 as one compatible runtime identity. Command discovery can include `runnable` for groups and `offline: false` for commands that need network access; strict discovery clients must accept those optional fields. Every executable command declares its effects under the shared standards. No new Zoom feature is mounted by this dependency change.

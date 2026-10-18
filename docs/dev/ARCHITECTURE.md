@@ -278,3 +278,19 @@ Moving them to a separate `.locks` directory lets older and newer processes both
 This host-format compatibility adapter keeps recognized local stale recovery and foreign/unrecognized
 refusal until the shared lock adapter supports the existing protocol. Checkpoint file publication
 already uses Core atomic writes; archive writer/partial/publication leases remain shared in Core.
+
+Project-candidate scanning delegates account authorization, bounded evidence hydration, name/key/alias
+matching and answer contracts to Core. Zoom binds only the selected existing account and vocabulary,
+opens the native store read-only with preparation intent, and closes before CLI/MCP output. The MCP
+tool is an explicit global-project-vocabulary grant; existing server defaults remain unchanged.
+
+`createZoomSeriesInventoryReader` implements the optional shared one-page inventory port over
+`GET /users/me/meetings?type=scheduled`. It uses the captured credential resolver, list-meetings
+scope, page limit and bounded HTTP parser; no whole-array management list is called. The normalized
+DTO retains only exact IDs, title, kind and unverified start hints. Scheduled inventory is not a
+filter for the requested window, so recurring original starts and undated records remain visible.
+The shared SDK binds continuations and reports unknown calendar completeness. Zoom's
+[meeting API](https://developers.zoom.us/docs/api/meetings/#list-meetings) returns unexpired scheduled
+meetings for the authenticated host; it is not every invitation or an instant-meeting archive.
+Provider page tokens expire; restart the finite-window listing if Zoom refuses an old cursor.
+This library export does not add a default MCP tool or a remote inventory command.

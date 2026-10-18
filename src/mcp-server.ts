@@ -4,7 +4,14 @@ import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js"
 import { CallToolRequestSchema, ListToolsRequestSchema, type Tool } from "@modelcontextprotocol/sdk/types.js"
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv"
 import { CliError, type ErrorCode, errorObjectOf, isCliError, mcpErrorResult } from "@wirecat/cli-base"
-import { agentResult, LOCAL_READ, snakeKeys, UNTRUSTED, UNTRUSTED_INSTRUCTION } from "@wirecat/cli-core/cli"
+import {
+  agentResult,
+  LOCAL_READ,
+  meetingProjectCandidatesTool,
+  snakeKeys,
+  UNTRUSTED,
+  UNTRUSTED_INSTRUCTION,
+} from "@wirecat/cli-core/cli"
 import { type MeetingStore, SAVE_INSTRUCTION } from "@wirecat/cli-core/meetings"
 import {
   callMeetingPassageTool,
@@ -29,6 +36,7 @@ import {
 } from "./meeting-context.js"
 import type { PreparationStoreRequest, ZoomPreparationOptions } from "./meeting-preparation.js"
 import { preparationToolFor, readPreparationTool } from "./meeting-preparation-mcp.js"
+import { readProjectCandidatesTool } from "./meeting-project-candidates-mcp.js"
 import { readProjectEvidenceTool } from "./meeting-project-evidence-mcp.js"
 import { type MeetingModelOptions, validateMeetingModel, validateMeetingSemantic } from "./meeting-semantic-commands.js"
 import type { StoreConnection } from "./store-connection.js"
@@ -47,6 +55,8 @@ export interface MeetingMcpOptions {
   /** Opt-in selected-profile meetings only; store-global notes are never exposed here. */
   includeUnifiedSearch?: boolean
   includeMeetingContext?: boolean
+  /** Explicit grant to compare selected meeting evidence with the global project vocabulary. */
+  includeMeetingProjectCandidates?: boolean
   /** Server-selected model for search_meetings by_meaning; tool callers cannot select models or generate vectors. */
   preparation?: ZoomPreparationOptions
   semanticModel?: MeetingModelOptions
@@ -75,6 +85,7 @@ const buildServer = (options: MeetingMcpOptions) => {
     )
     return { ...tool, inputSchema: { ...tool.inputSchema, type: "object" as const, properties } } satisfies Tool
   })
+  if (options.includeMeetingProjectCandidates === true) tools.push(meetingProjectCandidatesTool)
   tools.push(meetingProjectEvidenceTool)
   if (preparation) tools.push(preparationToolFor(context))
   const meaningArguments = {
@@ -224,6 +235,10 @@ const buildServer = (options: MeetingMcpOptions) => {
     if (!checked.valid) return failure("validation_error", `invalid meeting tool arguments: ${checked.errorMessage}`)
     if (request.params.name === "meeting_prepare") {
       const result = await readPreparationTool({ ...options, preparation }, args, signal)
+      return cancelled() ? failure("cancelled", "meeting read was cancelled") : result
+    }
+    if (request.params.name === "meeting_project_candidates") {
+      const result = await readProjectCandidatesTool(options, args, signal)
       return cancelled() ? failure("cancelled", "meeting read was cancelled") : result
     }
     if (request.params.name === "meeting_project_evidence") {

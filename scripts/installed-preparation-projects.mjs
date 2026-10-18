@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { checkProjectCandidates } from "./installed-project-candidates.mjs"
 
 export const checkPreparationProjects = async ({
   load,
@@ -95,5 +96,18 @@ export const checkPreparationProjects = async ({
   } finally {
     await reopened.close()
   }
-  return { cited_project_aliases: true, project_alias_continuation: true, project_alias_scope_no_writes: true }
+  const candidateProof = await checkProjectCandidates({
+    load,
+    path,
+    key,
+    connector,
+    reference: candidateReference,
+    project,
+  })
+  return {
+    ...candidateProof,
+    cited_project_aliases: true,
+    project_alias_continuation: true,
+    project_alias_scope_no_writes: true,
+  }
 }

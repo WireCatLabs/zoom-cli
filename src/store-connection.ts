@@ -6,6 +6,7 @@ import {
   type MeetingTranscriptReceiptStore,
   validateMeetingContextChange,
 } from "@wirecat/cli-core/meetings"
+import type { StoredMeetingProjectCandidateReader } from "@wirecat/cli-core/services"
 import type { MessageStore, StoreOptions } from "@wirecat/cli-core/store"
 import { profileAccountKey } from "./config.js"
 import { createLocalTranscriptionCapabilities, type LocalTranscriptionCapabilities } from "./local-transcription.js"
@@ -28,6 +29,7 @@ export interface StoreConnection {
   meetingSearch: MeetingHitSearch
   meetingBatch?: MeetingBatchReader
   meetingPreparation: MeetingPreparationBinding
+  meetingProjectCandidates?: StoredMeetingProjectCandidateReader
   meetingProjectEvidence: MeetingProjectDiscoveryReader
   meetingTranscription: LocalTranscriptionCapabilities
   unifiedSearch: UnifiedSearch
@@ -149,6 +151,14 @@ export const createStoreConnector =
         accountId,
         close: () => connected.close(),
         appendTranscriptsWithReceipt: (input) => meetings.appendTranscriptsWithReceipt(ownAccount(input, "append")),
+        meetingProjectCandidates: async (reference, request) => {
+          const { createStoredMeetingProjectCandidateReader } = await import("@wirecat/cli-core/services")
+          const read = createStoredMeetingProjectCandidateReader(key, accountId, {
+            meetings,
+            vocabulary: connected.knowledge,
+          })
+          return read(reference, request)
+        },
         meetingProjectEvidence: async (project, request) => {
           const { readMeetingProjectDiscovery } = await import("@wirecat/cli-core/services")
           return readMeetingProjectDiscovery(

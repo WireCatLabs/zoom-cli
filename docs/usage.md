@@ -221,6 +221,7 @@ does not import that transcript into the meeting database until you request arch
 | `meetings export <meeting> --format markdown\|vtt` | export stored meeting content |
 | `search meetings <query>`, `meetings people <query>` | find stored text, indexing new meetings first, or participants |
 | `meetings prepare <series-id>` | gather upcoming proof and cited stored context for one selected series |
+| `meetings projects scan <ref>` | suggest existing projects from a bounded stored meeting evidence page; no links saved |
 | `meetings projects evidence <project> [query...]` | read bounded canonical-name/key/alias evidence for an existing project |
 | `meetings update <reference>`, `meetings link <reference>` | preview or apply owner-selected stored links |
 | `meetings transcribe <meeting> <file> --model <model>` | preview or locally recognize a WAV file into an independent transcript |

@@ -5,7 +5,7 @@ import { object } from "./errors.js"
 function invalid(field: string): never {
   throw new CliError("invalid_response", `Zoom meeting ${field} is invalid`)
 }
-const instant = (value: unknown): number | null => {
+export const zoomScheduledInstant = (value: unknown): number | null => {
   if (value === undefined || value === null) return null
   if (
     typeof value !== "string" ||
@@ -37,7 +37,7 @@ const occurrence = (value: unknown): MeetingOccurrence => {
   )
     invalid("occurrence_id")
   if (row.status !== "available" && row.status !== "deleted") invalid("occurrence status")
-  const startAt = instant(row.start_time)
+  const startAt = zoomScheduledInstant(row.start_time)
   return {
     id: row.occurrence_id,
     startAt,
@@ -53,7 +53,7 @@ export const zoomOccurrenceSchedule = (value: unknown, meetingId: string, limit:
   if (row.timezone !== undefined && row.timezone !== null && typeof row.timezone !== "string") invalid("timezone")
   const timezone = typeof row.timezone === "string" ? row.timezone : null
   if (row.type === 2) {
-    const startAt = instant(row.start_time)
+    const startAt = zoomScheduledInstant(row.start_time)
     const known = startAt !== null && (row.status === undefined || row.status === "waiting")
     return {
       meetingId,
