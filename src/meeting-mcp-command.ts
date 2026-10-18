@@ -12,6 +12,7 @@ export interface ZoomMcpServeOptions {
   maxResultBytes?: number
   includeUnifiedSearch?: boolean
   includeMeetingContext?: boolean
+  includeMeetingProjectCandidates?: boolean
   semanticModel?: MeetingModelOptions
   preparation?: ZoomPreparationOptions
 }
@@ -29,6 +30,10 @@ export const addZoomMcpCommand = (
     .requiredOption("--mcp", "use the MCP JSON-RPC protocol")
     .option("--unified-search", "include selected-profile meetings-only unified search")
     .option("--meeting-context", "include account-fixed evidence, person context and task proposals")
+    .option(
+      "--meeting-project-candidates",
+      "include stored meeting project suggestions using the global project vocabulary",
+    )
     .option("--meeting-preparation", "include cited meeting preparation with remote Zoom schedule reads")
     .option("--semantic", "include read-only meeting vector search with an explicit query model")
     .option("--model <model>", "query embedding model: an installed one, or one served at --base-url")
@@ -38,6 +43,7 @@ export const addZoomMcpCommand = (
       async (options: {
         unifiedSearch?: boolean
         meetingContext?: boolean
+        meetingProjectCandidates?: boolean
         meetingPreparation?: boolean
         semantic?: boolean
         model?: string
@@ -61,6 +67,7 @@ export const addZoomMcpCommand = (
           signal: deps.signal() as AbortSignal,
           maxResultBytes: opts.maxOutputBytes,
           ...(options.unifiedSearch ? { includeUnifiedSearch: true } : {}),
+          ...(options.meetingProjectCandidates ? { includeMeetingProjectCandidates: true } : {}),
           ...(options.meetingContext ? { includeMeetingContext: true } : {}),
           ...(options.meetingPreparation ? { preparation: deps.preparation } : {}),
           ...(options.semantic

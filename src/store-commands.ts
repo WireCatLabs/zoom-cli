@@ -1,5 +1,10 @@
 import { CliError } from "@wirecat/cli-base"
-import { addMeetingBatchCommand, type Body, formatMeetingBatch } from "@wirecat/cli-core/cli"
+import {
+  addMeetingBatchCommand,
+  addMeetingProjectCandidatesCommand,
+  type Body,
+  formatMeetingBatch,
+} from "@wirecat/cli-core/cli"
 import type { MeetingBatchReader } from "@wirecat/cli-core/meetings"
 import { addMeetingPassageCommand } from "@wirecat/cli-core/meetings/cli"
 import type { Command } from "commander"
@@ -13,6 +18,7 @@ import type { ContextCapture } from "./meeting-communications-binding.js"
 import { addMeetingContextCommands } from "./meeting-context-commands.js"
 import { addMeetingIntegrationCommands } from "./meeting-integration-commands.js"
 import type { ZoomPreparationOptions } from "./meeting-preparation.js"
+import { createZoomProjectCandidateReader } from "./meeting-project-candidates.js"
 import { addMeetingReadBindings } from "./meeting-read-command-bindings.js"
 import { addMeetingSearchCommands } from "./meeting-search-commands.js"
 import { addMeetingEmbeddingCommand } from "./meeting-semantic-commands.js"
@@ -82,6 +88,11 @@ export const addStoreCommands = (program: Command, context: StoreCommandContext)
       ...preparation,
       connect: (context) => openStore("preparation", context),
     },
+  })
+  addMeetingProjectCandidatesCommand(program, {
+    read: createZoomProjectCandidateReader(() => openStore("preparation")),
+    signal,
+    output: (value) => output(bodyOf(value)),
   })
   addMeetingIntegrationCommands(program, {
     signal,

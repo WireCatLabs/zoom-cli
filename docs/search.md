@@ -269,6 +269,49 @@ may be incidental, and repeated refs across names are the same evidence. Propose
 only after reviewing the passage. If no project record exists yet, ordinary word search remains
 available without `--project`; repeat known names manually and retain the same selection.
 
+## Suggest projects for one meeting
+
+When you have found a meeting but do not know which saved project it concerns, ask your agent
+to compare that meeting with your existing project names, keys and aliases:
+
+```text prompt
+Look at this meeting and suggest which of my saved projects it may concern. Show the passages
+that support each suggestion, distinguish a title hint from transcript evidence, and leave the
+project links for review.
+```
+
+The scan reads the selected profile's local meeting and the shared project-name catalog. It does
+not contact Zoom or require an embedding model. Find the meeting's `ref` in a search result, then
+use that parent meeting reference. For example, with a fictional reference:
+
+```sh
+zm meetings projects scan meeting:1/2 --cues 20 --json
+```
+
+The answer keeps each canonical project reference, matched name/key/alias and supporting source.
+Title matches are labelled `metadata-title`; transcript matches include a retained cue reference,
+fingerprint and revision. Open the cited passage before proposing a link. A shared alias stays
+ambiguous, even if the candidate limit hides another project. The scan saves no association and
+does not treat an existing or repeated match as additional evidence of membership.
+
+One scan reads one bounded transcript page and at most 128 saved projects with 64 KiB of catalog
+names. It defaults to twenty cues and ten candidates. `--cues` takes 1–100, `--limit` takes 1–10,
+`--max-read-bytes` bounds each stored read up to 64 KiB, and `--bytes` bounds the answer item from
+2–64 KiB. The fixed transcript evidence packet is 32 KiB. If the project catalog exceeds its
+bound, select one known project with [project evidence](#find-a-project-before-linking-it)
+instead; the scan refuses rather than silently ignoring some projects.
+
+Inspect both `coverage` and `evidence.coverage`. To read more transcript evidence, pass
+`evidence.coverage.next_cursor` with the same meeting reference using `--cursor`. A title or
+project may repeat on the next page. Fingerprints describe live reads, not a frozen snapshot.
+Candidate output limits are separate: increase `--limit` or `--bytes` when candidates were omitted.
+A byte-truncated page with no cues and no cursor means a single cue did not fit; it does not
+establish an absence of relevant discussion. Archive completeness remains unknown.
+
+Use the existing [Memo review workflow](#notes-tags-and-memories-with-memo) to confirm the
+project association after checking the evidence. A suggested project remains unconfirmed until
+that review is applied.
+
 ## Notes, tags and memories with memo
 
 Use [memo](https://github.com/WireCatLabs/cli-memo) for the existing shared notes, tags and memories
@@ -277,9 +320,9 @@ overridden. For a Zoom profile named `AliceExample`, its provider account key is
 `zm-profile:AliceExample`:
 
 ```sh
-memo tags add planning --meeting 1 --provider zoom --account zm-profile:AliceExample --json
-memo tags remove planning --meeting 1 --provider zoom --account zm-profile:AliceExample --json
-memo notes add --text "Alice Example follow-up" --meeting 1 --provider zoom --account zm-profile:AliceExample --json
+memo tags add planning --meeting 1 --account zoom:zm-profile:AliceExample --json
+memo tags remove planning --meeting 1 --account zoom:zm-profile:AliceExample --json
+memo notes add --text "Alice Example follow-up" --meeting 1 --account zoom:zm-profile:AliceExample --json
 memo notes list --about meeting:1/1 --json
 memo facts add "Alice Example will review" --type promise --scope work --subject meeting:1/1 --evidence meeting:1/1/1/0 --json
 memo facts list --subject meeting:1/1 --json
@@ -290,6 +333,42 @@ agent-authored facts submitted through Memo MCP stay proposed until reviewed. Me
 digests and preferences separately. Meeting revision and cue evidence remains
 addressable after corrections. The references and ids above are invented examples; use ids from
 your stored meetings and selected account.
+
+### Suggest labels without creating synonyms
+
+An agent can read the meeting's metadata and cited passages, then compare possible labels with
+Memo's shared vocabulary. Ask for a proposal first:
+
+```text prompt
+Suggest a small set of tags for this meeting. Reuse our existing names and aliases, show the
+passages behind each suggestion, and flag likely synonyms for review. Do not create or merge
+labels while preparing the proposal.
+```
+
+The existing Memo tools provide the checks; Zoom keeps no second label catalog:
+
+```sh
+memo vocabulary list 'kind:tag' --max-entries 128 --max-read-bytes 65536 --json
+memo vocabulary check planning --kind tag --max-entries 128 --max-read-bytes 65536 --json
+memo vocabulary check --kind tag --max-entries 128 --max-read-bytes 65536 --max-comparisons 1000 --limit 20 --json
+```
+
+The first command lists canonical names and aliases. The second checks a proposed name for an
+exact existing label or similar names before creation; it checks across label kinds so a topic
+collision is not hidden. The last command audits likely synonyms among existing tags. These reads
+create and merge nothing. Their catalog/comparison limits are real work bounds; a refusal or
+incomplete audit is not proof that the label is unique.
+
+Reuse the canonical name when preflight says `reuse`. For `review`, inspect the alternatives and
+their meeting evidence before choosing a label or an owner-reviewed alias. `create` means no
+existing lexical candidate was found, not that the concept is new. Similarity preserves accents
+and does not discover every translation or synonym. Keep those uncertain proposals for review.
+Memo guards label creation against duplicate-like names and stale creation fingerprints; a
+fingerprint is a preview precondition, not permission to accept a proposal automatically.
+
+After review, apply the selected existing tag with Memo's meeting/account arguments above and
+search meetings by that tag. Use [Memo's tag guide](https://wirecat.dev/en/docs/memo/tags) for the
+shared labeling workflow. Zoom's preparation and project scan save no labels or merges.
 
 ## Task proposals
 

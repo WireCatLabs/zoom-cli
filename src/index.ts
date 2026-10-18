@@ -103,6 +103,7 @@ export {
   type RemoteMeeting,
   ZoomRemoteMeetings,
 } from "./remote-meetings.js"
+export { createZoomSeriesInventoryReader } from "./series-inventory.js"
 export {
   createStoreConnector,
   type StoreConnection,
