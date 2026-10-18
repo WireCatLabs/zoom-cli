@@ -202,6 +202,23 @@ zm meetings import <folder> [options]
 | `--json` | one JSON value. |
 | `--jsonl` | one JSON object per item. |
 
+### `zm meetings scheduled`
+
+discover candidate meeting series from one bounded provider page
+
+```sh
+zm meetings scheduled [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--since-time <time>` | absolute window start as ISO timestamp with zone (default now). |
+| `--before-time <time>` | exclusive ISO window end (default seven days after start). |
+| `--limit <n>` | series candidates in one provider page, 1–100 (default 100). |
+| `--max-read-bytes <bytes>` | normalized provider-page bytes, at most 1048576 (default 65536). |
+| `--bytes <bytes>` | answer item UTF-8 JSON bytes, 2048–1048576 (default 65536). |
+| `--cursor <cursor>` | continue with the same absolute window and returned page cursor. |
+
 ### `zm meetings projects`
 
 project-name evidence in stored meetings
@@ -938,6 +955,7 @@ zm serve [options]
 | `--unified-search` | include selected-profile meetings-only unified search. |
 | `--meeting-context` | include account-fixed evidence, person context and task proposals. |
 | `--meeting-project-candidates` | include stored meeting project suggestions using the global project vocabulary. |
+| `--meeting-inventory` | include bounded remote meeting-series discovery with unverified date hints. |
 | `--meeting-preparation` | include cited meeting preparation with remote Zoom schedule reads. |
 | `--semantic` | include read-only meeting vector search with an explicit query model. |
 | `--model <model>` | query embedding model: an installed one, or one served at --base-url. |

@@ -12,6 +12,7 @@
 
 ### Fixed
 
+- Meeting-management guidance connects candidate series discovery with preparation’s occurrence verification, and the app guide names the exact schedule-only permissions.
 - Project-scan guidance identifies the parent reference in a search hit’s `meeting` field; a transcript hit’s own `ref` identifies a cue and is not a scan input.
 
 ## 0.25.0 — 18.10.2026
