@@ -77,7 +77,8 @@ It replaces the OS keyring with one that throws, so tests pass `memoryKeyring()`
 except to this machine
 ([WC-TEST-3](https://github.com/WireCatLabs/cli-base/blob/main/docs/standards/testing.md#wc-test-3--no-test-contacts-a-provider-or-the-network)).
 No zm test calls `allowNetwork()`. Subprocesses inherit the sandbox. Stack-ordered hooks remove it after the
-file's own resource-closing hooks; an interrupted process may leave one behind.
+file's own resource-closing hooks. A worker that ends early, on an exit or a SIGTERM, removes its sandboxes on the way
+out; only a process killed outright leaves one behind.
 Command traces remain under `coverage/argv.jsonl`, with one previous run retained as
 `coverage/argv.previous.jsonl`, instead of accumulating temporary backup directories.
 

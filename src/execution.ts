@@ -24,20 +24,17 @@ export const bytes = (text: string): number => {
     throw new CliError("validation_error", "expected a nonnegative whole byte count")
   return Number(text)
 }
+const longRunning = new WeakSet<Command>()
+/** A one-shot command that may take an hour; cli-base's `lifetime` names only commands that never end on their own. */
+export const runsLong = (command: Command): Command => {
+  longRunning.add(command)
+  return command
+}
 export const commandDeadline = (action: Command): number | undefined => {
-  if (metaOf(action).lifetime === "persistent") return undefined
-  if (metaOf(action).lifetime === "interactive") return 300000
-  if (
-    action.name() === "download" ||
-    action.name() === "sync" ||
-    (action.name() === "transcribe" && action.parent?.name() === "meetings") ||
-    (action.name() === "run" &&
-      action.parent?.name() === "schedule" &&
-      action.parent.parent?.name() === "recordings") ||
-    (action.name() === "check" && action.parent?.name() === "archive")
-  )
-    return 3600000
-  return 30000
+  const { lifetime } = metaOf(action)
+  if (lifetime === "persistent") return undefined
+  if (lifetime === "interactive") return 300000
+  return longRunning.has(action) ? 3600000 : 30000
 }
 export interface ExecutionOptions {
   signal?: AbortSignal

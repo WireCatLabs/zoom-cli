@@ -3,6 +3,7 @@ import { annotate } from "@wirecat/cli-base/commands"
 import { FETCH, LOCAL_READ, LOCAL_WRITE, NO_EFFECTS } from "@wirecat/cli-core/cli"
 import { addMeetingCommands } from "@wirecat/cli-core/meetings/cli"
 import type { Command } from "commander"
+import { runsLong } from "./execution.js"
 
 const childOf = (parent: Command, name: string): Command => {
   const found = parent.commands.find((command) => command.name() === name)
@@ -18,6 +19,6 @@ export const addZoomMeetingCommands = (program: Command, deps: Parameters<typeof
   for (const name of ["list", "show", "transcript", "summary", "people"])
     annotate(childOf(meetings, name), { effects: LOCAL_READ })
   for (const name of ["import", "export"]) annotate(childOf(meetings, name), { effects: LOCAL_WRITE })
-  annotate(childOf(meetings, "sync"), { effects: FETCH })
+  runsLong(annotate(childOf(meetings, "sync"), { effects: FETCH }))
   annotate(childOf(events, "list"), { effects: LOCAL_READ })
 }
