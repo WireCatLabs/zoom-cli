@@ -8,6 +8,7 @@ coverage/
 # The working trail, kept on the machine doing the work: plans, the journal, the handoff.
 /docs_ai/
 /HANDOFF.md
+/CLEANUP.md
 .claude/settings.local.json
 .rumdl_cache/
 
