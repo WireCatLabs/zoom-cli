@@ -17,5 +17,11 @@ export const addZoomSkillCommands = (
       examples: [install ? "zm skill install --for agents --json" : "zm skill show --json"],
     })
   }
+  // addCommand, unlike command(), does not pass these down, and commander's defaults print plain text and exit 1.
+  const inheritFailureHandling = (target: Command) => {
+    target.exitOverride().configureOutput(program.configureOutput())
+    for (const child of target.commands) inheritFailureHandling(child)
+  }
+  inheritFailureHandling(command)
   program.addCommand(annotate(command, { effects: NO_EFFECTS }))
 }
