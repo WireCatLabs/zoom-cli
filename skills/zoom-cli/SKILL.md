@@ -79,7 +79,9 @@ Resume with `evidence.coverage.next_cursor`, the same parent ref and `--cursor`;
 repeat. Candidate truncation needs larger limit/bytes, separately from cue continuation. No cues
 with byte truncation and no cursor means an oversized cue, not an absence of discussion. Native MCP
 `meeting_project_candidates` requires `serve --mcp --meeting-project-candidates` and the same bounded
-arguments. Confirm reviewed links through Memo; the scan itself saves nothing.
+arguments. Confirm reviewed links through `memo projects meetings link` with the exact stored meeting ID
+and `--account zoom:zm-profile:<label>`. An existing proposal needs its own Memo fingerprint;
+candidate/vocabulary fingerprints do not substitute for it. The scan itself saves nothing.
 
 `search meetings` filters by dates, identity/person, event/series, project, tag or topic. Project
 filters require confirmed membership; tags/topics require explicit labels. Use memo for shared

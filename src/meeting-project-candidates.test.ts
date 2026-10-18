@@ -61,7 +61,7 @@ it("scans cited aliases offline with native read-only intent and closes before p
   )
   expect(f.connectStore).toHaveBeenCalledWith(expect.objectContaining({ intent: "preparation" }))
   expect(f.network).not.toHaveBeenCalled()
-  expect(readFileSync(f.path)).toEqual(before)
+  expect(readFileSync(f.path).equals(before)).toBe(true)
   const citation = result.item.items[0].matches.find(
     (match: { source: { kind: string } }) => match.source.kind === "transcript",
   )?.source.ref
@@ -85,7 +85,7 @@ it("scans cited aliases offline with native read-only intent and closes before p
   expect(projected.item.coverage.association).toBe("unconfirmed-literal-evidence")
   expect(projected.item.evidence.coverage.archive_completeness).toBe("unknown")
   expect(projected.item.items[0]).toEqual({ project: { ref: f.project.ref } })
-  expect(readFileSync(f.path)).toEqual(before)
+  expect(readFileSync(f.path).equals(before)).toBe(true)
 })
 
 it("exposes the native MCP tool only with an explicit global-vocabulary grant", async () => {
@@ -130,11 +130,11 @@ it("validates raw MCP fields before connecting and closes on foreign-source fail
   const f = await preparationFixture(undefined, false, true)
   const signal = new AbortController().signal
   const invalid = await readProjectCandidatesTool(f.mcp, { ref: f.reference, unknown: true }, signal)
-  expect(invalid.isError).toBe(true)
+  expect(invalid).toHaveProperty("isError", true)
   expect(JSON.stringify(invalid.structuredContent)).toContain("unknown")
   expect(f.connectStore).not.toHaveBeenCalled()
   const foreign = await readProjectCandidatesTool(f.mcp, { ref: "meeting:999/1" }, signal)
-  expect(foreign.isError).toBe(true)
+  expect(foreign).toHaveProperty("isError", true)
   expect(f.closed).toHaveBeenCalledOnce()
 })
 

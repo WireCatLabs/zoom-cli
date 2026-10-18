@@ -308,9 +308,13 @@ Candidate output limits are separate: increase `--limit` or `--bytes` when candi
 A byte-truncated page with no cues and no cursor means a single cue did not fit; it does not
 establish an absence of relevant discussion. Archive completeness remains unknown.
 
-Use the existing [Memo review workflow](#notes-tags-and-memories-with-memo) to confirm the
-project association after checking the evidence. A suggested project remains unconfirmed until
-that review is applied.
+After checking the evidence, `memo projects meetings link` can apply the confirmed local
+association using the exact stored meeting ID and account, such as
+`--account zoom:zm-profile:AliceExample`. This is a write, separate from the scan. When confirming
+an existing stored proposal, use that proposal's fingerprint from Memo; the scan does not create
+one, and its vocabulary fingerprint is not a membership receipt. The
+[Memo project command reference](https://wirecat.dev/en/docs/memo/commands#memo-projects-meetings-link)
+explains the inputs. A suggested project remains unconfirmed until that reviewed write is applied.
 
 ## Notes, tags and memories with memo
 

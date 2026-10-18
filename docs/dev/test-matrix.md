@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**252 ✅ · 1 ⛔ · 0 ❌** — 55 commands, 198 options.
+**259 ✅ · 1 ⛔ · 0 ❌** — 56 commands, 204 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -53,6 +53,12 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings projects evidence` | `--limit` | ✅ |  |
 | `meetings projects evidence` | `--cursor` | ✅ |  |
 | `meetings projects evidence` | `--max-read-bytes` | ✅ |  |
+| `meetings projects scan` |  | ✅ |  |
+| `meetings projects scan` | `--limit` | ✅ |  |
+| `meetings projects scan` | `--cues` | ✅ |  |
+| `meetings projects scan` | `--bytes` | ✅ |  |
+| `meetings projects scan` | `--max-read-bytes` | ✅ |  |
+| `meetings projects scan` | `--cursor` | ✅ |  |
 | `meetings prepare` |  | ✅ |  |
 | `meetings prepare` | `--context-source` | ✅ |  |
 | `meetings prepare` | `--context-query` | ✅ |  |
@@ -218,6 +224,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `serve` | `--mcp` | ✅ |  |
 | `serve` | `--unified-search` | ✅ |  |
 | `serve` | `--meeting-context` | ✅ |  |
+| `serve` | `--meeting-project-candidates` | ✅ |  |
 | `serve` | `--meeting-preparation` | ✅ |  |
 | `serve` | `--semantic` | ✅ |  |
 | `serve` | `--model` | ✅ |  |

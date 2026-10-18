@@ -225,6 +225,26 @@ zm meetings projects evidence <project> [query] [options]
 | `--cursor <cursor>` | continue with the same project and frozen selection from next. |
 | `--max-read-bytes <bytes>` | word-read byte budget, at most 67108864 (default 4194304). |
 
+#### `zm meetings projects scan`
+
+suggest existing projects from one bounded page of stored meeting evidence
+
+```sh
+zm meetings projects scan <ref> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `ref` | required | canonical parent meeting reference in the selected account. |
+
+| Option | What it does |
+|---|---|
+| `--limit <n>` | existing project candidates, 1–10 (default 10). |
+| `--cues <n>` | transcript cues, 1–100 (default 20). |
+| `--bytes <bytes>` | answer item UTF-8 JSON bytes, 2048–65536 (default 16384). |
+| `--max-read-bytes <bytes>` | stored text bytes per read, 1–65536 (default 65536). |
+| `--cursor <cursor>` | continue from evidence.coverage.next_cursor with the same meeting. |
+
 ### `zm meetings prepare`
 
 prepare cited context for one upcoming series
@@ -917,6 +937,7 @@ zm serve [options]
 | `--mcp` | use the MCP JSON-RPC protocol. |
 | `--unified-search` | include selected-profile meetings-only unified search. |
 | `--meeting-context` | include account-fixed evidence, person context and task proposals. |
+| `--meeting-project-candidates` | include stored meeting project suggestions using the global project vocabulary. |
 | `--meeting-preparation` | include cited meeting preparation with remote Zoom schedule reads. |
 | `--semantic` | include read-only meeting vector search with an explicit query model. |
 | `--model <model>` | query embedding model: an installed one, or one served at --base-url. |

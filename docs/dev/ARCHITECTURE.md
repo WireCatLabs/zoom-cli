@@ -279,7 +279,6 @@ This host-format compatibility adapter keeps recognized local stale recovery and
 refusal until the shared lock adapter supports the existing protocol. Checkpoint file publication
 already uses Core atomic writes; archive writer/partial/publication leases remain shared in Core.
 
-
 Project-candidate scanning delegates account authorization, bounded evidence hydration, name/key/alias
 matching and answer contracts to Core. Zoom binds only the selected existing account and vocabulary,
 opens the native store read-only with preparation intent, and closes before CLI/MCP output. The MCP

@@ -104,6 +104,7 @@ it("keeps undated and unknown schedule kinds explicit", async () => {
     meetings: [
       { id: "123", type: 3 },
       { id: 456, type: 1 },
+      { id: 789, type: 2, start_time: "2026-10-20T10:00:00Z" },
     ],
     next_page_token: "",
   })
@@ -111,6 +112,7 @@ it("keeps undated and unknown schedule kinds explicit", async () => {
   expect(result.items).toEqual([
     { meetingId: "123", title: null, kind: "unscheduled", scheduledStartAt: null },
     { meetingId: "456", title: null, kind: "unknown", scheduledStartAt: null },
+    { meetingId: "789", title: null, kind: "single", scheduledStartAt: Date.parse("2026-10-20T10:00:00Z") },
   ])
   expect(result.coverage.undated).toBe(2)
 })
