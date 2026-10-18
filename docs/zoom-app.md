@@ -98,7 +98,7 @@ permission; a granted scope authorizes an API call, not the existence of the req
 
 | Scope | Use |
 |---|---|
-| `meeting:read:list_meetings` | Find your hosted meeting records and list upcoming meetings |
+| `meeting:read:list_meetings` | Find hosted meeting records and list candidate scheduled series |
 | `meeting:read:list_past_instances` | Find the instance that ran for every listed meeting, recurring or not |
 | `cloud_recording:read:meeting_transcript` | Retrieve an available meeting transcript |
 | `meeting:read:list_past_participants` | Read participant records and their join/leave sessions |
@@ -106,7 +106,8 @@ permission; a granted scope authorizes an API call, not the existence of the req
 
 Configure all five for `zm meetings sync`: it reads these parts during ingestion, even though transcript
 or summary content may be absent. Zoom's plan, host settings and retention determine which parts
-exist. For a schedule-only workflow, meeting listing needs just its list scope.
+exist. For a schedule-only workflow, `meetings scheduled` needs just its list scope. Verifying a selected
+series with preparation also needs `meeting:read:meeting`, listed below.
 
 ## Add archive or management access
 

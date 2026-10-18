@@ -1,8 +1,9 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { FETCH } from "@wirecat/cli-core/cli"
+import { FETCH, type MeetingSeriesInventoryReader } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { bytes } from "./execution.js"
+import type { createZoomInventoryReader } from "./meeting-inventory.js"
 import type { ZoomPreparationOptions } from "./meeting-preparation.js"
 import { type MeetingModelOptions, validateMeetingModel } from "./meeting-semantic-commands.js"
 
@@ -15,6 +16,7 @@ export interface ZoomMcpServeOptions {
   includeMeetingProjectCandidates?: boolean
   semanticModel?: MeetingModelOptions
   preparation?: ZoomPreparationOptions
+  inventory?: MeetingSeriesInventoryReader
 }
 export const addZoomMcpCommand = (
   program: Command,
@@ -23,6 +25,7 @@ export const addZoomMcpCommand = (
     signal: () => AbortSignal | undefined
     serve?: (options: ZoomMcpServeOptions) => Promise<void>
     preparation: ZoomPreparationOptions
+    inventory?: ReturnType<typeof createZoomInventoryReader>
   },
 ) =>
   annotate(program.command("serve"), { effects: FETCH, lifetime: "persistent" })
@@ -34,6 +37,7 @@ export const addZoomMcpCommand = (
       "--meeting-project-candidates",
       "include stored meeting project suggestions using the global project vocabulary",
     )
+    .option("--meeting-inventory", "include bounded remote meeting-series discovery with unverified date hints")
     .option("--meeting-preparation", "include cited meeting preparation with remote Zoom schedule reads")
     .option("--semantic", "include read-only meeting vector search with an explicit query model")
     .option("--model <model>", "query embedding model: an installed one, or one served at --base-url")
@@ -45,6 +49,7 @@ export const addZoomMcpCommand = (
         meetingContext?: boolean
         meetingProjectCandidates?: boolean
         meetingPreparation?: boolean
+        meetingInventory?: boolean
         semantic?: boolean
         model?: string
         baseUrl?: string
@@ -62,6 +67,12 @@ export const addZoomMcpCommand = (
           throw new CliError("configuration_error", "remote embeddings require network access; remove --offline")
         if (options.meetingPreparation && opts.offline)
           throw new CliError("configuration_error", "meeting preparation requires network access; remove --offline")
+        if (options.meetingInventory && opts.offline)
+          throw new CliError("configuration_error", "meeting inventory requires network access; remove --offline")
+        const inventory = options.meetingInventory ? deps.inventory : undefined
+        if (options.meetingInventory && !inventory)
+          throw new CliError("configuration_error", "meeting inventory capability is unavailable")
+        inventory?.capture()
         await deps.serve({
           commandRegistry: program,
           signal: deps.signal() as AbortSignal,
@@ -69,6 +80,7 @@ export const addZoomMcpCommand = (
           ...(options.unifiedSearch ? { includeUnifiedSearch: true } : {}),
           ...(options.meetingProjectCandidates ? { includeMeetingProjectCandidates: true } : {}),
           ...(options.meetingContext ? { includeMeetingContext: true } : {}),
+          ...(inventory ? { inventory: inventory.read } : {}),
           ...(options.meetingPreparation ? { preparation: deps.preparation } : {}),
           ...(options.semantic
             ? { semanticModel: { model: options.model ?? "", baseUrl: options.baseUrl, dims: options.dims } }

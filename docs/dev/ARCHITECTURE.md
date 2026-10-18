@@ -22,6 +22,7 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [meeting-project-evidence-commands.ts](../../src/meeting-project-evidence-commands.ts), [meeting-project-evidence-mcp.ts](../../src/meeting-project-evidence-mcp.ts) | thin account/resource bindings over Core project discovery and registered schemas |
 | [meeting-preparation.ts](../../src/meeting-preparation.ts), [meeting-preparation-mcp.ts](../../src/meeting-preparation-mcp.ts) | per-call account/credential binding and close-before-output over Core preparation services and adapters |
 | [meeting-mcp-command.ts](../../src/meeting-mcp-command.ts), [meeting-read-command-bindings.ts](../../src/meeting-read-command-bindings.ts) | native command composition without expanding the main program |
+| [meeting-inventory.ts](../../src/meeting-inventory.ts), [meeting-inventory-mcp.ts](../../src/meeting-inventory-mcp.ts), [series-inventory.ts](../../src/series-inventory.ts) | captured public account and cold credentials over Core’s bounded series inventory CLI/MCP/SDK, without opening SQLite |
 | [upcoming-meetings.ts](../../src/upcoming-meetings.ts), [occurrence-schedule.ts](../../src/occurrence-schedule.ts) | bounded Zoom occurrence proof over the shared scoped reader |
 | [remote-http.ts](../../src/remote-http.ts) | authenticated Zoom dispatch, retry, opt-in shared JSON byte bounds and the one download path (host check on every redirect) |
 | [commands.ts](../../src/commands.ts) | shared command metadata, completion and local diagnostics |

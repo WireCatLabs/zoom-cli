@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { createRequire } from "node:module"
 import { join, resolve } from "node:path"
 import { pathToFileURL } from "node:url"
+import { checkInstalledInventory } from "./installed-inventory.mjs"
 
 const root = resolve(process.argv[2])
 const require = createRequire(join(root, "node_modules/@wirecat/zoom-cli/package.json"))
@@ -82,8 +83,13 @@ const stopped = createZoomUpcomingMeetingReader(
 await assert.rejects(stopped.next("123", { ...window, signal: controller.signal }), { code: "cancelled" })
 assert.equal(cancelled, true)
 assert.equal(cancelledResponse.body.locked, false)
+const inventory = await checkInstalledInventory({
+  load: (name) => import(pathToFileURL(require.resolve(name)).href),
+  root,
+})
 console.log(
   JSON.stringify({
+    ...inventory,
     cold_credentials: true,
     fixed_scope: true,
     bounded_wire: true,

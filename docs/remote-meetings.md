@@ -30,9 +30,12 @@ Remote meeting ids are Zoom's numeric ids; stored `meetings` commands use local 
 Listing needs the manually added `meeting:read:list_meetings` scope; showing and invitations need the
 optional scopes in [the app guide](zoom-app.md#add-archive-or-management-access).
 
-For a recurring series, the listed start time alone does not verify the next occurrence. The CLI
-does not yet expose occurrence-specific schedule reads. Confirm the intended occurrence in Zoom
-before relying on a preparation brief; if it cannot be checked, mark its date as unverified.
+For bounded discovery with an account/window-bound continuation, use
+[`meetings scheduled`](usage.md#find-a-scheduled-meeting-series). A recurring series’ listed start
+time alone does not verify the next occurrence. After selecting its provider ID,
+[`meetings prepare <series-id>`](usage.md#prepare-for-an-upcoming-meeting) checks the schedule and
+returns its verification status with cited stored context. Preserve incomplete or unverified
+coverage rather than treating a listed date as proof of a future call.
 
 ## Create, update or cancel
 

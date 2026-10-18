@@ -30,6 +30,7 @@ import { importFile, readDownloadedFiles, validateDownloadedFiles } from "./file
 import { liftJsonFields } from "./json-fields.js"
 import { addZoomMeetingCommands } from "./meeting-commands.js"
 import { type ContextCapture, captureContextSources } from "./meeting-communications-binding.js"
+import { addZoomInventoryCommand } from "./meeting-inventory.js"
 import { addZoomMcpCommand, type ZoomMcpServeOptions } from "./meeting-mcp-command.js"
 import type { ZoomPreparationOptions } from "./meeting-preparation.js"
 import { configuredMeetingSource } from "./meeting-source.js"
@@ -373,7 +374,20 @@ export const createProgram = (deps: ProgramDeps): Command => {
     fetch: fetchWithSignal(deps.fetch),
     remoteOptions,
   }
-  addZoomMcpCommand(program, { fields: () => fields, signal, serve: deps.serveMcp, preparation: preparationOptions })
+  const inventory = addZoomInventoryCommand(program, {
+    config: getConfig,
+    ...preparationOptions,
+    signal,
+    now: deps.now,
+    output: (value) => output(bodyOf(value)),
+  })
+  addZoomMcpCommand(program, {
+    fields: () => fields,
+    signal,
+    serve: deps.serveMcp,
+    preparation: preparationOptions,
+    inventory,
+  })
   addStoreCommands(program, {
     deps,
     connected,
