@@ -90,15 +90,17 @@ it("scans cited aliases offline with native read-only intent and closes before p
 
 it("exposes the native MCP tool only with an explicit global-vocabulary grant", async () => {
   const f = await preparationFixture(undefined, false, true)
-  for (const enabled of [false, true]) {
-    const server = createMeetingMcpServer({ ...f.mcp, includeMeetingProjectCandidates: enabled })
+  for (const enabled of [false, "false", true]) {
+    const server = createMeetingMcpServer({ ...f.mcp, includeMeetingProjectCandidates: enabled as unknown as boolean })
     const client = new Client({ name: "invented-project-agent", version: "1" })
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
     await server.connect(serverTransport)
     await client.connect(clientTransport)
     try {
-      expect((await client.listTools()).tools.some((tool) => tool.name === "meeting_project_candidates")).toBe(enabled)
-      if (enabled) {
+      expect((await client.listTools()).tools.some((tool) => tool.name === "meeting_project_candidates")).toBe(
+        enabled === true,
+      )
+      if (enabled === true) {
         const bad = await client.callTool({
           name: "meeting_project_candidates",
           arguments: { ref: f.candidateReference, account_id: 99 },

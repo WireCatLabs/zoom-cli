@@ -85,7 +85,7 @@ const buildServer = (options: MeetingMcpOptions) => {
     )
     return { ...tool, inputSchema: { ...tool.inputSchema, type: "object" as const, properties } } satisfies Tool
   })
-  if (options.includeMeetingProjectCandidates) tools.push(meetingProjectCandidatesTool)
+  if (options.includeMeetingProjectCandidates === true) tools.push(meetingProjectCandidatesTool)
   tools.push(meetingProjectEvidenceTool)
   if (preparation) tools.push(preparationToolFor(context))
   const meaningArguments = {
