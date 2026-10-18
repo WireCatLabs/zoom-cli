@@ -24,7 +24,13 @@
       "preset": "recommended",
       "style": {
         "useConst": "error",
-        "noNonNullAssertion": "error"
+        "noNonNullAssertion": "error",
+        "noExcessiveLinesPerFile": {
+          "level": "error",
+          "options": {
+            "maxLines": 1000
+          }
+        }
       },
       "correctness": {
         "noUnusedImports": "error",
@@ -37,7 +43,8 @@
           "options": {
             "allow": ["error"]
           }
-        }
+        },
+        "noImportCycles": "error"
       },
       "security": {
         "noSecrets": {
@@ -72,6 +79,24 @@
       ],
       "linter": {
         "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/test/**",
+        "**/tests/**",
+        "**/__tests__/**",
+        "**/fixtures/**",
+        "**/generated/**"
+      ],
+      "linter": {
+        "rules": {
           "security": {
             "noSecrets": "off"
           }
@@ -83,6 +108,18 @@
     "./config/wirecat/no-new-function.grit",
     "./config/wirecat/no-shell-true.grit",
     "./config/wirecat/no-exec-interpolation.grit",
+    {
+      "path": "./config/wirecat/no-deep-wirecat-import.grit",
+      "includes": [
+        "**",
+        "!**/*.test.*",
+        "!**/*.spec.*",
+        "!**/test/**",
+        "!**/tests/**",
+        "!**/__tests__/**",
+        "!**/fixtures/**"
+      ]
+    },
     {
       "path": "./config/wirecat/no-unbounded-spread.grit",
       "includes": [
