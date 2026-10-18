@@ -1,49 +1,27 @@
-Usage: zm [options] [command]
+zm — your Zoom meetings for agents: transcripts and summaries in a local store, every answer
+pointing at its line.
 
-Zoom meeting transcripts and summaries
+Usage: zm <command> [options]
 
-Options:
-  -V, --version                      output the version number
-  --json                             one JSON value; --json=id,title keeps only
-                                     those fields
-  --jsonl                            one JSON object per item
-  --no-input                         disable interactive login
-  --interactive                      permit browser approval in an interactive
-                                     terminal
-  --quiet                            suppress non-error diagnostics
-  --timeout <duration>               command deadline: reads 30s, login 5m,
-                                     downloads/transcription 1h; watch/MCP have
-                                     no default
-  --max-output-bytes <bytes>         bound rendered result bytes (default
-                                     4194304; zero is unlimited)
-  --offline                          refuse network requests
-  --debug                            on a failure, its whole record — cause and
-                                     stack — in place of the short line
-  -h, --help                         display help for command
+What you can do:
+  meetings sync                         meetings, transcripts and summaries into the store
+  search meetings "quote"               words across every transcript, with line refs
+  meetings context <person>             what past meetings say about one person
+  meetings prepare <series-id>          a briefing with sources before a meeting
+  meetings transcribe <meeting> <file>  a recording turned into text on this machine
+  recordings schedule create …          a daily, checked archive of cloud recordings
+  serve --mcp                           read-only meeting tools for any MCP agent
+  ZM_READ_ONLY=1 zm …                   a run that changes nothing
 
-Commands:
-  config                             local Zoom configuration
-  meetings                           stored meetings and their records
-  events                             the owner's stored events
-  commands [path...]                 discover commands, flags and examples,
-                                     optionally scoped to a command path
-  complete [words...]                answer shell completion requests
-  doctor                             check local runtime and public config
-                                     without a login or database
-  session                            the saved Zoom login, separate from local
-                                     data profiles
-  watch [options] [target] [folder]  keep fetching new meetings from Zoom, or
-                                     rescanning a folder, until stopped
-  recordings                         cloud recording assets and verified local
-                                     archives
-  remote-meetings                    upcoming Zoom meetings; stored meeting
-                                     reads remain under meetings
-  skill                              the instructions an agent is given for this
-                                     tool
-  serve [options]                    serve read-only meeting tools over MCP
-                                     stdio
-  search                             opt-in shared store search; meetings by
-                                     default
-  batch [options] <file>             run bounded stored meeting reads: search
-                                     meetings and meetings passage
-  help [command]                     display help for command
+Works with:
+  tg                                    Telegram in the same local store: search, review and tasks offline
+  max                                   MAX in the same local store: search, review and tasks offline
+  wa                                    WhatsApp in the same local store: search, review and tasks offline
+  drive                                 Google Drive and Docs as local text, searchable with your messages
+  memo context <person>                 one person across messengers, mail, notes and meetings
+
+Start here:   zm session start
+Next:         zm commands       every command, by section
+              zm guide          scenarios: command sequences for common tasks
+              zm help options   output, offline, timeouts, dry run
+For agents:   zm skill show     rules and the discovery loop

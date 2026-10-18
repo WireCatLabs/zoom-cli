@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**267 ✅ · 1 ⛔ · 0 ❌** — 57 commands, 211 options.
+**269 ✅ · 2 ⛔ · 0 ❌** — 59 commands, 212 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -269,6 +269,8 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `batch` |  | ✅ |  |
 | `batch` | `--max-read-bytes` | ✅ |  |
 | `batch` | `--format` | ✅ |  |
+| `guide` |  | ✅ |  |
+| `help` |  | ✅ |  |
 | *global* | `--version` | ⛔ | Installed-package acceptance checks the actual bin version; Commander exits before preAction tracing. |
 | *global* | `--json` | ✅ |  |
 | *global* | `--jsonl` | ✅ |  |
@@ -279,3 +281,4 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | *global* | `--max-output-bytes` | ✅ |  |
 | *global* | `--offline` | ✅ |  |
 | *global* | `--debug` | ✅ |  |
+| *global* | `--help-all` | ⛔ | first-screen.test.ts and the installed-package acceptance check it; Commander exits before preAction tracing. |

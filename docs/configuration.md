@@ -53,6 +53,7 @@ public app settings separate from keyring tokens and the shared meeting database
 | `ZM_CONFIG_DIR` | overrides the configuration directory; changing it also changes the keyring service used for login |
 | `ZM_STATE_DIR` | overrides the directory for recorded runs (`runs/`) |
 | `ZM_CACHE_DIR` | overrides the cache directory |
+| `ZM_READ_ONLY` | `1` refuses every command that changes Zoom, the store or a local file, with exit 5 ([security](security.md#what-agents-can-do)) |
 | `WIRECAT_STATE_DIR` | moves the WireCat folder every WireCat CLI shares: the database and the speech models |
 | `MESSAGING_STORE` | selects an explicit shared database path for import, pull, watch, meeting reads and MCP reads |
 | `OPENAI_API_KEY` | used by an explicitly selected OpenAI embedding endpoint ([topic search](topic-search.md)) |
