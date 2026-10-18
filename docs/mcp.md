@@ -103,6 +103,16 @@ and task creation are never MCP tools.
 For broader meeting context across projects, notes and documents, continue with
 [search and evidence](search.md#notes-tags-and-memories-with-memo); connect Memo separately where needed.
 
+With `zm serve --mcp --meeting-inventory`, the agent can call `meeting_series_inventory` to
+read one scheduled series page from the account captured at startup. It accepts optional ISO
+`after`/`until`, `limit`, `max_read_bytes`, `bytes` and `cursor`; it cannot choose an account.
+The default window is now through seven days later. Preserve the returned absolute window when
+continuing `item.page.next_cursor`. Titles and old recurring start dates are hints, not proof of
+an upcoming occurrence; coverage keeps calendar completeness unknown. This is a separate explicit
+remote-read grant, requires `meeting:read:list_meetings`, and refuses offline startup. It opens no
+meeting database and saves nothing. Use the selected provider ID with `meeting_prepare` to verify
+the next occurrence. See [find a scheduled series](usage.md#find-a-scheduled-meeting-series).
+
 With `zm serve --mcp --meeting-project-candidates`, the agent can call
 `meeting_project_candidates` with a parent meeting `ref` and optional `limit`, `cues`, `bytes`,
 `max_read_bytes` and `cursor`. This grants access to the shared project-name catalog alongside

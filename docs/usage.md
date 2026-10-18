@@ -27,6 +27,39 @@ zm meetings export <meeting-id> --format markdown --json
 Read the returned export before saving it to a file. MCP can return exports as text but does not
 write files. [Search and evidence](search.md) keeps exact passage references when you need citations.
 
+## Find a scheduled meeting series
+
+When you know the subject of the next call but not its Zoom series ID, ask your agent to find
+candidate series first. This reads Zoom’s scheduled meetings for the connected account; it does
+not import transcripts or open your local meeting database.
+
+```text prompt
+Find candidate series for my upcoming project meeting. Show the titles and series IDs, explain
+any uncertain or old dates, then verify the next occurrence of the series I select before
+preparing its context.
+```
+
+```sh
+zm meetings scheduled --limit 20 --json
+```
+
+The answer keeps the selected account, titles, provider `meeting_id` values, an absolute search
+window and coverage. By default that window starts now and ends seven days later. Zoom’s inventory
+can include a recurring series with an old first-start date or no date. These are discovery hints:
+they do not prove that a call happens in the window or that every calendar has been searched.
+Keep `calendar_completeness: unknown` and `occurrence_proof: not-read` with the candidates.
+
+If `item.page.has_more` is true, repeat the returned `item.after` and `item.until` as
+`--since-time` and `--before-time`, together with `item.page.next_cursor` as `--cursor`.
+The cursor belongs to that account and window; do not reuse it for another selection. Each call
+reads one provider page, with up to 100 candidates and a default 64 KiB read/output budget. Use
+`--max-read-bytes` and `--bytes` for explicit limits up to 1 MiB. A page that exceeds the limit is
+refused rather than silently dropping candidate series. The command needs
+`meeting:read:list_meetings` and network access; `--offline` refuses it before credentials are read.
+
+Choose the provider series ID, then continue with [meeting preparation](#prepare-for-an-upcoming-meeting)
+to verify the next occurrence and gather cited stored context. A local stored meeting ID is different.
+
 ## Prepare for an upcoming meeting
 
 You have an upcoming Zoom call and want the relevant earlier discussion beside it. Ask your agent:
@@ -220,6 +253,7 @@ does not import that transcript into the meeting database until you request arch
 | `meetings summary <meeting>` | read stored summaries |
 | `meetings export <meeting> --format markdown\|vtt` | export stored meeting content |
 | `search meetings <query>`, `meetings people <query>` | find stored text, indexing new meetings first, or participants |
+| `meetings scheduled` | discover one bounded page of candidate series; dates remain unverified |
 | `meetings prepare <series-id>` | gather upcoming proof and cited stored context for one selected series |
 | `meetings projects scan <ref>` | suggest existing projects from a bounded stored meeting evidence page; no links saved |
 | `meetings projects evidence <project> [query...]` | read bounded canonical-name/key/alias evidence for an existing project |

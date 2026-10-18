@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- `meetings scheduled` reads one bounded page of candidate Zoom series with explicit unknown calendar coverage and unverified start hints. `serve --mcp --meeting-inventory` grants the separate read-only `meeting_series_inventory` tool. The selected profile and credential binding are captured before provider reads; neither path opens the meeting store or infers the next occurrence.
+
 ### Changed — may break callers
 
 - Adopt published Core0.336.0/Base0.44.2 with one Base runtime identity. Shared read-only mode now refuses additional stored writes; preserve the current command effect and offline metadata when consuming discovery. The registered inventory opt-in remains inactive until a host binds it. Core’s new shared-store migration means read-only preparation needs the current schema; a normal stored read upgrades an older compatible store first.

@@ -8,6 +8,7 @@ import {
   agentResult,
   LOCAL_READ,
   meetingProjectCandidatesTool,
+  meetingSeriesInventoryTool,
   snakeKeys,
   UNTRUSTED,
   UNTRUSTED_INSTRUCTION,
@@ -23,7 +24,6 @@ import {
   meetingTools,
 } from "@wirecat/cli-core/meetings/mcp"
 import type { MeetingSearchCursor } from "@wirecat/cli-core/services"
-import type { Command } from "commander"
 import { hostFailureContext } from "./answer-policy.js"
 import { readMetadata, toolAnswer, toolAnswerSchema } from "./answers.js"
 import { camelKeys } from "./keys.js"
@@ -34,33 +34,17 @@ import {
   validateTaskKind,
   validateTaskProposal,
 } from "./meeting-context.js"
-import type { PreparationStoreRequest, ZoomPreparationOptions } from "./meeting-preparation.js"
+import { readInventoryTool } from "./meeting-inventory-mcp.js"
+import type { MeetingMcpOptions } from "./meeting-mcp-options.js"
 import { preparationToolFor, readPreparationTool } from "./meeting-preparation-mcp.js"
 import { readProjectCandidatesTool } from "./meeting-project-candidates-mcp.js"
 import { readProjectEvidenceTool } from "./meeting-project-evidence-mcp.js"
-import { type MeetingModelOptions, validateMeetingModel, validateMeetingSemantic } from "./meeting-semantic-commands.js"
+import { validateMeetingModel, validateMeetingSemantic } from "./meeting-semantic-commands.js"
 import type { StoreConnection } from "./store-connection.js"
 import { runUnifiedSearch, unifiedSearchAnswer } from "./unified-search.js"
 import { VERSION } from "./version.js"
 
-export interface MeetingMcpOptions {
-  /** Resolve the selected profile with read intent; each call owns a fresh connection. */
-  connectStore: (request?: PreparationStoreRequest) => Promise<StoreConnection>
-  commandRegistry?: Command
-  version?: string
-  now?: () => number
-  signal?: AbortSignal
-  /** Maximum UTF-8 bytes in a serialized tool result, including both content forms; zero is unlimited. */
-  maxResultBytes?: number
-  /** Opt-in selected-profile meetings only; store-global notes are never exposed here. */
-  includeUnifiedSearch?: boolean
-  includeMeetingContext?: boolean
-  /** Explicit grant to compare selected meeting evidence with the global project vocabulary. */
-  includeMeetingProjectCandidates?: boolean
-  /** Server-selected model for search_meetings by_meaning; tool callers cannot select models or generate vectors. */
-  preparation?: ZoomPreparationOptions
-  semanticModel?: MeetingModelOptions
-}
+export type { MeetingMcpOptions } from "./meeting-mcp-options.js"
 
 const failure = (code: ErrorCode, message: string) =>
   mcpErrorResult(errorObjectOf(new CliError(code, message), hostFailureContext(undefined, LOCAL_READ)))
@@ -73,6 +57,9 @@ const buildServer = (options: MeetingMcpOptions) => {
     ? { ...options.preparation, context: context ? () => context : undefined }
     : undefined
   const semanticModel = options.semanticModel ? Object.freeze({ ...options.semanticModel }) : undefined
+  const inventory = options.inventory
+  if (inventory !== undefined && typeof inventory !== "function")
+    throw new ZoomError("configuration_error", "meeting inventory must be an explicitly bound reader")
   const maxResultBytes = options.maxResultBytes ?? 4 * 1024 * 1024
   if (!Number.isSafeInteger(maxResultBytes) || maxResultBytes < 0)
     throw new CliError("validation_error", "maxResultBytes must be a nonnegative safe integer")
@@ -85,6 +72,7 @@ const buildServer = (options: MeetingMcpOptions) => {
     )
     return { ...tool, inputSchema: { ...tool.inputSchema, type: "object" as const, properties } } satisfies Tool
   })
+  if (inventory) tools.push(meetingSeriesInventoryTool)
   if (options.includeMeetingProjectCandidates === true) tools.push(meetingProjectCandidatesTool)
   tools.push(meetingProjectEvidenceTool)
   if (preparation) tools.push(preparationToolFor(context))
@@ -233,6 +221,10 @@ const buildServer = (options: MeetingMcpOptions) => {
       return failure("validation_error", "meeting tool arguments must be a plain object")
     const checked = validate(args)
     if (!checked.valid) return failure("validation_error", `invalid meeting tool arguments: ${checked.errorMessage}`)
+    if (request.params.name === "meeting_series_inventory" && inventory) {
+      const result = await readInventoryTool(inventory, args, signal, options)
+      return cancelled() ? failure("cancelled", "meeting inventory was cancelled") : result
+    }
     if (request.params.name === "meeting_prepare") {
       const result = await readPreparationTool({ ...options, preparation }, args, signal)
       return cancelled() ? failure("cancelled", "meeting read was cancelled") : result

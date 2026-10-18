@@ -152,3 +152,7 @@ Zoom partial/checkpoint/promotion bytes without using the journal writer, then r
 installed Zoom package without a recording download. Each installed platform retains these checks
 under `native_publication` in its proof. Native filesystem fault injection stays in Core's tests;
 consumer tests check observable compatibility and host metadata validation.
+
+The installed upcoming proof also exercises scheduled inventory through the installed CLI and MCP.
+Its injected provider transport retains old recurring hints, discards join URLs, rejects caller
+account overrides before HTTP, refuses offline reads and proves that no store connection opens.

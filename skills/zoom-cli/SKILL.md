@@ -175,6 +175,18 @@ Tokens stay in the keyring. Missing scopes require app changes and a new login; 
 is local, while `--check` verifies remotely. Browser consent needs interactive input; `--no-input`
 cannot approve it. `--timeout` bounds finite commands; watch/MCP are foreground lifetimes.
 
+## Discover candidate scheduled series
+
+Use `meetings scheduled --limit 20 --json` when the provider series ID is unknown. It reads one
+Zoom scheduled inventory page, needs `meeting:read:list_meetings` and network access, and opens no
+store. Titles and old/undated recurring start hints do not prove a future occurrence or complete
+calendar coverage. Preserve `coverage`, then verify a selected `meeting_id` with preparation.
+Continue `item.page.next_cursor` with the returned `item.after`/`item.until` as explicit
+`--since-time`/`--before-time`; cursors bind account/window. Input/output budgets refuse a whole
+oversized page. MCP `meeting_series_inventory` requires explicit `--meeting-inventory` startup;
+the server fixes its profile then, and callers cannot override it. Never auto-select an ambiguous
+series or treat inventory hints as attendance/occurrence evidence.
+
 ## Prepare one upcoming series
 
 Use `meetings prepare <series-id> --json` with the exact provider series ID from remote meeting
