@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.25.0 — 18.10.2026
 
 ### Added
 
@@ -9,7 +9,7 @@
 
 ### Changed — may break callers
 
-- Adopt published Core 0.334.0 and Base 0.44.1 as one compatible runtime identity. Command discovery can include `runnable` for groups and `offline: false` for commands that need network access; strict discovery clients must accept those optional fields. Every executable command declares its effects under the shared standards. No new Zoom feature is mounted by this dependency change.
+- Adopt published Core 0.334.0 and Base 0.44.1 as one compatible runtime identity. Command discovery can include `runnable` for groups and `offline: false` for commands that need network access; strict discovery clients must accept those optional fields. Every executable command declares its effects under the shared standards.
 
 ## 0.24.0 — 18.10.2026
 
