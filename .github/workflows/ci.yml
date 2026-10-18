@@ -6,6 +6,9 @@ on:
       pack:
         type: boolean
         default: false
+      platforms:
+        type: boolean
+        default: false
     outputs:
       package-sha256:
         value: ${{ jobs.ci.outputs.package-sha256 }}
@@ -16,17 +19,13 @@ permissions:
 
 jobs:
   ci:
-    uses: WireCatLabs/cli-base/.github/workflows/node-ci.yml@03341651a008f77abb8172f86d6df652321b4ce5 # v0.31.0
+    uses: WireCatLabs/cli-base/.github/workflows/node-ci.yml@bd634ed738d6ae34dcf63e9dc4374063222bea83 # feat/node-ci-cli-profile
     with:
       pack: ${{ inputs.pack || github.event_name == 'workflow_dispatch' }}
-      checks: |
-        pnpm contracts:check
-        pnpm contracts:upgrade
-        pnpm security:no-leak
-        pnpm docs:check
-        pnpm generate:check
-        pnpm test:matrix:check
-        pnpm lint:commands
+      cli: true
+      bin: zm
+      # Linux only on main; a release, the monthly run and a manual run add Windows and macOS.
+      platforms: ${{ inputs.pack || inputs.platforms || github.event_name == 'workflow_dispatch' }}
 
   installed-platforms:
     needs: ci

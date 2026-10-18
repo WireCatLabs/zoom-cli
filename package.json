@@ -36,7 +36,7 @@
     "test:coverage": "vitest run --coverage",
     "smoke:bun": "bun run scripts/smoke.ts",
     "prepublishOnly": "pnpm build",
-    "docs:check": "node node_modules/@wirecat/cli-base/dist/dev/bin.js docs-check --rules scripts/docs-rules.ts && cspell --no-progress --no-summary README.md && node node_modules/rumdl/bin/rumdl check --config config/wirecat/rumdl.toml README.md CHANGELOG.md CLAUDE.md docs/*.md docs/dev/*.md",
+    "docs:check": "node node_modules/@wirecat/cli-base/dist/dev/bin.js docs-check --rules scripts/docs-rules.ts --pages && cspell --no-progress --no-summary README.md && node node_modules/rumdl/bin/rumdl check --config config/wirecat/rumdl.toml README.md CHANGELOG.md CLAUDE.md docs/*.md docs/dev/*.md",
     "standards:check": "node config/wirecat/check.mjs",
     "docs:lint": "markdownlint-cli2",
     "docs:spell": "cspell lint --config cspell.json --no-progress README.md",
@@ -49,7 +49,10 @@
     "lint:commands": "node node_modules/@wirecat/cli-base/dist/dev/bin.js lint --cli dist/bin/zm.js",
     "test:matrix:check": "node node_modules/@wirecat/cli-base/dist/dev/bin.js test-matrix --program scripts/command-program.ts --untested scripts/test-matrix-untested.ts --name zm --check",
     "contracts:upgrade": "pnpm --dir contracts/previous install --frozen-lockfile --ignore-scripts && cli-contract contracts/upgrade.json",
-    "security:no-leak": "cli-testing security no-leak . contracts/no-leak.json"
+    "security:no-leak": "cli-testing security no-leak . contracts/no-leak.json",
+    "version:check": "node node_modules/@wirecat/cli-base/dist/dev/bin.js version",
+    "version:sync": "node node_modules/@wirecat/cli-base/dist/dev/bin.js version --sync",
+    "package:check": "node scripts/package-check.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",
