@@ -188,10 +188,16 @@ Once that works, [search a topic and read its surrounding evidence](search.md).
 
 ## Where files go
 
-The tool creates public `config.json` settings when you configure it; this is not a downloaded
-credentials file. `zm doctor --json` shows its location. Login tokens stay in your operating
-system's password store. Meetings use the shared local `wirecat.db`; recording downloads go to
-the destination you name. `ZM_CONFIG_DIR` changes configuration and its keyring service;
+| What | Linux and macOS | Windows |
+|---|---|---|
+| settings (`config.json`) | `~/.config/zm/` | `%APPDATA%\zm\Config\` |
+| state (recorded runs in `runs/`) | `~/.local/share/zm/` | `%LOCALAPPDATA%\zm\Data\` |
+| cache | `~/.cache/zm/` | `%LOCALAPPDATA%\zm\Cache\` |
+| the local store | `~/.local/share/WireCat/wirecat.db` | `%LOCALAPPDATA%\WireCat\Data\wirecat.db` |
+
+`config.json` holds public settings; it is not a downloaded credentials file. `zm doctor --json`
+shows its location. Login tokens stay in your operating system's password store. Recording downloads
+go to the destination you name. `ZM_CONFIG_DIR` changes configuration and its keyring service;
 `MESSAGING_STORE` selects a different database. See [configuration](configuration.md).
 
 ## Update or remove the tool
@@ -209,9 +215,17 @@ Remove the command with:
 npm uninstall -g @wirecat/zoom-cli
 ```
 
-Uninstalling leaves the shared meeting database and recording folders. Revoke app access in Zoom
-Marketplace if you also want to withdraw account authorization. There is no logout command; see
-[sessions](sessions.md#remove-access). Use the `.cmd` launchers on Windows if needed.
+Uninstalling removes only the package. To remove everything else, delete:
+
+- the settings directory (`~/.config/zm`) and the state directory (`~/.local/share/zm`);
+- the agent skill folders, if you installed the skill: `~/.claude/skills/zoom-cli` and
+  `~/.agents/skills/zoom-cli`;
+- the login entry in your password store, described in [sessions](sessions.md#remove-access);
+- the shared meeting database and your recording folders, only if you want the saved meetings gone.
+  Other WireCat tools use the same database.
+
+Revoke app access in Zoom Marketplace if you also want to withdraw account authorization.
+Use the `.cmd` launchers on Windows if needed.
 
 ## Shell completion
 

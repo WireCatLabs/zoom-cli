@@ -23,7 +23,12 @@ export const configuredMeetingSource = ({
     if (deps.source) return Promise.resolve(deps.source)
     activeSource ??= (async () => {
       const config = getConfig()
-      if (config.source === "api") return new ZoomApiSource(tokens(), fetch())
+      if (config.source === "api") {
+        const manager = tokens()
+        if (!manager.options.clientId)
+          throw new CliError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
+        return new ZoomApiSource(manager, fetch())
+      }
       if (!config.filesFolder) throw new CliError("configuration_error", "set files.folder before pulling from files")
       return new FilesSource(await (deps.readFiles ?? readDownloadedFiles)(config.filesFolder), config.filesTimezone)
     })()

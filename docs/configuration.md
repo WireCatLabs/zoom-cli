@@ -25,8 +25,8 @@ using its API. `ZOOM_CLIENT_ID` is not a runtime setting for the installed `zm` 
 The file stores these settings as `client_id`, `files_folder`, `files_timezone`, `account_profile` and `source`.
 JSON files must use these snake_case keys. Legacy camelCase files are refused and are not rewritten.
 Before upgrading an older file, rename `clientId` to `client_id`, `filesFolder` to `files_folder`,
-`filesTimezone` to `files_timezone` and `accountProfile` to `account_profile`. Preserve their values
-and private file permissions. The command setting selector `zoom.clientId` remains an alias for
+`filesTimezone` to `files_timezone` and `accountProfile` to `account_profile`. Preserve their values.
+The command setting selector `zoom.clientId` remains an alias for
 `zoom.client_id`; it is not a supported JSON file key.
 
 A malformed config still allows `--help` and `--version`; config commands report the error.
@@ -51,10 +51,14 @@ public app settings separate from keyring tokens and the shared meeting database
 | Variable | Effect |
 |---|---|
 | `ZM_CONFIG_DIR` | overrides the configuration directory; changing it also changes the keyring service used for login |
+| `ZM_STATE_DIR` | overrides the directory for recorded runs (`runs/`) |
+| `ZM_CACHE_DIR` | overrides the cache directory |
+| `WIRECAT_STATE_DIR` | moves the WireCat folder every WireCat CLI shares: the database and the speech models |
 | `MESSAGING_STORE` | selects an explicit shared database path for import, pull, watch, meeting reads and MCP reads |
 | `OPENAI_API_KEY` | used by an explicitly selected OpenAI embedding endpoint ([topic search](topic-search.md)) |
 
 Directories otherwise follow the platform convention. The default shared database is `wirecat.db`
+(`~/.local/share/WireCat/wirecat.db`, `%LOCALAPPDATA%\WireCat\Data\wirecat.db` on Windows)
 ([where meetings are stored](archive.md#where-meetings-are-stored)). Use the same environment in your
 terminal and MCP entry; otherwise they can read different profiles or stores. Continue with
 [sessions](sessions.md) to verify authorization separately from these public settings.

@@ -64,7 +64,8 @@ terminal, rather than a background job or an MCP client.
 zm config set account.profile personal
 ```
 
-A profile is a label for saved data, not a separate set of Zoom credentials. Labels have 1–64
+A profile is a label for saved data, not a separate set of Zoom credentials. Unlike `tg` and `max`,
+`zm` takes no profile argument: the profile is the `account.profile` setting. Labels have 1–64
 letters, digits, dots, underscores or hyphens and start with a letter or digit. Import and API
 pull share the selected label; ingestion registers it, while read commands only look it up.
 Pull or import once before expecting `meetings list` to find it.
@@ -81,8 +82,12 @@ the pull cursor; when switching ingestion sources, an older explicit `--since-ti
 ## Remove access
 
 There is no logout command. To withdraw the app's account access, remove/revoke the app in Zoom
-App Marketplace's app management. If you also want to remove the local token, use your operating
-system's password-store interface for this tool's entry. Uninstalling `zm` does not revoke Zoom
+App Marketplace's app management. To remove the local token, open your operating system's password store and delete the entry
+whose service is `zoom-cli:<configuration directory>` (for example `zoom-cli:/home/you/.config/zm`;
+`zm doctor --json` shows the directory) and whose account is your Public Client ID. Uninstalling `zm` does not revoke Zoom
 authorization or erase saved meetings. See [security](security.md) before sharing data with an agent.
+
+Several Zoom users on one computer each need their own `ZM_CONFIG_DIR`: the keyring entry depends on the
+configuration directory and the client ID, so users who share both share one login.
 
 Once the session and profile are ready, [pull or import your first meeting](archive.md#pull-hosted-meetings).

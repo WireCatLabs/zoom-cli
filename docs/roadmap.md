@@ -20,7 +20,7 @@ own archive metadata format.
 
 ## Save reviewed findings through Memo
 
-Memo 0.58.0 can stage cited decisions, statements and project tasks from a stored meeting for
+Memo can stage cited decisions, statements and project tasks from a stored meeting for
 owner review. Use an existing confirmed meeting/project link, inspect the supporting passages,
 and confirm the candidates you want to save. Staging alone creates no facts or tasks; an exact
 retry reuses the accepted records. See
