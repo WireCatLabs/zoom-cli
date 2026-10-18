@@ -47,6 +47,7 @@ describe("ZM_READ_ONLY", () => {
     [["config", "set", "account.profile", "personal"]],
     [["skill", "install"]],
     [["watch"]],
+    [["search", "meetings", "budget", "--model", "e5-small"]],
   ])("refuses %j with exit 5 before any network or store call", async (args) => {
     const { deps, network, stderr } = await setup({ ZM_READ_ONLY: "1" })
     expect(await run([...args, "--json"], deps)).toBe(5)

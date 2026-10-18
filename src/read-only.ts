@@ -13,6 +13,9 @@ export const ZM: AppIdentity = {
 
 // Their only write is the word index or a store opened read-only. Any other write, one added later too, is refused.
 const READS_UNDER_LOCK = new Set(["search meetings", "batch", "serve"])
+// Search by meaning builds missing vectors first, and with --base-url sends transcript text off this machine.
+const buildsVectors = (command: Command, path: string) =>
+  path === "search meetings" && command.opts().model !== undefined
 
 const pathOf = (command: Command): string => {
   const words: string[] = []
@@ -23,7 +26,9 @@ const pathOf = (command: Command): string => {
 const changesSomething = (command: Command): boolean => {
   const effects = metaOf(command).effects
   if (!effects) return true
-  return effects.remote === "write" || (effects.local === "write" && !READS_UNDER_LOCK.has(pathOf(command)))
+  const path = pathOf(command)
+  if (buildsVectors(command, path)) return true
+  return effects.remote === "write" || (effects.local === "write" && !READS_UNDER_LOCK.has(path))
 }
 
 /** `ZM_READ_ONLY` refuses, by declared effects, every command that changes Zoom or this machine, before it connects. */

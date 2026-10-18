@@ -21,14 +21,16 @@
   `help options`, `skill show`). It no longer lists every command or global option; `zm --help-all` prints the old
   help. Exit codes are unchanged.
 - `meetings list` and `meetings projects evidence` refuse a word that starts with `--` as an unknown option, with
-  commander's suggestion, instead of reading it as query text; after `--` every word is query.
+  commander's suggestion, instead of reading it as query text; after `--` every word is query. Known problem: this
+  also refuses their `--help` (exit 2); `-h` and `zm help meetings list` show the help.
 
 ### Security
 
 - **`ZM_READ_ONLY=1` makes a run change nothing.** Every command that writes to Zoom, the meeting store or a local
   file — `meetings sync`, `import`, `export`, `link`, `update`, `transcribe`, `embeddings`, recordings downloads and
   archive jobs, `watch`, `config set`, `skill install`, `session start` and remote meeting changes — is refused with
-  exit 5 before it connects to anything, previews included. Reads, word search, `batch` and `serve --mcp` still run.
+  exit 5 before it connects to anything, previews included; so is `search meetings --model`, which builds missing
+  vectors. Reads, word search, `batch` and `serve --mcp` still run.
   The lock is judged from each command's declared effects, so a new command that writes is refused too. Before, the
   variable worked only in tg, max and wa.
 

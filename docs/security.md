@@ -50,7 +50,8 @@ a transcript to an AI service. This guide explains those boundaries before you c
 - `ZM_READ_ONLY=1` makes a run change nothing. Every command that writes to Zoom, the meeting store or a
   local file — sync, import, export, downloads, archive jobs, links, transcription, configuration,
   login and remote meeting changes — is refused with exit 5 before it connects to anything, previews
-  included. Reads, word search (which keeps its index current), `batch` and `serve --mcp` still run.
+  included, and so is search by meaning (`--model`), which builds missing vectors. Reads, word search (which
+  keeps its index current), `batch` and `serve --mcp` still run.
   Set it for an agent that should only read; `0` or an empty value turns it off.
 
 An AI app can send the tool results it reads to its own provider. Choose that app and its data policy
