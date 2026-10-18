@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- `skill install` and `skill show` report a usage mistake, such as `zm skill install --yes`, as the same JSON error
+  with exit code 2 as every other command, instead of commander's plain text with exit code 1.
+
 ## 0.27.1 — 18.10.2026
 
 ### Fixed

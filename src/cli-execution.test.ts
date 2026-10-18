@@ -83,6 +83,12 @@ describe("command execution controls", () => {
     expect(value(stderr)).toHaveProperty("error.code", "validation_error")
     expect(value(stderr).error.message).toContain("command path")
   })
+  it("reports a usage mistake under skill as a JSON error with exit 2", async () => {
+    const { deps, stdout, stderr } = await setup()
+    expect(await run(["--json", "skill", "install", "--yes"], deps)).toBe(2)
+    expect(value(stderr).error).toMatchObject({ code: "validation_error", message: "unknown option '--yes'" })
+    expect(stdout).toEqual([])
+  })
   it("bounds UTF-8 result output with no partial stdout and allows an explicit unlimited bound", async () => {
     const { deps, stdout, stderr } = await setup()
     expect(await run(["--json", "--max-output-bytes", "1", "doctor"], deps)).toBe(13)
