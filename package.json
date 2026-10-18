@@ -47,7 +47,7 @@
     "generate:check": "pnpm build && node scripts/commands.ts --check",
     "test:matrix": "pnpm test --maxWorkers 2 && pnpm build && pnpm test:matrix:check",
     "lint:commands": "node node_modules/@wirecat/cli-base/dist/dev/bin.js lint --cli dist/bin/zm.js",
-    "test:matrix:check": "node node_modules/@wirecat/cli-base/dist/dev/bin.js test-matrix --program scripts/command-program.ts --untested scripts/test-matrix-untested.ts --name zm --check",
+    "test:matrix:check": "node node_modules/@wirecat/cli-base/dist/dev/bin.js test-matrix --program scripts/command-program.ts --untested scripts/test-matrix-untested.ts --name zm --check && git diff --exit-code -- docs/dev/test-matrix.md",
     "contracts:upgrade": "pnpm --dir contracts/previous install --frozen-lockfile --ignore-scripts && cli-contract contracts/upgrade.json",
     "security:no-leak": "cli-testing security no-leak . contracts/no-leak.json",
     "version:check": "node node_modules/@wirecat/cli-base/dist/dev/bin.js version",
