@@ -168,6 +168,10 @@ it("MCP inventory is opt-in, rejects caller accounts and does not connect the st
         expect(invalid.isError).toBe(true)
         expect(JSON.stringify(invalid.structuredContent)).toContain("account")
         expect(f.fetcher).not.toHaveBeenCalled()
+        const malformed = await client.callTool({ name: "meeting_series_inventory", arguments: { cursor: "wrong" } })
+        expect(malformed.isError).toBe(true)
+        expect(JSON.stringify(malformed.structuredContent)).toContain("cursor")
+        expect(f.fetcher).not.toHaveBeenCalled()
         const result = await client.callTool({ name: "meeting_series_inventory", arguments: { limit: 1 } })
         expect(result.isError).not.toBe(true)
         expect(result.structuredContent).toMatchObject({
@@ -217,4 +221,13 @@ it("aborted inventory does not capture scope or touch credentials", async () => 
   controller.abort(new Error("invented cancellation"))
   await expect(inventory.read({ ...window, signal: controller.signal })).rejects.toThrow("invented cancellation")
   expect(capture).not.toHaveBeenCalled()
+})
+
+it("an untyped nonfunction cannot enable the inventory MCP grant", () => {
+  const f = fixture()
+  expect(() => createMeetingMcpServer({ connectStore: f.connectStore, inventory: "false" as never })).toThrow(
+    "meeting inventory must be an explicitly bound reader",
+  )
+  expect(f.fetcher).not.toHaveBeenCalled()
+  expect(f.connectStore).not.toHaveBeenCalled()
 })

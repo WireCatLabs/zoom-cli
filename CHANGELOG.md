@@ -10,6 +10,10 @@
 
 - Adopt published Core0.336.0/Base0.44.2 with one Base runtime identity. Shared read-only mode now refuses additional stored writes; preserve the current command effect and offline metadata when consuming discovery. The registered inventory opt-in remains inactive until a host binds it. Core’s new shared-store migration means read-only preparation needs the current schema; a normal stored read upgrades an older compatible store first.
 
+### Fixed
+
+- Project-scan guidance identifies the parent reference in a search hit’s `meeting` field; a transcript hit’s own `ref` identifies a cue and is not a scan input.
+
 ## 0.25.0 — 18.10.2026
 
 ### Added

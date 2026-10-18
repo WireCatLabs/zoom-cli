@@ -281,8 +281,9 @@ project links for review.
 ```
 
 The scan reads the selected profile's local meeting and the shared project-name catalog. It does
-not contact Zoom or require an embedding model. Find the meeting's `ref` in a search result, then
-use that parent meeting reference. For example, with a fictional reference:
+not contact Zoom or require an embedding model. Use the search result’s `meeting` field as the
+parent meeting reference. A transcript hit’s own `ref` points to a cue and is not accepted by this
+scan. For example, with a fictional parent reference:
 
 ```sh
 zm meetings projects scan meeting:1/2 --cues 20 --json

@@ -68,7 +68,8 @@ be explicit. Never infer that a linked participant spoke a particular cue.
 `meetings projects evidence <project>` searches one existing canonical project's name/key/aliases,
 including meetings without confirmed membership. Keep its coverage and frozen continuation; it
 reads the existing index and neither refreshes it nor assigns project membership.
-When the project is unknown, `meetings projects scan <parent-ref> --json` compares one bounded
+When the project is unknown, use the search hit’s `meeting` field for the parent reference,
+not its transcript-cue `ref`. `meetings projects scan <parent-ref> --json` compares one bounded
 local evidence page with existing global project names/keys/aliases. This reads the shared project
 catalog explicitly, never creates membership, and needs no model or network. Keep `metadata-title`
 hints apart from transcript citations and retain ambiguity, fingerprints, omitted matches and both
