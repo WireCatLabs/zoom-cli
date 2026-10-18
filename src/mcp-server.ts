@@ -59,7 +59,7 @@ const buildServer = (options: MeetingMcpOptions) => {
   const semanticModel = options.semanticModel ? Object.freeze({ ...options.semanticModel }) : undefined
   const inventory = options.inventory
   if (inventory !== undefined && typeof inventory !== "function")
-    throw new ZoomError("configuration_error", "meeting inventory must be an explicitly bound reader")
+    throw new CliError("configuration_error", "meeting inventory must be an explicitly bound reader")
   const maxResultBytes = options.maxResultBytes ?? 4 * 1024 * 1024
   if (!Number.isSafeInteger(maxResultBytes) || maxResultBytes < 0)
     throw new CliError("validation_error", "maxResultBytes must be a nonnegative safe integer")
