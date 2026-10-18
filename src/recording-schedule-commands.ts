@@ -4,7 +4,7 @@ import type { Effects } from "@wirecat/cli-base/standards"
 import { type Body, FETCH, itemOf, LOCAL_READ, LOCAL_WRITE, NO_EFFECTS } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { wholeList } from "./answer-output.js"
-import { bytes } from "./execution.js"
+import { bytes, runsLong } from "./execution.js"
 import type {
   RecordingScheduleCapture,
   RecordingScheduleReceipt,
@@ -106,8 +106,7 @@ export const addRecordingScheduleCommands = (
     LOCAL_READ,
   )
   label(
-    schedule
-      .command("run")
+    runsLong(schedule.command("run"))
       .description("run the captured job once with durable archive progress")
       .argument("<job>", "saved job id")
       .action(async (id: string) => {

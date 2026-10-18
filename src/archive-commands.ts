@@ -15,7 +15,7 @@ import { recordingWindows } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
 import { wholeList } from "./answer-output.js"
 import type { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
-import { bytes } from "./execution.js"
+import { bytes, runsLong } from "./execution.js"
 import type { inspectArchiveLocks, recoverArchiveLocks } from "./recording-archive.js"
 import { validateDownloadOptions } from "./recording-archive.js"
 import type { inspectArchive, verifyArchive } from "./recording-manifest.js"
@@ -128,8 +128,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
   )
   label(
     resumable(
-      recordings
-        .command("sync")
+      runsLong(recordings.command("sync"))
         .description("download a date range of recordings into an archive folder, a month at a time")
         .requiredOption("--since-time <time>", "first day, YYYY-MM-DD")
         .requiredOption("--until-time <time>", "last day, YYYY-MM-DD; at most ten years after the first")
@@ -195,8 +194,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
   )
   label(
     resumable(
-      recordings
-        .command("download")
+      runsLong(recordings.command("download"))
         .description("stream recording assets into a verified local archive")
         .argument("<meeting>", "meeting id or occurrence UUID")
         .requiredOption("--output-dir <dir>", "explicit archive directory")
@@ -259,8 +257,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
     LOCAL_READ,
   )
   label(
-    archive
-      .command("check")
+    runsLong(archive.command("check"))
       .description("check the size and checksum of every file in a local archive")
       .argument("<directory>", "archive folder")
       .action(async (directory: string) =>

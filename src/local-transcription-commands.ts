@@ -3,7 +3,7 @@ import { annotate } from "@wirecat/cli-base/commands"
 import { type Body, itemOf, LOCAL_WRITE } from "@wirecat/cli-core/cli"
 import { speechModel } from "@wirecat/cli-core/speech"
 import type { Command } from "commander"
-import { bytes, duration } from "./execution.js"
+import { bytes, duration, runsLong } from "./execution.js"
 import {
   compactLocalTranscriptionReceipt,
   type LocalTranscriptionCapabilities,
@@ -23,8 +23,7 @@ export const addLocalTranscriptionCommands = (
   const meetings = program.commands.find((command) => command.name() === "meetings")
   if (!meetings) throw new CliError("configuration_error", "meeting command group is unavailable")
   annotate(
-    meetings
-      .command("transcribe")
+    runsLong(meetings.command("transcribe"))
       .description("preview transcribing a recording on this machine; --yes adds the transcript")
       .argument("<meeting>", "stored meeting id or meeting reference")
       .argument("<file>", "local PCM16 WAV file (16 or 48 kHz, mono/stereo)")
