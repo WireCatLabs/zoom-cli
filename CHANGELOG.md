@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.27.0 — 18.10.2026
+
+### Changed — may break callers
+
+- Adopt published Core 0.342.0 and Base 0.45.0 as one runtime identity. Base moved its lint, audit and vocabulary
+  tables from `@wirecat/cli-base/standards` to `@wirecat/cli-base/standards/tables`; an SDK consumer that imports those
+  tables, or pins Core or Base beside zoom, moves to these versions together. Command effects and output are unchanged.
+
 ## 0.26.0 — 18.10.2026
 
 ### Added
