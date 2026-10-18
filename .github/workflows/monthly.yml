@@ -15,8 +15,6 @@ permissions:
 jobs:
   validation:
     uses: ./.github/workflows/ci.yml
-    with:
-      platforms: true
   security:
     permissions:
       contents: read
