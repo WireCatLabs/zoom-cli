@@ -27,6 +27,7 @@ import { profileAccountKey, readConfig } from "./config.js"
 import { checkCancelled } from "./errors.js"
 import { bytes, duration, type ExecutionState, resetCliOptions, startExecution } from "./execution.js"
 import { importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
+import { installFirstScreen } from "./first-screen.js"
 import { liftJsonFields } from "./json-fields.js"
 import { addZoomMeetingCommands } from "./meeting-commands.js"
 import { type ContextCapture, captureContextSources } from "./meeting-communications-binding.js"
@@ -34,6 +35,7 @@ import { addZoomInventoryCommand } from "./meeting-inventory.js"
 import { addZoomMcpCommand, type ZoomMcpServeOptions } from "./meeting-mcp-command.js"
 import type { ZoomPreparationOptions } from "./meeting-preparation.js"
 import { configuredMeetingSource } from "./meeting-source.js"
+import { refuseChangeWhenReadOnly } from "./read-only.js"
 import type { RecordingScheduleService } from "./recording-schedule.js"
 import { addRecordingScheduleCommands } from "./recording-schedule-commands.js"
 import { zoomRecordingSchedule } from "./recording-schedule-setup.js"
@@ -93,6 +95,7 @@ export interface ProgramDeps {
   streamData?: (text: string, signal: AbortSignal) => Promise<void>
 }
 const answerExitCodes = new WeakMap<Command, number>()
+const HELP_EXITS = new Set(["commander.helpDisplayed", "commander.help", "commander.version"])
 
 export const createProgram = (deps: ProgramDeps): Command => {
   let config: ReturnType<typeof readConfig> | undefined
@@ -196,6 +199,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
       throw new CliError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
   }
   program.hook("preAction", async (_root, action) => {
+    refuseChangeWhenReadOnly(action, deps.env ?? process.env)
     const opts = action.optsWithGlobals()
     if (opts.json && opts.jsonl) throw new CliError("validation_error", "choose --json or --jsonl")
     checkJson(action, { json: opts.json === true, ...(fields ? { fields: fields.join(",") } : {}) }, false)
@@ -276,7 +280,6 @@ export const createProgram = (deps: ProgramDeps): Command => {
     fetch: () => fetchWithSignal(deps.fetch),
     signal,
   })
-  const watchSleep = deps.sleep
   const watch = createWatchService({
     deps,
     getConfig,
@@ -299,19 +302,19 @@ export const createProgram = (deps: ProgramDeps): Command => {
       grace?.dispose()
     }
   }
-  addWatchCommand(program, {
-    signal: () => signal() as AbortSignal,
-    receipt,
-    outputIsTTY: deps.outputIsTTY,
-    sleep: watchSleep ? (ms, abort) => watchSleep(ms, abort, "retry") : undefined,
-    prepare: watch.prepare,
-    ingest: watch.ingest,
-  })
   const retrySleep = deps.sleep
   const remoteOptions: RemoteOptions = {
     now: deps.now,
     sleep: retrySleep ? (ms, abort) => retrySleep(ms, abort, "retry") : undefined,
   }
+  addWatchCommand(program, {
+    signal: () => signal() as AbortSignal,
+    receipt,
+    outputIsTTY: deps.outputIsTTY,
+    sleep: remoteOptions.sleep,
+    prepare: watch.prepare,
+    ingest: watch.ingest,
+  })
   addArchiveCommands(program, {
     output,
     outputItems,
@@ -406,6 +409,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     },
   })
   annotateMeetingCommands(program)
+  installFirstScreen(program)
   const parseAsync = program.parseAsync.bind(program)
   program.parseAsync = async (...args) => {
     if (parsing) throw new CliError("validation_error", "concurrent command parsing is unavailable")
@@ -473,13 +477,7 @@ export const run = async (args: string[], deps: ProgramDeps): Promise<number> =>
     await program.parseAsync(args, { from: "user" })
     return answerExitCodes.get(program) ?? 0
   } catch (error) {
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      ["commander.helpDisplayed", "commander.help", "commander.version"].includes(String(error.code))
-    )
-      return 0
+    if (error instanceof CommanderError && HELP_EXITS.has(error.code)) return 0
     const unknownOutcome = error instanceof Error && "code" in error && error.code === "outcome_unknown"
     const failure = isCliError(error)
       ? error

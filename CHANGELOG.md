@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+### Added
+
+- **`zm guide [name]`: scenarios, the commands for a common task in order.** Five ship with the package:
+  `catch-up`, `find-quote`, `prepare-meeting`, `person-in-meetings` and `archive-recordings`; each prints its goal,
+  every step as a command with why, and what to look at. `--json` gives the same as data. Under "Works with" the list
+  names memo's `person-brief` for one person across every tool. CI checks that every step's command and options
+  parse.
+- **Every leaf command's `--help` ends with Returns, Next usually and Example**, and the commands document carries
+  the same three lines under each command.
+- `zm help options` prints the options for every command; `zm help <command>` prints that command's help.
+
+### Changed — may break callers
+
+- **Adopt Core 0.345.0 and Base 0.46.0.** An SDK consumer that pins Core or Base beside zoom moves with them.
+- **`zm --help` and a bare `zm` show a short first screen** instead of commander's full help: what zm is for, what
+  it can do that an API client would not, the other WireCat tools, and where to go next (`commands`, `guide`,
+  `help options`, `skill show`). It no longer lists every command or global option; `zm --help-all` prints the old
+  help. Exit codes are unchanged.
+- `meetings list` and `meetings projects evidence` refuse a word that starts with `--` as an unknown option, with
+  commander's suggestion, instead of reading it as query text; after `--` every word is query. Known problem: this
+  also refuses their `--help` (exit 2); `-h` and `zm help meetings list` show the help.
+
+### Security
+
+- **`ZM_READ_ONLY=1` makes a run change nothing.** Every command that writes to Zoom, the meeting store or a local
+  file — `meetings sync`, `import`, `export`, `link`, `update`, `transcribe`, `embeddings`, recordings downloads and
+  archive jobs, `watch`, `config set`, `skill install`, `session start` and remote meeting changes — is refused with
+  exit 5 before it connects to anything, previews included; so is `search meetings --model`, which builds missing
+  vectors. Reads, word search, `batch` and `serve --mcp` still run.
+  The lock is judged from each command's declared effects, so a new command that writes is refused too. Before, the
+  variable worked only in tg, max and wa.
+
 ### Fixed
 
 - `skill install` and `skill show` report a usage mistake, such as `zm skill install --yes`, as the same JSON error
