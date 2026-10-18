@@ -8,6 +8,9 @@ explicitly linked people and confirmed projects. An optional selected existing p
 name/key/alias word matches, kept separate from confirmed membership.
 Explicit configured communications selections add bounded, cited literal matches from stored
 message accounts, mail accounts and document folders, with source coverage and continuation.
+`meetings scheduled` discovers one bounded page of candidate series; `meetings projects scan`
+compares stored meeting evidence with existing project names, keys and aliases. Both preserve
+uncertainty and save no associations.
 An agent can combine these sources with Memo's projects, notes and people. Start with
 [meeting preparation](usage.md#prepare-for-an-upcoming-meeting) or [search and evidence](search.md).
 
@@ -27,10 +30,10 @@ these findings or generate a summary.
 
 ## Planned work
 
-- Broader meeting preparation: discover candidate series and inspect imported documents, mail,
-  messages and possible projects without requiring a project selection, then build a brief with explicit evidence and gaps.
-  The current selected-series command includes accepted global person/project facts, owner notes and explicitly
-  selected communications sources, but leaves unselected sources and project vocabularies unqueried; it returns stored context without generating a summary.
+- Broader meeting preparation: combine candidate-series discovery, project suggestions and the
+  selected-series context into a reviewed brief with explicit evidence and gaps. Broader source
+  research must stay within the owner's explicit grants. The current separate readers return
+  stored context and candidates without generating a summary or querying unselected sources.
 
 Project aliases, tags and notes already belong to Memo and the shared store. Another meeting
 provider uses the shared meeting capabilities; a production Google Meet or Teams connector is not
