@@ -126,7 +126,7 @@ zm meetings sync --lookback-days 7
 zm meetings list --json
 ```
 
-Session status should show saved credentials with `logged_in: true`; it does not contact Zoom to
+Session status should show saved credentials with `state: saved`; it does not contact Zoom to
 check whether access still works. Sync makes the remote requests and stores available hosted
 meeting data. List reads that local copy. Changing the profile label does not switch the Zoom
 account you approved. See [sessions and profiles](sessions.md#select-a-local-profile).

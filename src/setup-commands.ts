@@ -132,14 +132,22 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
         throw new CliError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
       const globals = program.opts()
       if (globals.offline) throw new CliError("configuration_error", "login requires network access; remove --offline")
-      const headless =
-        deps.interactive === false ||
-        Boolean(deps.env?.CI) ||
-        (deps.interactive !== undefined &&
-          (globals.json || globals.jsonl || deps.outputIsTTY === false) &&
-          !globals.interactive)
-      if (globals.input === false || headless)
+      if (globals.input === false)
         throw new CliError("configuration_error", "login requires browser approval; remove --no-input")
+      if (deps.interactive === false || deps.env?.CI)
+        throw new CliError(
+          "configuration_error",
+          "login requires browser approval; run zm session start in an interactive terminal",
+        )
+      if (
+        deps.interactive !== undefined &&
+        (globals.json || globals.jsonl || deps.outputIsTTY === false) &&
+        !globals.interactive
+      )
+        throw new CliError(
+          "configuration_error",
+          "login requires browser approval; add --interactive to log in with piped or JSON output",
+        )
       output(
         itemOf(
           await login({

@@ -43,7 +43,7 @@ it belongs to the active login attempt. Approval is complete only after the term
 zm session status --json
 ```
 
-This checks cached keyring state without contacting Zoom or refreshing tokens. `logged_in: true`
+This checks cached keyring state without contacting Zoom or refreshing tokens. `state: saved`
 means credentials are saved; it is not a remote validity check. The returned scopes show what was
 granted. For a remote check, add the `user:read:user` scope in the app, authorize again, then run:
 

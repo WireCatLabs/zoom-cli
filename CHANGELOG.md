@@ -6,6 +6,10 @@
 
 - `skill install` and `skill show` report a usage mistake, such as `zm skill install --yes`, as the same JSON error
   with exit code 2 as every other command, instead of commander's plain text with exit code 1.
+- `session start` with piped or JSON output no longer says "remove --no-input" when that flag was not given. It now
+  says to add `--interactive`; with no interactive terminal or under CI it says to run the login in one.
+- The installation and sessions guides check `session status` for `state: saved`. They said `logged_in: true`, which
+  only `session start` prints.
 
 ## 0.27.1 — 18.10.2026
 

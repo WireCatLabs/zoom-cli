@@ -212,17 +212,24 @@ describe("portable CLI discovery and diagnostics", () => {
     checkCancelled()
   })
   it("rejects real headless/CI/machine login before opening a browser", async () => {
-    const { deps, stdout } = await setup()
+    const { deps, stdout, stderr } = await setup()
+    const message = () => JSON.parse(stderr.at(-1) ?? "{}").error.message
     setConfig(deps.configPath, "zoom.clientId", "example-client")
     deps.interactive = false
     expect(await run(["--interactive", "session", "start"], deps)).toBe(3)
+    expect(message()).toContain("in an interactive terminal")
     deps.interactive = true
     deps.env = { CI: "1" }
     expect(await run(["session", "start"], deps)).toBe(3)
+    expect(message()).toContain("in an interactive terminal")
     deps.env = {}
     expect(await run(["--json", "session", "start"], deps)).toBe(3)
+    expect(message()).toContain("add --interactive")
     deps.outputIsTTY = false
     expect(await run(["session", "start"], deps)).toBe(3)
+    expect(message()).toContain("add --interactive")
+    expect(await run(["--no-input", "session", "start"], deps)).toBe(3)
+    expect(message()).toContain("remove --no-input")
     expect(stdout).toEqual([])
     const program = createProgram(deps)
     expect(
