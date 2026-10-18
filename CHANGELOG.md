@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.27.1 — 18.10.2026
+
+### Fixed
+
+- `meetings import` and `watch files` report a missing folder as `folder not found: <path>` (exit 6), a file given as the folder as `not a folder`, and an unreadable one as a permission error, instead of "this is a bug".
+- A mistyped command, a missing argument or an unknown option now shows what was wrong (`unknown command 'lst'` with the suggestion) instead of "command failed; use --help for usage". Exit code stays 2.
+- README: `search recordings <directory> <query>` replaces the removed `search meetings --archive`; the pagination field is `page.next_cursor`; the roadmap link points to this repository.
+
 ## 0.27.0 — 18.10.2026
 
 ### Changed — may break callers
