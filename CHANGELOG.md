@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed — may break callers
+
+- Adopt published Core0.336.0/Base0.44.2 with one Base runtime identity. Shared read-only mode now refuses additional stored writes; preserve the current command effect and offline metadata when consuming discovery. The registered inventory opt-in remains inactive until a host binds it. Core’s new shared-store migration means read-only preparation needs the current schema; a normal stored read upgrades an older compatible store first.
+
 ## 0.25.0 — 18.10.2026
 
 ### Added
