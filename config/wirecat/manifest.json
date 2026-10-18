@@ -1,19 +1,20 @@
 {
   "source": "https://github.com/WireCatLabs/community",
-  "revision": "60a8857c04548e135f672db64e0723dbe87b433f",
+  "revision": "b22b7ede5931a4058fc763e0a7d6bfe0fbdb87c8",
   "files": {
-    "biome.base.json": "6a5a2efe0b8989c29458f47f79c35cf756e6277a6b51699fe832b0da49d67370",
+    "biome.base.json": "5d265b71896cdb0454260fa8d897bd517f61de512f16831e5d5273f29775f9f3",
     "cspell.json": "8241122ed4d461976a838099b265ef8f2689a066608257b6fdc250d9b49b58aa",
     "lefthook.yml": "2f65a2e3103006d43f6d6f0a07ab333c132286157763222a59a5a22676acd391",
     "markdownlint.json": "5ed7d6980054c539f3f3c0e47a090f1a725b15be2c486a769a836bc6cd48ad2d",
+    "no-deep-wirecat-import.grit": "b9cb69b9ae125604c951cd924941ab089af32f9fa91f072e34531ca861ed125d",
     "no-exec-interpolation.grit": "b9461f887afd0f7d555814bc45c5cd47537808edc10a17b06049f3ca0fff5957",
     "no-new-function.grit": "f6423e186cca90b1ab87d40185c6d920e99d83366af6dc11455963a0797fb627",
     "no-shell-true.grit": "d3943cfa1d7ebbf7be0fa22c2aaf2b7d7aa9ff462f2eb14a7798632764e3875c",
     "no-unbounded-spread.grit": "f4178e5b74212fef58fec8916b6783d9f4f192ac618aa4ced041c4167bfbf81b",
-    "rumdl.toml": "048b929176f13234324f5825d1e811397f1491b9cb6684a1953e268e2c2ed863",
-    "check.mjs": "34b266411eaab7707030915f645308e86784b1574b21fa44ca974861a90c9ce1",
+    "release-lock-info.mjs": "4abab1f01ceee7d4c709222e923c9a6fc634bcf7b8b64d745a9ac495993310e0",
     "release-lock.sh": "f3309e569daea423c35f2a7b51cd55aec24c28160428b67ee2ece05e67fab877",
-    "release-lock-info.mjs": "4abab1f01ceee7d4c709222e923c9a6fc634bcf7b8b64d745a9ac495993310e0"
+    "rumdl.toml": "048b929176f13234324f5825d1e811397f1491b9cb6684a1953e268e2c2ed863",
+    "check.mjs": "34b266411eaab7707030915f645308e86784b1574b21fa44ca974861a90c9ce1"
   },
   "packageManager": "pnpm@11.20.0",
   "node": ">=22",
@@ -25,9 +26,5 @@
     "cspell": "10.3.6",
     "lefthook": "2.1.16",
     "markdownlint-cli2": "0.23.3"
-  },
-  "fileRevisions": {
-    "release-lock.sh": "f5e184c78cb170158773d2270cecb14431315ed6",
-    "release-lock-info.mjs": "f5e184c78cb170158773d2270cecb14431315ed6"
   }
 }

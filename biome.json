@@ -16,9 +16,6 @@
   },
   "linter": {
     "rules": {
-      "suspicious": {
-        "noImportCycles": "error"
-      },
       "style": {
         "noExcessiveLinesPerFile": {
           "level": "error",
@@ -46,10 +43,6 @@
                   {
                     "group": ["@wirecat/cli-core/store"],
                     "message": "src/store-connection.ts opens the shared store; the rest of zoom receives it as a dependency"
-                  },
-                  {
-                    "group": ["@wirecat/*/src/**", "@wirecat/*/dist/**"],
-                    "message": "use the WireCat packages through their public exports; their src and dist layout is not a contract"
                   }
                 ]
               }
@@ -70,10 +63,6 @@
                   {
                     "group": ["@wirecat/cli-core/store"],
                     "message": "src/store-connection.ts opens the shared store; the rest of zoom receives it as a dependency"
-                  },
-                  {
-                    "group": ["@wirecat/*/src/**", "@wirecat/*/dist/**"],
-                    "message": "use the WireCat packages through their public exports; their src and dist layout is not a contract"
                   }
                 ]
               }
@@ -94,10 +83,6 @@
                   {
                     "group": ["@modelcontextprotocol/**"],
                     "message": "only src/mcp-server.ts serves MCP (answers.ts shapes its tool list); commands and services do not know the protocol"
-                  },
-                  {
-                    "group": ["@wirecat/*/src/**", "@wirecat/*/dist/**"],
-                    "message": "use the WireCat packages through their public exports; their src and dist layout is not a contract"
                   }
                 ]
               }
@@ -107,7 +92,7 @@
       }
     },
     {
-      "includes": ["**/*.test.ts", "test/**", "**/generated/**", "scripts/installed-*.mjs"],
+      "includes": ["scripts/installed-*.mjs"],
       "linter": {
         "rules": {
           "style": {

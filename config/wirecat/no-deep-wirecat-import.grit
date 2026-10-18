@@ -1,0 +1,15 @@
+language js
+
+or {
+  `import $_ from $source`,
+  `import $source`,
+  `export { $_ } from $source`,
+  `export * from $source`,
+  `export * as $_ from $source`,
+  `export type { $_ } from $source`,
+  `import($source)`,
+  `require($source)`
+} where {
+  $source <: r"^[\"'`]@wirecat/[^/\"'`]+/(?:src|dist)(?:/.*)?[\"'`]$",
+  register_diagnostic(span=$source, message="Import WireCat packages through their public exports, never src/ or dist/: those paths are not part of the package contract and break on the next release.", severity="error")
+}
