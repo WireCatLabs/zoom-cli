@@ -133,7 +133,14 @@ export const validateDownloadedFiles = (files: DownloadedFile[], timezone = "UTC
 export const FOLDER_MAX_FILES = 10_000
 
 export const readDownloadedFiles = async (folder: string): Promise<DownloadedFile[]> => {
-  const entries = (await readdir(folder, { withFileTypes: true }))
+  const listing = await readdir(folder, { withFileTypes: true }).catch((error: NodeJS.ErrnoException) => {
+    if (error.code === "ENOENT") throw new CliError("not_found", `folder not found: ${folder}`)
+    if (error.code === "ENOTDIR") throw new CliError("validation_error", `not a folder: ${folder}`)
+    if (error.code === "EACCES" || error.code === "EPERM")
+      throw new CliError("permission_error", `cannot read folder: ${folder}`)
+    throw error
+  })
+  const entries = listing
     .filter((entry) => entry.isFile() && /\.vtt$/i.test(entry.name))
     .sort((a, b) => a.name.localeCompare(b.name))
   if (entries.length > FOLDER_MAX_FILES)

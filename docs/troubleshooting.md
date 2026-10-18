@@ -86,7 +86,7 @@ OAuth callback values, tokens and private transcript text.
 
 | Symptom | Check and repair | Success check |
 |---|---|---|
-| No stored profile or empty list | Choose a profile and import or pull; reads do not register accounts | `zm meetings list --json` shows the selected profile's meetings |
+| No stored profile or empty list (exit 3, "no stored meetings for the selected profile") | Choose a profile and import or pull; reads do not register accounts | `zm meetings list --json` shows the selected profile's meetings |
 | No hosted meetings in the recent window | Confirm the logged-in Zoom user, API source and date range; try an older explicit `--since-time` | Compare returned dates with expected hosted occurrences |
 | Meeting exists but transcript is empty | Check Zoom's transcript generation/retention and host permissions; expired or never-saved text cannot be recreated by pull | Open the transcript after Zoom makes it available and you pull again |
 | An attended meeting is missing | Ask the host for a VTT file or download it if allowed, then import | Check imported date/title and text |

@@ -63,3 +63,5 @@ export const renderBody = (
 /** Every row the command read, in one page. */
 export const wholeList = <T>(command: string, items: T[]) =>
   listOf(command, { items, limit: Math.max(1, items.length), has_more: false })
+
+export const usageMessage = (error: Error) => error.message.replace(/^error: |\s*\n\s*/g, " ").trim()

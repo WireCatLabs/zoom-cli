@@ -521,6 +521,16 @@ describe("downloaded files", () => {
     await mkdir(join(dir, "folder.vtt"))
     expect(await readDownloadedFiles(dir)).toEqual([file])
   })
+
+  it("reports a missing folder or a plain file as a normal error", async () => {
+    const dir = await temporary()
+    await writeFile(join(dir, "plain.txt"), "Example")
+    await expect(readDownloadedFiles(join(dir, "missing"))).rejects.toMatchObject({
+      code: "not_found",
+      message: `folder not found: ${join(dir, "missing")}`,
+    })
+    await expect(readDownloadedFiles(join(dir, "plain.txt"))).rejects.toMatchObject({ code: "validation_error" })
+  })
 })
 const programSetup = async (overrides: Partial<ProgramDeps> = {}) => {
   const dir = await temporary()
@@ -543,6 +553,28 @@ const programSetup = async (overrides: Partial<ProgramDeps> = {}) => {
   return { deps, stdout, stderr }
 }
 describe("zm", () => {
+  it("shows commander's own message for a mistyped command, a missing argument and an unknown option", async () => {
+    const { deps, stdout, stderr } = await programSetup()
+    for (const [args, message] of [
+      [["meetings", "lst"], /unknown command 'lst'.*list/],
+      [["search", "recordings"], /missing required argument 'directory'/],
+      [["meetings", "show", "--bogus"], /unknown option '--bogus'/],
+    ] as const) {
+      stdout.length = 0
+      stderr.length = 0
+      expect(await run([...args], deps)).toBe(2)
+      expect(`${stdout.join("")}${stderr.join("")}`).toMatch(message)
+    }
+  })
+
+  it("exits 6 with a folder-not-found message when the import folder is missing", async () => {
+    const dir = await temporary()
+    const missing = join(dir, "missing")
+    const { deps, stdout, stderr } = await programSetup({ readFiles: undefined })
+    expect(await run(["meetings", "import", missing], deps)).toBe(6)
+    expect(`${stdout.join("")}${stderr.join("")}`).toContain(`folder not found: ${missing}`)
+  })
+
   it("configures the public client, validates keys and keeps config nonsecret", async () => {
     const { deps, stdout } = await programSetup()
     expect(readConfig(deps.configPath).clientId).toBeNull()

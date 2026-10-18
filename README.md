@@ -70,7 +70,7 @@ series’ next occurrence and gathers cited context. `meetings people`, `search 
 search that also matches English, Spanish and Russian word forms) and `meetings context person:<id>`
 bring back past meetings with the same people. Inventory date hints alone do not prove the next call.
 Participant discovery accepts `--limit`, `--scan-limit`, `--max-read-bytes` and `--cursor`;
-follow `page.next` even after an empty scan page. It returns observed `identity_id` candidates,
+follow `page.next_cursor` even after an empty scan page. It returns observed `identity_id` candidates,
 never inferred person links. Stored meeting lists accept metadata queries, for example
 `zm meetings list 'started_at:[2026-09-01 TO 2026-10-01]' --json`.
 
@@ -133,9 +133,9 @@ links meetings to events and people, and creates, changes or cancels simple meet
 - **A company-managed Zoom account** may need an admin to approve your app.
 - **Daily archive jobs install only on Linux.** Other platforms can preview them.
 - **Zoom only, for now.** Google Meet and Microsoft Teams are
-  [on the roadmap][gh/cli-meetings/blob/main/docs/dev/roadmap.md].
+  [on the roadmap][gh/zoom-cli/blob/main/docs/roadmap.md].
 
-More: [what is planned][gh/cli-meetings/blob/main/docs/dev/roadmap.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
+More: [what is planned][gh/zoom-cli/blob/main/docs/roadmap.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
 
 ## Commands by task
 
@@ -149,7 +149,7 @@ More: [what is planned][gh/cli-meetings/blob/main/docs/dev/roadmap.md] · [Zoom 
 | Search by meaning | `search meetings <query> --model <model>`, `meetings embeddings --model <model>` |
 | Local transcription | `meetings transcribe <meeting> <file> --model <model>` |
 | Cloud recordings | `recordings list`, `recordings show <meeting>`, `recordings download <meeting> --output-dir <dir>`, `recordings sync --since-time <date> --until-time <date> --output-dir <dir> --jsonl`, `recordings schedule create\|list\|show\|run\|disable` |
-| Local archive | `recordings archive show\|check\|locks\|recover <directory>`, `recordings archive transcript\|import <directory>`, `search meetings <query> --archive <directory>` |
+| Local archive | `recordings archive show\|check\|locks\|recover <directory>`, `recordings archive transcript\|import <directory>`, `search recordings <directory> <query>` |
 | Zoom meetings | `remote-meetings list\|show\|invitation`, `remote-meetings create\|update\|cancel` |
 | Agents | `serve --mcp`, `skill show`, `skill install [--for claude\|agents\|all]`, `commands --json`, `complete -- <words...>` |
 
@@ -219,7 +219,7 @@ zm search recordings ./zoom-archive "example plan" --offline --json
 Sync covers up to ten years in monthly requests and downloads serially, streaming to disk. Each
 occurrence gets a manifest with sizes and SHA-256 checksums, never signed URLs or tokens. Existing
 files are never overwritten; repeated runs skip verified files. With a profile, interrupted downloads
-resume safely. `recordings archive transcript` and `search meetings --archive` read verified WebVTT offline
+resume safely. `recordings archive transcript` and `search recordings` read verified WebVTT offline
 without a database; `recordings archive import` appends them to your stored meetings. `recordings schedule
 create --yes` installs a daily systemd user timer (Linux only).
 
@@ -410,7 +410,7 @@ More: [development setup][docs/dev/development.md] · [test matrix][docs/dev/tes
 [docs/troubleshooting.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/troubleshooting.md
 [docs/usage.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/usage.md
 [docs/zoom-app.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/zoom-app.md
-[gh/cli-meetings/blob/main/docs/dev/roadmap.md]: https://github.com/WireCatLabs/cli-core/blob/main/docs/dev/MEETINGS.md#providers-next
+[gh/zoom-cli/blob/main/docs/roadmap.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/roadmap.md
 [license]: https://github.com/WireCatLabs/zoom-cli/blob/main/LICENSE
 [wirecat/en/docs/agents]: https://wirecat.dev/en/docs/agents
 [wirecat/en/docs/mcp]: https://wirecat.dev/en/docs/mcp
