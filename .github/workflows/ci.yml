@@ -16,17 +16,14 @@ permissions:
 
 jobs:
   ci:
-    uses: WireCatLabs/cli-base/.github/workflows/node-ci.yml@03341651a008f77abb8172f86d6df652321b4ce5 # v0.31.0
+    uses: WireCatLabs/cli-base/.github/workflows/node-ci.yml@f5c9d9a1ec6efd8630566fd53f1b8092d12dd310 # v0.44.5
     with:
       pack: ${{ inputs.pack || github.event_name == 'workflow_dispatch' }}
-      checks: |
-        pnpm contracts:check
-        pnpm contracts:upgrade
-        pnpm security:no-leak
-        pnpm docs:check
-        pnpm generate:check
-        pnpm test:matrix:check
-        pnpm lint:commands
+      cli: true
+      bin: zm
+      # Off until the unit suite passes on Windows and macOS: 22–25 tests there assume POSIX paths, modes,
+      # symlinks and systemd. The installed-package proof below still runs on all three.
+      platforms: false
 
   installed-platforms:
     needs: ci

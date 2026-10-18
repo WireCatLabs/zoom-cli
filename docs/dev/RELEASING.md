@@ -1,7 +1,9 @@
 # Releasing
 
 Release from a clean main equal to origin/main after the implementation and release-preparation
-PRs have passed CI. Date the top changelog section with the package version and release day.
+PRs have passed CI. Date the top changelog section with the package version and release day. The
+release-preparation PR raises `version` in `package.json` and runs `pnpm version:sync`, which writes it into
+`src/version.ts`; `pnpm version:check` in full validation fails when the two disagree.
 `bin/release` takes the machine-wide release lock and dispatches the GitHub workflow; it never reads
 an npm token or publishes locally. By default it refuses an occupied lock immediately. To wait in
 the shared queue, set a nonnegative timeout in seconds:
