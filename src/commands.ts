@@ -9,7 +9,7 @@ import {
   metaOf,
 } from "@wirecat/cli-base/commands"
 import { formatSuggestions, suggest } from "@wirecat/cli-base/completion"
-import { type Body, itemOf, LOCAL_READ, NO_EFFECTS, REMOTE_READ } from "@wirecat/cli-core/cli"
+import { type Body, commandsText, itemOf, LOCAL_READ, NO_EFFECTS, REMOTE_READ } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { wholeList } from "./answer-output.js"
 import { VERSION } from "./version.js"
@@ -35,13 +35,7 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
         const scoped = path.length ? scopeOf(all, path) : undefined
         const commands = scoped ? [scoped.command] : all
         if (!program.opts().json && !program.opts().jsonl) {
-          deps.discovery(
-            flatten(commands).map(({ usage, summary, description, effects }) => ({
-              command: usage,
-              description: summary ?? description,
-              writes: effects?.remote === "write" || effects?.local === "write" ? "yes" : "",
-            })),
-          )
+          deps.raw(commandsText(program, commands, scoped?.command.path))
           return
         }
         const fields = deps.fields()

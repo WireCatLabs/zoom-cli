@@ -145,6 +145,10 @@
                           "kind": {
                             "const": "command"
                           },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
                           "safe_to_auto_execute": {
                             "type": "boolean"
                           },
@@ -347,6 +351,10 @@
                           "kind": {
                             "const": "command"
                           },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
                           "safe_to_auto_execute": {
                             "type": "boolean"
                           },
@@ -450,6 +458,10 @@
                           },
                           "kind": {
                             "const": "command"
+                          },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
                           },
                           "safe_to_auto_execute": {
                             "type": "boolean"
@@ -687,6 +699,10 @@
                           "kind": {
                             "const": "command"
                           },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
                           "safe_to_auto_execute": {
                             "type": "boolean"
                           },
@@ -889,6 +905,10 @@
                           "kind": {
                             "const": "command"
                           },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
                           "safe_to_auto_execute": {
                             "type": "boolean"
                           },
@@ -992,6 +1012,10 @@
                           },
                           "kind": {
                             "const": "command"
+                          },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
                           },
                           "safe_to_auto_execute": {
                             "type": "boolean"
@@ -1541,6 +1565,10 @@
                       "kind": {
                         "const": "command"
                       },
+                      "line": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      },
                       "safe_to_auto_execute": {
                         "type": "boolean"
                       },
@@ -1642,6 +1670,10 @@
                           },
                           "kind": {
                             "const": "command"
+                          },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
                           },
                           "safe_to_auto_execute": {
                             "type": "boolean"
@@ -1860,6 +1892,10 @@
                           "kind": {
                             "const": "command"
                           },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
                           "safe_to_auto_execute": {
                             "type": "boolean"
                           },
@@ -2062,6 +2098,10 @@
                           "kind": {
                             "const": "command"
                           },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
                           "safe_to_auto_execute": {
                             "type": "boolean"
                           },
@@ -2165,6 +2205,10 @@
                           },
                           "kind": {
                             "const": "command"
+                          },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
                           },
                           "safe_to_auto_execute": {
                             "type": "boolean"
@@ -2383,6 +2427,10 @@
                           "kind": {
                             "const": "command"
                           },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
                           "safe_to_auto_execute": {
                             "type": "boolean"
                           },
@@ -2585,6 +2633,10 @@
                           "kind": {
                             "const": "command"
                           },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
                           "safe_to_auto_execute": {
                             "type": "boolean"
                           },
@@ -2688,6 +2740,10 @@
                           },
                           "kind": {
                             "const": "command"
+                          },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
                           },
                           "safe_to_auto_execute": {
                             "type": "boolean"
@@ -2909,6 +2965,10 @@
                           "kind": {
                             "const": "command"
                           },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
                           "safe_to_auto_execute": {
                             "type": "boolean"
                           },
@@ -3111,6 +3171,10 @@
                           "kind": {
                             "const": "command"
                           },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
                           "safe_to_auto_execute": {
                             "type": "boolean"
                           },
@@ -3214,6 +3278,10 @@
                           },
                           "kind": {
                             "const": "command"
+                          },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
                           },
                           "safe_to_auto_execute": {
                             "type": "boolean"
@@ -3448,6 +3516,10 @@
                           "kind": {
                             "const": "command"
                           },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
                           "safe_to_auto_execute": {
                             "type": "boolean"
                           },
@@ -3650,6 +3722,10 @@
                           "kind": {
                             "const": "command"
                           },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
                           "safe_to_auto_execute": {
                             "type": "boolean"
                           },
@@ -3753,6 +3829,10 @@
                           },
                           "kind": {
                             "const": "command"
+                          },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
                           },
                           "safe_to_auto_execute": {
                             "type": "boolean"
@@ -4036,6 +4116,10 @@
                           "kind": {
                             "const": "command"
                           },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
                           "safe_to_auto_execute": {
                             "type": "boolean"
                           },
@@ -4238,6 +4322,10 @@
                           "kind": {
                             "const": "command"
                           },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
                           "safe_to_auto_execute": {
                             "type": "boolean"
                           },
@@ -4341,6 +4429,10 @@
                           },
                           "kind": {
                             "const": "command"
+                          },
+                          "line": {
+                            "pattern": "\\S",
+                            "type": "string"
                           },
                           "safe_to_auto_execute": {
                             "type": "boolean"

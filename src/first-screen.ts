@@ -1,17 +1,43 @@
 import { fileURLToPath } from "node:url"
-import { guideCommand, installHelp } from "@wirecat/cli-core/cli"
+import { guideCommand, type HelpSection, inSection, installHelp } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { ZM } from "./read-only.js"
 
+// cli-core places its own groups (meetings, search, watch, serve, config, skill…); these are zm's.
+const SECTIONS: [string[], HelpSection][] = [
+  [["events"], "read"],
+  [["recordings"], "read"],
+  [["recordings", "schedule"], "automate"],
+  [["remote-meetings"], "read"],
+  [["remote-meetings", "create"], "write"],
+  [["remote-meetings", "update"], "write"],
+  [["remote-meetings", "cancel"], "write"],
+  [["meetings", "transcribe"], "write"],
+  [["meetings", "update"], "organise"],
+  [["meetings", "link"], "organise"],
+  [["batch"], "read"],
+  [["session"], "setup"],
+]
+
+const placeInSections = (program: Command): void => {
+  for (const [path, section] of SECTIONS) {
+    let command: Command | undefined = program
+    for (const name of path) command = command?.commands.find((child) => child.name() === name)
+    if (!command) throw new Error(`no command to place in a section: ${path.join(" ")}`)
+    inSection(command, section)
+  }
+}
+
 /** After every other command: the first screen's pointers name only commands that exist. */
 export const installFirstScreen = (program: Command): void => {
-  program.addCommand(
-    guideCommand(ZM, {
-      directory: fileURLToPath(new URL("../scenarios", import.meta.url)),
-      worksWith: [{ tool: "memo", name: "person-brief", title: "One person across every tool" }],
-      profile: false,
-    }),
-  )
+  placeInSections(program)
+  const guide = guideCommand(ZM, {
+    directory: fileURLToPath(new URL("../scenarios", import.meta.url)),
+    worksWith: [{ tool: "memo", name: "person-brief", title: "One person across every tool" }],
+    profile: false,
+  })
+  // addCommand, unlike command(), leaves out the exit override: `guide --help` called process.exit itself.
+  program.addCommand(guide.copyInheritedSettings(program))
   installHelp(program, {
     pitch:
       "your Zoom meetings for agents: transcripts and summaries in a local store, every answer pointing at its line.",
@@ -23,7 +49,7 @@ export const installFirstScreen = (program: Command): void => {
       { command: "meetings transcribe <meeting> <file>", does: "a recording turned into text on this machine" },
       { command: "recordings schedule create …", does: "a daily, checked archive of cloud recordings" },
       { command: "serve --mcp", does: "read-only meeting tools for any MCP agent" },
-      { command: "ZM_READ_ONLY=1 zm …", does: "a run that changes nothing" },
+      { command: "ZM_READ_ONLY=1 zm …", does: "reads and syncs only: no Zoom changes, login, settings or edits" },
     ],
     profile: false,
     start: "zm session start",

@@ -100,14 +100,13 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(await run(["config", "set", "no.such.key", "x"], deps)).not.toBe(0)
     expect(stderr[0]).toMatch(/^✗ /)
   })
-  it("lists one row per command without --json", async () => {
+  it("lists a scoped group as text without --json", async () => {
     const { deps, stdout } = await setup()
     expect(await run(["commands", "config"], deps)).toBe(0)
-    expect(JSON.parse(stdout[0] ?? "[]")).toEqual([
-      { command: "zm config", description: "local Zoom configuration", writes: "" },
-      { command: "zm config show", description: "show local configuration", writes: "" },
-      { command: "zm config set <key> <value>", description: "set a configuration value", writes: "yes" },
-    ])
+    const text = stdout.join("")
+    expect(text).toContain("zm config commands, by section.")
+    expect(text).toMatch(/\nSet up\n {2}zm config show +show local configuration\n/)
+    expect(text).toMatch(/ {2}zm config set <key> <value> +set a configuration value \(writes\)\n/)
   })
   it("reports local health and explicitly unknown authentication without keyring/DB access", async () => {
     const { deps, stdout } = await setup()
