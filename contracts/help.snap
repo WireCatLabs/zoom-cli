@@ -11,7 +11,7 @@ What you can do:
   meetings transcribe <meeting> <file>  a recording turned into text on this machine
   recordings schedule create …          a daily, checked archive of cloud recordings
   serve --mcp                           read-only meeting tools for any MCP agent
-  ZM_READ_ONLY=1 zm …                   reads and syncs only: no Zoom changes, login, settings or edits
+  ZM_READ_ONLY=1 zm …                   blocks changes to Zoom, login, settings, files and the store; syncs run
 
 Works with:
   tg                                    Telegram in the same local store: search, review and tasks offline
