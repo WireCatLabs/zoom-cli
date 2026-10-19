@@ -217,9 +217,11 @@ npm uninstall -g @wirecat/zoom-cli
 
 Uninstalling removes only the package. To remove everything else, delete:
 
-- the settings directory (`~/.config/zm`) and the state directory (`~/.local/share/zm`);
+- the settings, state and cache directories: `~/.config/zm`, `~/.local/share/zm` and `~/.cache/zm` on Linux and
+  macOS; `%APPDATA%\zm` and `%LOCALAPPDATA%\zm` on Windows;
 - the agent skill folders, if you installed the skill: `~/.claude/skills/zoom-cli` and
-  `~/.agents/skills/zoom-cli`;
+  `~/.agents/skills/zoom-cli` (`%USERPROFILE%\.claude\skills\zoom-cli` and
+  `%USERPROFILE%\.agents\skills\zoom-cli` on Windows);
 - the login entry in your password store, described in [sessions](sessions.md#remove-access);
 - the shared meeting database and your recording folders, only if you want the saved meetings gone.
   Other WireCat tools use the same database.

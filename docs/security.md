@@ -54,8 +54,9 @@ a transcript to an AI service. This guide explains those boundaries before you c
   remote `--base-url`. Still running: reads, word search (which keeps its index current), `batch`, `serve --mcp`,
   and the syncs that copy Zoom into the store or an archive — `meetings sync`, `watch`, `recordings sync`,
   `recordings download` and `recordings schedule run`; a sync or `watch` from a files source reads the configured
-  folder, while `meetings import <folder>` names a one-off folder and is refused. A command added later that writes is refused until it is
-  named here. Set it for an agent that should only read; `0` or an empty value turns it off.
+  folder, while `meetings import <folder>` names a one-off folder and is refused. Any other command that writes,
+  including one added in a later version, is refused. Set it for an agent that should only read; `0` or an empty
+  value turns it off.
 
 An AI app can send the tool results it reads to its own provider. Choose that app and its data policy
 separately from Zoom authorization. A remote embedding endpoint receives text for generation and
