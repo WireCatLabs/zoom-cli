@@ -49,7 +49,10 @@ export const installFirstScreen = (program: Command): void => {
       { command: "meetings transcribe <meeting> <file>", does: "a recording turned into text on this machine" },
       { command: "recordings schedule create …", does: "a daily, checked archive of cloud recordings" },
       { command: "serve --mcp", does: "read-only meeting tools for any MCP agent" },
-      { command: "ZM_READ_ONLY=1 zm …", does: "reads and syncs only: no Zoom changes, login, settings or edits" },
+      {
+        command: "ZM_READ_ONLY=1 zm …",
+        does: "blocks changes to Zoom, login, settings, files and the store; syncs run",
+      },
     ],
     profile: false,
     start: "zm session start",

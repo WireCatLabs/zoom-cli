@@ -8,14 +8,18 @@
   that copy Zoom into the store or an archive run under it — `meetings sync`, `watch`, `recordings sync`,
   `recordings download` and `recordings schedule run`; before, the lock refused them. Changes to Zoom, login,
   configuration and what the owner added (imports, links, transcripts, exports, archive jobs) stay refused with
-  exit 5, and the refusal now names which kind it was. Building vectors and an MCP server whose semantic queries go
-  to a remote `--base-url` are refused too, as cli-core's lock refuses a query sent to another service. The first
-  screen says what the lock blocks.
+  exit 5, and the refusal now names which kind it was. The first screen says what the lock blocks.
 - **`zm commands` without `--json` prints the commands as text, by section** (Read, Write, Organise, Automate, Set
   up), one line each with `(writes)` on a command that changes something, instead of a JSON array.
   `zm commands --json` is unchanged.
 - **Adopt Core 0.348.0 and Base 0.47.0**, which move together: a next step in `--json` output may carry `line`, the
   whole command to type. An SDK consumer that pins Core or Base beside zoom moves with them.
+
+### Security
+
+- **`ZM_READ_ONLY` refuses `zm serve --mcp --semantic --base-url`**, whose semantic queries go to a remote embedding
+  service; it ran under the lock in 0.28.0. cli-core's lock refuses a query sent to another service the same way.
+  `meetings embeddings` is refused as building vectors, with that reason.
 
 ### Fixed
 
