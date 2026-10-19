@@ -38,22 +38,47 @@ const setup = async (env: NodeJS.ProcessEnv) => {
 
 describe("ZM_READ_ONLY", () => {
   it.each([
-    [["remote-meetings", "create", "--title", "Example", "--yes"]],
-    [["remote-meetings", "cancel", "123456789", "--yes"]],
-    [["session", "start"]],
-    [["meetings", "sync"]],
-    [["meetings", "import", "./downloaded"]],
-    [["recordings", "download", "123456789", "--output-dir", "/tmp/zm-archive"]],
-    [["config", "set", "account.profile", "personal"]],
-    [["skill", "install"]],
-    [["watch"]],
-    [["search", "meetings", "budget", "--model", "e5-small"]],
-  ])("refuses %j with exit 5 before any network or store call", async (args) => {
+    [["remote-meetings", "create", "--title", "Example", "--yes"], "change Zoom"],
+    [["remote-meetings", "cancel", "123456789", "--yes"], "change Zoom"],
+    [["session", "start"], "log in or out"],
+    [["meetings", "import", "./downloaded"], "outside a sync"],
+    [["meetings", "link", "1", "--participant-id", "1", "--person", "p1", "--yes"], "outside a sync"],
+    [["meetings", "embeddings", "--model", "e5-small", "--yes"], "embedding service"],
+    [["config", "set", "account.profile", "personal"], "outside a sync"],
+    [["skill", "install"], "outside a sync"],
+    [
+      [
+        ...["recordings", "schedule", "create", "--name", "daily", "--output-dir", "/tmp/zm-archive"],
+        ...["--since-time", "2026-01-01", "--at", "03:00", "--timezone", "Europe/Madrid", "--yes"],
+      ],
+      "outside a sync",
+    ],
+    [["search", "meetings", "budget", "--model", "e5-small"], "embedding service"],
+  ])("refuses %j with exit 5 before any network or store call", async (args, what) => {
     const { deps, network, stderr } = await setup({ ZM_READ_ONLY: "1" })
     expect(await run([...args, "--json"], deps)).toBe(5)
     expect(stderr.join("")).toContain("this process is read-only (ZM_READ_ONLY)")
+    expect(stderr.join("")).toContain(what)
     expect(network).not.toHaveBeenCalled()
     expect(deps.connectStore).not.toHaveBeenCalled()
+  })
+
+  it("refuses an MCP server whose semantic queries go to a remote embedding service", async () => {
+    const { deps, stderr } = await setup({ ZM_READ_ONLY: "1" })
+    const args = ["serve", "--mcp", "--semantic", "--model", "remote-e5", "--base-url", "https://embed.example.test/v1"]
+    expect(await run([...args, "--dims", "8"], deps)).toBe(5)
+    expect(stderr.join("")).toContain("embedding service")
+  })
+
+  it.each([
+    [["meetings", "sync", "--json"]],
+    [["recordings", "download", "123456789", "--output-dir", "/tmp/zm-archive", "--json"]],
+    [["recordings", "sync", "--since-time", "2026-01-01", "--output-dir", "/tmp/zm-archive", "--json"]],
+    [["watch", "api", "--jsonl"]],
+  ])("lets the mirroring sync %j run", async (args) => {
+    const { deps, stderr } = await setup({ ZM_READ_ONLY: "1" })
+    expect(await run(args, deps)).not.toBe(5)
+    expect(stderr.join("")).not.toContain("read-only")
   })
 
   it("lets reads through, word search and its index included", async () => {

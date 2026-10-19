@@ -1,8 +1,9 @@
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
+import { describeProgram, flatten } from "@wirecat/cli-base/commands"
 import { afterEach, expect, it, vi } from "vitest"
-import { type ProgramDeps, run } from "./program.js"
+import { createProgram, type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
 
 const unavailable = async (): Promise<never> => {
@@ -55,4 +56,25 @@ it("prints a scenario's steps", async () => {
   })
   expect(await run(["guide", "find-quote"], deps)).toBe(0)
   expect(written.join("")).toContain("zm meetings passage")
+})
+
+it("prints help for every command, lists with a query included", async () => {
+  const { deps } = setup()
+  const leaves = flatten(describeProgram(createProgram(deps))).filter((command) => command.commands.length === 0)
+  const failed: string[] = []
+  for (const { path } of leaves) if ((await run([...path, "--help"], deps)) !== 0) failed.push(path.join(" "))
+  expect(leaves.length).toBeGreaterThan(50)
+  expect(failed).toEqual([])
+})
+
+it("lists commands as text by section, and as JSON with --json", async () => {
+  const { deps, stdout } = setup()
+  expect(await run(["commands"], deps)).toBe(0)
+  const text = stdout.join("")
+  expect(text).toMatch(/\nWrite\n {2}zm meetings transcribe/)
+  expect(text).toMatch(/\nAutomate\n {2}zm recordings schedule create/)
+  expect(text).toContain("zm session start [options]")
+  stdout.length = 0
+  expect(await run(["commands", "--json"], deps)).toBe(0)
+  expect(JSON.parse(stdout.join("")).contract).toBe(3)
 })

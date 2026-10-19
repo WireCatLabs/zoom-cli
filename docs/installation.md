@@ -230,6 +230,7 @@ Use the `.cmd` launchers on Windows if needed.
 ## Shell completion
 
 `zm complete -- <words...>` answers shell completion requests; it does not install completion
-into your shell. `zm commands --json` lists commands and options for agents and scripts.
+into your shell. `zm commands` lists every command by section; `zm commands --json` adds options for agents and
+scripts.
 
 After installation, [find a meeting passage](search.md) and check its source before keeping conclusions.

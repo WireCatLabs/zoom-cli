@@ -11,11 +11,19 @@ export const ZM: AppIdentity = {
   version: VERSION,
 }
 
-// Their only write is the word index or a store opened read-only. Any other write, one added later too, is refused.
-const READS_UNDER_LOCK = new Set(["search meetings", "batch", "serve"])
-// Search by meaning builds missing vectors first, and with --base-url sends transcript text off this machine.
-const buildsVectors = (command: Command, path: string) =>
-  path === "search meetings" && command.opts().model !== undefined
+// Mirrors copy the configured source (Zoom or its downloads folder) into the store or an archive, as tg's sync keeps
+// receiving under its lock. The rest write only the word index or open the store read-only. Any other write, one
+// added later too, is refused.
+const RUNS_UNDER_LOCK = new Set([
+  "meetings sync",
+  "watch",
+  "recordings sync",
+  "recordings download",
+  "recordings schedule run",
+  "search meetings",
+  "batch",
+  "serve",
+])
 
 const pathOf = (command: Command): string => {
   const words: string[] = []
@@ -23,16 +31,32 @@ const pathOf = (command: Command): string => {
   return words.join(" ")
 }
 
-const changesSomething = (command: Command): boolean => {
-  const effects = metaOf(command).effects
-  if (!effects) return true
-  const path = pathOf(command)
-  if (buildsVectors(command, path)) return true
-  return effects.remote === "write" || (effects.local === "write" && !READS_UNDER_LOCK.has(path))
+// Building vectors writes beyond the word index, and search by meaning builds missing ones first; with --base-url it, and serve's semantic tool, send text to that
+// service, which cli-core's lock refuses too.
+const usesEmbeddings = (command: Command, path: string): boolean => {
+  const options = command.opts()
+  if (path === "meetings embeddings") return true
+  if (path === "search meetings") return options.model !== undefined
+  return path === "serve" && options.semantic === true && options.baseUrl !== undefined
 }
 
-/** `ZM_READ_ONLY` refuses, by declared effects, every command that changes Zoom or this machine, before it connects. */
+const refusalOf = (command: Command): string | undefined => {
+  const effects = metaOf(command).effects
+  const path = pathOf(command)
+  if (path === "session start") return "log in or out"
+  if (effects?.remote === "write") return "change Zoom"
+  if (usesEmbeddings(command, path)) return "build meeting vectors or send text to an embedding service"
+  if (!effects || (effects.local === "write" && !RUNS_UNDER_LOCK.has(path)))
+    return "change settings, local files or the stored meetings outside a sync"
+  return undefined
+}
+
+/**
+ * `ZM_READ_ONLY` refuses, before anything connects, every command that changes Zoom, the login, settings or what the
+ * owner added; syncs and downloads from Zoom still run.
+ */
 export const refuseChangeWhenReadOnly = (command: Command, env: NodeJS.ProcessEnv): void => {
   const lock = readOnlyLockOf(ZM, env)
-  if (lock && changesSomething(command)) throw readOnlyRefusal(lock, "change Zoom, the meeting store or local files")
+  const refusal = lock && refusalOf(command)
+  if (lock && refusal) throw readOnlyRefusal(lock, refusal)
 }

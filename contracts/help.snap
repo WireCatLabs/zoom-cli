@@ -11,7 +11,7 @@ What you can do:
   meetings transcribe <meeting> <file>  a recording turned into text on this machine
   recordings schedule create …          a daily, checked archive of cloud recordings
   serve --mcp                           read-only meeting tools for any MCP agent
-  ZM_READ_ONLY=1 zm …                   a run that changes nothing
+  ZM_READ_ONLY=1 zm …                   reads and syncs only: no Zoom changes, login, settings or edits
 
 Works with:
   tg                                    Telegram in the same local store: search, review and tasks offline
@@ -23,5 +23,5 @@ Works with:
 Start here:   zm session start
 Next:         zm commands       every command, by section
               zm guide          scenarios: command sequences for common tasks
-              zm help options   output, offline, timeouts, dry run
+              zm help options   output, offline, timeouts
 For agents:   zm skill show     rules and the discovery loop

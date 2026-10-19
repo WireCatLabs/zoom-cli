@@ -312,7 +312,7 @@ More: [usage][docs/usage.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
 | `files.folder`, `files.timezone` | the transcript folder and the zone of its filenames |
 | `ZM_CONFIG_DIR` | another configuration directory (also changes the keyring entry) |
 | `ZM_STATE_DIR`, `ZM_CACHE_DIR` | another state (recorded runs) or cache directory |
-| `ZM_READ_ONLY` | `1` refuses every change, with exit 5 ([security][docs/security.md]) |
+| `ZM_READ_ONLY` | `1` allows reads and syncs only, other changes exit 5 ([security][docs/security.md]) |
 | `WIRECAT_STATE_DIR` | another WireCat folder; the default database is `~/.local/share/WireCat/wirecat.db` |
 | `MESSAGING_STORE` | another shared database path |
 | `OPENAI_API_KEY` | only for an OpenAI embedding endpoint you select |
@@ -327,8 +327,9 @@ More: [configuration][docs/configuration.md] · [Zoom on wirecat.dev][wirecat/en
 - Manifests and saved jobs never hold signed URLs, tokens or credentials; diagnostics omit raw
   provider error text.
 - The MCP server is read-only and fixed to the selected profile; changes to Zoom preview until `--yes`.
-- `ZM_READ_ONLY=1` refuses every command that changes Zoom, the store or a local file, with exit 5,
-  before any network call: give it to an agent that should only read.
+- `ZM_READ_ONLY=1` refuses changes to Zoom, the login, settings and anything you added (imports, links,
+  transcripts, exports, jobs), with exit 5, before any network call; reads and the syncs that copy Zoom into
+  the store or an archive still run. Give it to an agent that should only read.
 
 More: [security][docs/security.md] · [security on wirecat.dev][wirecat/en/docs/security]
 
