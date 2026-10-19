@@ -14,7 +14,6 @@ These options apply to every command.
 | `--json` | one JSON value; --json=id,title keeps only those fields. |
 | `--jsonl` | one JSON object per item. |
 | `--no-input` | disable interactive login. |
-| `--interactive` | permit browser approval in an interactive terminal. |
 | `--quiet` | suppress non-error diagnostics. |
 | `--timeout <duration>` | command deadline: reads 30s, login 5m, downloads/transcription 1h; watch/MCP have no default. |
 | `--max-output-bytes <bytes>` | bound rendered result bytes (default 4194304; zero is unlimited). |
@@ -655,7 +654,7 @@ zm session start [options]
 
 **Returns:** log in to Zoom through your browser
 
-**Example:** `zm session start --interactive`
+**Example:** `zm session start`
 
 ## `zm watch`
 

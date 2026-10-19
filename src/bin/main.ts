@@ -74,7 +74,6 @@ try {
       })
     },
     fetch,
-    interactive: Boolean(process.stdin.isTTY),
     outputIsTTY,
     env: process.env,
     signal: cancellation.signal,

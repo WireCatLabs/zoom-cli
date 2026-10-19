@@ -173,8 +173,8 @@ Follow the [app setup guide][docs/zoom-app.md]; no credentials file is downloade
 `zm session start` opens Zoom's consent page. Zoom redirects to the static page
 `https://wirecat.dev/zoom-callback`, which passes the answer to a listener on your machine; if it
 cannot, paste the `code=…&state=…` parameters it shows. Login checks the state and PKCE verifier and
-stores tokens only in the system keyring. Browser login needs an interactive terminal; piped or JSON
-login also needs `--interactive`. `zm session status` reads the cached state without refreshing it;
+stores tokens only in the system keyring. Without a terminal, as in an agent's shell, login prints the URL
+on stderr for the agent to pass on and waits for the callback; `--no-input` and CI refuse it. `zm session status` reads the cached state without refreshing it;
 `--check` asks Zoom.
 
 More: [your Zoom app][docs/zoom-app.md] · [login and sessions][docs/sessions.md] ·

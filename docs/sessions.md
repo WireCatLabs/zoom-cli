@@ -14,6 +14,11 @@ zm config set zoom.client_id <public-client-id>
 zm session start --browser firefox
 ```
 
+Agents: run `zm session start` in the background (it waits up to five minutes for the approval, and a shell
+tool shows nothing until the command exits), read the line `Open this URL to approve Zoom login:` and the URL
+under it, and give the URL to the person as a link. The browser that opens it must be on this computer, because
+the callback reaches a listener here. `--quiet` keeps the URL.
+
 Omit `--browser firefox` to use the default browser. Zoom displays the app's requested permissions;
 sign in to the intended account and approve. The tool stores tokens in the operating system's
 keyring, never the public configuration file. If that password store is unavailable, login fails.
@@ -54,9 +59,8 @@ zm session status --check --json
 Missing-scope errors name the required permission. The app owner adds it, saves the app and the
 user runs `zm session start` again. Configuration changes alone do not expand an existing token's scope.
 
-Browser login requires interactive input. Piped output or `--json` login also requires
-`--interactive`; `--no-input` refuses browser login. Keep initial connection in an ordinary
-terminal, rather than a background job or an MCP client.
+Without a terminal, login still prints the URL and waits for the callback; only the paste fallback needs a
+terminal. `--no-input` and CI refuse browser login. Login is not an MCP tool.
 
 ## Select a local profile
 

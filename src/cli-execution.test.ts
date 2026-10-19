@@ -226,6 +226,23 @@ describe("command execution controls", () => {
   })
 })
 
+describe("login without a terminal", () => {
+  it("answers JSON and prints the URL an agent passes on, even with --quiet", async () => {
+    const { deps, stdout, stderr } = await setup()
+    setConfig(deps.configPath, "zoom.clientId", "example-client")
+    deps.outputIsTTY = false
+    deps.openBrowser = async (url) => {
+      const state = new URL(url).searchParams.get("state") ?? ""
+      await fetch(
+        `http://127.0.0.1:${state.split(".")[0]}/callback?${new URLSearchParams({ state, code: "example-code" })}`,
+      )
+    }
+    expect(await run(["--json", "--quiet", "session", "start"], deps)).toBe(0)
+    expect(stderr.join("")).toMatch(/^Open this URL to approve Zoom login:\nhttps:\/\/\S+\n$/)
+    expect(JSON.parse(stdout.join(""))).toBeTruthy()
+  })
+})
+
 describe("archive and explicit remote command wiring", () => {
   it("lists/shows/downloads recording metadata with explicit options and no database", async () => {
     const { deps, stdout } = await setup()

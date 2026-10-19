@@ -38,7 +38,6 @@ export interface SessionCommandDeps {
     | "checkSession"
     | "tokens"
     | "now"
-    | "interactive"
     | "env"
     | "outputIsTTY"
     | "openBrowser"
@@ -134,20 +133,8 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
       if (globals.offline) throw new CliError("configuration_error", "login requires network access; remove --offline")
       if (globals.input === false)
         throw new CliError("configuration_error", "login requires browser approval; remove --no-input")
-      if (deps.interactive === false || deps.env?.CI)
-        throw new CliError(
-          "configuration_error",
-          "login requires browser approval; run zm session start in an interactive terminal",
-        )
-      if (
-        deps.interactive !== undefined &&
-        (globals.json || globals.jsonl || deps.outputIsTTY === false) &&
-        !globals.interactive
-      )
-        throw new CliError(
-          "configuration_error",
-          "login requires browser approval; add --interactive to log in with piped or JSON output",
-        )
+      if (deps.env?.CI)
+        throw new CliError("configuration_error", "login requires browser approval; run zm session start yourself")
       output(
         itemOf(
           await login({
@@ -155,9 +142,8 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
             signal: signal(),
             openBrowser: (url) => deps.openBrowser(url, opts.browser),
             readPaste: deps.readPaste,
-            showUrl: (url) => {
-              if (!program.opts().quiet) deps.diagnostic(`Open this URL to approve Zoom login:\n${url}\n`)
-            },
+            // Without a terminal this line is all an agent can pass on, so --quiet keeps it.
+            showUrl: (url) => deps.diagnostic(`Open this URL to approve Zoom login:\n${url}\n`),
           }),
         ),
       )
