@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Changed — may break callers
+
+- **`zm session start` works without a terminal, so an agent can pass the login URL on.** It refused when stdin was
+  not a terminal, and piped or `--json` login needed `--interactive`. Now it prints `Open this URL to approve Zoom
+  login:` and the URL on stderr, even with `--quiet`, and waits for the browser callback; only the paste fallback
+  needs a terminal. `--no-input` and CI still refuse it. `--interactive` is removed: it did nothing else.
+
 ## 0.29.0 — 19.10.2026
 
 ### Changed — may break callers

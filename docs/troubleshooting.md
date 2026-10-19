@@ -35,7 +35,7 @@ zm session start --browser firefox
 
 In an interactive terminal, open the authorization URL printed by that running login yourself,
 then paste its callback if necessary. Do not reuse an old URL. Without paste input, browser launch
-failure exits promptly. Piped/JSON login needs `--interactive`; `--no-input` refuses it.
+failure exits promptly. Without a terminal the URL is still printed; `--no-input` and CI refuse login.
 
 ### The app is unavailable or needs administrator approval
 

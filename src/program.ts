@@ -85,7 +85,6 @@ export interface ProgramDeps {
   data: (text: string) => void
   diagnostic: (text: string) => void
   now?: () => number
-  interactive?: boolean
   outputIsTTY?: boolean
   env?: NodeJS.ProcessEnv
   checkSession?: (options?: { signal?: AbortSignal }) => Promise<unknown>
@@ -166,7 +165,6 @@ export const createProgram = (deps: ProgramDeps): Command => {
     .option("--json", "one JSON value; --json=id,title keeps only those fields")
     .option("--jsonl", "one JSON object per item")
     .option("--no-input", "disable interactive login")
-    .option("--interactive", "permit browser approval in an interactive terminal")
     .option("--quiet", "suppress non-error diagnostics")
     .option(
       "--timeout <duration>",

@@ -215,23 +215,14 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(await run(["watch", "files", ".", "--pause", "0s", "--jsonl"], deps)).toBe(2)
     expect(JSON.parse(stderr.at(-1) ?? "{}").error.message).toContain("expected a positive duration")
   })
-  it("rejects real headless/CI/machine login before opening a browser", async () => {
+  it("refuses login in CI or with --no-input, before opening a browser", async () => {
     const { deps, stdout, stderr } = await setup()
     const message = () => JSON.parse(stderr.at(-1) ?? "{}").error.message
     setConfig(deps.configPath, "zoom.clientId", "example-client")
-    deps.interactive = false
-    expect(await run(["--interactive", "session", "start"], deps)).toBe(3)
-    expect(message()).toContain("in an interactive terminal")
-    deps.interactive = true
     deps.env = { CI: "1" }
     expect(await run(["session", "start"], deps)).toBe(3)
-    expect(message()).toContain("in an interactive terminal")
+    expect(message()).toContain("run zm session start yourself")
     deps.env = {}
-    expect(await run(["--json", "session", "start"], deps)).toBe(3)
-    expect(message()).toContain("add --interactive")
-    deps.outputIsTTY = false
-    expect(await run(["session", "start"], deps)).toBe(3)
-    expect(message()).toContain("add --interactive")
     expect(await run(["--no-input", "session", "start"], deps)).toBe(3)
     expect(message()).toContain("remove --no-input")
     expect(stdout).toEqual([])
@@ -253,13 +244,14 @@ describe("portable CLI discovery and diagnostics", () => {
   })
 })
 
-it("quiet suppresses optional login instructions but retains the failure envelope", async () => {
+it("quiet keeps the login URL, the one thing an agent can pass on, and the failure envelope", async () => {
   const { deps, stdout, stderr } = await setup()
   setConfig(deps.configPath, "zoom.clientId", "example-client")
   expect(await run(["--quiet", "session", "start"], deps)).toBe(3)
   expect(stdout).toEqual([])
-  expect(stderr).toHaveLength(1)
-  expect(JSON.parse(stderr[0] ?? "{}").error.code).toBe("configuration_error")
+  expect(stderr).toHaveLength(2)
+  expect(stderr[0]).toContain("Open this URL to approve Zoom login:")
+  expect(JSON.parse(stderr[1] ?? "{}").error.code).toBe("configuration_error")
 })
 
 it("prints a partial non-search answer before returning its source error exit code", async () => {

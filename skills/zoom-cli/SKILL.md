@@ -171,8 +171,9 @@ installed tool set. Generation and task persistence are not MCP tools.
 an authorized change once, and `--dry-run` always previews. Exit 14 means an uncertain dispatched
 write: inspect remote state before retrying. Never automatically replay creation or cancellation.
 Tokens stay in the keyring. Missing scopes require app changes and a new login; cached session status
-is local, while `--check` verifies remotely. Browser consent needs interactive input; `--no-input`
-cannot approve it. `--timeout` bounds finite commands; watch/MCP are foreground lifetimes.
+is local, while `--check` verifies remotely. To log in, run `zm session start` in the background, read the
+URL after `Open this URL to approve Zoom login:` and give it to the person as a link; their browser must be on
+this computer. `--no-input` cannot approve it. `--timeout` bounds finite commands; watch/MCP are foreground lifetimes.
 
 ## Discover candidate scheduled series
 
