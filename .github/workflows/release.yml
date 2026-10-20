@@ -5,7 +5,8 @@ name: Release
 #
 # Full validation builds, checks and packs once; `build` verifies the immutable tarball.
 # The job able to publish runs no code from our dependencies; `publish` holds the OIDC permission and only
-# runs `npm publish` on that file; `tag` is the only one that may write to the repository.
+# runs `npm publish` on that file; `tag` is the only one that may write to the repository: it pushes the tag and
+# creates the GitHub release.
 on:
   workflow_dispatch:
     inputs:
@@ -176,3 +177,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -a "v$VERSION" -m "$VERSION"
           git push origin "v$VERSION"
+
+      - name: GitHub release from the changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          awk -v v="$VERSION" '$0 ~ "^## "v" " {on=1; next} /^## / && on {exit} on' CHANGELOG.md |
+            gh release create "v$VERSION" --title "$VERSION" --notes-file -
