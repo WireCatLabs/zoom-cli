@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **The scenario check catches a step a shell would change** (cli-core 0.348.0 → 0.370.0): `>`, `|`, `;`, `$(`
+  or a glob left outside quotes now fails the tests. zm's own steps were already quoted. "Works with" takes memo's
+  title from cli-core, the same text every tool shows.
+
 ## 0.30.0 — 19.10.2026
 
 ### Changed — may break callers

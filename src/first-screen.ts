@@ -1,5 +1,5 @@
 import { fileURLToPath } from "node:url"
-import { guideCommand, type HelpSection, inSection, installHelp } from "@wirecat/cli-core/cli"
+import { guideCommand, type HelpSection, inSection, installHelp, MEMO_SCENARIOS } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { ZM } from "./read-only.js"
 
@@ -33,7 +33,7 @@ export const installFirstScreen = (program: Command): void => {
   placeInSections(program)
   const guide = guideCommand(ZM, {
     directory: fileURLToPath(new URL("../scenarios", import.meta.url)),
-    worksWith: [{ tool: "memo", name: "person-brief", title: "One person across every tool" }],
+    worksWith: [MEMO_SCENARIOS.personBrief],
     profile: false,
   })
   // addCommand, unlike command(), leaves out the exit override: `guide --help` called process.exit itself.
