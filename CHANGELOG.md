@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.31.0 — 20.10.2026
+
+### Added
+
+- **The shared store moves to version 25 when first opened** (cli-core 0.366.0): it adds a history of chat
+  changes for the messengers that share it. Nothing is sent.
 
 ### Fixed
 
