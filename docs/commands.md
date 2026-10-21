@@ -1220,7 +1220,7 @@ zm search meetings <query> [options]
 
 | Argument | | What it is |
 |---|---|---|
-| `query` | required | words to find; each also matches its other word forms. |
+| `query` | required | words, OR, (groups), -word, "a phrase", "a b"\~N (within N lines), exact:word, from:"Name" (who said the line); a word also matches its other forms and spellings speech recognition garbled. |
 
 | Option | What it does |
 |---|---|
@@ -1244,7 +1244,7 @@ zm search meetings <query> [options]
 | `--max-rows <n>` | by meaning: most transcript lines to read, 1 through 100000. |
 | `--max-text-bytes <bytes>` | by meaning: most transcript text to read (default 4 MiB). |
 
-**Returns:** meeting hit — ref, meeting, scope, id, excerpt, offset_ms, source
+**Returns:** meeting hit — ref, meeting, scope, id, excerpt, offset_ms, match, corrections, and 1 more
 
 **Next usually:** `zm meetings show <meeting>`, `zm meetings transcript <meeting>`, `zm meetings summary <meeting>`
 

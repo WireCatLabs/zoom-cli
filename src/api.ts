@@ -8,7 +8,7 @@ import {
   type SourceParticipant,
   type SummaryContent,
 } from "@wirecat/cli-core/meetings"
-import { number, object, string, zoomInstant } from "./errors.js"
+import { number, object, string, withIssue, ZoneAssumptions, zoomTime } from "./errors.js"
 import { type RemoteOptions, ZoomRemote } from "./remote-http.js"
 import type { TokenManager } from "./tokens.js"
 
@@ -31,10 +31,8 @@ const extras = (row: Record<string, unknown>, keys: string[]) =>
   )
 export const encodeUuid = (uuid: string): string =>
   uuid.startsWith("/") || uuid.includes("//") ? encodeURIComponent(encodeURIComponent(uuid)) : encodeURIComponent(uuid)
-const time = (value: unknown): number | null => {
-  const text = string(value)
-  if (text === null) return null
-  return zoomInstant(text, "Zoom returned an invalid timestamp")
+interface Doubt {
+  zoneless: boolean
 }
 const requiredString = (value: unknown): string => {
   const text = string(value)
@@ -50,8 +48,19 @@ export class ZoomApiSource implements MeetingSource {
     private readonly tokens: TokenManager,
     fetcher: typeof fetch,
     options: RemoteOptions = {},
+    readonly zones = new ZoneAssumptions(),
   ) {
     this.remote = new ZoomRemote(tokens, fetcher, options)
+  }
+  private time(value: unknown, doubt: Doubt): number | null {
+    const text = string(value)
+    if (text === null) return null
+    const { time, zone } = zoomTime(text, "Zoom returned an invalid timestamp")
+    if (zone !== null) {
+      doubt.zoneless = true
+      this.zones.add(zone)
+    }
+    return time
   }
   private request(path: string, scope: string, missingCode?: number) {
     return missingCode === undefined
@@ -108,7 +117,8 @@ export class ZoomApiSource implements MeetingSource {
       const recurring = row.type === 3 || row.type === 8
       const instances = await this.instances(seriesId)
       for (const instance of instances) {
-        const startedAt = time(instance.start_time)
+        const doubt = { zoneless: false }
+        const startedAt = this.time(instance.start_time, doubt)
         const id = requiredString(instance.uuid)
         if (startedAt === null) throw new CliError("invalid_response", "Zoom occurrence is missing its start time")
         if (startedAt < lower || seen.has(id)) continue
@@ -135,18 +145,21 @@ export class ZoomApiSource implements MeetingSource {
           description: string(row.agenda),
           joinUrl: string(row.join_url),
           timezone: string(row.timezone),
-          metadata: extras(row, [
-            "id",
-            "uuid",
-            "topic",
-            "type",
-            "start_time",
-            "duration",
-            "join_url",
-            "timezone",
-            "agenda",
-            "recurrence",
-          ]),
+          metadata: withIssue(
+            extras(row, [
+              "id",
+              "uuid",
+              "topic",
+              "type",
+              "start_time",
+              "duration",
+              "join_url",
+              "timezone",
+              "agenda",
+              "recurrence",
+            ]),
+            doubt.zoneless,
+          ),
         })
       }
     }
@@ -171,8 +184,9 @@ export class ZoomApiSource implements MeetingSource {
           : registrant
             ? `registrant:${registrant}`
             : `unknown:${position}`
-      const joinedAt = time(row.join_time)
-      const leftAt = time(row.leave_time)
+      const doubt = { zoneless: false }
+      const joinedAt = this.time(row.join_time, doubt)
+      const leftAt = this.time(row.leave_time, doubt)
       const rawDuration = number(row.duration)
       const duration =
         rawDuration !== null && rawDuration >= 0 && Number.isFinite(rawDuration * 1000) ? rawDuration : null
@@ -196,6 +210,7 @@ export class ZoomApiSource implements MeetingSource {
         if (leftAt !== null) existing.leftAt = Math.max(existing.leftAt ?? leftAt, leftAt)
         if (duration !== null) existing.durationMs = (existing.durationMs ?? 0) + duration * 1000
         if (Array.isArray(existing.sessions)) existing.sessions.push(session)
+        if (doubt.zoneless) existing.metadata = withIssue(existing.metadata ?? {}, true)
       } else
         participants.set(key, {
           identityExternalId: stableId,
@@ -207,16 +222,10 @@ export class ZoomApiSource implements MeetingSource {
           leftAt,
           durationMs: duration === null ? null : duration * 1000,
           sessions: [session],
-          metadata: extras(row, [
-            "id",
-            "name",
-            "user_email",
-            "registrant_id",
-            "join_time",
-            "leave_time",
-            "duration",
-            "role",
-          ]),
+          metadata: withIssue(
+            extras(row, ["id", "name", "user_email", "registrant_id", "join_time", "leave_time", "duration", "role"]),
+            doubt.zoneless,
+          ),
         })
     }
     return [...participants.values()]
@@ -277,6 +286,7 @@ export class ZoomApiSource implements MeetingSource {
   async summary(id: string): Promise<SummaryContent | null> {
     const body = await this.request(`/meetings/${encodeUuid(id)}/meeting_summary`, "meeting:read:summary", 3001)
     if (!body) return null
+    const doubt = { zoneless: false }
     const edited = body.edited_summary && typeof body.edited_summary === "object" ? object(body.edited_summary) : null
     const details = Array.isArray(body.summary_details) ? body.summary_details.map(object) : []
     const steps = edited?.next_steps ?? body.next_steps
@@ -287,19 +297,22 @@ export class ZoomApiSource implements MeetingSource {
       source: "zoom-ai",
       content: content ?? editedDetails,
       docUrl: string(body.summary_doc_url),
-      externalCreatedAt: time(body.summary_created_time),
-      externalUpdatedAt: time(body.summary_last_modified_time),
-      metadata: extras(body, [
-        "summary_content",
-        "summary_title",
-        "summary_overview",
-        "summary_details",
-        "next_steps",
-        "edited_summary",
-        "summary_doc_url",
-        "summary_created_time",
-        "summary_last_modified_time",
-      ]),
+      externalCreatedAt: this.time(body.summary_created_time, doubt),
+      externalUpdatedAt: this.time(body.summary_last_modified_time, doubt),
+      metadata: withIssue(
+        extras(body, [
+          "summary_content",
+          "summary_title",
+          "summary_overview",
+          "summary_details",
+          "next_steps",
+          "edited_summary",
+          "summary_doc_url",
+          "summary_created_time",
+          "summary_last_modified_time",
+        ]),
+        doubt.zoneless,
+      ),
       title: string(body.summary_title),
       overview: editedOverview ?? string(body.summary_overview),
       sections:

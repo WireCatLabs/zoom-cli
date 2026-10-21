@@ -2,7 +2,7 @@ import { CliError, isCliError, realSleep } from "@wirecat/cli-base"
 import { importFiles, type MeetingStore, pull } from "@wirecat/cli-core/meetings"
 import { ZoomApiSource } from "./api.js"
 import { filesZone, type ZoomConfig } from "./config.js"
-import { checkCancelled } from "./errors.js"
+import { checkCancelled, type ZoneAssumptions } from "./errors.js"
 import { importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import type { ProgramDeps } from "./program.js"
 import {
@@ -22,6 +22,7 @@ export interface WatchServiceDeps {
   offline: () => boolean
   openStore: (intent: StoreConnectRequest["intent"]) => Promise<StoreConnection>
   guardedStore: (store: MeetingStore) => MeetingStore
+  zones: ZoneAssumptions
 }
 
 /** Plans a watch and runs one ingestion cycle per call; reset() forgets the plan between parses. */
@@ -33,6 +34,7 @@ export const createWatchService = ({
   offline,
   openStore,
   guardedStore,
+  zones,
 }: WatchServiceDeps): Pick<WatchCommandDeps, "prepare" | "ingest"> & { reset: () => void } => {
   let watchConfig: ZoomConfig | undefined
   let watchSince: string | undefined
@@ -104,10 +106,15 @@ export const createWatchService = ({
         } else {
           const original =
             deps.source ??
-            new ZoomApiSource(tokens(), fetch(), {
-              now: deps.now,
-              sleep: (ms, abort) => (deps.sleep ?? realSleep)(ms, AbortSignal.any([operation, abort]), "retry"),
-            })
+            new ZoomApiSource(
+              tokens(),
+              fetch(),
+              {
+                now: deps.now,
+                sleep: (ms, abort) => (deps.sleep ?? realSleep)(ms, AbortSignal.any([operation, abort]), "retry"),
+              },
+              zones,
+            )
           let sourceFailure: CliError | undefined
           const source = new Proxy(original, {
             get(target, key, receiver) {

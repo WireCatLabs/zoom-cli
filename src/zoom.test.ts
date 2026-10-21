@@ -425,8 +425,51 @@ describe("API source", () => {
       else process.env.TZ = saved
     }
   })
-  it.each(["2026-10-10T15:30:00", "2026-10-10", "2026-10-10 15:30:00Z"])(
-    "refuses a Zoom join time that does not name its zone: %s",
+  it.each([
+    ["Asia/Vladivostok", "2026-10-10T05:30:00.000Z"],
+    ["America/Los_Angeles", "2026-10-10T22:30:00.000Z"],
+  ])("reads a zone-less Zoom time in the computer's zone, %s, and marks the record", async (zone, instant) => {
+    const saved = process.env.TZ
+    process.env.TZ = zone
+    try {
+      const source = new ZoomApiSource(authorize(tokenManager()), async (input) =>
+        String(input).includes("/participants")
+          ? response({ participants: [{ id: "alice-example", join_time: "2026-10-10T15:30:00", duration: 60 }] })
+          : response({ participants: [] }),
+      )
+      const [participant] = await source.participants("example")
+      expect(participant?.joinedAt).toBe(Date.parse(instant))
+      expect(participant?.metadata).toMatchObject({ issues: ["time_without_zone"] })
+      expect(source.zones.take()).toEqual([`1 Zoom time had no zone; read in ${zone} and marked time_without_zone`])
+      expect(source.zones.take()).toEqual([])
+    } finally {
+      if (saved === undefined) delete process.env.TZ
+      else process.env.TZ = saved
+    }
+  })
+  it("reads a zone-less time that daylight saving skips as UTC, and says so", async () => {
+    const saved = process.env.TZ
+    process.env.TZ = "America/Los_Angeles"
+    try {
+      const source = new ZoomApiSource(authorize(tokenManager()), async () =>
+        response({ participants: [{ id: "alice-example", join_time: "2026-03-08T02:30:00", duration: 60 }] }),
+      )
+      const [participant] = await source.participants("example")
+      expect(participant?.joinedAt).toBe(Date.parse("2026-03-08T02:30:00Z"))
+      expect(source.zones.take()).toEqual(["1 Zoom time had no zone; read in UTC and marked time_without_zone"])
+    } finally {
+      if (saved === undefined) delete process.env.TZ
+      else process.env.TZ = saved
+    }
+  })
+  it("leaves a record whose times name their zone unmarked", async () => {
+    const source = new ZoomApiSource(authorize(tokenManager()), apiFixture())
+    const [meeting] = await source.meetings("2026-10-01T00:00:00Z")
+    expect(meeting?.metadata).not.toHaveProperty("issues")
+    expect(source.zones.take()).toEqual([])
+  })
+  it.each(["2026-10-10", "2026-10-10 15:30:00Z", "2026-02-30T15:30:00", "2026-10-10T25:00:00", "example"])(
+    "refuses a malformed Zoom join time: %s",
     async (join_time) => {
       const source = new ZoomApiSource(authorize(tokenManager()), async () =>
         response({ participants: [{ id: "alice-example", join_time, duration: 60 }] }),

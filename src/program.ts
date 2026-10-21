@@ -24,7 +24,7 @@ import {
 import { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
 import { annotateMeetingCommands } from "./commands.js"
 import { filesZone, profileAccountKey, readConfig } from "./config.js"
-import { checkCancelled } from "./errors.js"
+import { checkCancelled, ZoneAssumptions } from "./errors.js"
 import { bytes, duration, type ExecutionState, resetCliOptions, startExecution } from "./execution.js"
 import { fileNamesHelp, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { installFirstScreen } from "./first-screen.js"
@@ -158,6 +158,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     }
   }
   const connected = (intent: StoreConnectRequest["intent"] = "read") => (connecting ??= openStore(intent))
+  const zones = new ZoneAssumptions()
   const program = new Command()
     .name("zm")
     .version(VERSION)
@@ -182,6 +183,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     if (!execution) throw new CliError("configuration_error", "command execution is not initialized")
     const answer = renderBody(execution.action, body, {
       format,
+      warnings: zones.take(),
       meta: execution.meta(),
       fields: selectFields ? fields : undefined,
       quiet: Boolean(program.opts().quiet),
@@ -229,12 +231,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
     output(wholeList("list", items))
   }
   addConfigCommands(program, { configPath: deps.configPath, getConfig, output })
-  const configured = configuredMeetingSource({
-    deps,
-    getConfig,
-    tokens,
-    fetch: () => fetchWithSignal(deps.fetch),
-  })
+  const fetchApi = () => fetchWithSignal(deps.fetch)
+  const configured = configuredMeetingSource({ deps, getConfig, tokens, fetch: fetchApi, zones })
   const source = configured.source
   const meetingCommands: Parameters<typeof addZoomMeetingCommands>[1] = {
     get store() {
@@ -287,6 +285,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     offline: () => Boolean(program.opts().offline),
     openStore,
     guardedStore,
+    zones,
   })
   const receipt = async (body: Body) => {
     const text = rendered(body)
@@ -327,7 +326,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
     },
     signal,
     now: deps.now ?? Date.now,
-    recordings: () => deps.recordings ?? new ZoomRecordings(tokens(), fetchWithSignal(deps.fetch), remoteOptions),
+    recordings: () =>
+      deps.recordings ?? new ZoomRecordings(tokens(), fetchWithSignal(deps.fetch), remoteOptions, zones),
     remoteMeetings: () =>
       deps.remoteMeetings ?? new ZoomRemoteMeetings(tokens(), fetchWithSignal(deps.fetch), remoteOptions),
     archive: deps.archive ?? {
@@ -338,7 +338,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     },
   })
   addRecordingScheduleCommands(program, {
-    ...zoomRecordingSchedule({ deps, getConfig, withSignal: fetchWithSignal, signal, remoteOptions }),
+    ...zoomRecordingSchedule({ deps, getConfig, withSignal: fetchWithSignal, signal, remoteOptions, zones }),
     offline: () => Boolean(program.opts().offline),
     signal,
     output,

@@ -40,6 +40,7 @@ export const renderBody = (
     meta: Meta
     fields?: readonly string[]
     quiet?: boolean
+    warnings?: readonly string[]
     diagnostic: (text: string) => void
   },
 ): { text: string; exitCode: number } => {
@@ -53,6 +54,7 @@ export const renderBody = (
     diagnostic: (text: string) => options.diagnostic(`${text}\n`),
   }
   const renderer = createRenderer({ format: options.format, color: false, quiet: options.quiet, streams })
+  for (const warning of options.warnings ?? []) renderer.warn(warning)
   // renderAnswer reports a partial answer through process.exitCode; zoom returns that code from `run` instead.
   const exitCode = process.exitCode
   try {

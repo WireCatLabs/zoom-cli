@@ -5,7 +5,7 @@ import type {
   RecordingPage,
 } from "@wirecat/cli-core/meetings"
 import { encodeUuid } from "./api.js"
-import { object, string, zoomInstant } from "./errors.js"
+import { object, string, ZoneAssumptions, zoomTime } from "./errors.js"
 import {
   type ArchiveReport,
   archiveRecording,
@@ -33,12 +33,13 @@ export const required = (value: unknown): string => {
   if (text === null) throw new CliError("invalid_response", "Zoom response is missing a required field")
   return text
 }
-const timestamp = (value: unknown): string | null => {
+const timestamp = (value: unknown, zones: ZoneAssumptions): string | null => {
   if (value === undefined || value === null || value === "") return null
-  const text = required(value)
-  return new Date(zoomInstant(text, "Zoom returned an invalid timestamp")).toISOString()
+  const { time, zone } = zoomTime(required(value), "Zoom returned an invalid timestamp")
+  if (zone !== null) zones.add(zone)
+  return new Date(time).toISOString()
 }
-const meeting = (value: unknown): RecordingMeeting => {
+const meeting = (value: unknown, zones: ZoneAssumptions): RecordingMeeting => {
   const row = object(value)
   const id = typeof row.id === "number" && Number.isSafeInteger(row.id) ? String(row.id) : required(row.id)
   if (!Array.isArray(row.recording_files))
@@ -68,15 +69,20 @@ const meeting = (value: unknown): RecordingMeeting => {
           : null,
       status: id === null ? "unsupported" : (string(asset.status) ?? "unknown"),
       available: id !== null && asset.status === "completed" && string(asset.download_url) !== null,
-      startedAt: timestamp(asset.recording_start),
-      endedAt: timestamp(asset.recording_end),
+      startedAt: timestamp(asset.recording_start, zones),
+      endedAt: timestamp(asset.recording_end, zones),
     }
   })
-  return { id, uuid: required(row.uuid), title: string(row.topic), startedAt: timestamp(row.start_time), assets }
+  return { id, uuid: required(row.uuid), title: string(row.topic), startedAt: timestamp(row.start_time, zones), assets }
 }
 export class ZoomRecordings {
   readonly remote: ZoomRemote
-  constructor(tokens: Pick<TokenManager, "tokens">, fetcher: typeof fetch, options: RemoteOptions = {}) {
+  constructor(
+    tokens: Pick<TokenManager, "tokens">,
+    fetcher: typeof fetch,
+    options: RemoteOptions = {},
+    readonly zones = new ZoneAssumptions(),
+  ) {
     this.remote = new ZoomRemote(tokens, fetcher, options)
   }
   catalog(account: string): RecordingCatalog {
@@ -126,7 +132,7 @@ export class ZoomRecordings {
     )
     if (!Array.isArray(body.meetings) || body.meetings.length > 1000)
       throw new CliError("invalid_response", "Zoom returned an invalid recording list")
-    const items = body.meetings.map(meeting)
+    const items = body.meetings.map((row) => meeting(row, this.zones))
     if (
       body.next_page_token !== undefined &&
       body.next_page_token !== null &&
@@ -170,7 +176,7 @@ export class ZoomRecordings {
       "cloud_recording:read:list_recording_files",
       { ...(signal ? { signal } : {}) },
     )
-    const item = meeting(body)
+    const item = meeting(body, this.zones)
     const rows = [
       ...(body.recording_files as unknown[]),
       ...(Array.isArray(body.participant_audio_files) ? body.participant_audio_files : []),

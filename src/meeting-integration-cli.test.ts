@@ -5,7 +5,7 @@ import { CliError, memoryKeyring } from "@wirecat/cli-base"
 import { parseMeetingReference } from "@wirecat/cli-core"
 import { createMeetingContext, type MeetingMediaDescriptor, transcribeMeeting } from "@wirecat/cli-core/meetings"
 import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-core/meetings/testing"
-import { afterEach, expect, it, vi } from "vitest"
+import { expect, it, vi } from "vitest"
 import { readAnswer, readJsonlPage, readReceipt } from "../scripts/testing/answers.js"
 import { fakeConnection } from "../scripts/testing/connection.js"
 import { setConfig } from "./config.js"
@@ -173,13 +173,7 @@ it("preserves an acknowledged link receipt when cancellation follows commit", as
   expect(latest(errors).error.code).toBe("cancelled")
 })
 
-const savedZone = process.env.TZ
-afterEach(() => {
-  if (savedZone === undefined) delete process.env.TZ
-  else process.env.TZ = savedZone
-})
 it("keeps bounded search cursors and coverage in JSONL and forwards typed date/budget filters", async () => {
-  process.env.TZ = "Asia/Vladivostok"
   const { output, deps, parts } = await setup()
   const search = vi.fn(async () => ({
     items: [
@@ -251,7 +245,7 @@ it("keeps bounded search cursors and coverage in JSONL and forwards typed date/b
       tag: "planning",
       eventId: 5,
       meetingSeriesId: 6,
-      since: Date.parse("2026-09-30T14:00:00Z"),
+      since: Date.parse("2026-10-01T00:00:00Z"),
       until: Date.parse("2026-10-11T10:00:00Z"),
       limit: 2,
       after: "example_previous",
