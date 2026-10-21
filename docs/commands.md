@@ -78,7 +78,7 @@ zm meetings list [query] [options]
 | `--limit <n>` | meetings per page. Default: `100`. |
 | `--page <n>` | page number. Default: `1`. |
 
-**Returns:** meeting — ref, id, provider, account, title, url, started_at, ended_at, and 7 more
+**Returns:** meeting — ref, id, provider, account, title, url, started_at, ended_at, and 8 more
 
 **Next usually:** `zm meetings show <meeting>`, `zm meetings transcript <meeting>`, `zm meetings summary <meeting>`
 
@@ -101,7 +101,7 @@ zm meetings show <meeting> [options]
 | `--json` | one JSON value. |
 | `--jsonl` | one JSON object per item. |
 
-**Returns:** meeting details — ref, id, provider, account, title, url, started_at, ended_at, and 15 more
+**Returns:** meeting details — ref, id, provider, account, title, url, started_at, ended_at, and 16 more
 
 **Next usually:** `zm meetings transcript <meeting>`, `zm meetings summary <meeting>`, `zm recordings show <meeting>`
 
