@@ -26,7 +26,7 @@ import { annotateMeetingCommands } from "./commands.js"
 import { filesZone, profileAccountKey, readConfig } from "./config.js"
 import { checkCancelled } from "./errors.js"
 import { bytes, duration, type ExecutionState, resetCliOptions, startExecution } from "./execution.js"
-import { importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
+import { fileNamesHelp, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { installFirstScreen } from "./first-screen.js"
 import { liftJsonFields } from "./json-fields.js"
 import { addZoomMeetingCommands } from "./meeting-commands.js"
@@ -244,6 +244,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
       return requireAccount()
     },
     source,
+    importHelp: fileNamesHelp(() => getConfig()),
     readFiles: async (folder) => {
       const config = getConfig()
       return validateDownloadedFiles(await (deps.readFiles ?? readDownloadedFiles)(folder), filesZone(config)).map(

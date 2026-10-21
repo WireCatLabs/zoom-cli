@@ -96,8 +96,29 @@
                       "pattern": "\\S",
                       "type": "string"
                     },
+                    "timezone": {
+                      "pattern": "\\S",
+                      "type": "string"
+                    },
                     "truncated": {
                       "type": "boolean"
+                    },
+                    "window": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "since": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        },
+                        "until": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [],
+                      "type": "object"
                     }
                   },
                   "required": ["run_id", "duration_ms", "complete"],
@@ -302,8 +323,29 @@
                       "pattern": "\\S",
                       "type": "string"
                     },
+                    "timezone": {
+                      "pattern": "\\S",
+                      "type": "string"
+                    },
                     "truncated": {
                       "type": "boolean"
+                    },
+                    "window": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "since": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        },
+                        "until": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [],
+                      "type": "object"
                     }
                   },
                   "required": ["run_id", "duration_ms", "complete"],
@@ -650,8 +692,29 @@
                       "pattern": "\\S",
                       "type": "string"
                     },
+                    "timezone": {
+                      "pattern": "\\S",
+                      "type": "string"
+                    },
                     "truncated": {
                       "type": "boolean"
+                    },
+                    "window": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "since": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        },
+                        "until": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [],
+                      "type": "object"
                     }
                   },
                   "required": ["run_id", "duration_ms", "complete"],
@@ -856,8 +919,29 @@
                       "pattern": "\\S",
                       "type": "string"
                     },
+                    "timezone": {
+                      "pattern": "\\S",
+                      "type": "string"
+                    },
                     "truncated": {
                       "type": "boolean"
+                    },
+                    "window": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "since": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        },
+                        "until": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [],
+                      "type": "object"
                     }
                   },
                   "required": ["run_id", "duration_ms", "complete"],
@@ -1199,11 +1283,34 @@
                   "items": {
                     "additionalProperties": false,
                     "properties": {
+                      "corrections": {
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "from": {
+                              "type": "string"
+                            },
+                            "to": {
+                              "items": {
+                                "type": "string"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "required": ["from", "to"],
+                          "type": "object"
+                        },
+                        "type": "array"
+                      },
                       "excerpt": {
                         "type": "string"
                       },
                       "id": {
                         "minLength": 1,
+                        "type": "string"
+                      },
+                      "match": {
+                        "enum": ["words", "corrected"],
                         "type": "string"
                       },
                       "meeting": {
@@ -1240,6 +1347,7 @@
                             "anyOf": [
                               {
                                 "format": "date-time",
+                                "pattern": "Z$",
                                 "type": "string"
                               },
                               {
@@ -1404,6 +1512,7 @@
                     },
                     "since": {
                       "format": "date-time",
+                      "pattern": "Z$",
                       "type": "string"
                     },
                     "tag_id": {
@@ -1412,6 +1521,7 @@
                     },
                     "until": {
                       "format": "date-time",
+                      "pattern": "Z$",
                       "type": "string"
                     }
                   },
@@ -1516,8 +1626,29 @@
                   "pattern": "\\S",
                   "type": "string"
                 },
+                "timezone": {
+                  "pattern": "\\S",
+                  "type": "string"
+                },
                 "truncated": {
                   "type": "boolean"
+                },
+                "window": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "since": {
+                      "format": "date-time",
+                      "pattern": "Z$",
+                      "type": "string"
+                    },
+                    "until": {
+                      "format": "date-time",
+                      "pattern": "Z$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [],
+                  "type": "object"
                 }
               },
               "required": ["run_id", "duration_ms", "complete"],
@@ -1843,8 +1974,29 @@
                       "pattern": "\\S",
                       "type": "string"
                     },
+                    "timezone": {
+                      "pattern": "\\S",
+                      "type": "string"
+                    },
                     "truncated": {
                       "type": "boolean"
+                    },
+                    "window": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "since": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        },
+                        "until": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [],
+                      "type": "object"
                     }
                   },
                   "required": ["run_id", "duration_ms", "complete"],
@@ -2049,8 +2201,29 @@
                       "pattern": "\\S",
                       "type": "string"
                     },
+                    "timezone": {
+                      "pattern": "\\S",
+                      "type": "string"
+                    },
                     "truncated": {
                       "type": "boolean"
+                    },
+                    "window": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "since": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        },
+                        "until": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [],
+                      "type": "object"
                     }
                   },
                   "required": ["run_id", "duration_ms", "complete"],
@@ -2378,8 +2551,29 @@
                       "pattern": "\\S",
                       "type": "string"
                     },
+                    "timezone": {
+                      "pattern": "\\S",
+                      "type": "string"
+                    },
                     "truncated": {
                       "type": "boolean"
+                    },
+                    "window": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "since": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        },
+                        "until": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [],
+                      "type": "object"
                     }
                   },
                   "required": ["run_id", "duration_ms", "complete"],
@@ -2584,8 +2778,29 @@
                       "pattern": "\\S",
                       "type": "string"
                     },
+                    "timezone": {
+                      "pattern": "\\S",
+                      "type": "string"
+                    },
                     "truncated": {
                       "type": "boolean"
+                    },
+                    "window": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "since": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        },
+                        "until": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [],
+                      "type": "object"
                     }
                   },
                   "required": ["run_id", "duration_ms", "complete"],
@@ -2916,8 +3131,29 @@
                       "pattern": "\\S",
                       "type": "string"
                     },
+                    "timezone": {
+                      "pattern": "\\S",
+                      "type": "string"
+                    },
                     "truncated": {
                       "type": "boolean"
+                    },
+                    "window": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "since": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        },
+                        "until": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [],
+                      "type": "object"
                     }
                   },
                   "required": ["run_id", "duration_ms", "complete"],
@@ -3122,8 +3358,29 @@
                       "pattern": "\\S",
                       "type": "string"
                     },
+                    "timezone": {
+                      "pattern": "\\S",
+                      "type": "string"
+                    },
                     "truncated": {
                       "type": "boolean"
+                    },
+                    "window": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "since": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        },
+                        "until": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [],
+                      "type": "object"
                     }
                   },
                   "required": ["run_id", "duration_ms", "complete"],
@@ -3467,8 +3724,29 @@
                       "pattern": "\\S",
                       "type": "string"
                     },
+                    "timezone": {
+                      "pattern": "\\S",
+                      "type": "string"
+                    },
                     "truncated": {
                       "type": "boolean"
+                    },
+                    "window": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "since": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        },
+                        "until": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [],
+                      "type": "object"
                     }
                   },
                   "required": ["run_id", "duration_ms", "complete"],
@@ -3673,8 +3951,29 @@
                       "pattern": "\\S",
                       "type": "string"
                     },
+                    "timezone": {
+                      "pattern": "\\S",
+                      "type": "string"
+                    },
                     "truncated": {
                       "type": "boolean"
+                    },
+                    "window": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "since": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        },
+                        "until": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [],
+                      "type": "object"
                     }
                   },
                   "required": ["run_id", "duration_ms", "complete"],
@@ -3964,6 +4263,7 @@
           "type": "string"
         },
         "query": {
+          "description": "The messages query language: words (all required), OR, (groups), NOT or -word, \"a phrase\", \"a b\"~N for words within N transcript lines (at most 20), exact:word, from:\"Name\" for who said the line",
           "minLength": 1,
           "type": "string"
         },
@@ -4067,8 +4367,29 @@
                       "pattern": "\\S",
                       "type": "string"
                     },
+                    "timezone": {
+                      "pattern": "\\S",
+                      "type": "string"
+                    },
                     "truncated": {
                       "type": "boolean"
+                    },
+                    "window": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "since": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        },
+                        "until": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [],
+                      "type": "object"
                     }
                   },
                   "required": ["run_id", "duration_ms", "complete"],
@@ -4273,8 +4594,29 @@
                       "pattern": "\\S",
                       "type": "string"
                     },
+                    "timezone": {
+                      "pattern": "\\S",
+                      "type": "string"
+                    },
                     "truncated": {
                       "type": "boolean"
+                    },
+                    "window": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "since": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        },
+                        "until": {
+                          "format": "date-time",
+                          "pattern": "Z$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [],
+                      "type": "object"
                     }
                   },
                   "required": ["run_id", "duration_ms", "complete"],

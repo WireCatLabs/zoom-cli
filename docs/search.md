@@ -27,8 +27,20 @@ zm search meetings "example plan" --limit 20 --cursor <next_cursor> --json
 This searches the stored profile, not Zoom's live history. [Pull or import missing meetings](archive.md)
 first. `search meetings` indexes whatever was stored since the last search before it reads, so there is no
 separate index step. All query words must match, through literal prefixes or stored word forms. The default
-configuration adds English, Russian and Spanish word stems; a store can disable or customize it. The query is
-plain words, with no operators. `--meeting-id`, `--event-id`, `--series-id`, `--since-time` and `--until-time`
+configuration adds English, Russian and Spanish word stems; a store can disable or customize it. A word of four
+letters or more also matches spellings speech recognition garbled («риелтор» finds «реелтора», «рилторов»); exact
+hits come first, and a widened hit has `match: "corrected"` and the stored word in `corrections`. The query is the
+[messages query language](https://github.com/WireCatLabs/cli-core/blob/main/docs/search/query-language.md#встречи):
+
+```sh
+zm search meetings 'риелтор OR агент' --json             # either word
+zm search meetings '(ипотека OR кредит) -квартира' --json # groups and exclusions
+zm search meetings '"циан риелтор"~3' --json              # the words at most 3 lines apart
+zm search meetings 'exact:риелтор' --json                 # the typed form only, no widening
+zm search meetings 'from:"Alice Example" бюджет' --json   # lines Alice said
+```
+
+`from:` is who said the line; who attended is `--identity-id` or `--person-id`. `--meeting-id`, `--event-id`, `--series-id`, `--since-time` and `--until-time`
 narrow the selected account. The opaque cursor belongs to that account, query and filters; it can continue
 inside a large transcript. JSON provides `page.next_cursor`, `next` and any `missing` index information. JSONL emits hit records followed by an end record with the page and completeness. Hits include the cited `ref`,
 meeting reference `meeting`, `excerpt` and `offset_ms`; expand a cue with `meetings passage`.
