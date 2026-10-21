@@ -68,7 +68,7 @@ zm meetings list --json
 The files source reads `.vtt` and `.txt` files directly inside a folder, without recursion.
 Names use `YYYY-MM-DD_HHMM_topic-slug.vtt` or `.txt`. A `.txt` is the form zoom-searcher wrote: a header
 (`Встреча:` title, `Дата:` start, `Zoom ID:`, `Говорят:` speakers), then `[hh:mm:ss] Speaker: text` lines. Its
-title and start replace the ones in the file name, its Zoom meeting ID becomes the series key, and its speakers
+title replaces the one in the file name; its time (like the file name's) is when the recording ended, so the start is that less the last line's offset, its Zoom meeting ID becomes the series key, and its speakers
 become participants of that meeting only, keyed by name — never one person across meetings. A `.txt` and a `.vtt`
 with one name are one meeting, and the `.txt` is read. Occurrence IDs derive from timestamp and normalized
 topic; these files carry no Zoom occurrence UUID. A `.vtt`'s participants remain unknown: speaker names are

@@ -24,6 +24,12 @@
   UTC, so a `2026-10-21_1000_…` file from Madrid was stored two hours late. A config that names a zone keeps it;
   saving another setting no longer writes `UTC` into `files_timezone`. Storage stays UTC.
 
+### Fixed
+
+- **A `.txt` transcript's time is read as the end of its recording.** zoom-searcher named files and wrote `Дата:`
+  from the Zoom portal's "created" time, which is when the recording ended. A `.txt` meeting now starts that time
+  less its last line's offset and ends at it, so it lines up with the API's copy of the same meeting.
+
 ## 0.31.0 — 20.10.2026
 
 ### Added
