@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.33.0 — 22.10.2026
+
+### Changed — may break callers
+
+- **cli-core 0.380.0 → 0.382.0.** A file's copy and the API's copy of one meeting become one record when imported
+  (the same Zoom meeting ID, starts within 15 minutes); the API's record wins and the file only fills a missing
+  transcript. `from:"Name"` finds a speaker known only by name across meetings. Search also matches words speech
+  recognition cut off («може» for «может») when they are not dictionary words. The shared store moves to version 28
+  when first opened (chat state); older tools still open it.
+
 ## 0.32.0 — 22.10.2026
 
 ### Added
