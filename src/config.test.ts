@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, expect, it } from "vitest"
-import { readConfig, setConfig } from "./config.js"
+import { filesZone, readConfig, setConfig } from "./config.js"
 
 const configPath = () => join(mkdtempSync(join(tmpdir(), "zm-config-")), "config.json")
 const saved = (path: string) => JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>
@@ -41,12 +41,22 @@ describe("config names", () => {
     expect(saved(path)).not.toHaveProperty("clientId")
   })
 
+  it("reads file names in this computer's zone until files.timezone is set, and keeps it unset when saving", () => {
+    const path = configPath()
+    expect(readConfig(path).filesTimezone).toBeNull()
+    expect(filesZone(readConfig(path))).toBe(Intl.DateTimeFormat().resolvedOptions().timeZone)
+    setConfig(path, "zoom.client_id", "example-one")
+    expect(saved(path).files_timezone).toBeNull()
+    setConfig(path, "files.timezone", "Asia/Tokyo")
+    expect(filesZone(readConfig(path))).toBe("Asia/Tokyo")
+  })
+
   it("refuses a legacy camelCase file without rewriting it", () => {
     const path = configPath()
     writeFileSync(path, JSON.stringify(oldFile), { mode: 0o600 })
     const before = readFileSync(path, "utf8")
     expect(() => readConfig(path)).toThrow(
-      `${path}: clientId is an unknown setting; rename it to client_id (and 3 more problems)`,
+      `${path}: clientId is an unknown setting; rename it to client_id (and 2 more problems)`,
     )
     expect(() => readConfig(path)).not.toThrow(/example-client|Europe/)
     expect(readFileSync(path, "utf8")).toBe(before)
@@ -58,7 +68,7 @@ describe("config names", () => {
     const before = JSON.stringify({ ...oldFile, client_id })
     writeFileSync(path, before)
     expect(() => readConfig(path)).toThrow(
-      `${path}: clientId is an unknown setting; rename it to client_id (and 2 more problems)`,
+      `${path}: clientId is an unknown setting; rename it to client_id (and 1 more problem)`,
     )
     expect(readFileSync(path, "utf8")).toBe(before)
   })

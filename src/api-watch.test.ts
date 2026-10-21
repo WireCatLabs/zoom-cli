@@ -73,6 +73,7 @@ it("resolves a configured files folder and keeps its profile/timezone bound desp
   const { deps, controller, directory } = await setup()
   setConfig(deps.configPath, "source", "files")
   setConfig(deps.configPath, "files.folder", directory)
+  setConfig(deps.configPath, "files.timezone", "UTC")
   setConfig(deps.configPath, "account.profile", "example-first")
   const store = memoryMeetingStore()
   const profiles: string[] = [],

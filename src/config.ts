@@ -11,7 +11,8 @@ export interface ZoomConfig {
   clientId: string | null
   source: "api" | "files"
   filesFolder: string | null
-  filesTimezone: string
+  /** `null`: the computer's zone, read when files are imported. */
+  filesTimezone: string | null
   accountProfile: string | null
   contextSources?: ConfiguredContextSource[]
 }
@@ -25,16 +26,20 @@ const ConfigFile = v.strictObject({
   ),
   source: v.picklist(["api", "files"]),
   files_folder: v.nullable(v.string()),
-  files_timezone: v.pipe(
-    v.string(),
-    v.check((zone) => {
-      try {
-        new Intl.DateTimeFormat("en", { timeZone: zone })
-        return true
-      } catch {
-        return false
-      }
-    }),
+  files_timezone: v.optional(
+    v.nullable(
+      v.pipe(
+        v.string(),
+        v.check((zone) => {
+          try {
+            new Intl.DateTimeFormat("en", { timeZone: zone })
+            return true
+          } catch {
+            return false
+          }
+        }),
+      ),
+    ),
   ),
   account_profile: v.optional(v.nullable(v.pipe(v.string(), v.regex(profilePattern)))),
   context_sources: v.optional(contextSourcesSchema),
@@ -55,7 +60,7 @@ export const readConfig = (path: string): ZoomConfig => {
         client_id: null,
         source: "api" as const,
         files_folder: null,
-        files_timezone: "UTC",
+        files_timezone: null,
         account_profile: null,
       }
     })
@@ -63,7 +68,7 @@ export const readConfig = (path: string): ZoomConfig => {
       clientId: file.client_id,
       source: file.source,
       filesFolder: file.files_folder,
-      filesTimezone: file.files_timezone,
+      filesTimezone: file.files_timezone ?? null,
       accountProfile: file.account_profile ?? null,
       ...(file.context_sources === undefined ? {} : { contextSources: file.context_sources }),
     }
@@ -125,3 +130,7 @@ export const setConfig = (path: string, key: string, value: string): ZoomConfig 
   saveConfig(path, config)
   return config
 }
+
+/** The zone a transcript file name's time is read in: `files.timezone`, else this computer's. */
+export const filesZone = (config: Pick<ZoomConfig, "filesTimezone">): string =>
+  config.filesTimezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone

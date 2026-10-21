@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Changed — may break callers
+
+- **A transcript file name's time is read in this computer's zone unless `files.timezone` is set.** It was read in
+  UTC, so a `2026-10-21_1000_…` file from Madrid was stored two hours late. A config that names a zone keeps it;
+  saving another setting no longer writes `UTC` into `files_timezone`. Storage stays UTC.
+
 ## 0.31.0 — 20.10.2026
 
 ### Added

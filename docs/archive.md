@@ -71,8 +71,8 @@ topic; these files carry no Zoom occurrence UUID. Participants remain unknown: s
 preserved as text, without guessing a person's identity. Check the imported date, title and transcript
 before attaching project or person records.
 
-File times default to UTC. Set `files.timezone` to the IANA zone used when the filenames were
-created, for example `Europe/Madrid`. Ambiguous or nonexistent daylight-saving times are refused.
+A file name's time is read in this computer's zone. Set `files.timezone` to the IANA zone the filenames were
+created in when it differs, for example `Europe/Madrid`; storage stays UTC. Ambiguous or nonexistent daylight-saving times are refused.
 Conflicting contents for the same normalized filename key are an error; correct the conflicting
 files before retrying. File discovery fails explicitly on invalid names rather than silently
 importing a partial folder.
