@@ -75,6 +75,47 @@ describe("cloud recordings", () => {
     ).show("example")
     expect(unsupported.assets[0]).toMatchObject({ id: null, status: "unsupported", format: "VTT", available: false })
   })
+  it("reads zone-less Zoom recording times in the computer's zone and counts them", async () => {
+    const saved = process.env.TZ
+    process.env.TZ = "Asia/Vladivostok"
+    try {
+      const recordings = source(
+        scripted(
+          meeting([file("example-video", { recording_start: "2026-10-10T15:00:00" })], {
+            start_time: "2026-10-10T15:00:00",
+          }),
+        ),
+      )
+      const detail = await recordings.show("example")
+      expect(detail.startedAt).toBe("2026-10-10T05:00:00.000Z")
+      expect(detail.assets[0]?.startedAt).toBe("2026-10-10T05:00:00.000Z")
+      expect(recordings.zones.take()).toEqual([
+        "2 Zoom times had no zone; read in Asia/Vladivostok and marked time_without_zone",
+      ])
+    } finally {
+      if (saved === undefined) delete process.env.TZ
+      else process.env.TZ = saved
+    }
+  })
+  it.each([{ start_time: "2026-10-10" }, { recording_files: [file("example-video", { recording_start: "bad" })] }])(
+    "refuses a malformed Zoom recording time: %o",
+    async (overrides) => {
+      await expect(source(scripted(meeting([file()], overrides))).show("example")).rejects.toMatchObject({
+        code: "invalid_response",
+        message: "Zoom returned an invalid timestamp",
+      })
+    },
+  )
+  it("keeps an offset or finely timed Zoom time as the same UTC instant", async () => {
+    const detail = await source(scripted(meeting([file()], { start_time: "2026-10-10T17:00:00+02:00" }))).show(
+      "example",
+    )
+    expect(detail.startedAt).toBe("2026-10-10T15:00:00.000Z")
+    const fine = await source(scripted(meeting([file()], { start_time: "2026-10-10T15:00:00.661234Z" }))).show(
+      "example",
+    )
+    expect(fine.startedAt).toBe("2026-10-10T15:00:00.661Z")
+  })
   it("validates date windows, lists, ids, timestamps, file duplicates and conflicting pages", async () => {
     for (const [from, to] of [
       ["bad", "2026-10-01"],

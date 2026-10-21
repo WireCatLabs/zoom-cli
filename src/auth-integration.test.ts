@@ -280,6 +280,52 @@ it("constructs the API source lazily and respects an injected source", async () 
   expect(await run(["meetings", "sync", "--since-time", "2026-10-01"], deps)).toBe(0)
 })
 
+it("reads zone-less Zoom times in the computer's zone, marks them and warns once per sync", async () => {
+  const saved = process.env.TZ
+  process.env.TZ = "Asia/Vladivostok"
+  try {
+    const { deps, stderr } = await setup()
+    deps.store = memoryMeetingStore()
+    deps.accountId = 1
+    deps.tokens.save({
+      accessToken: "example-access",
+      refreshToken: "example-refresh",
+      expiresAt: 3600000,
+      scopes: [
+        "meeting:read:list_meetings",
+        "meeting:read:list_past_instances",
+        "meeting:read:list_past_participants",
+        "cloud_recording:read:meeting_transcript",
+        "meeting:read:summary",
+      ],
+    })
+    const missing = (code: number) =>
+      new Response(JSON.stringify({ code, message: "example missing" }), { status: 404 })
+    deps.fetch = async (input) => {
+      const path = new URL(String(input)).pathname
+      if (path === "/v2/users/me/meetings") return reply({ meetings: [{ id: 100, topic: "Example", type: 2 }] })
+      if (path === "/v2/past_meetings/100/instances")
+        return reply({ meetings: [{ uuid: "example-once", start_time: "2026-10-10T15:30:00" }] })
+      if (path.endsWith("/participants"))
+        return reply({ participants: [{ id: "alice-example", join_time: "2026-10-10T15:31:00", duration: 60 }] })
+      if (path.endsWith("/transcript")) return missing(3322)
+      if (path.endsWith("/meeting_summary")) return missing(3001)
+      throw new Error(`unscripted request ${path}`)
+    }
+    expect(await run(["meetings", "sync", "--since-time", "2026-10-01", "--json"], deps)).toBe(0)
+    const [meeting] = await deps.store.meetings()
+    expect(meeting?.startedAt).toBe(Date.parse("2026-10-10T05:30:00Z"))
+    expect(meeting?.metadata).toMatchObject({ issues: ["time_without_zone"] })
+    const details = await deps.store.meeting(meeting?.id ?? 0)
+    expect(details?.participants[0]?.joinedAt).toBe(Date.parse("2026-10-10T05:31:00Z"))
+    const warnings = stderr.filter((line) => line.includes("no zone"))
+    expect(warnings).toEqual(["2 Zoom times had no zone; read in Asia/Vladivostok and marked time_without_zone\n"])
+  } finally {
+    if (saved === undefined) delete process.env.TZ
+    else process.env.TZ = saved
+  }
+})
+
 it("preflights every normalized import key before saving and deduplicates identical aliases", async () => {
   const { deps, stdout, stderr } = await setup()
   deps.store = memoryMeetingStore()

@@ -2,6 +2,7 @@ import { CliError } from "@wirecat/cli-base"
 import type { MeetingSource } from "@wirecat/cli-core/meetings"
 import { ZoomApiSource } from "./api.js"
 import { filesZone, type ZoomConfig } from "./config.js"
+import type { ZoneAssumptions } from "./errors.js"
 import { FilesSource, readDownloadedFiles } from "./files.js"
 import type { ProgramDeps } from "./program.js"
 import type { TokenManager } from "./tokens.js"
@@ -12,11 +13,13 @@ export const configuredMeetingSource = ({
   getConfig,
   tokens,
   fetch,
+  zones,
 }: {
   deps: Pick<ProgramDeps, "source" | "readFiles">
   getConfig: () => ZoomConfig
   tokens: () => TokenManager
   fetch: () => typeof globalThis.fetch
+  zones: ZoneAssumptions
 }): { source: MeetingSource; reset: () => void } => {
   let activeSource: Promise<MeetingSource> | undefined
   const getSource = (): Promise<MeetingSource> => {
@@ -27,7 +30,7 @@ export const configuredMeetingSource = ({
         const manager = tokens()
         if (!manager.options.clientId)
           throw new CliError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
-        return new ZoomApiSource(manager, fetch())
+        return new ZoomApiSource(manager, fetch(), {}, zones)
       }
       if (!config.filesFolder) throw new CliError("configuration_error", "set files.folder before pulling from files")
       return new FilesSource(await (deps.readFiles ?? readDownloadedFiles)(config.filesFolder), filesZone(config))

@@ -2,6 +2,7 @@ import { homedir } from "node:os"
 import { dirname, join } from "node:path"
 import { CliError } from "@wirecat/cli-base"
 import { readConfig, type ZoomConfig } from "./config.js"
+import type { ZoneAssumptions } from "./errors.js"
 import type { ProgramDeps } from "./program.js"
 import {
   createRecordingScheduleService,
@@ -21,6 +22,7 @@ export const zoomRecordingSchedule = ({
   withSignal,
   signal,
   remoteOptions,
+  zones,
 }: {
   deps: Pick<
     ProgramDeps,
@@ -30,6 +32,7 @@ export const zoomRecordingSchedule = ({
   withSignal: (fetcher: typeof fetch) => typeof fetch
   signal: () => AbortSignal | undefined
   remoteOptions: RemoteOptions
+  zones: ZoneAssumptions
 }): { service: () => RecordingScheduleService; capture: () => RecordingScheduleCapture } => {
   let recordingSchedule = deps.recordingSchedule
   return {
@@ -65,6 +68,7 @@ export const zoomRecordingSchedule = ({
               }),
               withSignal(deps.fetch),
               remoteOptions,
+              zones,
             )
           },
           now: deps.now,

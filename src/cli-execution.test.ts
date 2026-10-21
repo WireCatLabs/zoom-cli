@@ -244,6 +244,62 @@ describe("login without a terminal", () => {
 })
 
 describe("archive and explicit remote command wiring", () => {
+  it.each([
+    ["Asia/Vladivostok", "2026-10-21T23:30:00Z", "2026-09-22", "2026-10-22"],
+    ["America/Los_Angeles", "2026-10-22T03:00:00Z", "2026-09-21", "2026-10-21"],
+  ])("ends the default recordings list on today in %s, and names that zone", async (zone, now, from, to) => {
+    const { deps, stdout } = await setup()
+    setConfig(deps.configPath, "zoom.clientId", "example-client")
+    const list = vi.fn(async () => [])
+    deps.recordings = { list, show: vi.fn(), download: vi.fn(), catalog }
+    deps.now = () => Date.parse(now)
+    expect(await run(["--json", "recordings", "list", "--timezone", zone], deps)).toBe(0)
+    expect(list).toHaveBeenCalledWith(expect.objectContaining({ from, to }))
+    expect(JSON.parse(stdout.join("")).meta.timezone).toBe(zone)
+  })
+  it("takes today from the computer's zone when no --timezone is given", async () => {
+    const saved = process.env.TZ
+    process.env.TZ = "Asia/Vladivostok"
+    try {
+      const { deps } = await setup()
+      setConfig(deps.configPath, "zoom.clientId", "example-client")
+      const list = vi.fn(async () => [])
+      deps.recordings = { list, show: vi.fn(), download: vi.fn(), catalog }
+      deps.now = () => Date.parse("2026-10-21T23:30:00Z")
+      expect(await run(["--json", "recordings", "list"], deps)).toBe(0)
+      expect(list).toHaveBeenCalledWith(expect.objectContaining({ to: "2026-10-22" }))
+    } finally {
+      if (saved === undefined) delete process.env.TZ
+      else process.env.TZ = saved
+    }
+  })
+  it("says text times are UTC, and only when text shows one", async () => {
+    const { deps, stdout } = await setup()
+    setConfig(deps.configPath, "zoom.clientId", "example-client")
+    const list = vi.fn(async () => [meeting])
+    deps.recordings = { list, show: vi.fn(), download: vi.fn(), catalog }
+    deps.outputIsTTY = true
+    expect(await run(["recordings", "list", "--timezone", "UTC"], deps)).toBe(0)
+    expect(stdout.join("")).toContain("2026-10-10T15:30:00Z")
+    expect(stdout.join("")).toMatch(/times in UTC\n$/)
+    stdout.length = 0
+    list.mockResolvedValueOnce([])
+    expect(await run(["recordings", "list", "--timezone", "UTC"], deps)).toBe(0)
+    expect(stdout.join("")).not.toContain("times in UTC")
+    stdout.length = 0
+    deps.outputIsTTY = false
+    expect(await run(["recordings", "list", "--timezone", "UTC"], deps)).toBe(0)
+    expect(stdout.join("")).not.toContain("times in UTC")
+  })
+  it("refuses an unknown --timezone before listing", async () => {
+    const { deps, stderr } = await setup()
+    setConfig(deps.configPath, "zoom.clientId", "example-client")
+    const list = vi.fn(async () => [])
+    deps.recordings = { list, show: vi.fn(), download: vi.fn(), catalog }
+    expect(await run(["--json", "recordings", "list", "--timezone", "Mars/Example"], deps)).toBe(2)
+    expect(value(stderr).error.code).toBe("validation_error")
+    expect(list).not.toHaveBeenCalled()
+  })
   it("lists/shows/downloads recording metadata with explicit options and no database", async () => {
     const { deps, stdout } = await setup()
     setConfig(deps.configPath, "zoom.clientId", "example-client")
@@ -255,7 +311,7 @@ describe("archive and explicit remote command wiring", () => {
     deps.connectStore = async () => {
       throw new Error("unexpected database")
     }
-    expect(await run(["--json", "recordings", "list"], deps)).toBe(0)
+    expect(await run(["--json", "recordings", "list", "--timezone", "Europe/Madrid"], deps)).toBe(0)
     expect(list).toHaveBeenCalledWith(
       expect.objectContaining({ from: "2026-09-10", to: "2026-10-10", signal: expect.any(AbortSignal) }),
     )

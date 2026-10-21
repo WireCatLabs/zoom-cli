@@ -1,5 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
+import { timezoneOf } from "@wirecat/cli-base/query"
 import type { Effects } from "@wirecat/cli-base/standards"
 import {
   type Body,
@@ -104,6 +105,15 @@ const mutation = (options: MutationOptions & { yes?: boolean }, deps: ArchiveCom
   if (options.yes && !options.dryRun) deps.api()
   return { apply: options.yes, dryRun: options.dryRun, signal: deps.signal(), occurrenceId: options.occurrenceId }
 }
+const localZone = (given?: string): string => {
+  try {
+    return timezoneOf(given)
+  } catch {
+    throw new CliError("validation_error", "--timezone must be an IANA timezone such as Europe/Madrid")
+  }
+}
+const localDay = (now: number, zone: string): string =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit" }).format(now)
 export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps): void => {
   const recordings = annotate(program.command("recordings"), { effects: NO_EFFECTS }).description(
     "cloud recording assets and verified local archives",
@@ -113,15 +123,18 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
       .command("list")
       .description("list cloud recording occurrences (last 30 days by default)")
       .option("--since-time <time>", "first day, YYYY-MM-DD")
-      .option("--until-time <time>", "last day, YYYY-MM-DD")
-      .action(async (options: { sinceTime?: string; untilTime?: string }) => {
+      .option("--until-time <time>", "last day, YYYY-MM-DD (default today in --timezone)")
+      .option("--timezone <zone>", "IANA timezone of today (default the computer's)")
+      .action(async (options: { sinceTime?: string; untilTime?: string; timezone?: string }) => {
         deps.api()
-        const to = options.untilTime ?? new Date(deps.now()).toISOString().slice(0, 10)
+        const zone = localZone(options.timezone)
+        const to = options.untilTime ?? localDay(deps.now(), zone)
         const end = Date.parse(`${to}T00:00:00Z`)
         if (!/^\d{4}-\d{2}-\d{2}$/.test(to) || !Number.isFinite(end) || new Date(end).toISOString().slice(0, 10) !== to)
           throw new CliError("validation_error", "--until-time must be a real YYYY-MM-DD date")
         const from = options.sinceTime ?? new Date(end - 30 * 86400000).toISOString().slice(0, 10)
-        deps.output(wholeList("recordings list", await deps.recordings().list({ from, to, signal: deps.signal() })))
+        const list = wholeList("recordings list", await deps.recordings().list({ from, to, signal: deps.signal() }))
+        deps.output(options.untilTime === undefined ? { ...list, meta: { timezone: zone } } : list)
       }),
     "zm recordings list --since-time 2026-10-01 --until-time 2026-10-10 --json",
     REMOTE_READ,
