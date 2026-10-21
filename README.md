@@ -298,7 +298,8 @@ More: [managing Zoom meetings][docs/remote-meetings.md] · [Zoom on wirecat.dev]
 go to stderr. `--json=id,title` keeps only those fields, `--offline` refuses the network, and output is
 capped at 4 MiB unless `--max-output-bytes` says otherwise. Default deadlines are 30 seconds for
 reads, five minutes for login and one hour for downloads, sync and verification; `--timeout 5m`
-changes them. Watching and MCP serving run until stopped.
+changes them. Watching and MCP serving run until stopped. Times are UTC in every format; text
+output that shows one ends with `times in UTC`.
 
 More: [usage][docs/usage.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
 

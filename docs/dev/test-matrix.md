@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**268 ✅ · 2 ⛔ · 0 ❌** — 59 commands, 211 options.
+**269 ✅ · 2 ⛔ · 0 ❌** — 59 commands, 212 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -150,6 +150,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `recordings list` |  | ✅ |  |
 | `recordings list` | `--since-time` | ✅ |  |
 | `recordings list` | `--until-time` | ✅ |  |
+| `recordings list` | `--timezone` | ✅ |  |
 | `recordings sync` |  | ✅ |  |
 | `recordings sync` | `--since-time` | ✅ |  |
 | `recordings sync` | `--until-time` | ✅ |  |

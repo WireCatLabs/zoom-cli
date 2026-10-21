@@ -1,23 +1,14 @@
 import { CliError } from "@wirecat/cli-base"
 import type { MeetingOccurrence, MeetingOccurrenceSchedule } from "@wirecat/cli-core/meetings"
-import { object } from "./errors.js"
+import { object, zoomInstant } from "./errors.js"
 
 function invalid(field: string): never {
   throw new CliError("invalid_response", `Zoom meeting ${field} is invalid`)
 }
 export const zoomScheduledInstant = (value: unknown): number | null => {
   if (value === undefined || value === null) return null
-  if (
-    typeof value !== "string" ||
-    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(value)
-  )
-    invalid("start_time")
-  const local = value.replace(/(?:Z|[+-]\d{2}:\d{2})$/, "Z")
-  const date = new Date(local)
-  if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 19) !== local.slice(0, 19)) invalid("start_time")
-  const stamp = Date.parse(value)
-  if (!Number.isSafeInteger(stamp)) invalid("start_time")
-  return stamp
+  if (typeof value !== "string") invalid("start_time")
+  return zoomInstant(value, "Zoom meeting start_time is invalid")
 }
 const end = (start: number | null, value: unknown): number | null => {
   if (value === undefined || value === null) return null

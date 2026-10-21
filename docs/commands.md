@@ -696,7 +696,8 @@ zm recordings list [options]
 | Option | What it does |
 |---|---|
 | `--since-time <time>` | first day, YYYY-MM-DD. |
-| `--until-time <time>` | last day, YYYY-MM-DD. |
+| `--until-time <time>` | last day, YYYY-MM-DD (default today in --timezone). |
+| `--timezone <zone>` | IANA timezone of today (default the computer's). |
 
 **Returns:** list cloud recording occurrences (last 30 days by default)
 
@@ -1232,7 +1233,7 @@ zm search meetings <query> [options]
 | `--tag <name>` | meetings with this tag, by name or alias. |
 | `--topic <name>` | meetings with this topic, by name or alias. |
 | `--since-time <time>` | meetings starting at or after this ISO 8601 date or time. |
-| `--until-time <time>` | meetings starting at or before this ISO 8601 date or time. |
+| `--until-time <time>` | meetings starting at or before this ISO 8601 date or time; a date alone covers that whole local day. |
 | `--limit <n>` | how many hits, 1 through 1000 (default 100). |
 | `--cursor <cursor>` | continue from the previous page's page.next_cursor, with the same query and filters. |
 | `--max-read-bytes <bytes>` | most stored bytes to read, 1 through 67108864 (default 4194304). |

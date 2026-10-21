@@ -75,6 +75,21 @@ describe("cloud recordings", () => {
     ).show("example")
     expect(unsupported.assets[0]).toMatchObject({ id: null, status: "unsupported", format: "VTT", available: false })
   })
+  it.each([
+    { start_time: "2026-10-10T15:00:00" },
+    { recording_files: [file("example-video", { recording_start: "2026-10-10T15:00:00" })] },
+  ])("refuses a Zoom recording time that does not name its zone: %o", async (overrides) => {
+    await expect(source(scripted(meeting([file()], overrides))).show("example")).rejects.toMatchObject({
+      code: "invalid_response",
+      message: "Zoom returned an invalid timestamp",
+    })
+  })
+  it("keeps an offset Zoom time as the same UTC instant", async () => {
+    const detail = await source(scripted(meeting([file()], { start_time: "2026-10-10T17:00:00+02:00" }))).show(
+      "example",
+    )
+    expect(detail.startedAt).toBe("2026-10-10T15:00:00.000Z")
+  })
   it("validates date windows, lists, ids, timestamps, file duplicates and conflicting pages", async () => {
     for (const [from, to] of [
       ["bad", "2026-10-01"],

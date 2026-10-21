@@ -6,6 +6,9 @@ import type { Command } from "commander"
 
 export type AnswerFormat = "json" | "jsonl" | "pretty"
 
+// Text shows the stored UTC times as they are; a person reads an unlabelled time as local (WC-TIME-4).
+const UTC_TIME = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?Z/
+
 const record = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value)
 const only = (value: Record<string, unknown>, keys: string[]) => Object.keys(value).every((key) => keys.includes(key))
@@ -57,7 +60,9 @@ export const renderBody = (
   } finally {
     process.exitCode = exitCode
   }
-  return { text: chunks.join(""), exitCode: exitCodeOfAnswer(meta, metaOf(command).partial === true) }
+  const text = chunks.join("")
+  const label = options.format === "pretty" && UTC_TIME.test(text) ? "times in UTC\n" : ""
+  return { text: text + label, exitCode: exitCodeOfAnswer(meta, metaOf(command).partial === true) }
 }
 
 /** Every row the command read, in one page. */

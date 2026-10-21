@@ -407,6 +407,36 @@ describe("API source", () => {
     expect(encodeUuid("/example//uuid")).toBe(encodeURIComponent(encodeURIComponent("/example//uuid")))
     expect(encodeUuid("example+uuid")).toBe("example%2Buuid")
   })
+  it("stores the same API instants whatever the process zone", async () => {
+    const saved = process.env.TZ
+    const read = async (zone: string) => {
+      process.env.TZ = zone
+      const source = new ZoomApiSource(authorize(tokenManager()), apiFixture())
+      const meetings = await source.meetings("2026-10-01T00:00:00Z")
+      const participants = await source.participants("/example//occurrence")
+      return { starts: meetings.map((row) => row.occurrence.startedAt), joins: participants[0]?.sessions }
+    }
+    try {
+      const east = await read("Asia/Vladivostok")
+      expect(await read("America/Los_Angeles")).toEqual(east)
+      expect(east.starts[0]).toBe("2026-10-10T15:30:00.000Z")
+    } finally {
+      if (saved === undefined) delete process.env.TZ
+      else process.env.TZ = saved
+    }
+  })
+  it.each(["2026-10-10T15:30:00", "2026-10-10", "2026-10-10 15:30:00Z"])(
+    "refuses a Zoom join time that does not name its zone: %s",
+    async (join_time) => {
+      const source = new ZoomApiSource(authorize(tokenManager()), async () =>
+        response({ participants: [{ id: "alice-example", join_time, duration: 60 }] }),
+      )
+      await expect(source.participants("example")).rejects.toMatchObject({
+        code: "invalid_response",
+        message: "Zoom returned an invalid timestamp",
+      })
+    },
+  )
   it("handles optional identities, independent nameless guests and missing timestamps", async () => {
     const source = new ZoomApiSource(authorize(tokenManager()), async () =>
       response({

@@ -8,7 +8,7 @@ import {
   type SourceParticipant,
   type SummaryContent,
 } from "@wirecat/cli-core/meetings"
-import { number, object, string } from "./errors.js"
+import { number, object, string, zoomInstant } from "./errors.js"
 import { type RemoteOptions, ZoomRemote } from "./remote-http.js"
 import type { TokenManager } from "./tokens.js"
 
@@ -34,9 +34,7 @@ export const encodeUuid = (uuid: string): string =>
 const time = (value: unknown): number | null => {
   const text = string(value)
   if (text === null) return null
-  const result = Date.parse(text)
-  if (!Number.isFinite(result)) throw new CliError("invalid_response", "Zoom returned an invalid timestamp")
-  return result
+  return zoomInstant(text, "Zoom returned an invalid timestamp")
 }
 const requiredString = (value: unknown): string => {
   const text = string(value)

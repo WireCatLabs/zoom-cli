@@ -23,6 +23,11 @@
 - **A transcript file name's time is read in this computer's zone unless `files.timezone` is set.** It was read in
   UTC, so a `2026-10-21_1000_…` file from Madrid was stored two hours late. A config that names a zone keeps it;
   saving another setting no longer writes `UTC` into `files_timezone`. Storage stays UTC.
+- F7PLACEHOLDER
+- **`zm recordings list` ends "today" on the local day, not the UTC day.** Without `--until-time` the list ended on
+  the UTC date, so in Madrid between midnight and 02:00 it stopped at yesterday. It now takes today in the computer's
+  zone, or in the new `--timezone`, and `meta.timezone` names it.
+- **Text output that shows a time ends with `times in UTC`.** JSON, JSONL and MCP are unchanged: UTC, ending in `Z`.
 
 ### Fixed
 

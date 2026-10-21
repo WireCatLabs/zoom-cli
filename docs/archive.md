@@ -126,7 +126,8 @@ Replace `<zoom-occurrence-uuid>` with an occurrence UUID returned by the recordi
 local meeting ID or the numeric Zoom meeting number. The download receipt identifies saved and
 unavailable assets. Verification checks the local files against their manifest; it does not prove
 Zoom had every expected recording. If there are no recordings, check the date range, host account,
-cloud recording availability and scopes before widening the backup.
+cloud recording availability and scopes before widening the backup. Without `--until-time` the
+list ends today in the computer's zone, or in `--timezone`, and `meta.timezone` names that zone.
 
 For recording history across months, use:
 

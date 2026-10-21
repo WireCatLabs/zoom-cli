@@ -5,7 +5,7 @@ import type {
   RecordingPage,
 } from "@wirecat/cli-core/meetings"
 import { encodeUuid } from "./api.js"
-import { object, string } from "./errors.js"
+import { object, string, zoomInstant } from "./errors.js"
 import {
   type ArchiveReport,
   archiveRecording,
@@ -36,8 +36,7 @@ export const required = (value: unknown): string => {
 const timestamp = (value: unknown): string | null => {
   if (value === undefined || value === null || value === "") return null
   const text = required(value)
-  if (!Number.isFinite(Date.parse(text))) throw new CliError("invalid_response", "Zoom returned an invalid timestamp")
-  return new Date(text).toISOString()
+  return new Date(zoomInstant(text, "Zoom returned an invalid timestamp")).toISOString()
 }
 const meeting = (value: unknown): RecordingMeeting => {
   const row = object(value)
