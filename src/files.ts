@@ -76,8 +76,8 @@ const FILE_NAME = /^(\d{4})-(\d{2})-(\d{2})_(\d{2})(\d{2})_(.+)\.(vtt|txt)$/i
 const isText = (name: string): boolean => /\.txt$/i.test(name)
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-/** `Mar 4, 2026 10:30 AM`, as the Zoom web portal shows a start: the wall clock of the zone the files were made in. */
-const headerStart = (date: string | null, timezone: string): number | null => {
+/** `Mar 4, 2026 10:30 AM`, as the Zoom web portal shows a recording: the wall clock of the zone the files were made in. */
+const headerTime = (date: string | null, timezone: string): number | null => {
   const match = /^([A-Z][a-z]{2}) (\d{1,2}), (\d{4}) (\d{1,2}):(\d{2}) ([AP]M)$/.exec(date ?? "")
   const month = MONTHS.indexOf(match?.[1] ?? "") + 1
   if (!match || month === 0) return null
@@ -108,13 +108,22 @@ export const fileMeeting = (name: string, timezone = "UTC"): SourceMeeting => {
   }
 }
 /**
- * A `.txt` header names the meeting, its start, its Zoom meeting id and who spoke. The id is the series key the API
- * uses, so the file's copy and the API's copy of one occurrence become one record. A speaker is a participant of
- * this meeting only, keyed by name: a name alone never stands for the same person in another meeting.
+ * A `.txt` header names the meeting, when its recording was made, its Zoom meeting id and who spoke. zoom-searcher
+ * took that time, and the one in the file name, from the portal's "created" column: the end of the recording, not
+ * the start — on seven meetings the API also holds, it was the API's start plus the transcript's length, to the
+ * minute. So the start is that time less the last line's offset. The id is the series key the API uses, so the
+ * file's copy and the API's copy of one occurrence become one record. A speaker is a participant of this meeting
+ * only, keyed by name: a name alone never stands for the same person in another meeting.
  */
-const textHeader = (file: DownloadedFile, accountId: number, occurrenceId: string, timezone: string) => {
+const textHeader = (
+  file: DownloadedFile,
+  accountId: number,
+  occurrenceId: string,
+  timezone: string,
+  nameTime: number,
+) => {
   if (!isText(file.name)) return undefined
-  const { header } = parseTranscriptText(file.content)
+  const { header, lines } = parseTranscriptText(file.content)
   const participants = header.speakers.map(
     (name, position): ParticipantInput => ({
       identity: {
@@ -136,9 +145,13 @@ const textHeader = (file: DownloadedFile, accountId: number, occurrenceId: strin
     }),
   )
   const meetingId = header.meetingId?.replace(/\s/g, "")
+  const endedAt = headerTime(header.date, timezone) ?? nameTime
+  const durationMs = lines.at(-1)?.startMs ?? 0
   return {
     title: header.title,
-    startedAt: headerStart(header.date, timezone),
+    startedAt: endedAt - durationMs,
+    endedAt,
+    durationMs,
     seriesId: meetingId && /^\d+$/.test(meetingId) ? meetingId : null,
     participants,
   }
@@ -146,7 +159,7 @@ const textHeader = (file: DownloadedFile, accountId: number, occurrenceId: strin
 
 export const importFile = (file: DownloadedFile, accountId: number, timezone = "UTC"): ImportFile => {
   const source = fileMeeting(file.name, timezone)
-  const header = textHeader(file, accountId, source.occurrence.id, timezone)
+  const header = textHeader(file, accountId, source.occurrence.id, timezone, Date.parse(source.occurrence.startedAt))
   const title = header?.title ?? source.occurrence.title
   return {
     content: file.content,
@@ -160,8 +173,8 @@ export const importFile = (file: DownloadedFile, accountId: number, timezone = "
       location: null,
       joinUrl: null,
       startedAt: header?.startedAt ?? Date.parse(source.occurrence.startedAt),
-      endedAt: null,
-      durationMs: null,
+      endedAt: header?.endedAt ?? null,
+      durationMs: header?.durationMs ?? null,
       timezone,
       hostIdentityId: null,
       participantsCount: null,

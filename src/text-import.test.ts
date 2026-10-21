@@ -15,11 +15,13 @@ Zoom ID: 840 0000 0000
 `
 const name = "2026-10-21_1030_planerka.txt"
 
-it("keeps a .txt header's title, start, Zoom meeting id and speakers", () => {
+it("keeps a .txt header's title, time, Zoom meeting id and speakers, reading the time as the recording's end", () => {
   const file = importFile({ name, content: text }, 7, "Europe/Madrid")
   expect(file.format).toBe("text")
   expect(file.meeting.title).toBe("Планёрка по релизу")
-  expect(file.meeting.startedAt).toBe(Date.parse("2026-10-21T08:30:00Z"))
+  expect(file.meeting.endedAt).toBe(Date.parse("2026-10-21T08:30:00Z"))
+  expect(file.meeting.startedAt).toBe(Date.parse("2026-10-21T08:26:20Z"))
+  expect(file.meeting.durationMs).toBe(220000)
   expect(file.meeting.timezone).toBe("Europe/Madrid")
   expect(file.meeting.series?.externalId).toBe("84000000000")
   expect(file.participants?.map((p) => [p.displayName, p.identity.associatePerson])).toEqual([
@@ -43,7 +45,7 @@ it("gives a .txt and a .vtt of one meeting one key, and keeps the .txt", () => {
 it("falls back to the file name when the header has no readable date or id", () => {
   const bare = text.replace(/^Дата: .*$/m, "Дата: —").replace(/^Zoom ID: .*$/m, "Zoom ID: —")
   const file = importFile({ name, content: bare }, 7, "UTC")
-  expect(file.meeting.startedAt).toBe(Date.parse("2026-10-21T10:30:00Z"))
+  expect(file.meeting.startedAt).toBe(Date.parse("2026-10-21T10:30:00Z") - 220000)
   expect(file.meeting.series?.externalId).toBe("file:planerka")
 })
 
