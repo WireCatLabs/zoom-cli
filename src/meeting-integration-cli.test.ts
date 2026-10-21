@@ -217,7 +217,7 @@ it("keeps bounded search cursors and coverage in JSONL and forwards typed date/b
         "--series-id",
         "6",
         "--since-time",
-        "2026-10-01",
+        "2026-10-01T00:00:00Z",
         "--until-time",
         "2026-10-11T12:00:00+02:00",
         "--limit",

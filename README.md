@@ -198,15 +198,15 @@ More: [profiles][docs/sessions.md#select-a-local-profile] ·
 
 ```sh
 zm meetings sync --lookback-days 7                       # hosted meetings, revisiting late transcripts
-zm meetings import ./downloaded-transcripts              # .vtt files from your Zoom portal
+zm meetings import ./downloaded-transcripts              # .vtt or zoom-searcher .txt files
 zm watch api --lookback-days 7 --jsonl                   # keep pulling in the foreground
 ```
 
 The cursor alone does not revisit transcripts that appear late; use `--lookback-days` or an older
 `--since-time`. A failed occurrence leaves the cursor unchanged for the next pull. Imported files follow
-the exporter's `YYYY-MM-DD_HHMM_topic-slug.vtt` names; set `files.timezone` to the zone they were
-written in when it is not this computer's zone (the default). Participants of imported files stay unknown, and speaker names are
-never turned into identities.
+the exporter's `YYYY-MM-DD_HHMM_topic-slug.vtt` names, or `.txt` with a zoom-searcher header; their time is read in
+this computer's zone unless `files.timezone` names another, and the import says which. A `.txt`'s speakers become
+participants of that meeting only; speaker names never become identities across meetings.
 
 More: [the local archive][docs/archive.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
 

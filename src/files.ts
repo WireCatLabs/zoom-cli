@@ -2,8 +2,16 @@ import { createHash } from "node:crypto"
 import { readdir, readFile, stat } from "node:fs/promises"
 import { basename, join } from "node:path"
 import { CliError } from "@wirecat/cli-base"
-import { type ImportFile, type MeetingSource, parseVtt, type SourceMeeting } from "@wirecat/cli-core/meetings"
+import {
+  type ImportFile,
+  type MeetingSource,
+  type ParticipantInput,
+  parseTranscriptText,
+  parseVtt,
+  type SourceMeeting,
+} from "@wirecat/cli-core/meetings"
 import { TRANSCRIPT_MAX_BYTES } from "./api.js"
+import { filesZone, type ZoomConfig } from "./config.js"
 
 export interface DownloadedFile {
   name: string
@@ -64,9 +72,29 @@ const localTimestamp = (
     )
   return [...possibilities][0] ?? target
 }
+const FILE_NAME = /^(\d{4})-(\d{2})-(\d{2})_(\d{2})(\d{2})_(.+)\.(vtt|txt)$/i
+const isText = (name: string): boolean => /\.txt$/i.test(name)
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+/** `Mar 4, 2026 10:30 AM`, as the Zoom web portal shows a start: the wall clock of the zone the files were made in. */
+const headerStart = (date: string | null, timezone: string): number | null => {
+  const match = /^([A-Z][a-z]{2}) (\d{1,2}), (\d{4}) (\d{1,2}):(\d{2}) ([AP]M)$/.exec(date ?? "")
+  const month = MONTHS.indexOf(match?.[1] ?? "") + 1
+  if (!match || month === 0) return null
+  const [, , day, year, hour, minute, half] = match
+  return localTimestamp(
+    Number(year),
+    month,
+    Number(day),
+    (Number(hour) % 12) + (half === "PM" ? 12 : 0),
+    Number(minute),
+    timezone,
+  )
+}
+
 export const fileMeeting = (name: string, timezone = "UTC"): SourceMeeting => {
-  const match = /^(\d{4})-(\d{2})-(\d{2})_(\d{2})(\d{2})_(.+)\.vtt$/i.exec(basename(name))
-  if (!match) throw new CliError("validation_error", "expected a transcript named YYYY-MM-DD_HHMM_topic.vtt")
+  const match = FILE_NAME.exec(basename(name))
+  if (!match) throw new CliError("validation_error", "expected a transcript named YYYY-MM-DD_HHMM_topic.vtt or .txt")
   const [, year, month, day, hour, minute, topic = ""] = match
   const startedAt = localTimestamp(Number(year), Number(month), Number(day), Number(hour), Number(minute), timezone)
   const slug = topic.normalize("NFC")
@@ -79,19 +107,59 @@ export const fileMeeting = (name: string, timezone = "UTC"): SourceMeeting => {
     timezone,
   }
 }
+/**
+ * A `.txt` header names the meeting, its start, its Zoom meeting id and who spoke. The id is the series key the API
+ * uses, so the file's copy and the API's copy of one occurrence become one record. A speaker is a participant of
+ * this meeting only, keyed by name: a name alone never stands for the same person in another meeting.
+ */
+const textHeader = (file: DownloadedFile, accountId: number, occurrenceId: string, timezone: string) => {
+  if (!isText(file.name)) return undefined
+  const { header } = parseTranscriptText(file.content)
+  const participants = header.speakers.map(
+    (name, position): ParticipantInput => ({
+      identity: {
+        provider: "zoom",
+        externalId: `name:${name}@${accountId}/${occurrenceId}:${position}`,
+        name,
+        metadata: null,
+        associatePerson: false,
+      },
+      displayName: name,
+      email: null,
+      role: null,
+      joinedAt: null,
+      leftAt: null,
+      durationMs: null,
+      sessions: null,
+      externalId: null,
+      metadata: null,
+    }),
+  )
+  const meetingId = header.meetingId?.replace(/\s/g, "")
+  return {
+    title: header.title,
+    startedAt: headerStart(header.date, timezone),
+    seriesId: meetingId && /^\d+$/.test(meetingId) ? meetingId : null,
+    participants,
+  }
+}
+
 export const importFile = (file: DownloadedFile, accountId: number, timezone = "UTC"): ImportFile => {
   const source = fileMeeting(file.name, timezone)
+  const header = textHeader(file, accountId, source.occurrence.id, timezone)
+  const title = header?.title ?? source.occurrence.title
   return {
     content: file.content,
     source: "file",
+    ...(header ? { format: "text" as const, participants: header.participants } : {}),
     meeting: {
       accountId,
       externalId: source.occurrence.id,
-      title: source.occurrence.title,
+      title,
       description: null,
       location: null,
       joinUrl: null,
-      startedAt: Date.parse(source.occurrence.startedAt),
+      startedAt: header?.startedAt ?? Date.parse(source.occurrence.startedAt),
       endedAt: null,
       durationMs: null,
       timezone,
@@ -100,8 +168,8 @@ export const importFile = (file: DownloadedFile, accountId: number, timezone = "
       metadata: null,
       deletedAt: null,
       series: {
-        externalId: source.occurrence.seriesId,
-        title: source.series?.title ?? null,
+        externalId: header?.seriesId ?? source.occurrence.seriesId,
+        title: header?.title ?? source.series?.title ?? null,
         description: null,
         kind: null,
         recurrence: null,
@@ -121,6 +189,11 @@ const indexDownloadedFiles = (
   for (const file of [...files].sort((a, b) => a.name.localeCompare(b.name))) {
     const meeting = fileMeeting(file.name, timezone)
     const existing = result.get(meeting.occurrence.id)
+    // A .txt and a .vtt of one meeting are two copies; the .txt also carries the header.
+    if (existing && isText(existing.file.name) !== isText(file.name)) {
+      if (isText(file.name)) result.set(meeting.occurrence.id, { meeting, file })
+      continue
+    }
     if (existing && existing.file.content !== file.content)
       throw new CliError("validation_error", "conflicting transcript files have the same occurrence key")
     if (!existing) result.set(meeting.occurrence.id, { meeting, file })
@@ -141,12 +214,15 @@ export const readDownloadedFiles = async (folder: string): Promise<DownloadedFil
     throw error
   })
   const entries = listing
-    .filter((entry) => entry.isFile() && /\.vtt$/i.test(entry.name))
+    // Any .vtt is a transcript and a misnamed one is an error; a .txt is one only when named like one.
+    .filter(
+      (entry) => entry.isFile() && (/\.vtt$/i.test(entry.name) || (isText(entry.name) && FILE_NAME.test(entry.name))),
+    )
     .sort((a, b) => a.name.localeCompare(b.name))
   if (entries.length > FOLDER_MAX_FILES)
     throw new CliError(
       "validation_error",
-      `the folder holds ${entries.length} .vtt files and zm reads at most ${FOLDER_MAX_FILES} — move some into another folder`,
+      `the folder holds ${entries.length} transcript files and zm reads at most ${FOLDER_MAX_FILES} — move some into another folder`,
     )
   const files: DownloadedFile[] = []
   for (const entry of entries) {
@@ -183,7 +259,8 @@ export class FilesSource implements MeetingSource {
   }
   async transcript(id: string) {
     const file = this.index().get(id)?.file
-    return file ? parseVtt(file.content) : null
+    if (!file) return null
+    return isText(file.name) ? parseTranscriptText(file.content).lines : parseVtt(file.content)
   }
   async participants() {
     return null
@@ -197,4 +274,19 @@ export class FilesSource implements MeetingSource {
   async files() {
     return null
   }
+}
+
+/** What `meetings import --help` adds: the names zm reads and the zone it reads their time in. */
+export const fileNamesHelp = (config: () => Pick<ZoomConfig, "filesTimezone">): string => {
+  let zone: string
+  try {
+    zone = config().filesTimezone
+      ? `files.timezone, now ${filesZone(config())}`
+      : `this computer's zone, now ${filesZone(config())}`
+  } catch {
+    zone = "files.timezone, else this computer's zone"
+  }
+  return `Files: YYYY-MM-DD_HHMM_topic.vtt, and YYYY-MM-DD_HHMM_topic.txt with a header (Встреча:, Дата:, Zoom ID:, Говорят:).
+The time in a file name and in Дата: is read in ${zone}; set another with
+zm config set files.timezone <IANA zone>. Times are stored in UTC, and the import names the zone it used.`
 }

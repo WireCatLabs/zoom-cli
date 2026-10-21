@@ -509,7 +509,7 @@ describe("downloaded files", () => {
     expect(d?.transcripts.length).toBe(1)
     expect(d?.transcripts[0]?.rows[0]?.speakerParticipantId).toBeNull()
   })
-  it("rejects broken names, invalid dates and DST ambiguity, and reads only ordinary VTT files", async () => {
+  it("rejects broken names, invalid dates and DST ambiguity, and skips files that are not transcripts", async () => {
     for (const name of ["bad.vtt", "2026-02-30_1530_example.vtt", "2026-10-10_2460_example.vtt"])
       expect(() => fileMeeting(name)).toThrow()
     expect(() => fileMeeting("2026-10-25_0230_example.vtt", "Europe/Madrid")).toThrow(/ambiguous/)

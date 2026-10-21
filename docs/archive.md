@@ -65,10 +65,15 @@ zm meetings import ./downloaded-transcripts
 zm meetings list --json
 ```
 
-The files source reads ordinary `.vtt` files directly inside a folder, without recursion.
-Names use `YYYY-MM-DD_HHMM_topic-slug.vtt`. Occurrence IDs derive from timestamp and normalized
-topic; these files carry no Zoom occurrence UUID. Participants remain unknown: speaker names are
-preserved as text, without guessing a person's identity. Check the imported date, title and transcript
+The files source reads `.vtt` and `.txt` files directly inside a folder, without recursion.
+Names use `YYYY-MM-DD_HHMM_topic-slug.vtt` or `.txt`. A `.txt` is the form zoom-searcher wrote: a header
+(`Встреча:` title, `Дата:` start, `Zoom ID:`, `Говорят:` speakers), then `[hh:mm:ss] Speaker: text` lines. Its
+title and start replace the ones in the file name, its Zoom meeting ID becomes the series key, and its speakers
+become participants of that meeting only, keyed by name — never one person across meetings. A `.txt` and a `.vtt`
+with one name are one meeting, and the `.txt` is read. Occurrence IDs derive from timestamp and normalized
+topic; these files carry no Zoom occurrence UUID. A `.vtt`'s participants remain unknown: speaker names are
+preserved as text, without guessing a person's identity. `zm meetings import` names the zone it read the file
+times in (`timezone`), and `zm meetings import --help` shows it before you run it. Check the imported date, title and transcript
 before attaching project or person records.
 
 A file name's time is read in this computer's zone. Set `files.timezone` to the IANA zone the filenames were

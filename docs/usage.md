@@ -246,7 +246,7 @@ does not import that transcript into the meeting database until you request arch
 | `complete -- <words...>` | answer shell completion requests |
 | `doctor` | inspect local runtime and public config without login or database access |
 | `session status` | inspect saved OAuth state separately from local data profiles |
-| `meetings import <folder>` | import downloaded transcripts into the selected local profile |
+| `meetings import <folder>` | import `.vtt` or zoom-searcher `.txt` transcripts into the selected local profile; names the zone file times were read in |
 | `meetings sync [--since-time <time>]` | fetch occurrences from the configured source |
 | `meetings list`, `meetings show <meeting>` | read stored meetings |
 | `meetings transcript <meeting>` | read current transcripts |

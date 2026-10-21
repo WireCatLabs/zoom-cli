@@ -2,8 +2,24 @@
 
 ## Unreleased
 
+### Added
+
+- **`zm meetings import` reads zoom-searcher's `.txt` transcripts.** `YYYY-MM-DD_HHMM_topic.txt` files with a header
+  are imported: the header's title and start replace the file name's, its Zoom meeting ID becomes the series key
+  (so the API's copy of the same meeting can join it once cli-core merges them), and its speakers become
+  participants of that meeting only. A `.txt` and a `.vtt` with one name are one meeting; the `.txt` is read. A
+  `.txt` not named like a transcript is skipped. The import result names the zone file times were read in
+  (`timezone`), and `zm meetings import --help` shows the file names and that zone.
+- **Meeting search widens garbled words and reads the query language** (cli-core 0.380.0): «риелтор» also finds
+  «реелтора»; `OR`, `(groups)`, `-word`, `"phrases"`, `"a b"~N`, `exact:` and `from:"Name"`. See
+  [search](docs/search.md).
+
 ### Changed — may break callers
 
+- **A search query is now syntax, and a date alone is a local day** (cli-core 0.370.0 → 0.380.0, cli-base 0.49.0).
+  `:`, `(`, `"`, `-` and `AND`/`OR`/`NOT` in `zm search meetings` mean query syntax; a query of punctuation alone
+  is an error. `--since-time 2026-10-01` starts at local midnight, not UTC midnight; write a time with `Z` for UTC.
+  Search cursors from earlier versions are refused; search again.
 - **A transcript file name's time is read in this computer's zone unless `files.timezone` is set.** It was read in
   UTC, so a `2026-10-21_1000_…` file from Madrid was stored two hours late. A config that names a zone keeps it;
   saving another setting no longer writes `UTC` into `files_timezone`. Storage stays UTC.
