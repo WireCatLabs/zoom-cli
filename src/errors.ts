@@ -17,7 +17,7 @@ export const number = (value: unknown): number | null =>
 /** Epoch ms of a Zoom date-time, which must name its zone: a time without one would be read in the process zone. */
 export const zoomInstant = (text: string, message: string): number => {
   const invalid = () => new CliError("invalid_response", message)
-  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(text)) throw invalid()
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(text)) throw invalid()
   const local = text.replace(/(?:Z|[+-]\d{2}:\d{2})$/, "Z")
   const date = new Date(local)
   if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 19) !== local.slice(0, 19)) throw invalid()

@@ -84,11 +84,15 @@ describe("cloud recordings", () => {
       message: "Zoom returned an invalid timestamp",
     })
   })
-  it("keeps an offset Zoom time as the same UTC instant", async () => {
+  it("keeps an offset or finely timed Zoom time as the same UTC instant", async () => {
     const detail = await source(scripted(meeting([file()], { start_time: "2026-10-10T17:00:00+02:00" }))).show(
       "example",
     )
     expect(detail.startedAt).toBe("2026-10-10T15:00:00.000Z")
+    const fine = await source(scripted(meeting([file()], { start_time: "2026-10-10T15:00:00.661234Z" }))).show(
+      "example",
+    )
+    expect(fine.startedAt).toBe("2026-10-10T15:00:00.661Z")
   })
   it("validates date windows, lists, ids, timestamps, file duplicates and conflicting pages", async () => {
     for (const [from, to] of [
