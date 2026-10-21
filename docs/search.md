@@ -48,6 +48,18 @@ zm search recordings ./zoom-archive "example plan" --limit 100 --offline --json
 Its hits are the ones `search all` answers with: `ref` (`recording:<file id>/<cue position>`), `title`,
 `timestamp`, `excerpt`, `sender_name` and `offset_ms`; `account` is the archive folder.
 
+## Why zm does not search on Zoom's side
+
+Zoom's API has no way to search transcript text. The [Meetings API reference](https://developers.zoom.us/docs/api/meetings/)
+only hands transcripts out as files: `GET /meetings/{meetingId}/transcript`, and recording files with
+`file_type` `TRANSCRIPT` (VTT) from `GET /meetings/{meetingId}/recordings` and `GET /archive_files`. None of its
+endpoints takes a text query (checked 2026-10-21). Searching text inside transcripts is a feature of the Zoom
+web portal only: "You can search for text within audio transcripts", and an admin can search every transcript in
+the account ([Using audio transcription for cloud recordings](https://support.zoom.com/hc/en/article?id=zm_kb&sysparm_article=KB0064927)).
+
+So zm downloads each transcript once and searches its own copy: that works offline, keeps meetings Zoom has
+deleted, and lets a word match its other forms and garbled spellings.
+
 ## Narrow by people and work
 
 Combine a participant identity or explicitly linked person with a project and date range:
