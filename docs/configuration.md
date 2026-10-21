@@ -15,7 +15,7 @@ Set a value with `zm config set <key> <value>` and see them all with `zm config 
 | `source` | Where `meetings sync` and `watch` read from: `api` (default) or `files` |
 | `files.folder` | Transcript folder for file-source pull/watch; unset by default |
 | `context.sources` | JSON array of explicitly selected message, mail or document accounts for this profile; empty by default ([setup below](#select-communications-for-preparation)) |
-| `files.timezone` | the IANA zone of downloaded transcript filenames, for example `Europe/Madrid`; default UTC |
+| `files.timezone` | the IANA zone of downloaded transcript filenames, for example `Europe/Madrid`; unset: this computer's zone |
 
 Check `zm config show` after editing. Switching `account.profile` does not switch the authenticated
 Zoom user. Changing the client ID selects a different keyring entry, so authorize that app before

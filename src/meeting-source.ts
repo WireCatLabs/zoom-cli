@@ -1,7 +1,7 @@
 import { CliError } from "@wirecat/cli-base"
 import type { MeetingSource } from "@wirecat/cli-core/meetings"
 import { ZoomApiSource } from "./api.js"
-import type { ZoomConfig } from "./config.js"
+import { filesZone, type ZoomConfig } from "./config.js"
 import { FilesSource, readDownloadedFiles } from "./files.js"
 import type { ProgramDeps } from "./program.js"
 import type { TokenManager } from "./tokens.js"
@@ -30,7 +30,7 @@ export const configuredMeetingSource = ({
         return new ZoomApiSource(manager, fetch())
       }
       if (!config.filesFolder) throw new CliError("configuration_error", "set files.folder before pulling from files")
-      return new FilesSource(await (deps.readFiles ?? readDownloadedFiles)(config.filesFolder), config.filesTimezone)
+      return new FilesSource(await (deps.readFiles ?? readDownloadedFiles)(config.filesFolder), filesZone(config))
     })()
     return activeSource
   }

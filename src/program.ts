@@ -23,7 +23,7 @@ import {
 } from "./archive-commands.js"
 import { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
 import { annotateMeetingCommands } from "./commands.js"
-import { profileAccountKey, readConfig } from "./config.js"
+import { filesZone, profileAccountKey, readConfig } from "./config.js"
 import { checkCancelled } from "./errors.js"
 import { bytes, duration, type ExecutionState, resetCliOptions, startExecution } from "./execution.js"
 import { importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
@@ -246,8 +246,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
     source,
     readFiles: async (folder) => {
       const config = getConfig()
-      return validateDownloadedFiles(await (deps.readFiles ?? readDownloadedFiles)(folder), config.filesTimezone).map(
-        (file) => importFile(file, requireAccount(), config.filesTimezone),
+      return validateDownloadedFiles(await (deps.readFiles ?? readDownloadedFiles)(folder), filesZone(config)).map(
+        (file) => importFile(file, requireAccount(), filesZone(config)),
       )
     },
     now: deps.now,

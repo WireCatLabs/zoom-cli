@@ -1,7 +1,7 @@
 import { CliError, isCliError, realSleep } from "@wirecat/cli-base"
 import { importFiles, type MeetingStore, pull } from "@wirecat/cli-core/meetings"
 import { ZoomApiSource } from "./api.js"
-import type { ZoomConfig } from "./config.js"
+import { filesZone, type ZoomConfig } from "./config.js"
 import { checkCancelled } from "./errors.js"
 import { importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import type { ProgramDeps } from "./program.js"
@@ -93,11 +93,11 @@ export const createWatchService = ({
         if (plan.source === "files") {
           const files = validateDownloadedFiles(
             await (deps.readFiles ?? readDownloadedFiles)(plan.folder ?? ""),
-            config.filesTimezone,
+            filesZone(config),
           )
           checkCancelled(operation)
           result = await importFiles(
-            files.map((file) => importFile(file, accountId, config.filesTimezone)),
+            files.map((file) => importFile(file, accountId, filesZone(config))),
             store,
             deps.now?.(),
           )

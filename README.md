@@ -205,7 +205,7 @@ zm watch api --lookback-days 7 --jsonl                   # keep pulling in the f
 The cursor alone does not revisit transcripts that appear late; use `--lookback-days` or an older
 `--since-time`. A failed occurrence leaves the cursor unchanged for the next pull. Imported files follow
 the exporter's `YYYY-MM-DD_HHMM_topic-slug.vtt` names; set `files.timezone` to the zone they were
-written in (UTC by default). Participants of imported files stay unknown, and speaker names are
+written in when it is not this computer's zone (the default). Participants of imported files stay unknown, and speaker names are
 never turned into identities.
 
 More: [the local archive][docs/archive.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]

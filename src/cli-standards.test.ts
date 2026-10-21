@@ -135,14 +135,14 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(readAnswer(stdout[0] ?? "{}")).toMatchObject({
       config: {
         readable: false,
-        error: `${deps.configPath}: clientId is an unknown setting; rename it to client_id (and 3 more problems)`,
+        error: `${deps.configPath}: clientId is an unknown setting; rename it to client_id (and 2 more problems)`,
       },
       authentication: { state: "not_checked" },
     })
     expect(await run(["--json", "config", "show"], deps)).toBe(3)
     expect(JSON.parse(stderr[0] ?? "{}").error).toMatchObject({
       code: "configuration_error",
-      message: `${deps.configPath}: clientId is an unknown setting; rename it to client_id (and 3 more problems)`,
+      message: `${deps.configPath}: clientId is an unknown setting; rename it to client_id (and 2 more problems)`,
     })
     expect([...stdout, ...stderr].join("")).not.toContain("example-old-client")
   })
