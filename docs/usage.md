@@ -276,8 +276,8 @@ does not import that transcript into the meeting database until you request arch
 | `search recordings <directory> <query>` | search verified archived cue text without a database |
 | `recordings archive import <directory>` | verify archived VTT assets and append them to stored occurrences |
 | `remote-meetings list\|show\|invitation` | read upcoming Zoom meetings and invitations |
-| `remote-meetings create\|update\|cancel` | preview or apply a simple Zoom meeting change |
-| `serve --mcp` | serve read-only stored meeting tools over MCP stdio |
+| `remote-meetings create\|update\|cancel` | a simple Zoom meeting change, asked first; `--dry-run` previews |
+| `mcp` | serve zm's commands to an MCP agent over stdio, as the profile's permissions allow |
 | `skill show`, `skill install --for agents` | print or explicitly install the packaged agent guide |
 
 Stored `meetings` commands use local database ids; `remote-meetings` uses Zoom's numeric ids.

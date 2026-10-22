@@ -364,22 +364,17 @@ it("rescans real downloaded files so corrections replace current search while pr
   expect((await store.meeting(meetings[0]?.id ?? 0))?.transcripts).toHaveLength(2)
 })
 
-it("publishes usable serve/login discovery examples and forwards MCP per-tool bounds", async () => {
+it("publishes usable mcp/login discovery examples and lifetimes", async () => {
   const { deps, output } = await setup()
-  expect(await run(["commands", "serve", "--json"], deps)).toBe(0)
-  expect(JSON.parse(output.at(-1) ?? "{}").commands[0].examples).toEqual(["zm personal serve --mcp"])
+  expect(await run(["commands", "mcp", "--json"], deps)).toBe(0)
+  expect(JSON.parse(output.at(-1) ?? "{}").commands[0].examples).toEqual(["zm personal mcp"])
   expect(await run(["commands", "session", "start", "--json"], deps)).toBe(0)
   expect(JSON.parse(output.at(-1) ?? "{}").commands[0].examples).toEqual(["zm personal session start"])
   expect(JSON.parse(output.at(-1) ?? "{}").commands[0].lifetime).toBe("interactive")
   expect(await run(["commands", "watch", "--json"], deps)).toBe(0)
   expect(JSON.parse(output.at(-1) ?? "{}").commands[0].lifetime).toBe("persistent")
-  expect(await run(["commands", "serve", "--json"], deps)).toBe(0)
+  expect(await run(["commands", "mcp", "--json"], deps)).toBe(0)
   expect(JSON.parse(output.at(-1) ?? "{}").commands[0].lifetime).toBe("persistent")
-  deps.serveMcp = vi.fn(async ({ maxResultBytes }) => {
-    expect(maxResultBytes).toBe(0)
-  })
-  expect(await run(["example", "serve", "--mcp", "--max-output-bytes", "0"], deps)).toBe(0)
-  expect(deps.serveMcp).toHaveBeenCalledOnce()
 })
 
 it("uses published summary/history/export commands and writes exact VTT without overwrite", async () => {

@@ -51,7 +51,7 @@ a transcript to an AI service. This guide explains those boundaries before you c
   Refused with exit 5 before it connects to anything, previews included: remote meeting changes, login,
   configuration, skill install, import, export, links, transcription, archive jobs and lock recovery, building
   vectors (`meetings embeddings`, search by meaning with `--model`) and an MCP server whose semantic queries go to a
-  remote `--base-url`. Still running: reads, word search (which keeps its index current), `batch`, `serve --mcp`,
+  remote `--base-url`. Still running: reads, word search (which keeps its index current), `batch`, `mcp`,
   and the syncs that copy Zoom into the store or an archive — `meetings sync`, `watch`, `recordings sync`,
   `recordings download` and `recordings schedule run`; a sync or `watch` from a files source reads the configured
   folder, while `meetings import <folder>` names a one-off folder and is refused. Any other command that writes,

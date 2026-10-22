@@ -105,10 +105,10 @@ export const annotateMeetingCommands = (program: Command): void => {
   }
 }
 /** The top-level commands that act for no account, so their examples carry no profile word. */
-export const PROFILE_FREE = new Set(["commands", "complete", "config", "doctor", "guide", "help", "skill"])
+export const PROFILE_FREE = new Set(["commands", "complete", "config", "doctor", "guide", "help", "skill", "upgrade"])
 const exampleFor = (path: string): string => {
   const profile = PROFILE_FREE.has(path.split(" ")[0] ?? "") ? "" : "personal "
-  if (path === "serve") return "zm personal serve --mcp"
+  if (path === "mcp") return "zm personal mcp"
   if (path === "session start") return "zm personal session start"
   const argumentsByPath: Record<string, string> = {
     "config set": "files.timezone Europe/Madrid",

@@ -29,10 +29,11 @@ import { bytes, duration, type ExecutionState, resetCliOptions, startExecution }
 import { fileNamesHelp, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { installFirstScreen } from "./first-screen.js"
 import { liftJsonFields } from "./json-fields.js"
+import type { ZoomMcpOptions } from "./mcp.js"
+import { addMcpCommands, runForAgent } from "./mcp-command.js"
 import { addZoomMeetingCommands } from "./meeting-commands.js"
 import { type ContextCapture, captureContextSources } from "./meeting-communications-binding.js"
 import { addZoomInventoryCommand } from "./meeting-inventory.js"
-import { addZoomMcpCommand, type ZoomMcpServeOptions } from "./meeting-mcp-command.js"
 import type { ZoomPreparationOptions } from "./meeting-preparation.js"
 import { configuredMeetingSource } from "./meeting-source.js"
 import { guardCommand } from "./permissions.js"
@@ -93,7 +94,7 @@ export interface ProgramDeps {
   checkSession?: (options?: { signal?: AbortSignal }) => Promise<unknown>
   signal?: AbortSignal
   sleep?: SleepLike
-  serveMcp?: (options: ZoomMcpServeOptions) => Promise<void>
+  serveMcp?: (options: ZoomMcpOptions) => Promise<void>
   streamData?: (text: string, signal: AbortSignal) => Promise<void>
 }
 const answerExitCodes = new WeakMap<Command, number>()
@@ -147,9 +148,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     const selected = profile()
     try {
       const connection = await connectSelectedProfile(deps.connectStore, selected, intent, context)
-      // Importing or syncing is what puts a profile's meetings here, so it lists the profile from then on.
-      if (intent === "ingestion")
-        recordProfile(deps.configPath, selected, program.opts().quiet ? undefined : deps.diagnostic)
+      if (intent === "ingestion") recordProfile(deps.configPath, selected, deps, program.opts().quiet)
       return connection
     } catch (error) {
       if (isCliError(error)) throw error
@@ -376,20 +375,19 @@ export const createProgram = (deps: ProgramDeps): Command => {
     fetch: fetchWithSignal(deps.fetch),
     remoteOptions,
   }
-  const inventory = addZoomInventoryCommand(program, {
+  addZoomInventoryCommand(program, {
     profile,
     ...preparationOptions,
     signal,
     now: deps.now,
     output: (value) => output(bodyOf(value)),
   })
-  addZoomMcpCommand(program, {
-    fields: () => fields,
+  addMcpCommands(program, {
+    profile,
+    permissions: (name) => readConfig(deps.configPath).permissions[name] ?? {},
+    run: (argv) => runForAgent(run, argv, deps),
     signal,
     serve: deps.serveMcp,
-    profile,
-    preparation: preparationOptions,
-    inventory,
   })
   addStoreCommands(program, {
     deps,

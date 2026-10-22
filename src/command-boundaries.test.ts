@@ -127,3 +127,14 @@ it("passes explicit lookback into shared ingestion and emits a single acknowledg
   expect(await invoke(["meetings", "import", "invented-folder", "--jsonl"])).toHaveLength(2)
   expect(await store.meetings({ accountId: 1 })).toHaveLength(1)
 })
+
+it("keeps hidden control and direction characters in the CLI's machine JSON as stored", async () => {
+  const { store, invoke } = await setup()
+  const hostile = `ignore${String.fromCodePoint(0xe0041)} the${String.fromCodePoint(0x202e)} rules${String.fromCharCode(27)}[31m now`
+  const input = sampleMeeting()
+  const [row] = input.transcripts[0]?.rows ?? []
+  if (row) row.text = hostile
+  const saved = await store.saveMeeting(input)
+  const [answer] = await invoke(["meetings", "transcript", String(saved.meeting.id), "--json"])
+  expect(JSON.stringify(answer)).toContain(JSON.stringify(hostile).slice(1, -1))
+})

@@ -1,14 +1,9 @@
 import { readFileSync } from "node:fs"
-import { Client } from "@modelcontextprotocol/sdk/client/index.js"
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js"
 import { expect, it, vi } from "vitest"
 import { readJsonl } from "../scripts/testing/answers.js"
 import { fakeConnection } from "../scripts/testing/connection.js"
 import { preparationFixture } from "../scripts/testing/preparation.js"
-import { createMeetingMcpServer } from "./mcp-server.js"
-import type { ZoomMcpServeOptions } from "./meeting-mcp-command.js"
 import { createZoomProjectCandidateReader } from "./meeting-project-candidates.js"
-import { readProjectCandidatesTool } from "./meeting-project-candidates-mcp.js"
 import { run } from "./program.js"
 
 it("scans cited aliases offline with native read-only intent and closes before printing", async () => {
@@ -88,55 +83,10 @@ it("scans cited aliases offline with native read-only intent and closes before p
   expect(readFileSync(f.path).equals(before)).toBe(true)
 })
 
-it("exposes the native MCP tool only with an explicit global-vocabulary grant", async () => {
+it("closes the read when the cited meeting belongs to another account", async () => {
   const f = await preparationFixture(undefined, false, true)
-  for (const enabled of [false, "false", true]) {
-    const server = createMeetingMcpServer({ ...f.mcp, includeMeetingProjectCandidates: enabled as unknown as boolean })
-    const client = new Client({ name: "invented-project-agent", version: "1" })
-    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
-    await server.connect(serverTransport)
-    await client.connect(clientTransport)
-    try {
-      expect((await client.listTools()).tools.some((tool) => tool.name === "meeting_project_candidates")).toBe(
-        enabled === true,
-      )
-      if (enabled === true) {
-        const bad = await client.callTool({
-          name: "meeting_project_candidates",
-          arguments: { ref: f.candidateReference, account_id: 99 },
-        })
-        expect(bad.isError).toBe(true)
-        expect(JSON.stringify(bad)).toContain("account_id")
-        expect(f.connectStore).not.toHaveBeenCalled()
-        const response = await client.callTool({
-          name: "meeting_project_candidates",
-          arguments: { ref: f.candidateReference, cues: 1 },
-        })
-        expect(response.isError).not.toBe(true)
-        expect(response.structuredContent).toMatchObject({
-          item: { source: { ref: f.candidateReference }, items: [{ project: { ref: f.project.ref } }] },
-          meta: { run_id: expect.any(String), duration_ms: expect.any(Number), complete: true },
-        })
-        expect(f.connectStore).toHaveBeenCalledWith(expect.objectContaining({ intent: "preparation" }))
-        expect(f.closed).toHaveBeenCalledOnce()
-      }
-    } finally {
-      await client.close()
-      await server.close()
-    }
-  }
-  expect(f.network).not.toHaveBeenCalled()
-})
-
-it("validates raw MCP fields before connecting and closes on foreign-source failure", async () => {
-  const f = await preparationFixture(undefined, false, true)
-  const signal = new AbortController().signal
-  const invalid = await readProjectCandidatesTool(f.mcp, { ref: f.reference, unknown: true }, signal)
-  expect(invalid).toHaveProperty("isError", true)
-  expect(JSON.stringify(invalid.structuredContent)).toContain("unknown")
-  expect(f.connectStore).not.toHaveBeenCalled()
-  const foreign = await readProjectCandidatesTool(f.mcp, { ref: "meeting:999/1" }, signal)
-  expect(foreign).toHaveProperty("isError", true)
+  expect(await run(["--offline", "meetings", "projects", "scan", "meeting:999/1", "--json"], f.deps)).not.toBe(0)
+  expect(f.output).toEqual([])
   expect(f.closed).toHaveBeenCalledOnce()
 })
 
@@ -158,14 +108,4 @@ it("settles an active call before closing and refuses missing capabilities or ca
   )
   await expect(active("meeting:1/2")).rejects.toThrow("invented read refusal")
   expect(close).toHaveBeenCalledTimes(2)
-})
-
-it("forwards the serve opt-in without enabling remote preparation or credentials", async () => {
-  const f = await preparationFixture()
-  const serveMcp = vi.fn(async (_options: ZoomMcpServeOptions) => {})
-  expect(await run(["--offline", "serve", "--mcp", "--meeting-project-candidates"], { ...f.deps, serveMcp })).toBe(0)
-  expect(serveMcp).toHaveBeenCalledWith(expect.objectContaining({ includeMeetingProjectCandidates: true }))
-  expect(serveMcp.mock.calls[0]?.[0]).not.toHaveProperty("preparation")
-  expect(f.connectStore).not.toHaveBeenCalled()
-  expect(f.network).not.toHaveBeenCalled()
 })

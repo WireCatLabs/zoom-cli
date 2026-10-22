@@ -19,10 +19,13 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [meeting-source.ts](../../src/meeting-source.ts) | the API or folder source the config names, built on first use |
 | [recording-schedule-setup.ts](../../src/recording-schedule-setup.ts) | saved schedule jobs, Linux user timers and per-job credentials |
 | [meeting-commands.ts](../../src/meeting-commands.ts) | Core's stored-meeting commands, with the effects Core leaves undeclared |
-| [meeting-project-evidence-commands.ts](../../src/meeting-project-evidence-commands.ts), [meeting-project-evidence-mcp.ts](../../src/meeting-project-evidence-mcp.ts) | thin account/resource bindings over Core project discovery and registered schemas |
-| [meeting-preparation.ts](../../src/meeting-preparation.ts), [meeting-preparation-mcp.ts](../../src/meeting-preparation-mcp.ts) | per-call account/credential binding and close-before-output over Core preparation services and adapters |
-| [meeting-mcp-command.ts](../../src/meeting-mcp-command.ts), [meeting-read-command-bindings.ts](../../src/meeting-read-command-bindings.ts) | native command composition without expanding the main program |
-| [meeting-inventory.ts](../../src/meeting-inventory.ts), [meeting-inventory-mcp.ts](../../src/meeting-inventory-mcp.ts), [series-inventory.ts](../../src/series-inventory.ts) | captured public account and cold credentials over Core’s bounded series inventory CLI/MCP/SDK, without opening SQLite |
+| [meeting-project-evidence-commands.ts](../../src/meeting-project-evidence-commands.ts) | thin account/resource bindings over Core project discovery and registered schemas |
+| [meeting-preparation.ts](../../src/meeting-preparation.ts) | per-call account/credential binding and close-before-output over Core preparation services and adapters |
+| [meeting-read-command-bindings.ts](../../src/meeting-read-command-bindings.ts) | native command composition without expanding the main program |
+| [profile.ts](../../src/profile.ts), [profile-word.ts](../../src/profile-word.ts) | the profile word, `ZM_PROFILE` and `ZM_PROFILE_LOCK` (WC-ACCT-1..5) |
+| [permissions.ts](../../src/permissions.ts) | per-profile permission levels and the `ask` question, checked before a command connects (WC-PERM) |
+| [upgrade.ts](../../src/upgrade.ts) | cli-core's `upgrade` |
+| [meeting-inventory.ts](../../src/meeting-inventory.ts), [series-inventory.ts](../../src/series-inventory.ts) | captured public account and cold credentials over Core’s bounded series inventory CLI/MCP/SDK, without opening SQLite |
 | [upcoming-meetings.ts](../../src/upcoming-meetings.ts), [occurrence-schedule.ts](../../src/occurrence-schedule.ts) | bounded Zoom occurrence proof over the shared scoped reader |
 | [remote-http.ts](../../src/remote-http.ts) | authenticated Zoom dispatch, retry, opt-in shared JSON byte bounds and the one download path (host check on every redirect) |
 | [commands.ts](../../src/commands.ts) | shared command metadata, completion and local diagnostics |
@@ -44,7 +47,7 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [meeting-semantic.ts](../../src/meeting-semantic.ts) | explicit model selection and public vector/model service adaptation |
 | [context-sources.ts](../../src/context-sources.ts), [meeting-communications-binding.ts](../../src/meeting-communications-binding.ts) | profile-local source grants and captured immutable identities over narrow metadata ports; Core owns querying, budgets and evidence assembly |
 | [store-connection.ts](../../src/store-connection.ts) | lazy public shared-store/account adapter and the selected-profile connect request, without SQL |
-| [mcp-server.ts](../../src/mcp-server.ts) | official SDK transport and shared read-only meeting tools |
+| [mcp.ts](../../src/mcp.ts), [mcp-command.ts](../../src/mcp-command.ts) | `zm <profile> mcp`: cli-core's three shared tools over zm's own commands, run in-process (WC-MCP) |
 | [answer-output.ts](../../src/answer-output.ts), [answers.ts](../../src/answers.ts) | commands answer with cli-core `itemOf`/`listOf` bodies printed by `renderAnswer`; `bodyOf` adapts the plain values cli-core meeting commands and MCP tools return; run metadata and MCP envelopes |
 | [answer-policy.ts](../../src/answer-policy.ts) | each command's declared effects ([WC-CMD-17](https://github.com/WireCatLabs/cli-base/blob/main/docs/standards/commands.md#wc-cmd-17--declare-effects-on-every-command)) bound to shared retry and next-step policies; failure rendering |
 | [streaming.ts](../../src/streaming.ts), [watch-commands.ts](../../src/watch-commands.ts), [watch-service.ts](../../src/watch-service.ts) | bounded receipts, writable completion and serial API or folder ingestion |

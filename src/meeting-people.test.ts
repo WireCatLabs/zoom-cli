@@ -1,15 +1,12 @@
 import { mkdtempSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { Client } from "@modelcontextprotocol/sdk/client/index.js"
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js"
 import { memoryKeyring } from "@wirecat/cli-base"
 import { sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { openStore } from "@wirecat/cli-core/store"
 import { expect, it, vi } from "vitest"
 import { readAnswer, readJsonl } from "../scripts/testing/answers.js"
 import { useProfile } from "../scripts/testing/profile.js"
-import { createMeetingMcpServer } from "./mcp-server.js"
 import { type ProgramDeps, run } from "./program.js"
 import { createStoreConnector } from "./store-connection.js"
 import { TokenManager } from "./tokens.js"
@@ -116,43 +113,6 @@ it("preserves empty participant scan pages and continuation budgets through CLI 
   expect(last).not.toHaveProperty("next")
   expect(f.close).toHaveBeenCalledTimes(3)
   expect(f.network).not.toHaveBeenCalled()
-})
-
-it("keeps MCP participant discovery account-bound and closes each paged read", async () => {
-  const f = await fixture()
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
-  const server = createMeetingMcpServer({
-    version: "example",
-    connectStore: () =>
-      f.connectStore({ profile: "AliceExample", externalId: "zm-profile:AliceExample", intent: "read" }),
-  })
-  const client = new Client({ name: "invented-people-client", version: "1" })
-  await server.connect(serverTransport)
-  await client.connect(clientTransport)
-  try {
-    const result = await client.callTool({
-      name: "meeting_people",
-      arguments: { query: "АЛИСА", limit: 1, scan_limit: 3, max_read_bytes: 100 },
-    })
-    expect(result).toMatchObject({
-      structuredContent: {
-        item: {
-          account_id: f.selected,
-          page: { has_more: true, next_cursor: expect.any(String) },
-          items: [{ display_name: "Алиса Пример" }],
-        },
-      },
-    })
-    expect(f.close).toHaveBeenCalledOnce()
-    expect(
-      await client.callTool({ name: "meeting_people", arguments: { query: "алиса", account_id: 999 } }),
-    ).toMatchObject({ isError: true })
-    expect(f.close).toHaveBeenCalledOnce()
-    expect(f.network).not.toHaveBeenCalled()
-  } finally {
-    await client.close()
-    await server.close()
-  }
 })
 
 it("keeps the bounded participant report in JSONL data with a final end record", async () => {

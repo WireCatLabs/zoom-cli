@@ -1,15 +1,10 @@
 import { createHash } from "node:crypto"
 import { readFileSync } from "node:fs"
-import { Client } from "@modelcontextprotocol/sdk/client/index.js"
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js"
 import { expect, it, vi } from "vitest"
 import { readAnswer } from "../scripts/testing/answers.js"
 import { communicationsFixture } from "../scripts/testing/communications.js"
 import { now } from "../scripts/testing/preparation.js"
-import { readConfig, setConfig } from "./config.js"
-import { createMeetingMcpServer } from "./mcp-server.js"
-import { captureContextSources } from "./meeting-communications-binding.js"
-import { readPreparationTool } from "./meeting-preparation-mcp.js"
+import { setConfig } from "./config.js"
 import { run } from "./program.js"
 
 const selections = ["work-messages", "work-mail", "project-files"]
@@ -23,7 +18,7 @@ const input = {
   },
 }
 
-it("joins conflicting dated statements through the actual read-only SDK without writing or inferring a winner", async () => {
+it("joins conflicting dated statements without writing or inferring a winner", async () => {
   const f = await communicationsFixture()
   const digest = () => createHash("sha256").update(readFileSync(f.path)).digest("hex"),
     before = digest()
@@ -57,8 +52,6 @@ it("joins conflicting dated statements through the actual read-only SDK without 
   expect(f.network).toHaveBeenCalledOnce()
   expect(f.closed).toHaveBeenCalledOnce()
   expect(digest()).toBe(before)
-  const mcp = await readPreparationTool(f.mcp, input, new AbortController().signal)
-  expect(mcp.structuredContent).toMatchObject({ item: { communications: section } })
 })
 
 it("rejects an unconfigured selection before credentials, database opening or Zoom reads", async () => {
@@ -70,22 +63,6 @@ it("rejects an unconfigured selection before credentials, database opening or Zo
       f.deps,
     ),
   ).not.toBe(0)
-  expect(f.connectStore).not.toHaveBeenCalled()
-  expect(f.network).not.toHaveBeenCalled()
-  expect(load).not.toHaveBeenCalled()
-})
-
-it("validates raw MCP nested arguments before any protected reads", async () => {
-  const f = await communicationsFixture(),
-    load = vi.spyOn(f.tokens.options.keyring, "get")
-  const result = await readPreparationTool(
-    f.mcp,
-    { ...input, communications: { ...input.communications, account_id: 99 } },
-    new AbortController().signal,
-  )
-  expect(result).toMatchObject({ isError: true })
-  expect(JSON.stringify(result)).toContain("validation_error")
-  expect(JSON.stringify(result)).toContain("account_id")
   expect(f.connectStore).not.toHaveBeenCalled()
   expect(f.network).not.toHaveBeenCalled()
   expect(load).not.toHaveBeenCalled()
@@ -112,43 +89,6 @@ it("keeps source coverage when the caller projects only excerpt references", asy
   expect(section.items).toHaveLength(1)
   expect(Object.keys(section.items[0])).toEqual(["ref"])
   expect(section.coverage.sources[0]).toMatchObject({ selection_id: "work-messages", state: "searched" })
-})
-
-it("exposes only captured MCP selection IDs and cannot expand after source configuration changes", async () => {
-  const f = await communicationsFixture()
-  const getContext = vi.fn(() => captureContextSources(readConfig(f.deps.configPath).contextSources, "AliceExample"))
-  const server = createMeetingMcpServer({ ...f.mcp, preparation: { ...f.mcp.preparation, context: getContext } })
-  const client = new Client({ name: "invented-context-agent", version: "1" })
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
-  await server.connect(serverTransport)
-  await client.connect(clientTransport)
-  try {
-    const tools = await client.listTools(),
-      tool = tools.tools.find((t) => t.name === "meeting_prepare")
-    expect(JSON.stringify(tool?.inputSchema)).toContain('"enum":["work-messages","work-mail","project-files"]')
-    expect(f.connectStore).not.toHaveBeenCalled()
-    setConfig(
-      f.deps.configPath,
-      "context.sources",
-      JSON.stringify([
-        ...f.sources,
-        { id: "foreign", kind: "message", provider: "example-messenger", account: "BobSample" },
-      ]),
-      () => "AliceExample",
-    )
-    const bad = await client.callTool({
-      name: "meeting_prepare",
-      arguments: { ...input, communications: { ...input.communications, sources: [{ id: "foreign" }] } },
-    })
-    expect(bad.isError).toBe(true)
-    expect(f.connectStore).not.toHaveBeenCalled()
-    const result = await client.callTool({ name: "meeting_prepare", arguments: input })
-    expect(result.isError).not.toBe(true)
-    expect(getContext).toHaveBeenCalledOnce()
-  } finally {
-    await client.close()
-    await server.close()
-  }
 })
 
 it("does not let an unavailable unrequested configured source block a valid source", async () => {

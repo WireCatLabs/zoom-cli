@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, symlinkSync, unlinkSyn
 import { lstat, open } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { dirname, join, resolve } from "node:path"
-import { fileURLToPath, pathToFileURL } from "node:url"
+import { fileURLToPath } from "node:url"
 
 const root = resolve(process.argv[2])
 const expectedVersion = process.argv[3]
@@ -464,11 +464,8 @@ assert.equal(peopleJsonl.stdout.trim().split("\n").length, 2)
 const [peopleContinuation] = jsonl(peopleJsonl.stdout)
 assert.ok(peopleContinuation.items.every((item) => String(item.meeting_id) !== foreignMeetingId))
 assert.equal(typeof peopleContinuation.page.has_more, "boolean")
-const { Client } = await import(pathToFileURL(require.resolve("@modelcontextprotocol/sdk/client/index.js")).href)
-const { StdioServerTransport } = await import(
-  pathToFileURL(require.resolve("@modelcontextprotocol/sdk/server/stdio.js")).href
-)
-const child = spawn(process.execPath, [...prefix, entry, "serve", "--mcp"], {
+// The installed package ships no MCP client, so the proof speaks newline-delimited JSON-RPC itself.
+const child = spawn(process.execPath, [...prefix, entry, "invented-platform", "mcp"], {
   cwd: root,
   env: environment,
   stdio: ["pipe", "pipe", "pipe"],
@@ -482,29 +479,56 @@ const exited = new Promise((resolveExit, reject) => {
   child.once("close", resolveExit)
 })
 const timer = setTimeout(() => child.kill(), 15000)
-const client = new Client({ name: "invented-platform-proof", version: "1" })
+const pending = new Map()
+let buffered = ""
+child.stdout.on("data", (bytes) => {
+  buffered += bytes
+  for (let end = buffered.indexOf("\n"); end >= 0; end = buffered.indexOf("\n")) {
+    const message = JSON.parse(buffered.slice(0, end))
+    buffered = buffered.slice(end + 1)
+    pending.get(message.id)?.(message)
+    pending.delete(message.id)
+  }
+})
+let nextId = 0
+const rpc = (method, params) =>
+  new Promise((resolveReply) => {
+    const id = ++nextId
+    pending.set(id, resolveReply)
+    child.stdin.write(`${JSON.stringify({ jsonrpc: "2.0", id, method, params })}\n`)
+  })
+const callTool = async (name, args) => (await rpc("tools/call", { name, arguments: args })).result
 try {
-  await client.connect(new StdioServerTransport(child.stdout, child.stdin))
-  assert.equal((await client.listTools()).tools.length, 8)
-  const projectEvidence = await client.callTool({
-    name: "meeting_project_evidence",
+  const initialized = await rpc("initialize", {
+    protocolVersion: "2025-11-25",
+    capabilities: {},
+    clientInfo: { name: "invented-platform-proof", version: "1" },
+  })
+  assert.ok(initialized.result.capabilities.tools)
+  child.stdin.write(`${JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" })}\n`)
+  const tools = (await rpc("tools/list", {})).result.tools
+  assert.deepEqual(
+    tools.map((tool) => tool.name),
+    ["zm_tools_search", "zm_read", "zm_write"],
+  )
+  const projectEvidence = await callTool("zm_read", {
+    command: "meetings projects evidence",
     arguments: { project: "RES", limit: 2 },
   })
-  assert.notEqual(projectEvidence.isError, true)
+  assert.notEqual(projectEvidence.isError, true, JSON.stringify(projectEvidence))
   assert.equal(projectEvidence.structuredContent.item.project.key, "RES")
   assert.equal(projectEvidence.structuredContent.item.association, "unconfirmed-word-evidence")
   assert.equal(projectEvidence.structuredContent.item.coverage.archive_completeness, "unknown")
   assert.equal(projectEvidence.structuredContent.item.page.has_more, true)
   assert.equal(typeof projectEvidence.structuredContent.meta.run_id, "string")
-  assert.equal(projectEvidence.structuredContent.next[0].args.project, "RES")
-  const refusedScope = await client.callTool({
-    name: "meeting_project_evidence",
+  const refusedScope = await callTool("zm_read", {
+    command: "meetings projects evidence",
     arguments: { project: "RES", account_id: 999 },
   })
   assert.equal(refusedScope.isError, true)
-  const result = await client.callTool({ name: "meetings_list", arguments: {} })
-  assert.notEqual(result.isError, true)
-  const firstScope = result.structuredContent ?? JSON.parse(result.content[0].text)
+  const result = await callTool("zm_read", { command: "meetings list", arguments: {} })
+  assert.notEqual(result.isError, true, JSON.stringify(result))
+  const firstScope = result.structuredContent
   assert.ok(firstScope.items.some((meeting) => String(meeting.id) === meetingId))
   assert.equal(
     firstScope.items.some((meeting) => String(meeting.id) === foreignMeetingId),
@@ -512,29 +536,21 @@ try {
   )
   environment.ZM_PROFILE = "invented-foreign-platform"
   assert.ok(json("meetings", "list").items.some((meeting) => String(meeting.id) === foreignMeetingId))
-  const secondResult = await client.callTool({ name: "meetings_list", arguments: {} })
+  const secondResult = await callTool("zm_read", { command: "meetings list", arguments: {} })
   assert.notEqual(secondResult.isError, true)
-  const secondScope = secondResult.structuredContent ?? JSON.parse(secondResult.content[0].text)
+  const secondScope = secondResult.structuredContent
   assert.deepEqual(
     secondScope.items,
     firstScope.items,
-    "an initialized MCP account cannot change when later commands name another profile",
+    "a running MCP server keeps its profile when later commands name another profile",
   )
-  assert.deepEqual(secondScope.page, firstScope.page)
-  assert.equal(typeof firstScope.meta.run_id, "string")
   assert.notEqual(secondScope.meta.run_id, firstScope.meta.run_id)
-  const frozenProject = await client.callTool({
-    name: "meeting_project_evidence",
-    arguments: { project: "RES", limit: 2 },
-  })
-  assert.equal(frozenProject.structuredContent.item.account_id, projectEvidence.structuredContent.item.account_id)
 
   child.stdin.end()
   assert.equal(await exited, 0, stderr)
   assert.equal(diagnostics(stderr), "")
 } finally {
   clearTimeout(timer)
-  await client.close()
   if (child.exitCode === null && child.signalCode === null) child.kill()
   await exited
 }
@@ -599,7 +615,6 @@ try {
   for (const args of [
     ["search", "meetings", "invented", ...modelOptions],
     ["meetings", "embeddings", ...modelOptions, "--yes"],
-    ["serve", "--mcp", "--semantic", ...modelOptions],
   ])
     invoke(["--offline", ...args], 3, remoteEnvironment)
   assert.equal(requests().length, 0, "offline semantic commands must fail before model HTTP")
@@ -628,58 +643,6 @@ try {
   const replay = remoteJson("meetings", "embeddings", ...modelOptions, "--yes")
   assert.equal(replay.saved, 0)
   assert.equal(requests().length, generatedRequests + 1, "cached generation must not call the model")
-  const semanticChild = spawn(process.execPath, [...prefix, entry, "serve", "--mcp", "--semantic", ...modelOptions], {
-    cwd: root,
-    env: { ...environment, ...remoteEnvironment },
-    stdio: ["pipe", "pipe", "pipe"],
-  })
-  let semanticStderr = ""
-  semanticChild.stderr.on("data", (bytes) => {
-    semanticStderr += bytes
-  })
-  const semanticExited = new Promise((resolveExit, reject) => {
-    semanticChild.once("error", reject)
-    semanticChild.once("close", resolveExit)
-  })
-  const semanticTimer = setTimeout(() => semanticChild.kill(), 15000)
-  const semanticClient = new Client({ name: "invented-semantic-proof", version: "1" })
-  try {
-    await semanticClient.connect(new StdioServerTransport(semanticChild.stdout, semanticChild.stdin))
-    const tools = (await semanticClient.listTools()).tools
-    assert.equal(tools.length, 8)
-    assert.equal(
-      tools.some((tool) => /generat|embedding/.test(tool.name)),
-      false,
-    )
-    assert.equal(requests().length, generatedRequests + 1, "semantic MCP discovery is model-free")
-    for (const override of [{ model: "forbidden-caller-model" }, { account_id: 99999 }]) {
-      const refused = await semanticClient.callTool({
-        name: "search_meetings",
-        arguments: { query, by_meaning: true, ...override },
-      })
-      assert.equal(refused.isError, true)
-    }
-    assert.equal(requests().length, generatedRequests + 1, "invalid MCP overrides never invoke the model")
-    const result = await semanticClient.callTool({
-      name: "search_meetings",
-      arguments: { query, by_meaning: true },
-    })
-    assert.notEqual(result.isError, true)
-    const report = answer(JSON.stringify(result.structuredContent ?? JSON.parse(result.content[0].text)))
-    assert.equal(report.account_id, semantic.account_id)
-    assert.deepEqual(report.model, semantic.model)
-    assert.ok(report.items.length > 0)
-    assert.equal(requests().length, generatedRequests + 2)
-    assert.deepEqual(requests().at(-1).input, [query])
-    semanticChild.stdin.end()
-    assert.equal(await semanticExited, 0, semanticStderr)
-    assert.equal(diagnostics(semanticStderr), "")
-  } finally {
-    clearTimeout(semanticTimer)
-    await semanticClient.close()
-    if (semanticChild.exitCode === null && semanticChild.signalCode === null) semanticChild.kill()
-    await semanticExited
-  }
 } finally {
   clearTimeout(modelTimer)
   if (modelChild.exitCode === null && modelChild.signalCode === null) modelChild.kill()
@@ -699,7 +662,6 @@ const proof = {
   fixedMcpProfile: true,
   semanticPreviewGenerationQuery: true,
   semanticOfflineBoundary: true,
-  semanticReadonlyMcp: true,
   scheduleOfflinePreview: true,
   recordingResume,
   writer_leases: writerLeaseProof,

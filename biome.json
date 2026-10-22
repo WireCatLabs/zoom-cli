@@ -38,7 +38,7 @@
                 "patterns": [
                   {
                     "group": ["@modelcontextprotocol/**"],
-                    "message": "only src/mcp-server.ts serves MCP (answers.ts shapes its tool list); commands and services do not know the protocol"
+                    "message": "only src/mcp.ts serves MCP; commands and services do not know the protocol"
                   },
                   {
                     "group": ["@wirecat/cli-core/store"],
@@ -52,7 +52,7 @@
       }
     },
     {
-      "includes": ["src/mcp-server.ts", "src/answers.ts", "!**/*.test.ts"],
+      "includes": ["src/mcp-server.ts", "src/mcp.ts", "src/answers.ts", "!**/*.test.ts"],
       "linter": {
         "rules": {
           "style": {
@@ -82,7 +82,7 @@
                 "patterns": [
                   {
                     "group": ["@modelcontextprotocol/**"],
-                    "message": "only src/mcp-server.ts serves MCP (answers.ts shapes its tool list); commands and services do not know the protocol"
+                    "message": "only src/mcp.ts serves MCP; commands and services do not know the protocol"
                   }
                 ]
               }

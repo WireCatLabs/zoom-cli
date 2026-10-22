@@ -7,7 +7,6 @@ import { createTaskFromMeeting } from "@wirecat/cli-core/services"
 import { openStore } from "@wirecat/cli-core/store"
 import { expect, vi } from "vitest"
 import { profileAccountKey, setConfig } from "../../src/config.js"
-import type { PreparationStoreRequest } from "../../src/meeting-preparation.js"
 import type { ProgramDeps } from "../../src/program.js"
 import { createStoreConnector } from "../../src/store-connection.js"
 import { TokenManager } from "../../src/tokens.js"
@@ -179,16 +178,5 @@ export const preparationFixture = async (
     projectNote,
     meetingNote,
     relatedReference,
-    mcp: {
-      now: () => now,
-      connectStore: (preparation?: PreparationStoreRequest) =>
-        connectStore({
-          profile: "AliceExample",
-          externalId: key.account,
-          intent: preparation ? "preparation" : "read",
-          ...(preparation?.context ? { context: preparation.context } : {}),
-        }),
-      preparation: { credentials: () => tokens.forProfile("AliceExample", null), fetch: network },
-    },
   }
 }
