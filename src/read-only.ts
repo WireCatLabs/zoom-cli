@@ -22,7 +22,7 @@ const RUNS_UNDER_LOCK = new Set([
   "recordings schedule run",
   "search meetings",
   "batch",
-  "serve",
+  "mcp",
 ])
 
 const pathOf = (command: Command): string => {
@@ -31,13 +31,12 @@ const pathOf = (command: Command): string => {
   return words.join(" ")
 }
 
-// Building vectors writes beyond the word index, and search by meaning builds missing ones first; with --base-url it, and serve's semantic tool, send text to that
-// service, which cli-core's lock refuses too.
+// Building vectors writes beyond the word index, and search by meaning builds missing ones first; with --base-url it
+// sends text to that service, which cli-core's lock refuses too.
 const usesEmbeddings = (command: Command, path: string): boolean => {
   const options = command.opts()
   if (path === "meetings embeddings") return true
-  if (path === "search meetings") return options.model !== undefined
-  return path === "serve" && options.semantic === true && options.baseUrl !== undefined
+  return path === "search meetings" && options.model !== undefined
 }
 
 export const refusalOf = (command: Command): string | undefined => {

@@ -10,7 +10,7 @@ import { refusalOf, refuseChangeWhenReadOnly } from "./read-only.js"
 export const DEFAULT_PERMISSIONS: Readonly<Record<string, Level>> = { "remote-meetings": "ask" }
 
 /** Looking after the tool — its settings, its login, its help — is never gated (WC-PERM-5). */
-const HOUSEKEEPING = new Set([...PROFILE_FREE, "session", "serve"])
+const HOUSEKEEPING = new Set([...PROFILE_FREE, "session", "serve", "mcp"])
 
 const pathOf = (command: Command): string[] => {
   const words: string[] = []

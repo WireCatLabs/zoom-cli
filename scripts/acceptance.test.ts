@@ -3,8 +3,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSy
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
-import { Client } from "@modelcontextprotocol/sdk/client/index.js"
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
+import { Client } from "@modelcontextprotocol/client"
+import { StdioServerTransport } from "@modelcontextprotocol/server/stdio"
 import { beforeAll, describe, expect, it } from "vitest"
 import { VERSION } from "../src/version.js"
 import { readAnswer } from "./testing/answers.js"
@@ -205,7 +205,7 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
 
   it("discovers the installed MCP tools for a named profile without config or database and exits on EOF", async () => {
     const isolated = join(install, "mcp-config")
-    const child = spawn(executable, ["personal", "serve", "--mcp"], {
+    const child = spawn(executable, ["personal", "mcp"], {
       cwd: install,
       env: { ...environment(), ZM_CONFIG_DIR: isolated, MESSAGING_STORE: join(install, "mcp-unused.db") },
       stdio: ["pipe", "pipe", "pipe"],
@@ -222,9 +222,10 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
     try {
       await client.connect(new StdioServerTransport(child.stdout, child.stdin))
       const listed = await client.listTools()
-      expect(listed.tools).toHaveLength(8)
-      expect(listed.tools.map((tool) => tool.name)).toContain("search_meetings")
-      expect(listed.tools.every((tool) => tool.annotations?.readOnlyHint === true)).toBe(true)
+      expect(listed.tools.map((tool) => tool.name)).toEqual(["zm_tools_search", "zm_read", "zm_write"])
+      const found = await client.callTool({ name: "zm_tools_search", arguments: { query: "meetings list" } })
+      const [first] = (found.structuredContent as { items: unknown[] }).items
+      expect(first).toMatchObject({ command: "meetings list", writes: false })
       expect(existsSync(isolated)).toBe(false)
       expect(existsSync(join(install, "mcp-unused.db"))).toBe(false)
       child.stdin.end()

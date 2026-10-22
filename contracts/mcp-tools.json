@@ -2,1521 +2,112 @@
   {
     "annotations": {
       "destructiveHint": false,
-      "idempotentHint": true,
-      "openWorldHint": false,
+      "openWorldHint": true,
       "readOnlyHint": true
     },
     "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
-        "format": {
-          "enum": ["markdown", "vtt"],
+        "arguments": {
+          "additionalProperties": {},
+          "description": "that command's arguments",
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "command": {
+          "description": "a command zm_tools_search returned: \"messages list\"",
+          "minLength": 1,
           "type": "string"
-        },
-        "meeting": {
-          "minimum": 1,
-          "type": "integer"
-        },
-        "transcript_id": {
-          "minimum": 1,
-          "type": "integer"
         }
       },
-      "required": ["meeting", "format"],
+      "required": ["command"],
       "type": "object"
     },
-    "name": "meeting_export",
+    "name": "zm_read",
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "anyOf": [
         {
-          "anyOf": [
-            {
-              "additionalProperties": false,
-              "properties": {
-                "items": {
-                  "items": {},
-                  "type": "array"
-                },
-                "meta": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "accounts": {
-                      "items": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "type": "array"
-                    },
-                    "complete": {
-                      "type": "boolean"
-                    },
-                    "duration_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "issues": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "code": {
-                            "enum": [
-                              "validation_error",
-                              "configuration_error",
-                              "authentication_error",
-                              "permission_error",
-                              "not_found",
-                              "confirmation_required",
-                              "rate_limited",
-                              "timeout",
-                              "network_error",
-                              "provider_error",
-                              "provider_unavailable",
-                              "invalid_response",
-                              "outcome_unknown",
-                              "cancelled"
-                            ],
-                            "type": "string"
-                          },
-                          "reason": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "source": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["code", "source"],
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
-                    "run_id": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "timezone": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "truncated": {
-                      "type": "boolean"
-                    },
-                    "window": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "since": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        },
-                        "until": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        }
-                      },
-                      "required": [],
-                      "type": "object"
-                    }
-                  },
-                  "required": ["run_id", "duration_ms", "complete"],
-                  "type": "object"
-                },
-                "missing": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "field": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "step": {
-                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                        "type": "string"
-                      },
-                      "why": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      }
-                    },
-                    "required": ["field", "why"],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
-                  "type": "array"
-                },
-                "page": {
-                  "oneOf": [
-                    {
-                      "additionalProperties": false,
-                      "properties": {
-                        "has_more": {
-                          "type": "boolean"
-                        },
-                        "limit": {
-                          "minimum": 1,
-                          "type": "integer"
-                        },
-                        "mode": {
-                          "const": "page"
-                        },
-                        "next_page": {
-                          "minimum": 2,
-                          "type": "integer"
-                        }
-                      },
-                      "required": ["mode", "limit", "has_more"],
-                      "type": "object"
-                    },
-                    {
-                      "additionalProperties": false,
-                      "properties": {
-                        "has_more": {
-                          "type": "boolean"
-                        },
-                        "limit": {
-                          "minimum": 1,
-                          "type": "integer"
-                        },
-                        "mode": {
-                          "const": "cursor"
-                        },
-                        "next_cursor": {
-                          "pattern": "\\S",
-                          "type": "string"
-                        }
-                      },
-                      "required": ["mode", "limit", "has_more"],
-                      "type": "object"
-                    }
-                  ]
-                }
-              },
-              "required": ["items", "page", "meta"],
-              "type": "object"
-            },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "item": {},
-                "meta": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "accounts": {
-                      "items": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "type": "array"
-                    },
-                    "complete": {
-                      "type": "boolean"
-                    },
-                    "duration_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "issues": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "code": {
-                            "enum": [
-                              "validation_error",
-                              "configuration_error",
-                              "authentication_error",
-                              "permission_error",
-                              "not_found",
-                              "confirmation_required",
-                              "rate_limited",
-                              "timeout",
-                              "network_error",
-                              "provider_error",
-                              "provider_unavailable",
-                              "invalid_response",
-                              "outcome_unknown",
-                              "cancelled"
-                            ],
-                            "type": "string"
-                          },
-                          "reason": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "source": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["code", "source"],
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
-                    "run_id": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "timezone": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "truncated": {
-                      "type": "boolean"
-                    },
-                    "window": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "since": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        },
-                        "until": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        }
-                      },
-                      "required": [],
-                      "type": "object"
-                    }
-                  },
-                  "required": ["run_id", "duration_ms", "complete"],
-                  "type": "object"
-                },
-                "missing": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "field": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "step": {
-                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                        "type": "string"
-                      },
-                      "why": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      }
-                    },
-                    "required": ["field", "why"],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
-                  "type": "array"
-                }
-              },
-              "required": ["item", "meta"],
-              "type": "object"
-            }
-          ]
-        },
-        {
           "additionalProperties": false,
           "properties": {
-            "error": {
+            "items": {
+              "items": {},
+              "type": "array"
+            },
+            "meta": {
               "additionalProperties": false,
               "properties": {
-                "code": {
-                  "enum": [
-                    "validation_error",
-                    "configuration_error",
-                    "authentication_error",
-                    "permission_error",
-                    "not_found",
-                    "confirmation_required",
-                    "rate_limited",
-                    "timeout",
-                    "network_error",
-                    "provider_error",
-                    "provider_unavailable",
-                    "invalid_response",
-                    "outcome_unknown",
-                    "cancelled",
-                    "internal_error"
-                  ],
-                  "type": "string"
-                },
-                "details": {
-                  "additionalProperties": {},
-                  "propertyNames": {
+                "accounts": {
+                  "items": {
+                    "pattern": "\\S",
                     "type": "string"
                   },
-                  "type": "object"
-                },
-                "message": {
-                  "pattern": "\\S",
-                  "type": "string"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
                   "type": "array"
                 },
-                "param": {
-                  "pattern": "\\S",
-                  "type": "string"
+                "complete": {
+                  "type": "boolean"
                 },
-                "reason": {
-                  "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                  "type": "string"
+                "duration_ms": {
+                  "minimum": 0,
+                  "type": "integer"
                 },
-                "retry": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "after_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "safe": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": ["safe"],
-                  "type": "object"
-                },
-                "run_id": {
-                  "pattern": "\\S",
-                  "type": "string"
-                }
-              },
-              "required": ["code", "reason", "message", "retry"],
-              "type": "object"
-            }
-          },
-          "required": ["error"],
-          "type": "object"
-        }
-      ],
-      "type": "object"
-    }
-  },
-  {
-    "annotations": {
-      "destructiveHint": false,
-      "idempotentHint": true,
-      "openWorldHint": false,
-      "readOnlyHint": true
-    },
-    "inputSchema": {
-      "additionalProperties": false,
-      "properties": {
-        "cursor": {
-          "minLength": 1,
-          "type": "string"
-        },
-        "limit": {
-          "maximum": 1000,
-          "minimum": 1,
-          "type": "integer"
-        },
-        "max_read_bytes": {
-          "maximum": 67108864,
-          "minimum": 1,
-          "type": "integer"
-        },
-        "query": {
-          "minLength": 1,
-          "type": "string"
-        },
-        "scan_limit": {
-          "maximum": 10000,
-          "minimum": 1,
-          "type": "integer"
-        }
-      },
-      "required": ["query"],
-      "type": "object"
-    },
-    "name": "meeting_people",
-    "outputSchema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "anyOf": [
-        {
-          "anyOf": [
-            {
-              "additionalProperties": false,
-              "properties": {
-                "items": {
-                  "items": {},
-                  "type": "array"
-                },
-                "meta": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "accounts": {
-                      "items": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "type": "array"
-                    },
-                    "complete": {
-                      "type": "boolean"
-                    },
-                    "duration_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "issues": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "code": {
-                            "enum": [
-                              "validation_error",
-                              "configuration_error",
-                              "authentication_error",
-                              "permission_error",
-                              "not_found",
-                              "confirmation_required",
-                              "rate_limited",
-                              "timeout",
-                              "network_error",
-                              "provider_error",
-                              "provider_unavailable",
-                              "invalid_response",
-                              "outcome_unknown",
-                              "cancelled"
-                            ],
-                            "type": "string"
-                          },
-                          "reason": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "source": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["code", "source"],
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
-                    "run_id": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "timezone": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "truncated": {
-                      "type": "boolean"
-                    },
-                    "window": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "since": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        },
-                        "until": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        }
-                      },
-                      "required": [],
-                      "type": "object"
-                    }
-                  },
-                  "required": ["run_id", "duration_ms", "complete"],
-                  "type": "object"
-                },
-                "missing": {
+                "issues": {
                   "items": {
                     "additionalProperties": false,
                     "properties": {
-                      "field": {
-                        "pattern": "\\S",
+                      "code": {
+                        "enum": [
+                          "validation_error",
+                          "configuration_error",
+                          "authentication_error",
+                          "permission_error",
+                          "not_found",
+                          "confirmation_required",
+                          "rate_limited",
+                          "timeout",
+                          "network_error",
+                          "provider_error",
+                          "provider_unavailable",
+                          "invalid_response",
+                          "outcome_unknown",
+                          "cancelled"
+                        ],
                         "type": "string"
                       },
-                      "step": {
+                      "reason": {
                         "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                        "type": "string"
-                      },
-                      "why": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      }
-                    },
-                    "required": ["field", "why"],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
-                  "type": "array"
-                },
-                "page": {
-                  "oneOf": [
-                    {
-                      "additionalProperties": false,
-                      "properties": {
-                        "has_more": {
-                          "type": "boolean"
-                        },
-                        "limit": {
-                          "minimum": 1,
-                          "type": "integer"
-                        },
-                        "mode": {
-                          "const": "page"
-                        },
-                        "next_page": {
-                          "minimum": 2,
-                          "type": "integer"
-                        }
-                      },
-                      "required": ["mode", "limit", "has_more"],
-                      "type": "object"
-                    },
-                    {
-                      "additionalProperties": false,
-                      "properties": {
-                        "has_more": {
-                          "type": "boolean"
-                        },
-                        "limit": {
-                          "minimum": 1,
-                          "type": "integer"
-                        },
-                        "mode": {
-                          "const": "cursor"
-                        },
-                        "next_cursor": {
-                          "pattern": "\\S",
-                          "type": "string"
-                        }
-                      },
-                      "required": ["mode", "limit", "has_more"],
-                      "type": "object"
-                    }
-                  ]
-                }
-              },
-              "required": ["items", "page", "meta"],
-              "type": "object"
-            },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "item": {},
-                "meta": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "accounts": {
-                      "items": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "type": "array"
-                    },
-                    "complete": {
-                      "type": "boolean"
-                    },
-                    "duration_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "issues": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "code": {
-                            "enum": [
-                              "validation_error",
-                              "configuration_error",
-                              "authentication_error",
-                              "permission_error",
-                              "not_found",
-                              "confirmation_required",
-                              "rate_limited",
-                              "timeout",
-                              "network_error",
-                              "provider_error",
-                              "provider_unavailable",
-                              "invalid_response",
-                              "outcome_unknown",
-                              "cancelled"
-                            ],
-                            "type": "string"
-                          },
-                          "reason": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "source": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["code", "source"],
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
-                    "run_id": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "timezone": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "truncated": {
-                      "type": "boolean"
-                    },
-                    "window": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "since": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        },
-                        "until": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        }
-                      },
-                      "required": [],
-                      "type": "object"
-                    }
-                  },
-                  "required": ["run_id", "duration_ms", "complete"],
-                  "type": "object"
-                },
-                "missing": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "field": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "step": {
-                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                        "type": "string"
-                      },
-                      "why": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      }
-                    },
-                    "required": ["field", "why"],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
-                  "type": "array"
-                }
-              },
-              "required": ["item", "meta"],
-              "type": "object"
-            }
-          ]
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "error": {
-              "additionalProperties": false,
-              "properties": {
-                "code": {
-                  "enum": [
-                    "validation_error",
-                    "configuration_error",
-                    "authentication_error",
-                    "permission_error",
-                    "not_found",
-                    "confirmation_required",
-                    "rate_limited",
-                    "timeout",
-                    "network_error",
-                    "provider_error",
-                    "provider_unavailable",
-                    "invalid_response",
-                    "outcome_unknown",
-                    "cancelled",
-                    "internal_error"
-                  ],
-                  "type": "string"
-                },
-                "details": {
-                  "additionalProperties": {},
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "type": "object"
-                },
-                "message": {
-                  "pattern": "\\S",
-                  "type": "string"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
-                  "type": "array"
-                },
-                "param": {
-                  "pattern": "\\S",
-                  "type": "string"
-                },
-                "reason": {
-                  "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                  "type": "string"
-                },
-                "retry": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "after_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "safe": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": ["safe"],
-                  "type": "object"
-                },
-                "run_id": {
-                  "pattern": "\\S",
-                  "type": "string"
-                }
-              },
-              "required": ["code", "reason", "message", "retry"],
-              "type": "object"
-            }
-          },
-          "required": ["error"],
-          "type": "object"
-        }
-      ],
-      "type": "object"
-    }
-  },
-  {
-    "annotations": {
-      "destructiveHint": false,
-      "idempotentHint": true,
-      "openWorldHint": false,
-      "readOnlyHint": true
-    },
-    "inputSchema": {
-      "additionalProperties": false,
-      "properties": {
-        "cursor": {
-          "maxLength": 4096,
-          "minLength": 1,
-          "type": "string"
-        },
-        "limit": {
-          "maximum": 1000,
-          "minimum": 1,
-          "type": "integer"
-        },
-        "max_read_bytes": {
-          "maximum": 67108864,
-          "minimum": 1,
-          "type": "integer"
-        },
-        "project": {
-          "maxLength": 200,
-          "minLength": 1,
-          "type": "string"
-        },
-        "query": {
-          "maxLength": 8192,
-          "type": "string"
-        }
-      },
-      "required": ["project"],
-      "type": "object"
-    },
-    "name": "meeting_project_evidence",
-    "outputSchema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "anyOf": [
-        {
-          "additionalProperties": false,
-          "properties": {
-            "item": {
-              "additionalProperties": false,
-              "properties": {
-                "account_id": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "association": {
-                  "const": "unconfirmed-word-evidence"
-                },
-                "coverage": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "archive_completeness": {
-                      "const": "unknown"
-                    },
-                    "current_revisions": {
-                      "const": true
-                    },
-                    "duplicates": {
-                      "const": "may-repeat-between-terms"
-                    },
-                    "index_completeness": {
-                      "const": "unknown"
-                    },
-                    "indexing": {
-                      "enum": ["ready", "pending"],
-                      "type": "string"
-                    },
-                    "remaining_terms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "term_index": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "terms_total": {
-                      "minimum": 0,
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "archive_completeness",
-                    "current_revisions",
-                    "indexing",
-                    "index_completeness",
-                    "term_index",
-                    "terms_total",
-                    "remaining_terms",
-                    "duplicates"
-                  ],
-                  "type": "object"
-                },
-                "hits": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "corrections": {
-                        "items": {
-                          "additionalProperties": false,
-                          "properties": {
-                            "from": {
-                              "type": "string"
-                            },
-                            "to": {
-                              "items": {
-                                "type": "string"
-                              },
-                              "type": "array"
-                            }
-                          },
-                          "required": ["from", "to"],
-                          "type": "object"
-                        },
-                        "type": "array"
-                      },
-                      "excerpt": {
-                        "type": "string"
-                      },
-                      "id": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "match": {
-                        "enum": ["words", "corrected"],
-                        "type": "string"
-                      },
-                      "meeting": {
-                        "pattern": "^[a-z]+:\\S+$",
-                        "type": "string"
-                      },
-                      "offset_ms": {
-                        "anyOf": [
-                          {
-                            "minimum": 0,
-                            "type": "integer"
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "ref": {
-                        "pattern": "^[a-z]+:\\S+$",
-                        "type": "string"
-                      },
-                      "scope": {
-                        "enum": ["transcript", "chat", "summary"],
                         "type": "string"
                       },
                       "source": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "ref": {
-                            "pattern": "^[a-z]+:\\S+$",
-                            "type": "string"
-                          },
-                          "started_at": {
-                            "anyOf": [
-                              {
-                                "format": "date-time",
-                                "pattern": "Z$",
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "title": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "url": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          }
-                        },
-                        "required": ["ref", "title", "started_at", "url"],
-                        "type": "object"
+                        "pattern": "\\S",
+                        "type": "string"
                       }
                     },
-                    "required": ["ref", "meeting", "scope", "id", "excerpt", "offset_ms"],
+                    "required": ["code", "source"],
                     "type": "object"
                   },
                   "type": "array"
                 },
-                "kind": {
-                  "const": "meeting_project_evidence"
-                },
-                "limits": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "limit": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "max_read_bytes": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "max_terms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "max_vocabulary_read_bytes": {
-                      "minimum": 0,
-                      "type": "integer"
-                    }
-                  },
-                  "required": ["limit", "max_read_bytes", "max_vocabulary_read_bytes", "max_terms"],
-                  "type": "object"
-                },
-                "page": {
-                  "oneOf": [
-                    {
-                      "additionalProperties": false,
-                      "properties": {
-                        "has_more": {
-                          "type": "boolean"
-                        },
-                        "limit": {
-                          "minimum": 1,
-                          "type": "integer"
-                        },
-                        "mode": {
-                          "const": "page"
-                        },
-                        "next_page": {
-                          "minimum": 2,
-                          "type": "integer"
-                        }
-                      },
-                      "required": ["mode", "limit", "has_more"],
-                      "type": "object"
-                    },
-                    {
-                      "additionalProperties": false,
-                      "properties": {
-                        "has_more": {
-                          "type": "boolean"
-                        },
-                        "limit": {
-                          "minimum": 1,
-                          "type": "integer"
-                        },
-                        "mode": {
-                          "const": "cursor"
-                        },
-                        "next_cursor": {
-                          "pattern": "\\S",
-                          "type": "string"
-                        }
-                      },
-                      "required": ["mode", "limit", "has_more"],
-                      "type": "object"
-                    }
-                  ]
-                },
-                "project": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "id": {
-                      "minLength": 1,
-                      "type": "string"
-                    },
-                    "key": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "name": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["id", "name", "key"],
-                  "type": "object"
-                },
-                "query": {
+                "run_id": {
+                  "pattern": "\\S",
                   "type": "string"
                 },
-                "schema_version": {
-                  "const": 1
+                "timezone": {
+                  "pattern": "\\S",
+                  "type": "string"
                 },
-                "selection": {
+                "truncated": {
+                  "type": "boolean"
+                },
+                "window": {
                   "additionalProperties": false,
                   "properties": {
-                    "event_id": {
-                      "minLength": 1,
-                      "type": "string"
-                    },
-                    "identity_id": {
-                      "minLength": 1,
-                      "type": "string"
-                    },
-                    "meeting_id": {
-                      "minLength": 1,
-                      "type": "string"
-                    },
-                    "person_id": {
-                      "minLength": 1,
-                      "type": "string"
-                    },
-                    "series_id": {
-                      "minLength": 1,
-                      "type": "string"
-                    },
                     "since": {
                       "format": "date-time",
                       "pattern": "Z$",
-                      "type": "string"
-                    },
-                    "tag_id": {
-                      "minLength": 1,
                       "type": "string"
                     },
                     "until": {
@@ -1527,47 +118,152 @@
                   },
                   "required": [],
                   "type": "object"
+                }
+              },
+              "required": ["run_id", "duration_ms", "complete"],
+              "type": "object"
+            },
+            "missing": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "field": {
+                    "pattern": "\\S",
+                    "type": "string"
+                  },
+                  "step": {
+                    "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
+                    "type": "string"
+                  },
+                  "why": {
+                    "pattern": "\\S",
+                    "type": "string"
+                  }
                 },
-                "term": {
+                "required": ["field", "why"],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "next": {
+              "items": {
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "args": {
+                        "additionalProperties": {},
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "type": "object"
+                      },
+                      "command": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      },
+                      "kind": {
+                        "const": "command"
+                      },
+                      "line": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      },
+                      "safe_to_auto_execute": {
+                        "type": "boolean"
+                      },
+                      "step": {
+                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
+                        "type": "string"
+                      },
+                      "why": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      }
+                    },
+                    "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "user_action"
+                      },
+                      "safe_to_auto_execute": {
+                        "const": false
+                      },
+                      "step": {
+                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
+                        "type": "string"
+                      },
+                      "why": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      }
+                    },
+                    "required": ["kind", "step", "why", "safe_to_auto_execute"],
+                    "type": "object"
+                  }
+                ]
+              },
+              "maxItems": 2,
+              "type": "array"
+            },
+            "page": {
+              "oneOf": [
+                {
                   "additionalProperties": false,
                   "properties": {
-                    "alias_id": {
-                      "minLength": 1,
-                      "type": "string"
+                    "has_more": {
+                      "type": "boolean"
                     },
-                    "kind": {
-                      "enum": ["canonical", "key", "alias"],
-                      "type": "string"
+                    "limit": {
+                      "minimum": 1,
+                      "type": "integer"
                     },
-                    "name": {
+                    "mode": {
+                      "const": "page"
+                    },
+                    "next_page": {
+                      "minimum": 2,
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["mode", "limit", "has_more"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "limit": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "mode": {
+                      "const": "cursor"
+                    },
+                    "next_cursor": {
+                      "pattern": "\\S",
                       "type": "string"
                     }
                   },
-                  "required": ["name", "kind"],
+                  "required": ["mode", "limit", "has_more"],
                   "type": "object"
-                },
-                "vocabulary_fingerprint": {
-                  "minLength": 1,
-                  "type": "string"
                 }
-              },
-              "required": [
-                "schema_version",
-                "kind",
-                "account_id",
-                "query",
-                "project",
-                "term",
-                "hits",
-                "association",
-                "vocabulary_fingerprint",
-                "selection",
-                "limits",
-                "page",
-                "coverage"
-              ],
-              "type": "object"
-            },
+              ]
+            }
+          },
+          "required": ["items", "page", "meta"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "item": {},
             "meta": {
               "additionalProperties": false,
               "properties": {
@@ -1744,142 +440,6 @@
           },
           "required": ["item", "meta"],
           "type": "object"
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "error": {
-              "additionalProperties": false,
-              "properties": {
-                "code": {
-                  "enum": [
-                    "validation_error",
-                    "configuration_error",
-                    "authentication_error",
-                    "permission_error",
-                    "not_found",
-                    "confirmation_required",
-                    "rate_limited",
-                    "timeout",
-                    "network_error",
-                    "provider_error",
-                    "provider_unavailable",
-                    "invalid_response",
-                    "outcome_unknown",
-                    "cancelled",
-                    "internal_error"
-                  ],
-                  "type": "string"
-                },
-                "details": {
-                  "additionalProperties": {},
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "type": "object"
-                },
-                "message": {
-                  "pattern": "\\S",
-                  "type": "string"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
-                  "type": "array"
-                },
-                "param": {
-                  "pattern": "\\S",
-                  "type": "string"
-                },
-                "reason": {
-                  "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                  "type": "string"
-                },
-                "retry": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "after_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "safe": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": ["safe"],
-                  "type": "object"
-                },
-                "run_id": {
-                  "pattern": "\\S",
-                  "type": "string"
-                }
-              },
-              "required": ["code", "reason", "message", "retry"],
-              "type": "object"
-            }
-          },
-          "required": ["error"],
-          "type": "object"
         }
       ],
       "type": "object"
@@ -1893,2962 +453,466 @@
       "readOnlyHint": true
     },
     "inputSchema": {
-      "additionalProperties": false,
-      "properties": {
-        "meeting": {
-          "minimum": 1,
-          "type": "integer"
-        }
-      },
-      "required": ["meeting"],
-      "type": "object"
-    },
-    "name": "meeting_show",
-    "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "anyOf": [
-        {
-          "anyOf": [
-            {
-              "additionalProperties": false,
-              "properties": {
-                "items": {
-                  "items": {},
-                  "type": "array"
-                },
-                "meta": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "accounts": {
-                      "items": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "type": "array"
-                    },
-                    "complete": {
-                      "type": "boolean"
-                    },
-                    "duration_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "issues": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "code": {
-                            "enum": [
-                              "validation_error",
-                              "configuration_error",
-                              "authentication_error",
-                              "permission_error",
-                              "not_found",
-                              "confirmation_required",
-                              "rate_limited",
-                              "timeout",
-                              "network_error",
-                              "provider_error",
-                              "provider_unavailable",
-                              "invalid_response",
-                              "outcome_unknown",
-                              "cancelled"
-                            ],
-                            "type": "string"
-                          },
-                          "reason": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "source": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["code", "source"],
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
-                    "run_id": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "timezone": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "truncated": {
-                      "type": "boolean"
-                    },
-                    "window": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "since": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        },
-                        "until": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        }
-                      },
-                      "required": [],
-                      "type": "object"
-                    }
-                  },
-                  "required": ["run_id", "duration_ms", "complete"],
-                  "type": "object"
-                },
-                "missing": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "field": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "step": {
-                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                        "type": "string"
-                      },
-                      "why": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      }
-                    },
-                    "required": ["field", "why"],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
-                  "type": "array"
-                },
-                "page": {
-                  "oneOf": [
-                    {
-                      "additionalProperties": false,
-                      "properties": {
-                        "has_more": {
-                          "type": "boolean"
-                        },
-                        "limit": {
-                          "minimum": 1,
-                          "type": "integer"
-                        },
-                        "mode": {
-                          "const": "page"
-                        },
-                        "next_page": {
-                          "minimum": 2,
-                          "type": "integer"
-                        }
-                      },
-                      "required": ["mode", "limit", "has_more"],
-                      "type": "object"
-                    },
-                    {
-                      "additionalProperties": false,
-                      "properties": {
-                        "has_more": {
-                          "type": "boolean"
-                        },
-                        "limit": {
-                          "minimum": 1,
-                          "type": "integer"
-                        },
-                        "mode": {
-                          "const": "cursor"
-                        },
-                        "next_cursor": {
-                          "pattern": "\\S",
-                          "type": "string"
-                        }
-                      },
-                      "required": ["mode", "limit", "has_more"],
-                      "type": "object"
-                    }
-                  ]
-                }
-              },
-              "required": ["items", "page", "meta"],
-              "type": "object"
-            },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "item": {},
-                "meta": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "accounts": {
-                      "items": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "type": "array"
-                    },
-                    "complete": {
-                      "type": "boolean"
-                    },
-                    "duration_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "issues": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "code": {
-                            "enum": [
-                              "validation_error",
-                              "configuration_error",
-                              "authentication_error",
-                              "permission_error",
-                              "not_found",
-                              "confirmation_required",
-                              "rate_limited",
-                              "timeout",
-                              "network_error",
-                              "provider_error",
-                              "provider_unavailable",
-                              "invalid_response",
-                              "outcome_unknown",
-                              "cancelled"
-                            ],
-                            "type": "string"
-                          },
-                          "reason": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "source": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["code", "source"],
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
-                    "run_id": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "timezone": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "truncated": {
-                      "type": "boolean"
-                    },
-                    "window": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "since": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        },
-                        "until": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        }
-                      },
-                      "required": [],
-                      "type": "object"
-                    }
-                  },
-                  "required": ["run_id", "duration_ms", "complete"],
-                  "type": "object"
-                },
-                "missing": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "field": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "step": {
-                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                        "type": "string"
-                      },
-                      "why": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      }
-                    },
-                    "required": ["field", "why"],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
-                  "type": "array"
-                }
-              },
-              "required": ["item", "meta"],
-              "type": "object"
-            }
-          ]
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "error": {
-              "additionalProperties": false,
-              "properties": {
-                "code": {
-                  "enum": [
-                    "validation_error",
-                    "configuration_error",
-                    "authentication_error",
-                    "permission_error",
-                    "not_found",
-                    "confirmation_required",
-                    "rate_limited",
-                    "timeout",
-                    "network_error",
-                    "provider_error",
-                    "provider_unavailable",
-                    "invalid_response",
-                    "outcome_unknown",
-                    "cancelled",
-                    "internal_error"
-                  ],
-                  "type": "string"
-                },
-                "details": {
-                  "additionalProperties": {},
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "type": "object"
-                },
-                "message": {
-                  "pattern": "\\S",
-                  "type": "string"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
-                  "type": "array"
-                },
-                "param": {
-                  "pattern": "\\S",
-                  "type": "string"
-                },
-                "reason": {
-                  "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                  "type": "string"
-                },
-                "retry": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "after_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "safe": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": ["safe"],
-                  "type": "object"
-                },
-                "run_id": {
-                  "pattern": "\\S",
-                  "type": "string"
-                }
-              },
-              "required": ["code", "reason", "message", "retry"],
-              "type": "object"
-            }
-          },
-          "required": ["error"],
-          "type": "object"
-        }
-      ],
-      "type": "object"
-    }
-  },
-  {
-    "annotations": {
-      "destructiveHint": false,
-      "idempotentHint": true,
-      "openWorldHint": false,
-      "readOnlyHint": true
-    },
-    "inputSchema": {
       "additionalProperties": false,
       "properties": {
-        "meeting": {
-          "minimum": 1,
-          "type": "integer"
-        }
-      },
-      "required": ["meeting"],
-      "type": "object"
-    },
-    "name": "meeting_summary",
-    "outputSchema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "anyOf": [
-        {
-          "anyOf": [
-            {
-              "additionalProperties": false,
-              "properties": {
-                "items": {
-                  "items": {},
-                  "type": "array"
-                },
-                "meta": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "accounts": {
-                      "items": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "type": "array"
-                    },
-                    "complete": {
-                      "type": "boolean"
-                    },
-                    "duration_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "issues": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "code": {
-                            "enum": [
-                              "validation_error",
-                              "configuration_error",
-                              "authentication_error",
-                              "permission_error",
-                              "not_found",
-                              "confirmation_required",
-                              "rate_limited",
-                              "timeout",
-                              "network_error",
-                              "provider_error",
-                              "provider_unavailable",
-                              "invalid_response",
-                              "outcome_unknown",
-                              "cancelled"
-                            ],
-                            "type": "string"
-                          },
-                          "reason": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "source": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["code", "source"],
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
-                    "run_id": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "timezone": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "truncated": {
-                      "type": "boolean"
-                    },
-                    "window": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "since": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        },
-                        "until": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        }
-                      },
-                      "required": [],
-                      "type": "object"
-                    }
-                  },
-                  "required": ["run_id", "duration_ms", "complete"],
-                  "type": "object"
-                },
-                "missing": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "field": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "step": {
-                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                        "type": "string"
-                      },
-                      "why": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      }
-                    },
-                    "required": ["field", "why"],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
-                  "type": "array"
-                },
-                "page": {
-                  "oneOf": [
-                    {
-                      "additionalProperties": false,
-                      "properties": {
-                        "has_more": {
-                          "type": "boolean"
-                        },
-                        "limit": {
-                          "minimum": 1,
-                          "type": "integer"
-                        },
-                        "mode": {
-                          "const": "page"
-                        },
-                        "next_page": {
-                          "minimum": 2,
-                          "type": "integer"
-                        }
-                      },
-                      "required": ["mode", "limit", "has_more"],
-                      "type": "object"
-                    },
-                    {
-                      "additionalProperties": false,
-                      "properties": {
-                        "has_more": {
-                          "type": "boolean"
-                        },
-                        "limit": {
-                          "minimum": 1,
-                          "type": "integer"
-                        },
-                        "mode": {
-                          "const": "cursor"
-                        },
-                        "next_cursor": {
-                          "pattern": "\\S",
-                          "type": "string"
-                        }
-                      },
-                      "required": ["mode", "limit", "has_more"],
-                      "type": "object"
-                    }
-                  ]
-                }
-              },
-              "required": ["items", "page", "meta"],
-              "type": "object"
-            },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "item": {},
-                "meta": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "accounts": {
-                      "items": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "type": "array"
-                    },
-                    "complete": {
-                      "type": "boolean"
-                    },
-                    "duration_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "issues": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "code": {
-                            "enum": [
-                              "validation_error",
-                              "configuration_error",
-                              "authentication_error",
-                              "permission_error",
-                              "not_found",
-                              "confirmation_required",
-                              "rate_limited",
-                              "timeout",
-                              "network_error",
-                              "provider_error",
-                              "provider_unavailable",
-                              "invalid_response",
-                              "outcome_unknown",
-                              "cancelled"
-                            ],
-                            "type": "string"
-                          },
-                          "reason": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "source": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["code", "source"],
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
-                    "run_id": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "timezone": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "truncated": {
-                      "type": "boolean"
-                    },
-                    "window": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "since": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        },
-                        "until": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        }
-                      },
-                      "required": [],
-                      "type": "object"
-                    }
-                  },
-                  "required": ["run_id", "duration_ms", "complete"],
-                  "type": "object"
-                },
-                "missing": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "field": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "step": {
-                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                        "type": "string"
-                      },
-                      "why": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      }
-                    },
-                    "required": ["field", "why"],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
-                  "type": "array"
-                }
-              },
-              "required": ["item", "meta"],
-              "type": "object"
-            }
-          ]
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "error": {
-              "additionalProperties": false,
-              "properties": {
-                "code": {
-                  "enum": [
-                    "validation_error",
-                    "configuration_error",
-                    "authentication_error",
-                    "permission_error",
-                    "not_found",
-                    "confirmation_required",
-                    "rate_limited",
-                    "timeout",
-                    "network_error",
-                    "provider_error",
-                    "provider_unavailable",
-                    "invalid_response",
-                    "outcome_unknown",
-                    "cancelled",
-                    "internal_error"
-                  ],
-                  "type": "string"
-                },
-                "details": {
-                  "additionalProperties": {},
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "type": "object"
-                },
-                "message": {
-                  "pattern": "\\S",
-                  "type": "string"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
-                  "type": "array"
-                },
-                "param": {
-                  "pattern": "\\S",
-                  "type": "string"
-                },
-                "reason": {
-                  "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                  "type": "string"
-                },
-                "retry": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "after_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "safe": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": ["safe"],
-                  "type": "object"
-                },
-                "run_id": {
-                  "pattern": "\\S",
-                  "type": "string"
-                }
-              },
-              "required": ["code", "reason", "message", "retry"],
-              "type": "object"
-            }
-          },
-          "required": ["error"],
-          "type": "object"
-        }
-      ],
-      "type": "object"
-    }
-  },
-  {
-    "annotations": {
-      "destructiveHint": false,
-      "idempotentHint": true,
-      "openWorldHint": false,
-      "readOnlyHint": true
-    },
-    "inputSchema": {
-      "additionalProperties": false,
-      "properties": {
-        "history": {
-          "type": "boolean"
-        },
-        "meeting": {
-          "minimum": 1,
-          "type": "integer"
-        }
-      },
-      "required": ["meeting"],
-      "type": "object"
-    },
-    "name": "meeting_transcript",
-    "outputSchema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "anyOf": [
-        {
-          "anyOf": [
-            {
-              "additionalProperties": false,
-              "properties": {
-                "items": {
-                  "items": {},
-                  "type": "array"
-                },
-                "meta": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "accounts": {
-                      "items": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "type": "array"
-                    },
-                    "complete": {
-                      "type": "boolean"
-                    },
-                    "duration_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "issues": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "code": {
-                            "enum": [
-                              "validation_error",
-                              "configuration_error",
-                              "authentication_error",
-                              "permission_error",
-                              "not_found",
-                              "confirmation_required",
-                              "rate_limited",
-                              "timeout",
-                              "network_error",
-                              "provider_error",
-                              "provider_unavailable",
-                              "invalid_response",
-                              "outcome_unknown",
-                              "cancelled"
-                            ],
-                            "type": "string"
-                          },
-                          "reason": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "source": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["code", "source"],
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
-                    "run_id": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "timezone": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "truncated": {
-                      "type": "boolean"
-                    },
-                    "window": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "since": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        },
-                        "until": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        }
-                      },
-                      "required": [],
-                      "type": "object"
-                    }
-                  },
-                  "required": ["run_id", "duration_ms", "complete"],
-                  "type": "object"
-                },
-                "missing": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "field": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "step": {
-                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                        "type": "string"
-                      },
-                      "why": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      }
-                    },
-                    "required": ["field", "why"],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
-                  "type": "array"
-                },
-                "page": {
-                  "oneOf": [
-                    {
-                      "additionalProperties": false,
-                      "properties": {
-                        "has_more": {
-                          "type": "boolean"
-                        },
-                        "limit": {
-                          "minimum": 1,
-                          "type": "integer"
-                        },
-                        "mode": {
-                          "const": "page"
-                        },
-                        "next_page": {
-                          "minimum": 2,
-                          "type": "integer"
-                        }
-                      },
-                      "required": ["mode", "limit", "has_more"],
-                      "type": "object"
-                    },
-                    {
-                      "additionalProperties": false,
-                      "properties": {
-                        "has_more": {
-                          "type": "boolean"
-                        },
-                        "limit": {
-                          "minimum": 1,
-                          "type": "integer"
-                        },
-                        "mode": {
-                          "const": "cursor"
-                        },
-                        "next_cursor": {
-                          "pattern": "\\S",
-                          "type": "string"
-                        }
-                      },
-                      "required": ["mode", "limit", "has_more"],
-                      "type": "object"
-                    }
-                  ]
-                }
-              },
-              "required": ["items", "page", "meta"],
-              "type": "object"
-            },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "item": {},
-                "meta": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "accounts": {
-                      "items": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "type": "array"
-                    },
-                    "complete": {
-                      "type": "boolean"
-                    },
-                    "duration_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "issues": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "code": {
-                            "enum": [
-                              "validation_error",
-                              "configuration_error",
-                              "authentication_error",
-                              "permission_error",
-                              "not_found",
-                              "confirmation_required",
-                              "rate_limited",
-                              "timeout",
-                              "network_error",
-                              "provider_error",
-                              "provider_unavailable",
-                              "invalid_response",
-                              "outcome_unknown",
-                              "cancelled"
-                            ],
-                            "type": "string"
-                          },
-                          "reason": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "source": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["code", "source"],
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
-                    "run_id": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "timezone": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "truncated": {
-                      "type": "boolean"
-                    },
-                    "window": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "since": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        },
-                        "until": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        }
-                      },
-                      "required": [],
-                      "type": "object"
-                    }
-                  },
-                  "required": ["run_id", "duration_ms", "complete"],
-                  "type": "object"
-                },
-                "missing": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "field": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "step": {
-                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                        "type": "string"
-                      },
-                      "why": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      }
-                    },
-                    "required": ["field", "why"],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
-                  "type": "array"
-                }
-              },
-              "required": ["item", "meta"],
-              "type": "object"
-            }
-          ]
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "error": {
-              "additionalProperties": false,
-              "properties": {
-                "code": {
-                  "enum": [
-                    "validation_error",
-                    "configuration_error",
-                    "authentication_error",
-                    "permission_error",
-                    "not_found",
-                    "confirmation_required",
-                    "rate_limited",
-                    "timeout",
-                    "network_error",
-                    "provider_error",
-                    "provider_unavailable",
-                    "invalid_response",
-                    "outcome_unknown",
-                    "cancelled",
-                    "internal_error"
-                  ],
-                  "type": "string"
-                },
-                "details": {
-                  "additionalProperties": {},
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "type": "object"
-                },
-                "message": {
-                  "pattern": "\\S",
-                  "type": "string"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
-                  "type": "array"
-                },
-                "param": {
-                  "pattern": "\\S",
-                  "type": "string"
-                },
-                "reason": {
-                  "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                  "type": "string"
-                },
-                "retry": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "after_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "safe": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": ["safe"],
-                  "type": "object"
-                },
-                "run_id": {
-                  "pattern": "\\S",
-                  "type": "string"
-                }
-              },
-              "required": ["code", "reason", "message", "retry"],
-              "type": "object"
-            }
-          },
-          "required": ["error"],
-          "type": "object"
-        }
-      ],
-      "type": "object"
-    }
-  },
-  {
-    "annotations": {
-      "destructiveHint": false,
-      "idempotentHint": true,
-      "openWorldHint": false,
-      "readOnlyHint": true
-    },
-    "inputSchema": {
-      "additionalProperties": false,
-      "properties": {
-        "event_id": {
-          "minimum": 1,
-          "type": "integer"
-        },
-        "limit": {
-          "minimum": 1,
-          "type": "integer"
-        },
-        "page": {
-          "minimum": 1,
-          "type": "integer"
-        },
         "query": {
-          "minLength": 1,
+          "description": "words that describe the task",
           "type": "string"
-        },
-        "series_id": {
-          "minimum": 1,
-          "type": "integer"
         }
       },
       "required": [],
       "type": "object"
     },
-    "name": "meetings_list",
+    "name": "zm_tools_search",
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "anyOf": [
-        {
-          "anyOf": [
-            {
-              "additionalProperties": false,
-              "properties": {
-                "items": {
-                  "items": {},
-                  "type": "array"
-                },
-                "meta": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "accounts": {
-                      "items": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "type": "array"
-                    },
-                    "complete": {
-                      "type": "boolean"
-                    },
-                    "duration_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "issues": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "code": {
-                            "enum": [
-                              "validation_error",
-                              "configuration_error",
-                              "authentication_error",
-                              "permission_error",
-                              "not_found",
-                              "confirmation_required",
-                              "rate_limited",
-                              "timeout",
-                              "network_error",
-                              "provider_error",
-                              "provider_unavailable",
-                              "invalid_response",
-                              "outcome_unknown",
-                              "cancelled"
-                            ],
-                            "type": "string"
-                          },
-                          "reason": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "source": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["code", "source"],
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
-                    "run_id": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "timezone": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "truncated": {
-                      "type": "boolean"
-                    },
-                    "window": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "since": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        },
-                        "until": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        }
-                      },
-                      "required": [],
-                      "type": "object"
-                    }
-                  },
-                  "required": ["run_id", "duration_ms", "complete"],
-                  "type": "object"
-                },
-                "missing": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "field": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "step": {
-                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                        "type": "string"
-                      },
-                      "why": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      }
-                    },
-                    "required": ["field", "why"],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
-                  "type": "array"
-                },
-                "page": {
-                  "oneOf": [
-                    {
-                      "additionalProperties": false,
-                      "properties": {
-                        "has_more": {
-                          "type": "boolean"
-                        },
-                        "limit": {
-                          "minimum": 1,
-                          "type": "integer"
-                        },
-                        "mode": {
-                          "const": "page"
-                        },
-                        "next_page": {
-                          "minimum": 2,
-                          "type": "integer"
-                        }
-                      },
-                      "required": ["mode", "limit", "has_more"],
-                      "type": "object"
-                    },
-                    {
-                      "additionalProperties": false,
-                      "properties": {
-                        "has_more": {
-                          "type": "boolean"
-                        },
-                        "limit": {
-                          "minimum": 1,
-                          "type": "integer"
-                        },
-                        "mode": {
-                          "const": "cursor"
-                        },
-                        "next_cursor": {
-                          "pattern": "\\S",
-                          "type": "string"
-                        }
-                      },
-                      "required": ["mode", "limit", "has_more"],
-                      "type": "object"
-                    }
-                  ]
-                }
-              },
-              "required": ["items", "page", "meta"],
-              "type": "object"
-            },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "item": {},
-                "meta": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "accounts": {
-                      "items": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "type": "array"
-                    },
-                    "complete": {
-                      "type": "boolean"
-                    },
-                    "duration_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "issues": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "code": {
-                            "enum": [
-                              "validation_error",
-                              "configuration_error",
-                              "authentication_error",
-                              "permission_error",
-                              "not_found",
-                              "confirmation_required",
-                              "rate_limited",
-                              "timeout",
-                              "network_error",
-                              "provider_error",
-                              "provider_unavailable",
-                              "invalid_response",
-                              "outcome_unknown",
-                              "cancelled"
-                            ],
-                            "type": "string"
-                          },
-                          "reason": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "source": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["code", "source"],
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
-                    "run_id": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "timezone": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "truncated": {
-                      "type": "boolean"
-                    },
-                    "window": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "since": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        },
-                        "until": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        }
-                      },
-                      "required": [],
-                      "type": "object"
-                    }
-                  },
-                  "required": ["run_id", "duration_ms", "complete"],
-                  "type": "object"
-                },
-                "missing": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "field": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "step": {
-                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                        "type": "string"
-                      },
-                      "why": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      }
-                    },
-                    "required": ["field", "why"],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
-                  "type": "array"
-                }
-              },
-              "required": ["item", "meta"],
-              "type": "object"
-            }
-          ]
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "error": {
-              "additionalProperties": false,
-              "properties": {
-                "code": {
-                  "enum": [
-                    "validation_error",
-                    "configuration_error",
-                    "authentication_error",
-                    "permission_error",
-                    "not_found",
-                    "confirmation_required",
-                    "rate_limited",
-                    "timeout",
-                    "network_error",
-                    "provider_error",
-                    "provider_unavailable",
-                    "invalid_response",
-                    "outcome_unknown",
-                    "cancelled",
-                    "internal_error"
-                  ],
-                  "type": "string"
-                },
-                "details": {
-                  "additionalProperties": {},
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "type": "object"
-                },
-                "message": {
-                  "pattern": "\\S",
-                  "type": "string"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
-                  "type": "array"
-                },
-                "param": {
-                  "pattern": "\\S",
-                  "type": "string"
-                },
-                "reason": {
-                  "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                  "type": "string"
-                },
-                "retry": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "after_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "safe": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": ["safe"],
-                  "type": "object"
-                },
-                "run_id": {
-                  "pattern": "\\S",
-                  "type": "string"
-                }
-              },
-              "required": ["code", "reason", "message", "retry"],
-              "type": "object"
-            }
-          },
-          "required": ["error"],
-          "type": "object"
-        }
-      ],
+      "properties": {},
+      "required": [],
       "type": "object"
     }
   },
   {
     "annotations": {
-      "destructiveHint": false,
-      "idempotentHint": true,
-      "openWorldHint": false,
-      "readOnlyHint": true
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true,
+      "readOnlyHint": false
     },
     "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
-        "cursor": {
-          "maxLength": 1000,
+        "arguments": {
+          "additionalProperties": {},
+          "description": "that command's arguments",
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "command": {
+          "description": "a command zm_tools_search returned: \"messages list\"",
           "minLength": 1,
           "type": "string"
-        },
-        "event_id": {
-          "maximum": 9007199254740991,
-          "minimum": 1,
-          "type": "integer"
-        },
-        "identity_id": {
-          "maximum": 9007199254740991,
-          "minimum": 1,
-          "type": "integer"
-        },
-        "limit": {
-          "maximum": 1000,
-          "minimum": 1,
-          "type": "integer"
-        },
-        "max_read_bytes": {
-          "maximum": 67108864,
-          "minimum": 1,
-          "type": "integer"
-        },
-        "meeting_id": {
-          "maximum": 9007199254740991,
-          "minimum": 1,
-          "type": "integer"
-        },
-        "person_id": {
-          "maximum": 9007199254740991,
-          "minimum": 1,
-          "type": "integer"
-        },
-        "project": {
-          "maxLength": 200,
-          "minLength": 1,
-          "type": "string"
-        },
-        "query": {
-          "description": "The messages query language: words (all required), OR, (groups), NOT or -word, \"a phrase\", \"a b\"~N for words within N transcript lines (at most 20), exact:word, from:\"Name\" for who said the line",
-          "minLength": 1,
-          "type": "string"
-        },
-        "series_id": {
-          "maximum": 9007199254740991,
-          "minimum": 1,
-          "type": "integer"
-        },
-        "since_time": {
-          "maximum": 8640000000000000,
-          "minimum": -8640000000000000,
-          "type": "integer"
-        },
-        "tag": {
-          "maxLength": 200,
-          "minLength": 1,
-          "type": "string"
-        },
-        "topic": {
-          "maxLength": 200,
-          "minLength": 1,
-          "type": "string"
-        },
-        "until_time": {
-          "maximum": 8640000000000000,
-          "minimum": -8640000000000000,
-          "type": "integer"
         }
       },
-      "required": ["query"],
+      "required": ["command"],
       "type": "object"
     },
-    "name": "search_meetings",
+    "name": "zm_write",
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "anyOf": [
         {
-          "anyOf": [
-            {
-              "additionalProperties": false,
-              "properties": {
-                "items": {
-                  "items": {},
-                  "type": "array"
-                },
-                "meta": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "accounts": {
-                      "items": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "type": "array"
-                    },
-                    "complete": {
-                      "type": "boolean"
-                    },
-                    "duration_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "issues": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "code": {
-                            "enum": [
-                              "validation_error",
-                              "configuration_error",
-                              "authentication_error",
-                              "permission_error",
-                              "not_found",
-                              "confirmation_required",
-                              "rate_limited",
-                              "timeout",
-                              "network_error",
-                              "provider_error",
-                              "provider_unavailable",
-                              "invalid_response",
-                              "outcome_unknown",
-                              "cancelled"
-                            ],
-                            "type": "string"
-                          },
-                          "reason": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "source": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["code", "source"],
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
-                    "run_id": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "timezone": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "truncated": {
-                      "type": "boolean"
-                    },
-                    "window": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "since": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        },
-                        "until": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        }
-                      },
-                      "required": [],
-                      "type": "object"
-                    }
-                  },
-                  "required": ["run_id", "duration_ms", "complete"],
-                  "type": "object"
-                },
-                "missing": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "field": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "step": {
-                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                        "type": "string"
-                      },
-                      "why": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      }
-                    },
-                    "required": ["field", "why"],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
-                  "type": "array"
-                },
-                "page": {
-                  "oneOf": [
-                    {
-                      "additionalProperties": false,
-                      "properties": {
-                        "has_more": {
-                          "type": "boolean"
-                        },
-                        "limit": {
-                          "minimum": 1,
-                          "type": "integer"
-                        },
-                        "mode": {
-                          "const": "page"
-                        },
-                        "next_page": {
-                          "minimum": 2,
-                          "type": "integer"
-                        }
-                      },
-                      "required": ["mode", "limit", "has_more"],
-                      "type": "object"
-                    },
-                    {
-                      "additionalProperties": false,
-                      "properties": {
-                        "has_more": {
-                          "type": "boolean"
-                        },
-                        "limit": {
-                          "minimum": 1,
-                          "type": "integer"
-                        },
-                        "mode": {
-                          "const": "cursor"
-                        },
-                        "next_cursor": {
-                          "pattern": "\\S",
-                          "type": "string"
-                        }
-                      },
-                      "required": ["mode", "limit", "has_more"],
-                      "type": "object"
-                    }
-                  ]
-                }
-              },
-              "required": ["items", "page", "meta"],
-              "type": "object"
-            },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "item": {},
-                "meta": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "accounts": {
-                      "items": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "type": "array"
-                    },
-                    "complete": {
-                      "type": "boolean"
-                    },
-                    "duration_ms": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "issues": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "code": {
-                            "enum": [
-                              "validation_error",
-                              "configuration_error",
-                              "authentication_error",
-                              "permission_error",
-                              "not_found",
-                              "confirmation_required",
-                              "rate_limited",
-                              "timeout",
-                              "network_error",
-                              "provider_error",
-                              "provider_unavailable",
-                              "invalid_response",
-                              "outcome_unknown",
-                              "cancelled"
-                            ],
-                            "type": "string"
-                          },
-                          "reason": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "source": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["code", "source"],
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
-                    "run_id": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "timezone": {
-                      "pattern": "\\S",
-                      "type": "string"
-                    },
-                    "truncated": {
-                      "type": "boolean"
-                    },
-                    "window": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "since": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        },
-                        "until": {
-                          "format": "date-time",
-                          "pattern": "Z$",
-                          "type": "string"
-                        }
-                      },
-                      "required": [],
-                      "type": "object"
-                    }
-                  },
-                  "required": ["run_id", "duration_ms", "complete"],
-                  "type": "object"
-                },
-                "missing": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "field": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      },
-                      "step": {
-                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                        "type": "string"
-                      },
-                      "why": {
-                        "pattern": "\\S",
-                        "type": "string"
-                      }
-                    },
-                    "required": ["field", "why"],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
-                  "type": "array"
-                }
-              },
-              "required": ["item", "meta"],
-              "type": "object"
-            }
-          ]
-        },
-        {
           "additionalProperties": false,
           "properties": {
-            "error": {
+            "items": {
+              "items": {},
+              "type": "array"
+            },
+            "meta": {
               "additionalProperties": false,
               "properties": {
-                "code": {
-                  "enum": [
-                    "validation_error",
-                    "configuration_error",
-                    "authentication_error",
-                    "permission_error",
-                    "not_found",
-                    "confirmation_required",
-                    "rate_limited",
-                    "timeout",
-                    "network_error",
-                    "provider_error",
-                    "provider_unavailable",
-                    "invalid_response",
-                    "outcome_unknown",
-                    "cancelled",
-                    "internal_error"
-                  ],
-                  "type": "string"
-                },
-                "details": {
-                  "additionalProperties": {},
-                  "propertyNames": {
+                "accounts": {
+                  "items": {
+                    "pattern": "\\S",
                     "type": "string"
                   },
-                  "type": "object"
-                },
-                "message": {
-                  "pattern": "\\S",
-                  "type": "string"
-                },
-                "next": {
-                  "items": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "args": {
-                            "additionalProperties": {},
-                            "propertyNames": {
-                              "type": "string"
-                            },
-                            "type": "object"
-                          },
-                          "command": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "const": "command"
-                          },
-                          "line": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          },
-                          "safe_to_auto_execute": {
-                            "type": "boolean"
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "kind": {
-                            "const": "user_action"
-                          },
-                          "safe_to_auto_execute": {
-                            "const": false
-                          },
-                          "step": {
-                            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                            "type": "string"
-                          },
-                          "why": {
-                            "pattern": "\\S",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["kind", "step", "why", "safe_to_auto_execute"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "maxItems": 2,
                   "type": "array"
                 },
-                "param": {
-                  "pattern": "\\S",
-                  "type": "string"
+                "complete": {
+                  "type": "boolean"
                 },
-                "reason": {
-                  "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
-                  "type": "string"
+                "duration_ms": {
+                  "minimum": 0,
+                  "type": "integer"
                 },
-                "retry": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "after_ms": {
-                      "minimum": 0,
-                      "type": "integer"
+                "issues": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "validation_error",
+                          "configuration_error",
+                          "authentication_error",
+                          "permission_error",
+                          "not_found",
+                          "confirmation_required",
+                          "rate_limited",
+                          "timeout",
+                          "network_error",
+                          "provider_error",
+                          "provider_unavailable",
+                          "invalid_response",
+                          "outcome_unknown",
+                          "cancelled"
+                        ],
+                        "type": "string"
+                      },
+                      "reason": {
+                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
+                        "type": "string"
+                      },
+                      "source": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      }
                     },
-                    "safe": {
-                      "type": "boolean"
-                    }
+                    "required": ["code", "source"],
+                    "type": "object"
                   },
-                  "required": ["safe"],
-                  "type": "object"
+                  "type": "array"
                 },
                 "run_id": {
                   "pattern": "\\S",
                   "type": "string"
+                },
+                "timezone": {
+                  "pattern": "\\S",
+                  "type": "string"
+                },
+                "truncated": {
+                  "type": "boolean"
+                },
+                "window": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "since": {
+                      "format": "date-time",
+                      "pattern": "Z$",
+                      "type": "string"
+                    },
+                    "until": {
+                      "format": "date-time",
+                      "pattern": "Z$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [],
+                  "type": "object"
                 }
               },
-              "required": ["code", "reason", "message", "retry"],
+              "required": ["run_id", "duration_ms", "complete"],
               "type": "object"
+            },
+            "missing": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "field": {
+                    "pattern": "\\S",
+                    "type": "string"
+                  },
+                  "step": {
+                    "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
+                    "type": "string"
+                  },
+                  "why": {
+                    "pattern": "\\S",
+                    "type": "string"
+                  }
+                },
+                "required": ["field", "why"],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "next": {
+              "items": {
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "args": {
+                        "additionalProperties": {},
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "type": "object"
+                      },
+                      "command": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      },
+                      "kind": {
+                        "const": "command"
+                      },
+                      "line": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      },
+                      "safe_to_auto_execute": {
+                        "type": "boolean"
+                      },
+                      "step": {
+                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
+                        "type": "string"
+                      },
+                      "why": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      }
+                    },
+                    "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "user_action"
+                      },
+                      "safe_to_auto_execute": {
+                        "const": false
+                      },
+                      "step": {
+                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
+                        "type": "string"
+                      },
+                      "why": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      }
+                    },
+                    "required": ["kind", "step", "why", "safe_to_auto_execute"],
+                    "type": "object"
+                  }
+                ]
+              },
+              "maxItems": 2,
+              "type": "array"
+            },
+            "page": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "limit": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "mode": {
+                      "const": "page"
+                    },
+                    "next_page": {
+                      "minimum": 2,
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["mode", "limit", "has_more"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "limit": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "mode": {
+                      "const": "cursor"
+                    },
+                    "next_cursor": {
+                      "pattern": "\\S",
+                      "type": "string"
+                    }
+                  },
+                  "required": ["mode", "limit", "has_more"],
+                  "type": "object"
+                }
+              ]
             }
           },
-          "required": ["error"],
+          "required": ["items", "page", "meta"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "item": {},
+            "meta": {
+              "additionalProperties": false,
+              "properties": {
+                "accounts": {
+                  "items": {
+                    "pattern": "\\S",
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "complete": {
+                  "type": "boolean"
+                },
+                "duration_ms": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "issues": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "validation_error",
+                          "configuration_error",
+                          "authentication_error",
+                          "permission_error",
+                          "not_found",
+                          "confirmation_required",
+                          "rate_limited",
+                          "timeout",
+                          "network_error",
+                          "provider_error",
+                          "provider_unavailable",
+                          "invalid_response",
+                          "outcome_unknown",
+                          "cancelled"
+                        ],
+                        "type": "string"
+                      },
+                      "reason": {
+                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
+                        "type": "string"
+                      },
+                      "source": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      }
+                    },
+                    "required": ["code", "source"],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "run_id": {
+                  "pattern": "\\S",
+                  "type": "string"
+                },
+                "timezone": {
+                  "pattern": "\\S",
+                  "type": "string"
+                },
+                "truncated": {
+                  "type": "boolean"
+                },
+                "window": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "since": {
+                      "format": "date-time",
+                      "pattern": "Z$",
+                      "type": "string"
+                    },
+                    "until": {
+                      "format": "date-time",
+                      "pattern": "Z$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [],
+                  "type": "object"
+                }
+              },
+              "required": ["run_id", "duration_ms", "complete"],
+              "type": "object"
+            },
+            "missing": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "field": {
+                    "pattern": "\\S",
+                    "type": "string"
+                  },
+                  "step": {
+                    "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
+                    "type": "string"
+                  },
+                  "why": {
+                    "pattern": "\\S",
+                    "type": "string"
+                  }
+                },
+                "required": ["field", "why"],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "next": {
+              "items": {
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "args": {
+                        "additionalProperties": {},
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "type": "object"
+                      },
+                      "command": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      },
+                      "kind": {
+                        "const": "command"
+                      },
+                      "line": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      },
+                      "safe_to_auto_execute": {
+                        "type": "boolean"
+                      },
+                      "step": {
+                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
+                        "type": "string"
+                      },
+                      "why": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      }
+                    },
+                    "required": ["kind", "step", "command", "args", "why", "safe_to_auto_execute"],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "user_action"
+                      },
+                      "safe_to_auto_execute": {
+                        "const": false
+                      },
+                      "step": {
+                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
+                        "type": "string"
+                      },
+                      "why": {
+                        "pattern": "\\S",
+                        "type": "string"
+                      }
+                    },
+                    "required": ["kind", "step", "why", "safe_to_auto_execute"],
+                    "type": "object"
+                  }
+                ]
+              },
+              "maxItems": 2,
+              "type": "array"
+            }
+          },
+          "required": ["item", "meta"],
           "type": "object"
         }
       ],

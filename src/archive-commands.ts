@@ -96,7 +96,7 @@ const changes = (command: Command): Command =>
     .option("--timezone <zone>", "IANA timezone")
     .option("--agenda <text>", "meeting agenda")
     .option("--type <type>", "instant (1) or scheduled (2)", positive)
-    .option("--yes", "apply the remote mutation once instead of previewing")
+    .option("--yes", "apply the change without asking first")
     .option("--dry-run", "preview only, including when --yes is present")
 const mutation = (options: MutationOptions & { yes?: boolean }, deps: ArchiveCommandsDeps): MutationOptions => {
   if (options.yes && !options.dryRun) deps.api()
@@ -351,7 +351,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
     REMOTE_READ,
   )
   label(
-    changes(remote.command("create").description("preview a meeting creation; --yes performs it once")).action(
+    changes(remote.command("create").description("create a Zoom meeting; asks first, --dry-run previews")).action(
       async (options: ChangeOptions & MutationOptions & { yes?: boolean }) =>
         deps.output(itemOf(await deps.remoteMeetings().create(change(options), mutation(options, deps)))),
     ),
@@ -362,7 +362,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
     changes(
       remote
         .command("update")
-        .description("preview a meeting update; --yes performs it once")
+        .description("change a Zoom meeting; asks first, --dry-run previews")
         .argument("<meeting>", "positive numeric Zoom meeting id"),
     ).action(async (id: string, options: ChangeOptions & MutationOptions & { yes?: boolean }) =>
       deps.output(itemOf(await deps.remoteMeetings().update(id, change(options), mutation(options, deps)))),
@@ -373,10 +373,10 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
   label(
     remote
       .command("cancel")
-      .description("preview a cancellation; --yes performs it once")
+      .description("cancel a Zoom meeting; asks first, --dry-run previews")
       .argument("<meeting>", "positive numeric Zoom meeting id")
       .option("--occurrence-id <id>", "cancel one recurring occurrence")
-      .option("--yes", "apply cancellation once instead of previewing")
+      .option("--yes", "cancel without asking first")
       .option("--dry-run", "preview only, including when --yes is present")
       .action(async (id: string, options: MutationOptions & { yes?: boolean }) =>
         deps.output(itemOf(await deps.remoteMeetings().cancel(id, mutation(options, deps)))),

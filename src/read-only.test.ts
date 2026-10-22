@@ -63,13 +63,6 @@ describe("ZM_READ_ONLY", () => {
     expect(deps.connectStore).not.toHaveBeenCalled()
   })
 
-  it("refuses an MCP server whose semantic queries go to a remote embedding service", async () => {
-    const { deps, stderr } = await setup({ ZM_READ_ONLY: "1" })
-    const args = ["serve", "--mcp", "--semantic", "--model", "remote-e5", "--base-url", "https://embed.example.test/v1"]
-    expect(await run([...args, "--dims", "8"], deps)).toBe(5)
-    expect(stderr.join("")).toContain("embedding service")
-  })
-
   it.each([
     [["meetings", "sync", "--json"]],
     [["recordings", "download", "123456789", "--output-dir", "/tmp/zm-archive", "--json"]],

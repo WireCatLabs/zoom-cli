@@ -1,8 +1,7 @@
 import { parseLucene } from "@wirecat/cli-base/query"
 import { openStore } from "@wirecat/cli-core/store"
 import { contractSeed } from "@wirecat/cli-core/testing"
-import { readConfig, setConfig } from "../../src/config.js"
-import { captureContextSources } from "../../src/meeting-communications-binding.js"
+import { setConfig } from "../../src/config.js"
 import { now, preparationFixture } from "./preparation.js"
 
 export const communicationsFixture = async () => {
@@ -61,14 +60,7 @@ export const communicationsFixture = async () => {
       { id: "project-files", kind: "document", provider: "folder", account: `notes:${folder.id}` },
     ]
     setConfig(f.deps.configPath, "context.sources", JSON.stringify(sources), () => "AliceExample")
-    const context = captureContextSources(readConfig(f.deps.configPath).contextSources, "AliceExample")
-    return {
-      ...f,
-      sources,
-      document,
-      context,
-      mcp: { ...f.mcp, preparation: { ...f.mcp.preparation, context: () => context } },
-    }
+    return { ...f, sources, document }
   } finally {
     await store.close()
   }

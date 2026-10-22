@@ -2,11 +2,8 @@ import assert from "node:assert/strict"
 import { join } from "node:path"
 
 export const checkInstalledInventory = async ({ load, root }) => {
-  const { run, setConfig, TokenManager, createZoomSeriesInventoryReader, createMeetingMcpServer } =
-    await load("@wirecat/zoom-cli")
+  const { run, setConfig, TokenManager } = await load("@wirecat/zoom-cli")
   const { memoryKeyring } = await load("@wirecat/cli-base")
-  const { Client } = await load("@modelcontextprotocol/sdk/client/index.js")
-  const { InMemoryTransport } = await load("@modelcontextprotocol/sdk/inMemory.js")
   const now = Date.parse("2026-10-18T00:00:00Z")
   const tokens = new TokenManager({
     clientId: "invented-client",
@@ -76,35 +73,9 @@ export const checkInstalledInventory = async ({ load, root }) => {
   const before = requests
   assert.notEqual(await run(["AliceExample", "--offline", "meetings", "scheduled", "--json"], deps), 0)
   assert.equal(requests, before)
-  const reader = createZoomSeriesInventoryReader("zm-profile:AliceExample", alice, fetcher)
-  const server = createMeetingMcpServer({
-    connectStore: deps.connectStore,
-    inventory: (request) => reader.page(request),
-    now: () => now,
-  })
-  const client = new Client({ name: "invented-inventory-agent", version: "1" })
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
-  await server.connect(serverTransport)
-  await client.connect(clientTransport)
-  try {
-    assert.ok((await client.listTools()).tools.some((tool) => tool.name === "meeting_series_inventory"))
-    const invalid = await client.callTool({ name: "meeting_series_inventory", arguments: { account: "other" } })
-    assert.equal(invalid.isError, true)
-    assert.match(JSON.stringify(invalid.structuredContent), /account/)
-    assert.equal(requests, before)
-    const result = await client.callTool({ name: "meeting_series_inventory", arguments: { limit: 1 } })
-    assert.notEqual(result.isError, true)
-    assert.equal(result.structuredContent.item.scope.account, "zm-profile:AliceExample")
-    assert.ok(result.structuredContent.meta.run_id)
-  } finally {
-    await client.close()
-    await server.close()
-  }
   assert.equal(storeCalls, 0)
   return {
     inventory_installed_cli: true,
-    inventory_installed_mcp: true,
-    inventory_strict_arguments: true,
     inventory_no_store: true,
     inventory_offline_boundary: true,
     inventory_unverified_hints: true,

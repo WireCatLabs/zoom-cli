@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**269 ✅ · 2 ⛔ · 0 ❌** — 59 commands, 212 options.
+**262 ✅ · 2 ⛔ · 0 ❌** — 61 commands, 203 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -143,6 +143,8 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `session status` | `--check` | ✅ |  |
 | `session start` |  | ✅ |  |
 | `session start` | `--browser` | ✅ |  |
+| `upgrade` |  | ✅ |  |
+| `upgrade` | `--check` | ✅ |  |
 | `watch` |  | ✅ |  |
 | `watch` | `--since-time` | ✅ |  |
 | `watch` | `--lookback-days` | ✅ |  |
@@ -228,17 +230,8 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `skill show` |  | ✅ |  |
 | `skill install` |  | ✅ |  |
 | `skill install` | `--for` | ✅ |  |
+| `mcp` |  | ✅ |  |
 | `serve` |  | ✅ |  |
-| `serve` | `--mcp` | ✅ |  |
-| `serve` | `--unified-search` | ✅ |  |
-| `serve` | `--meeting-context` | ✅ |  |
-| `serve` | `--meeting-project-candidates` | ✅ |  |
-| `serve` | `--meeting-inventory` | ✅ |  |
-| `serve` | `--meeting-preparation` | ✅ |  |
-| `serve` | `--semantic` | ✅ |  |
-| `serve` | `--model` | ✅ |  |
-| `serve` | `--base-url` | ✅ |  |
-| `serve` | `--dims` | ✅ |  |
 | `search all` |  | ✅ |  |
 | `search all` | `--only` | ✅ |  |
 | `search all` | `--limit` | ✅ |  |

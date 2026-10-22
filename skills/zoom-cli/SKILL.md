@@ -82,9 +82,7 @@ cue packet, 16 KiB item; hard maxima: 100 cues, 10 candidates, 64 KiB stored byt
 64 KiB item. Over-budget catalogs refuse; select a known project for evidence search instead.
 Resume with `evidence.coverage.next_cursor`, the same parent ref and `--cursor`; a title/project may
 repeat. Candidate truncation needs larger limit/bytes, separately from cue continuation. No cues
-with byte truncation and no cursor means an oversized cue, not an absence of discussion. Native MCP
-`meeting_project_candidates` requires `serve --mcp --meeting-project-candidates` and the same bounded
-arguments. Confirm reviewed links through `memo projects meetings link` with the exact stored meeting ID
+with byte truncation and no cursor means an oversized cue, not an absence of discussion. Over MCP it is the same command. Confirm reviewed links through `memo projects meetings link` with the exact stored meeting ID
 and `--account zoom:zm-profile:<label>`. An existing proposal needs its own Memo fingerprint;
 candidate/vocabulary fingerprints do not substitute for it. The scan itself saves nothing.
 
@@ -168,13 +166,11 @@ OPENAI_API_KEY, and `--offline` refuses remote inference. Never include credenti
 passages, and store filters do not apply. Its cursor continues candidate scanning, not global ranking.
 Follow row/text/candidate bounds; unknown coverage remains unknown.
 
-`serve --mcp` exposes stored reads, with opt-in context/unified/semantic tools. Use no JSON/JSONL
-render flags with MCP framing. The server fixes its model at startup and account on its first read.
-MCP meaning search reads existing vectors; it does not generate them. Inspect tool discovery for the
-installed tool set. Generation and task persistence are not MCP tools.
+`zm <profile> mcp` serves these commands as `zm_tools_search`, `zm_read` and `zm_write`, as the profile's
+permissions allow; a call answers as the command does. Over MCP a change at level `ask` runs without a question.
 
-`remote-meetings` uses numeric remote ids. Create/update/cancel preview by default; `--yes` applies
-an authorized change once, and `--dry-run` always previews. Exit 14 means an uncertain dispatched
+`remote-meetings` uses numeric remote ids. Create/update/cancel ask first: without a terminal `--yes`
+applies an authorized change once (else exit 7), and `--dry-run` always previews. Exit 14 means an uncertain dispatched
 write: inspect remote state before retrying. Never automatically replay creation or cancellation.
 Tokens stay in the keyring. Missing scopes require app changes and a new login; cached session status
 is local, while `--check` verifies remotely. To log in, run `zm personal session start` in the background, read the
@@ -189,8 +185,7 @@ store. Titles and old/undated recurring start hints do not prove a future occurr
 calendar coverage. Preserve `coverage`, then verify a selected `meeting_id` with preparation.
 Continue `item.page.next_cursor` with the returned `item.after`/`item.until` as explicit
 `--since-time`/`--before-time`; cursors bind account/window. Input/output budgets refuse a whole
-oversized page. MCP `meeting_series_inventory` requires explicit `--meeting-inventory` startup;
-the server fixes its profile then, and callers cannot override it. Never auto-select an ambiguous
+oversized page. Never auto-select an ambiguous
 series or treat inventory hints as attendance/occurrence evidence.
 
 ## Prepare one upcoming series

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import type { Tool } from "@modelcontextprotocol/sdk/types.js"
+import type { Tool } from "@modelcontextprotocol/server"
 import { CliError } from "@wirecat/cli-base"
 import { errorObjectSchema, jsonSchemaOf, type Meta } from "@wirecat/cli-base/standards"
 import { metaNow, runnable, answerSchema as sharedAnswerSchema } from "@wirecat/cli-core/cli"

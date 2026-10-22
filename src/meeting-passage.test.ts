@@ -1,15 +1,12 @@
 import { mkdtempSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { Client } from "@modelcontextprotocol/sdk/client/index.js"
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js"
 import { memoryKeyring } from "@wirecat/cli-base"
 import { sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { openStore } from "@wirecat/cli-core/store"
 import { expect, it, vi } from "vitest"
 import { readReceipt } from "../scripts/testing/answers.js"
 import { useProfile } from "../scripts/testing/profile.js"
-import { createMeetingMcpServer } from "./mcp-server.js"
 import { type ProgramDeps, run } from "./program.js"
 import { createStoreConnector } from "./store-connection.js"
 import { TokenManager } from "./tokens.js"
@@ -41,7 +38,6 @@ const fixture = async () => {
     await store.close()
   }
 }
-const request = { profile: "AliceExample", externalId: "zm-profile:AliceExample", intent: "read" as const }
 const setup = async () => {
   const f = await fixture()
   const output: string[] = []
@@ -72,7 +68,7 @@ const setup = async () => {
     diagnostic: () => {},
   }
   useProfile(deps.configPath, "AliceExample")
-  return { ...f, deps, output, close, opened, network, connectStore }
+  return { ...f, deps, output, close, opened, network }
 }
 it("projects cited cues while retaining coverage, source and execution metadata", async () => {
   const f = await setup()
@@ -151,46 +147,14 @@ it("opens published search-hit context as Markdown or structured JSON and closes
   expect(f.network).not.toHaveBeenCalled()
   expect(f.opened).not.toHaveBeenCalled()
 })
-it("serves the same cited context through opt-in MCP and rejects account injection before connection", async () => {
+it("answers a passage reference from another account as not found and still closes", async () => {
   const f = await setup()
-  const connect = vi.fn(async () => f.connectStore?.(request))
-  const server = createMeetingMcpServer({
-    includeMeetingContext: true,
-    connectStore: async () => {
-      const connection = await connect()
-      if (!connection) throw Error("missing invented connection")
-      return connection
-    },
-  })
-  const [left, right] = InMemoryTransport.createLinkedPair()
-  await server.connect(right)
-  const client = new Client({ name: "example-passage-client", version: "1" })
-  await client.connect(left)
-  try {
-    expect((await client.listTools()).tools.some((tool) => tool.name === "meeting_passage")).toBe(true)
-    expect(connect).not.toHaveBeenCalled()
-    expect(
-      await client.callTool({ name: "meeting_passage", arguments: { reference: f.reference, account_id: 99 } }),
-    ).toMatchObject({ isError: true })
-    expect(connect).not.toHaveBeenCalled()
-    const result = await client.callTool({
-      name: "meeting_passage",
-      arguments: { reference: f.reference, before: 1, after: 1, format: "markdown" },
-    })
-    expect(result).toMatchObject({
-      structuredContent: { item: { target_ref: f.reference, coverage: { included: 3 } } },
-    })
-    expect(JSON.stringify(result.content)).toContain("Bob Sample agreed to review")
-    expect(f.close).toHaveBeenCalledOnce()
-    const foreign = f.reference.replace(/^meeting:\d+\//, "meeting:999/")
-    expect(await client.callTool({ name: "meeting_passage", arguments: { reference: foreign } })).toMatchObject({
-      isError: true,
-      structuredContent: { error: { code: "not_found" } },
-    })
-    expect(f.close).toHaveBeenCalledTimes(2)
-    expect(f.network).not.toHaveBeenCalled()
-  } finally {
-    await client.close()
-    await server.close()
-  }
+  const errors: string[] = []
+  f.deps.diagnostic = (text) => errors.push(text)
+  const foreign = f.reference.replace(/^meeting:\d+\//, "meeting:999/")
+  expect(await run(["meetings", "passage", foreign, "--json"], f.deps)).not.toBe(0)
+  expect(f.output).toEqual([])
+  expect(errors.join("")).toContain("not_found")
+  expect(f.close).toHaveBeenCalledOnce()
+  expect(f.network).not.toHaveBeenCalled()
 })

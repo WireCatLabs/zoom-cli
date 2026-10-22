@@ -601,17 +601,15 @@ it("starts MCP without touching configuration or the meeting store and preserves
     throw new Error("unexpected store")
   })
   deps.serveMcp = vi.fn(async ({ signal }) => {
-    expect(signal.aborted).toBe(false)
+    expect(signal?.aborted).toBe(false)
   })
-  expect(await run(["example", "serve", "--mcp"], deps)).toBe(0)
+  expect(await run(["example", "mcp"], deps)).toBe(0)
   expect(deps.serveMcp).toHaveBeenCalledWith(expect.objectContaining({ profile: "example" }))
   expect(deps.connectStore).not.toHaveBeenCalled()
   expect(stdout).toEqual([])
   expect(stderr).toEqual([])
-  expect(await run(["example", "serve", "--mcp", "--json"], deps)).toBe(2)
+  expect(await run(["example", "mcp", "--json"], deps)).toBe(2)
   expect(deps.serveMcp).toHaveBeenCalledOnce()
-  delete deps.serveMcp
-  expect(await run(["example", "serve", "--mcp"], deps)).toBe(3)
 })
 
 it("classifies dispatched token failures as uncertain while preflight cancellation never dispatches", async () => {

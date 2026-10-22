@@ -34,7 +34,6 @@ export {
   type LocalTranscriptionTarget,
 } from "./local-transcription.js"
 export { type LoginOptions, login, REDIRECT } from "./login.js"
-export { createMeetingMcpServer, type MeetingMcpOptions, serveMeetingMcp } from "./mcp-server.js"
 export { type ContextCapture, type ContextMetadata, captureContextSources } from "./meeting-communications-binding.js"
 export {
   createMeetingContextCapabilities,

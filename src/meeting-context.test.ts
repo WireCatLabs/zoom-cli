@@ -292,13 +292,6 @@ it("CLI forwards complete context envelopes and proposal-only previews with no a
   )
   expect(await run(["meetings", "task-proposal", reference, "--type", "promise", "--json"], deps)).toBe(0)
   expect(readReceipt(output.pop() ?? "{}").applied).toBe(false)
-  const serve = vi.fn(async () => {})
-  deps.serveMcp = serve
-  expect(await run(["serve", "--mcp", "--meeting-context"], deps)).toBe(0)
-  expect(serve).toHaveBeenCalledWith(expect.objectContaining({ includeMeetingContext: true }))
-  serve.mockClear()
-  expect(await run(["serve", "--mcp", "--unified-search"], deps)).toBe(0)
-  expect(serve).toHaveBeenCalledWith(expect.objectContaining({ includeUnifiedSearch: true }))
 })
 
 it("CLI validates before connection, uses one read connection and closes before stdout", async () => {
@@ -456,7 +449,6 @@ it("refuses remote semantic models offline before connecting, querying, generati
     ["search", "meetings", "example", ...remote],
     ["meetings", "embeddings", ...remote],
     ["meetings", "embeddings", ...remote, "--yes"],
-    ["serve", "--mcp", "--semantic", ...remote],
   ])
     expect(await run([...args, "--offline"], deps)).toBe(3)
   expect(connect).not.toHaveBeenCalled()

@@ -1,11 +1,7 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js"
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js"
 import { expect, it, vi } from "vitest"
 import { readAnswer } from "../scripts/testing/answers.js"
 import { preparationFixture as fixture, now } from "../scripts/testing/preparation.js"
-import { createMeetingMcpServer } from "./mcp-server.js"
 import { createZoomPreparationReader } from "./meeting-preparation.js"
-import { readPreparationTool } from "./meeting-preparation-mcp.js"
 import { run } from "./program.js"
 
 it("CLI prepares the selected series with cited local context and closes before output", async () => {
@@ -66,7 +62,7 @@ it("CLI prepares the selected series with cited local context and closes before 
   expect(f.output.join("")).not.toContain("invented-access")
 })
 
-it("CLI and MCP include direct meeting notes without importing notes from other meetings", async () => {
+it("CLI includes direct meeting notes without importing notes from other meetings", async () => {
   const f = await fixture(undefined, true)
   expect(await run(["meetings", "prepare", "123", "--json"], f.deps)).toBe(0)
   const notes = readAnswer(f.output.join("")).notes
@@ -75,9 +71,6 @@ it("CLI and MCP include direct meeting notes without importing notes from other 
     expect.objectContaining({ ref: f.meetingNote?.ref, meeting: f.reference, person: null, project: null }),
     expect.objectContaining({ ref: f.projectNote.ref, meeting: null, project: expect.any(String) }),
   ])
-  const result = await readPreparationTool(f.mcp, { series_id: "123" }, new AbortController().signal)
-  expect("isError" in result && result.isError).not.toBe(true)
-  expect(result.structuredContent).toMatchObject({ item: { notes } })
 })
 
 it("refuses invalid fields, provider IDs and offline reads before store or credentials", async () => {
@@ -94,22 +87,6 @@ it("refuses invalid fields, provider IDs and offline reads before store or crede
   expect(load).not.toHaveBeenCalled()
   expect(f.network).not.toHaveBeenCalled()
   expect(f.output).toEqual([])
-})
-
-it("raw MCP refuses communications without a captured grant before protected reads", async () => {
-  const f = await fixture()
-  const load = vi.spyOn(f.tokens.options.keyring, "get")
-  const result = await readPreparationTool(
-    f.mcp,
-    { series_id: "123", communications: { sources: [{ id: "unconfigured" }], query: "launch" } },
-    new AbortController().signal,
-  )
-  expect(result).toMatchObject({ isError: true })
-  expect(JSON.stringify(result)).toContain("validation_error")
-  expect(JSON.stringify(result)).toContain("communications")
-  expect(f.connectStore).not.toHaveBeenCalled()
-  expect(load).not.toHaveBeenCalled()
-  expect(f.network).not.toHaveBeenCalled()
 })
 
 it("refuses unconfigured communications before store access or credentials, without output", async () => {
@@ -168,104 +145,37 @@ it("note-reference projection retains note source and pagination coverage", asyn
   expect(item.notes.items[0]).toEqual({ ref: f.projectNote.ref })
 })
 
-it("MCP preparation is opt-in, uses the same selected account and has strict arguments", async () => {
-  const f = await fixture()
-  for (const enabled of [false, true]) {
-    const server = createMeetingMcpServer({ ...f.mcp, preparation: enabled ? f.mcp.preparation : undefined })
-    const client = new Client({ name: "invented-preparation-agent", version: "1" })
-    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
-    await server.connect(serverTransport)
-    await client.connect(clientTransport)
-    try {
-      expect((await client.listTools()).tools.some((tool) => tool.name === "meeting_prepare")).toBe(enabled)
-      if (enabled) {
-        const bad = await client.callTool({ name: "meeting_prepare", arguments: { series_id: "123", account_id: 999 } })
-        expect(bad.isError).toBe(true)
-        expect(JSON.stringify(bad)).toContain("account_id")
-        expect(f.connectStore).not.toHaveBeenCalled()
-        const result = await client.callTool({ name: "meeting_prepare", arguments: { series_id: "123" } })
-        expect(result.isError).not.toBe(true)
-        const text = result.content as { type: string; text: string }[]
-        expect(readAnswer(text[0]?.text ?? "")).toMatchObject({
-          account_id: String(f.accountId),
-          meetings: [{ ref: f.reference }],
-          related: { items: [{ ref: f.relatedReference, shared_person: true, shared_project: true }] },
-          knowledge: { items: [{ ref: f.projectFact.ref, shared_project: true }] },
-          notes: { items: [{ ref: f.projectNote.ref, revision: 2, text: f.projectNote.text }] },
-        })
-        expect(f.closed).toHaveBeenCalledOnce()
-      }
-    } finally {
-      await client.close()
-      await server.close()
-    }
-  }
-})
-
-it("keeps the native MCP preparation item within bytes after hidden text expands", async () => {
+it("keeps the preparation item within bytes after hidden text expands", async () => {
   const f = await fixture("\u200b".repeat(11000))
   expect(Buffer.byteLength(f.projectNote.text)).toBe(33000)
   expect(await run(["meetings", "prepare", "123", "--bytes", "65536", "--json"], f.deps)).toBe(0)
   const raw = readAnswer(f.output.join(""))
   expect(raw.notes.items[0]).toMatchObject({ ref: f.projectNote.ref, text: f.projectNote.text })
   expect(Buffer.byteLength(JSON.stringify(raw))).toBeLessThanOrEqual(65536)
-  const result = await readPreparationTool(f.mcp, { series_id: "123", bytes: 65536 }, new AbortController().signal)
-  expect(result).not.toMatchObject({ isError: true })
-  expect(result).toMatchObject({
-    structuredContent: {
-      meta: { truncated: true },
-      item: {
-        notes: { items: [], coverage: { output_limited: true } },
-        meetings: [{ ref: f.reference }],
-        knowledge: { items: [{ ref: f.projectFact.ref }] },
-      },
-    },
-  })
-  const item = readAnswer(JSON.stringify(result.structuredContent))
-  expect(Buffer.byteLength(JSON.stringify(item))).toBeLessThanOrEqual(65536)
-  expect(f.closed).toHaveBeenCalledTimes(2)
+  expect(f.closed).toHaveBeenCalledOnce()
 })
 
 it("closes on provider failure and refuses output when close fails", async () => {
   const f = await fixture()
   f.network.mockResolvedValueOnce(new Response(JSON.stringify({ code: 4700 }), { status: 403 }))
-  const signal = new AbortController().signal
-  const failed = await readPreparationTool(f.mcp, { series_id: "123" }, signal)
-  expect(failed).toMatchObject({ isError: true })
+  expect(await run(["meetings", "prepare", "123", "--json"], f.deps)).not.toBe(0)
   expect(f.closed).toHaveBeenCalledOnce()
-  const closedFailure = await readPreparationTool(
-    {
-      ...f.mcp,
-      connectStore: async () => {
-        const connection = await f.mcp.connectStore()
-        return {
-          ...connection,
-          close: async () => {
-            await connection.close()
-            throw new Error("Invented close failure")
-          },
-        }
+  expect(f.output).toEqual([])
+  const connectStore = f.deps.connectStore
+  if (!connectStore) throw Error("missing invented connector")
+  f.deps.connectStore = async (request) => {
+    const connection = await connectStore(request)
+    return {
+      ...connection,
+      close: async () => {
+        await connection.close()
+        throw new Error("Invented close failure")
       },
-    },
-    { series_id: "123" },
-    signal,
-  )
-  expect(closedFailure).toMatchObject({ isError: true })
-  expect(JSON.stringify(closedFailure)).not.toContain("Invented close failure")
+    }
+  }
+  expect(await run(["meetings", "prepare", "123", "--json"], f.deps)).not.toBe(0)
+  expect(f.output).toEqual([])
   expect(f.closed).toHaveBeenCalledTimes(2)
-})
-
-it("serve enables remote preparation explicitly and rejects it offline", async () => {
-  const f = await fixture()
-  const serveMcp = vi.fn(async () => {})
-  expect(await run(["serve", "--mcp", "--meeting-preparation"], { ...f.deps, serveMcp })).toBe(0)
-  expect(serveMcp).toHaveBeenCalledWith(
-    expect.objectContaining({ preparation: expect.objectContaining({ credentials: expect.any(Function) }) }),
-  )
-  expect(await run(["serve", "--mcp", "--meeting-preparation", "--offline"], { ...f.deps, serveMcp })).not.toBe(0)
-  expect(serveMcp).toHaveBeenCalledOnce()
-  expect(f.connectStore).not.toHaveBeenCalled()
-  expect(f.network).not.toHaveBeenCalled()
 })
 
 it("accepts fixed windows and bounded context options, including standard field projection", async () => {
@@ -309,7 +219,9 @@ it("accepts fixed windows and bounded context options, including standard field 
 it("the public reader validates before credentials and closes on cancellation during binding", async () => {
   const f = await fixture()
   const credentials = vi.fn(() => f.tokens)
-  const connect = vi.fn(() => f.mcp.connectStore())
+  const connect = vi.fn(async (): Promise<never> => {
+    throw Error("unexpected connection")
+  })
   const reader = createZoomPreparationReader({ credentials, fetch: f.network, connect })
   await expect(
     reader("123", { after: now, until: now + 1000, historyAfter: now - 1000, cues: 101 }),
@@ -355,40 +267,13 @@ it("refuses absent profile bindings and foreign providers without dispatching", 
     })
     expect(close).toHaveBeenCalledOnce()
   }
-  const missing = await readPreparationTool(
-    { ...f.mcp, preparation: undefined },
-    { series_id: "123" },
-    new AbortController().signal,
-  )
-  expect(missing).toMatchObject({ isError: true })
-  expect(JSON.stringify(missing)).toContain("configuration_error")
   expect(f.connectStore).not.toHaveBeenCalled()
   expect(f.network).not.toHaveBeenCalled()
 })
 
-it("requires a stored profile and refuses MCP output modes and offline remote embeddings", async () => {
+it("requires a stored profile", async () => {
   const f = await fixture()
-  const serveMcp = vi.fn(async () => {})
   expect(await run(["meetings", "prepare", "123", "--json"], { ...f.deps, connectStore: undefined })).not.toBe(0)
-  expect(await run(["serve", "--mcp", "--json=id"], { ...f.deps, serveMcp })).toBe(2)
-  expect(
-    await run(
-      [
-        "serve",
-        "--mcp",
-        "--semantic",
-        "--model",
-        "example",
-        "--base-url",
-        "http://localhost:1234",
-        "--dims",
-        "3",
-        "--offline",
-      ],
-      { ...f.deps, serveMcp },
-    ),
-  ).not.toBe(0)
-  expect(serveMcp).not.toHaveBeenCalled()
   expect(f.connectStore).not.toHaveBeenCalled()
   expect(f.network).not.toHaveBeenCalled()
 })

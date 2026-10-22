@@ -319,6 +319,7 @@ it("says when an import makes a profile beside others, and lists the profiles a 
     openBrowser: async () => {},
     data: (text) => stdout.push(text),
     diagnostic: (text) => stderr.push(text),
+    outputIsTTY: true,
   }
   expect(await run(["AliceExampel", "meetings", "import", transcripts, "--json"], deps)).toBe(0)
   expect(stderr.join("")).toContain("new profile AliceExampel; the other profiles here: AliceExample")

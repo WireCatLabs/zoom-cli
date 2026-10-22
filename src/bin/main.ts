@@ -8,11 +8,10 @@ import { CliError, catchCrashes, isCliError, readBatchInput, systemKeyring } fro
 import { reportFailure } from "../answer-policy.js"
 import { readConfig } from "../config.js"
 import { loginService, zmPaths } from "../folders.js"
-import { captureContextSources } from "../meeting-communications-binding.js"
 import { writeExportFile } from "../output-file.js"
 import { run } from "../program.js"
 import { lazyRunLog } from "../run-log.js"
-import { connectSelectedProfile, createStoreConnector } from "../store-connection.js"
+import { createStoreConnector } from "../store-connection.js"
 import { writeStream } from "../streaming.js"
 import { TOKEN_LOG_ALLOW, TokenManager } from "../tokens.js"
 import { VERSION } from "../version.js"
@@ -61,18 +60,6 @@ try {
     recordingScheduleTarget: { runtime: process.execPath, cliPath: fileURLToPath(import.meta.url) },
     tokens,
     connectStore,
-    serveMcp: async (options) => {
-      const { serveMeetingMcp } = await import("../mcp-server.js")
-      const config = readConfig(configPath)
-      const profile = options.profile
-      const context = captureContextSources(config.contextSources, profile)
-      await serveMeetingMcp({
-        ...options,
-        ...(options.preparation ? { preparation: { ...options.preparation, context: () => context } } : {}),
-        connectStore: async (preparation) =>
-          connectSelectedProfile(connectStore, profile, preparation ? "preparation" : "read", preparation?.context),
-      })
-    },
     fetch,
     outputIsTTY,
     env: process.env,

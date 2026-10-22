@@ -93,8 +93,8 @@ More: [the local archive][docs/archive.md] · [search and evidence][docs/search.
 
 - **Command line + skill.** `zm skill install` adds the packaged guide for Claude Code, Codex and
   Gemini CLI. Every command speaks `--json` or `--jsonl`, and `zm commands --json` describes them all.
-- **MCP.** `zm personal serve --mcp` is a read-only stdio server for Claude Desktop, Cursor and other MCP
-  clients: meetings, transcripts, summaries, exports and search.
+- **MCP.** `zm personal mcp` serves zm's commands to Claude Desktop, Cursor and other MCP clients, as
+  far as the profile's permissions allow.
   [Connecting a client][docs/mcp.md].
 
 Your agent. Your meetings. Your rules.
@@ -110,8 +110,8 @@ More: [MCP and skills][docs/mcp.md] · [connect your AI agent][wirecat/en/docs/a
 - **Every answer has a source.** References such as `meeting:1/42/57/118` point to one passage of one
   transcript revision, and corrected transcripts keep their history.
 - **Made for agents.** JSON output, bounded reads with explicit completeness, a skill and an MCP server.
-- **Safe by default.** Your own Zoom app, tokens only in the keyring, a read-only MCP server, and every
-  change to Zoom previewed until you add `--yes`.
+- **Safe by default.** Your own Zoom app, tokens only in the keyring, permissions per profile, and every
+  change to Zoom asked first at the terminal.
 
 More: [security][docs/security.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
 
@@ -151,7 +151,7 @@ More: [what is planned][gh/zoom-cli/blob/main/docs/roadmap.md] · [Zoom on wirec
 | Cloud recordings | `recordings list`, `recordings show <meeting>`, `recordings download <meeting> --output-dir <dir>`, `recordings sync --since-time <date> --until-time <date> --output-dir <dir> --jsonl`, `recordings schedule create\|list\|show\|run\|disable` |
 | Local archive | `recordings archive show\|check\|locks\|recover <directory>`, `recordings archive transcript\|import <directory>`, `search recordings <directory> <query>` |
 | Zoom meetings | `remote-meetings list\|show\|invitation`, `remote-meetings create\|update\|cancel` |
-| Agents | `serve --mcp`, `skill show`, `skill install [--for claude\|agents\|all]`, `commands --json`, `complete -- <words...>` |
+| Agents | `mcp`, `skill show`, `skill install [--for claude\|agents\|all]`, `commands --json`, `complete -- <words...>` |
 
 Zoom meeting changes, links, transcription, schedules, explicit `meetings embeddings` generation and
 lock recovery preview by default and run once with `--yes`; `--dry-run` keeps the preview. Word search
@@ -262,19 +262,17 @@ More: [transcribe local audio][docs/archive.md#transcribe-local-audio] · [Zoom 
 
 `zm skill install` writes the packaged guide to `~/.claude/skills/zoom-cli/` (Claude Code) and
 `~/.agents/skills/zoom-cli/` (Codex, Gemini CLI); `--for` picks one. MCP clients start the server
-with `["serve", "--mcp"]`:
+with the profile it speaks for:
 
 ```json
-{ "mcpServers": { "zoom": { "command": "zm", "args": ["serve", "--mcp"] } } }
+{ "mcpServers": { "zoom": { "command": "zm", "args": ["personal", "mcp"] } } }
 ```
 
-The server has eight read-only tools: meeting list and show, transcripts, summaries, exports, text
-search, participant search and evidence for project names. Optional flags add more:
-`--meeting-context` (cited passages), `--unified-search` (shared search), `--meeting-inventory`,
-`--meeting-preparation`, `--meeting-project-candidates` and `--semantic --model <model>` (ranking of
-existing semantic vectors); [MCP and skills][docs/mcp.md] lists the tools each one adds. It reads only the selected profile, and never exposes
-file exports, Zoom changes, embedding generation or task creation. A desktop app may need the full
-path from `command -v zm` (Linux/macOS) or `where.exe zm` (Windows), and the same `ZM_CONFIG_DIR` or `MESSAGING_STORE` in the entry's `env`.
+The server offers zm's commands as the three tools every WireCat CLI serves — `zm_tools_search`, `zm_read`,
+`zm_write` — and runs each call as the command line would. The profile's [permissions][docs/configuration.md]
+decide what it offers: `{"remote-meetings": "readonly"}` keeps an agent from changing Zoom meetings. A desktop app
+may need the full path from `command -v zm` (Linux/macOS) or `where.exe zm` (Windows), and the same `ZM_CONFIG_DIR`
+or `MESSAGING_STORE` in the entry's `env`.
 
 More: [MCP and skills][docs/mcp.md] · [MCP and skills on wirecat.dev][wirecat/en/docs/mcp] ·
 [connect your AI agent][wirecat/en/docs/agents]

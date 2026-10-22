@@ -656,6 +656,24 @@ zm session start [options]
 
 **Example:** `zm personal session start`
 
+## `zm upgrade`
+
+upgrade zm with the package manager that installed it; --check only looks
+
+**Changes local data.**
+
+```sh
+zm upgrade [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--check` | say whether a newer version exists, and install nothing. |
+
+**Returns:** upgrade zm with the package manager that installed it; --check only looks
+
+**Example:** `zm upgrade --check`, `zm upgrade`
+
 ## `zm watch`
 
 keep fetching new meetings from Zoom, or rescanning a folder, until stopped
@@ -1043,7 +1061,7 @@ zm remote-meetings invitation <meeting>
 
 ### `zm remote-meetings create`
 
-preview a meeting creation; --yes performs it once
+create a Zoom meeting; asks first, --dry-run previews
 
 **Changes remote Zoom data.**
 
@@ -1059,16 +1077,16 @@ zm remote-meetings create [options]
 | `--timezone <zone>` | IANA timezone. |
 | `--agenda <text>` | meeting agenda. |
 | `--type <type>` | instant (1) or scheduled (2). |
-| `--yes` | apply the remote mutation once instead of previewing. |
+| `--yes` | apply the change without asking first. |
 | `--dry-run` | preview only, including when --yes is present. |
 
-**Returns:** preview a meeting creation; --yes performs it once
+**Returns:** create a Zoom meeting; asks first, --dry-run previews
 
 **Example:** `zm remote-meetings create --title "Example planning" --start-time 2026-10-10T15:30:00Z --dry-run --json`
 
 ### `zm remote-meetings update`
 
-preview a meeting update; --yes performs it once
+change a Zoom meeting; asks first, --dry-run previews
 
 **Changes remote Zoom data.**
 
@@ -1088,16 +1106,16 @@ zm remote-meetings update <meeting> [options]
 | `--timezone <zone>` | IANA timezone. |
 | `--agenda <text>` | meeting agenda. |
 | `--type <type>` | instant (1) or scheduled (2). |
-| `--yes` | apply the remote mutation once instead of previewing. |
+| `--yes` | apply the change without asking first. |
 | `--dry-run` | preview only, including when --yes is present. |
 
-**Returns:** preview a meeting update; --yes performs it once
+**Returns:** change a Zoom meeting; asks first, --dry-run previews
 
 **Example:** `zm remote-meetings update 123456789 --title "Example planning" --dry-run --json`
 
 ### `zm remote-meetings cancel`
 
-preview a cancellation; --yes performs it once
+cancel a Zoom meeting; asks first, --dry-run previews
 
 **Changes remote Zoom data.**
 
@@ -1112,10 +1130,10 @@ zm remote-meetings cancel <meeting> [options]
 | Option | What it does |
 |---|---|
 | `--occurrence-id <id>` | cancel one recurring occurrence. |
-| `--yes` | apply cancellation once instead of previewing. |
+| `--yes` | cancel without asking first. |
 | `--dry-run` | preview only, including when --yes is present. |
 
-**Returns:** preview a cancellation; --yes performs it once
+**Returns:** cancel a Zoom meeting; asks first, --dry-run previews
 
 **Example:** `zm remote-meetings cancel 123456789 --dry-run --json`
 
@@ -1153,32 +1171,19 @@ zm skill install [options]
 
 **Example:** `zm skill install --for agents --json`
 
-## `zm serve`
+## `zm mcp`
 
-serve read-only meeting tools over MCP stdio
+serve zm's commands to an MCP agent over stdio, as the named profile allows them
 
 **Changes local data.**
 
 ```sh
-zm serve [options]
+zm mcp
 ```
 
-| Option | What it does |
-|---|---|
-| `--mcp` | use the MCP JSON-RPC protocol. |
-| `--unified-search` | include selected-profile meetings-only unified search. |
-| `--meeting-context` | include account-fixed evidence, person context and task proposals. |
-| `--meeting-project-candidates` | include stored meeting project suggestions using the global project vocabulary. |
-| `--meeting-inventory` | include bounded remote meeting-series discovery with unverified date hints. |
-| `--meeting-preparation` | include cited meeting preparation with remote Zoom schedule reads. |
-| `--semantic` | include read-only meeting vector search with an explicit query model. |
-| `--model <model>` | query embedding model: an installed one, or one served at --base-url. |
-| `--base-url <url>` | explicit remote embedding endpoint for semantic queries. |
-| `--dims <n>` | vector size the remote service returns, in dimensions. |
+**Returns:** serve zm's commands to an MCP agent over stdio, as the named profile allows them
 
-**Returns:** serve read-only meeting tools over MCP stdio
-
-**Example:** `zm personal serve --mcp`
+**Example:** `zm personal mcp`
 
 ## `zm search`
 

@@ -61,10 +61,19 @@ export const profileSelection = (env: NodeJS.ProcessEnv, profiles: () => readonl
   }
 }
 
-/** A profile is listed once something is stored for it; a new one beside others is said, since it may be a typo. */
-export const recordProfile = (configPath: string, profile: string, diagnostic?: (text: string) => void): void => {
+/**
+ * Importing or syncing is what puts a profile's meetings here, so it lists the profile from then on. A new one beside
+ * others is said at a terminal, since it may be a typo; a script reads stderr as failure, so it is told nothing.
+ */
+export const recordProfile = (
+  configPath: string,
+  profile: string,
+  terminal: { outputIsTTY?: boolean; diagnostic: (text: string) => void },
+  quiet = false,
+): void => {
   const here = readConfig(configPath).profiles
   if (here.includes(profile)) return
-  if (here.length) diagnostic?.(`new profile ${profile}; the other profiles here: ${here.join(", ")}\n`)
+  if (here.length && terminal.outputIsTTY && !quiet)
+    terminal.diagnostic(`new profile ${profile}; the other profiles here: ${here.join(", ")}\n`)
   addProfile(configPath, profile)
 }

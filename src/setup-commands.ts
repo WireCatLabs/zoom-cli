@@ -19,6 +19,7 @@ import { permissionKeys } from "./permissions.js"
 import type { ProgramDeps } from "./program.js"
 import { getZoomProfile } from "./recordings.js"
 import type { TokenManager } from "./tokens.js"
+import { addUpgradeCommand } from "./upgrade.js"
 import { VERSION } from "./version.js"
 
 export const addConfigCommands = (
@@ -135,6 +136,7 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
       }
     },
   })
+  addUpgradeCommand(program, { data: buffer, diagnostic: deps.diagnostic })
   const session = program.commands.find((command) => command.name() === "session")
   if (!session) throw new CliError("configuration_error", "session command group is unavailable")
   const start = session

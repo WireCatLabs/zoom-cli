@@ -10,6 +10,13 @@
 
 ### Changed — may break callers
 
+- **`zm <profile> mcp` replaces `zm serve --mcp`** (WC-MCP-1..10, WC-CMD-5). One server offers zm's commands as the
+  shared three tools `zm_tools_search`, `zm_read`, `zm_write`, and runs each call as the command line does. The eight
+  fixed tools and the serve flags (`--meeting-context`, `--meeting-preparation`, `--semantic` and the rest) are gone;
+  each tool they added is a command the server offers. The profile's permissions decide what it offers; over MCP a
+  change at level `ask` runs without a question, so give an agent's profile `{"remote-meetings": "readonly"}` to keep
+  it from changing Zoom meetings. MCP entries change `args` to `["<profile>", "mcp"]`; `zm serve` now says so. The
+  library exports `createMeetingMcpServer` and `serveMeetingMcp` are removed.
 - **Creating, updating or cancelling a Zoom meeting asks first.** At a terminal zm asks y/N; without one and without
   `--yes` the command fails with `confirmation_required` (exit 7). It printed a preview and exited 0; `--dry-run`
   still previews. A profile with `"remote-meetings": "allow"` applies without `--yes`.
@@ -25,7 +32,6 @@
 - **`context.sources` belongs to the profile named on the command**: `zm research config set context.sources …`.
 - **A recording schedule's timer runs `zm <profile> recordings schedule run`.** A timer installed by an earlier
   version names no profile; create the schedule again.
-- **MCP clients pass the profile:** `"args": ["personal", "serve", "--mcp"]`.
 
 ## 0.34.0 — 22.10.2026
 
