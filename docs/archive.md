@@ -239,21 +239,25 @@ Earlier acknowledged occurrences can remain committed if a later append fails.
 Create an independent local transcript from an audio file for an existing stored meeting:
 
 ```sh
-zm personal meetings transcribe 1 ./AliceExample.wav --model parakeet-v3 --json
-zm personal meetings transcribe 1 ./AliceExample.wav --model parakeet-v3 --yes --json
+zm models audio download parakeet-v3
+zm personal meetings transcribe 1 ./AliceExample.m4a --model parakeet-v3 --json
+zm personal meetings transcribe 1 ./AliceExample.m4a --model parakeet-v3 --yes --json
 ```
 
 Preview verifies the input and describes the chosen model without loading it. `--yes` recognizes
 with an already installed local model and atomically appends the completed transcript; `--dry-run`
-overrides it. No model is automatically installed. Input currently accepts PCM16 WAV, mono or stereo,
-at 16 or 48 kHz; video files are not decoded. `--models-dir` selects an absolute installed model
+overrides it. Transcription never downloads a model: `zm models audio list` shows the models this version knows,
+and `zm models audio download <model>` fetches one into the folder every WireCat CLI shares, checking each file's
+sha256; run it again to repair a model whose files are of another version. A PCM16 WAV, mono or stereo, at 16 or
+48 kHz is read as it is; anything else — Zoom's MP4 and M4A recordings, other audio and video — is decoded first by
+the `ffmpeg` installed on this computer, into a private temporary folder removed afterwards. The same file always
+decodes to the same audio, so transcribing it again is a replay. `--models-dir` selects an absolute installed model
 directory. Media, duration, segment count and transcript text have explicit bounds through
 `--max-bytes`, `--max-duration`, `--max-segments` and `--max-text-bytes`. Recognition uses fixed
 windows of up to 30 seconds, so timestamps describe those windows. Speakers remain unknown. Provider
 transcripts and historical revisions are preserved; the applied receipt gives transaction counts and
 provenance.
 
-Recognition needs an installed supported speech model; this guide does not assume one is present.
-Convert unsupported audio/video to the stated WAV format with a tool you already use before
-transcribing. After an applied receipt, open `meetings transcript` and check the words and timestamp
+Recognition needs an installed supported speech model; this guide does not assume one is present. A recording
+that is not a ready WAV needs `ffmpeg` on `PATH`; zm does not install it. After an applied receipt, open `meetings transcript` and check the words and timestamp
 windows before treating the new text as evidence. Continue with [search and citations](search.md).

@@ -416,7 +416,7 @@ zm meetings transcribe <meeting> <file> [options]
 | Argument | | What it is |
 |---|---|---|
 | `meeting` | required | stored meeting id or meeting reference. |
-| `file` | required | local PCM16 WAV file (16 or 48 kHz, mono/stereo). |
+| `file` | required | a recording: WAV as it is, MP4, M4A or other audio and video through an installed ffmpeg. |
 
 | Option | What it does |
 |---|---|
@@ -431,7 +431,7 @@ zm meetings transcribe <meeting> <file> [options]
 
 **Returns:** preview transcribing a recording on this machine; --yes adds the transcript
 
-**Example:** `zm meetings transcribe meeting:3/12 ./AliceExample.wav --model parakeet-v3 --json`
+**Example:** `zm personal meetings transcribe meeting:3/12 ./AliceExample.m4a --model parakeet-v3 --json`
 
 ### `zm meetings evidence`
 
@@ -673,6 +673,44 @@ zm upgrade [options]
 **Returns:** upgrade zm with the package manager that installed it; --check only looks
 
 **Example:** `zm upgrade --check`, `zm upgrade`
+
+## `zm models`
+
+models that run on this machine
+
+### `zm models audio`
+
+speech models for `meetings transcribe`
+
+#### `zm models audio list`
+
+the speech models this version knows, and which are downloaded
+
+```sh
+zm models audio list
+```
+
+**Returns:** the speech models this version knows, and which are downloaded
+
+**Example:** `zm models audio list --json`
+
+#### `zm models audio download`
+
+download a speech model, or repair one, checking every file's sha256
+
+**Changes local data.**
+
+```sh
+zm models audio download <model>
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `model` | required | a model id from `models audio list`. |
+
+**Returns:** download a speech model, or repair one, checking every file's sha256
+
+**Example:** `zm models audio download parakeet-v3 --json`
 
 ## `zm watch`
 

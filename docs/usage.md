@@ -258,7 +258,8 @@ does not import that transcript into the meeting database until you request arch
 | `meetings projects scan <ref>` | suggest existing projects from a bounded stored meeting evidence page; no links saved |
 | `meetings projects evidence <project> [query...]` | read bounded canonical-name/key/alias evidence for an existing project |
 | `meetings update <reference>`, `meetings link <reference>` | preview or apply owner-selected stored links |
-| `meetings transcribe <meeting> <file> --model <model>` | preview or locally recognize a WAV file into an independent transcript |
+| `meetings transcribe <meeting> <file> --model <model>` | preview or locally recognize a recording (MP4, M4A, WAV) into an independent transcript |
+| `models audio list\|download` | the speech models for transcription; download or repair one |
 | `meetings passage <reference>`, `meetings evidence <reference>`, `meetings context <person>` | read bounded evidence or identity-linked person context |
 | `meetings task-proposal <reference> --type <type>` | preview a task with meeting provenance |
 | `search meetings <query> --model <model>` | rank stored passages by meaning, building missing vectors first |

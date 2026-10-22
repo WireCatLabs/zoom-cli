@@ -105,7 +105,17 @@ export const annotateMeetingCommands = (program: Command): void => {
   }
 }
 /** The top-level commands that act for no account, so their examples carry no profile word. */
-export const PROFILE_FREE = new Set(["commands", "complete", "config", "doctor", "guide", "help", "skill", "upgrade"])
+export const PROFILE_FREE = new Set([
+  "commands",
+  "complete",
+  "config",
+  "doctor",
+  "guide",
+  "help",
+  "skill",
+  "upgrade",
+  "models",
+])
 const exampleFor = (path: string): string => {
   const profile = PROFILE_FREE.has(path.split(" ")[0] ?? "") ? "" : "personal "
   if (path === "mcp") return "zm personal mcp"

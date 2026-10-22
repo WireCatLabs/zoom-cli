@@ -357,3 +357,19 @@ it("compact receipts reject missing commitments and retain compatibility with op
   const legacy = { ...first, media: { ...first.media, recognition: { engine: "sherpa-onnx", model: "tiny-example" } } }
   expect(compactLocalTranscriptionReceipt(legacy)).toMatchObject({ modelVersion: null, timing: "recognition-segments" })
 })
+it("says how to repair the models when the speech engine throws a bare number, as WebAssembly does", async () => {
+  const opening = await fixture()
+  const media = await opening.source.describe(context)
+  vi.mocked(opening.speech.open).mockImplementationOnce(() => Promise.reject(413528352))
+  await expect(collect(opening.source.segments(media, context))).rejects.toMatchObject({
+    code: "configuration_error",
+    message: expect.stringContaining("zm models audio download tiny-example"),
+  })
+  const hearing = await fixture()
+  const planned = await hearing.source.describe(context)
+  hearing.model.recognize.mockImplementationOnce(() => Promise.reject(38629824))
+  await expect(collect(hearing.source.segments(planned, context))).rejects.toMatchObject({
+    code: "configuration_error",
+  })
+  expect(hearing.model.close).toHaveBeenCalledTimes(1)
+})

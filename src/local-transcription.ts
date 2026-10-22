@@ -14,6 +14,7 @@ import type {
 } from "@wirecat/cli-core/speech"
 import { openWavAudio, preflightWavAudio, type WavAudioPlan } from "@wirecat/cli-core/speech/wav"
 import { checkCancelled } from "./errors.js"
+import { wavFor } from "./media-decode.js"
 
 export interface LocalSpeechPort {
   describe(model: string): Readonly<LocalSpeechRecognitionModel>
@@ -82,6 +83,21 @@ export const compactLocalTranscriptionReceipt = (receipt: MeetingTranscriptionRe
     timing: receipt.media.recognition.timing ?? "recognition-segments",
   }
 }
+/**
+ * The speech engine is WebAssembly; a model file it cannot read surfaces as a bare number thrown, not an Error. It is
+ * almost always a file of the wrong version or a broken download.
+ */
+const engineFailure = async <T>(model: string, work: () => Promise<T>): Promise<T> => {
+  try {
+    return await work()
+  } catch (error) {
+    if (error instanceof Error) throw error
+    throw new CliError(
+      "configuration_error",
+      `the speech engine could not run ${model}; \`zm models audio download ${model}\` checks its files and repairs them`,
+    )
+  }
+}
 const loadSpeech = async (): Promise<LocalSpeechPort> => {
   const speech = await import("@wirecat/cli-core/speech")
   return { describe: speech.localSpeechRecognitionModel, open: speech.openLocalSpeechRecognizer }
@@ -136,11 +152,15 @@ export const createWavTranscriptionSource = (
       let model: LocalSpeechRecognizer | undefined
       try {
         checkCancelled(context.signal)
-        model = await speech.open(recognition.model, {
-          directory: selected.modelsDirectory,
-          env: selected.env,
-          signal: context.signal,
-        })
+        const port = speech
+        const chosen = recognition.model
+        model = await engineFailure(chosen, () =>
+          port.open(chosen, {
+            directory: selected.modelsDirectory,
+            env: selected.env,
+            signal: context.signal,
+          }),
+        )
         if (
           model.engine !== recognition.engine ||
           model.model !== recognition.model ||
@@ -149,7 +169,10 @@ export const createWavTranscriptionSource = (
           throw new CliError("validation_error", "installed speech recognizer changed after the media preview")
         for await (const window of audio.windows()) {
           checkCancelled(context.signal)
-          const text = await model.recognize(window.samples, { signal: context.signal })
+          const recognizer = model
+          const text = await engineFailure(recognition.model, () =>
+            recognizer.recognize(window.samples, { signal: context.signal }),
+          )
           checkCancelled(context.signal)
           yield { startMs: window.startMs, endMs: window.endMs, text }
         }
@@ -197,25 +220,30 @@ export const createLocalTranscriptionCapabilities = (
       )
         throw new CliError("not_found", "meeting was not found in the selected account")
       const target = Object.freeze({ accountId, externalId: found.externalId, now: options.now?.() ?? Date.now() })
-      const source = createWavTranscriptionSource(file, {
-        model: request.model,
-        modelsDirectory: request.modelsDirectory,
-        env: options.env,
-        speech: options.speech,
-      })
-      const { transcribeMeeting } = await import("@wirecat/cli-core/meetings")
-      return transcribeMeeting(
-        source,
-        {
-          appendTranscriptsWithReceipt(value) {
-            if (value.accountId !== accountId || value.externalId !== target.externalId)
-              throw new CliError("validation_error", "transcription append must retain its selected target")
-            return appendTranscriptsWithReceipt(value)
+      const audio = await wavFor(file, { signal: request.signal })
+      try {
+        const source = createWavTranscriptionSource(audio.path, {
+          model: request.model,
+          modelsDirectory: request.modelsDirectory,
+          env: options.env,
+          speech: options.speech,
+        })
+        const { transcribeMeeting } = await import("@wirecat/cli-core/meetings")
+        return await transcribeMeeting(
+          source,
+          {
+            appendTranscriptsWithReceipt(value) {
+              if (value.accountId !== accountId || value.externalId !== target.externalId)
+                throw new CliError("validation_error", "transcription append must retain its selected target")
+              return appendTranscriptsWithReceipt(value)
+            },
           },
-        },
-        target,
-        request,
-      )
+          target,
+          request,
+        )
+      } finally {
+        await audio.release()
+      }
     },
   }
 }

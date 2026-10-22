@@ -1,5 +1,6 @@
 [
   "events",
+  "models audio",
   "recordings archive",
   "recordings schedule",
   "remote-meetings"

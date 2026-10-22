@@ -126,8 +126,8 @@ links meetings to events and people, and creates, changes or cancels simple meet
   `task-proposal` only previews a task and creates nothing.
 - **People are linked by hand.** `zm` never guesses a person from a speaker name; person context
   covers participants already linked to a person, for example with `meetings link`.
-- **Local transcription takes PCM16 WAV only** (16 or 48 kHz) and an already installed speech model;
-  video files are not decoded, and speakers stay unknown.
+- **Local transcription needs `ffmpeg` for anything but a ready WAV**, and a model you download with
+  `zm models audio download`; speakers stay unknown.
 - **Attended meetings need a manual download** from your Zoom portal, then `zm personal meetings import`.
 - **A company-managed Zoom account** may need an admin to approve your app.
 - **Daily archive jobs install only on Linux.** Other platforms can preview them.
@@ -251,9 +251,9 @@ More: [search and evidence][docs/search.md] · [topic search][docs/topic-search.
 
 ## Local transcription
 
-No Zoom transcript? `zm personal meetings transcribe 1 ./call.wav --model <model> --yes` recognizes a PCM16 WAV
-file (mono or stereo, 16 or 48 kHz) with an already installed local speech model and appends it as a
-separate transcript. The preview checks the file without loading the model. Timestamps cover windows
+No Zoom transcript? `zm personal meetings transcribe 1 ./call.m4a --model <model> --yes` recognizes a recording —
+Zoom's MP4 or M4A through an installed `ffmpeg`, a 16 or 48 kHz PCM16 WAV as it is — with a local speech model from
+`zm models audio download <model>`, and appends it as a separate transcript. The preview checks the file without loading the model. Timestamps cover windows
 of up to 30 seconds and speakers stay unknown.
 
 More: [transcribe local audio][docs/archive.md#transcribe-local-audio] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]

@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**262 ✅ · 2 ⛔ · 0 ❌** — 61 commands, 203 options.
+**261 ✅ · 5 ⛔ · 0 ❌** — 63 commands, 203 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -143,8 +143,10 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `session status` | `--check` | ✅ |  |
 | `session start` |  | ✅ |  |
 | `session start` | `--browser` | ✅ |  |
-| `upgrade` |  | ✅ |  |
-| `upgrade` | `--check` | ✅ |  |
+| `upgrade` |  | ⛔ | It asks the npm registry and runs the package manager; cli-core's upgrade-command.test covers the command. |
+| `upgrade` | `--check` | ⛔ | It asks the npm registry; cli-core's upgrade-command.test covers the command. |
+| `models audio list` |  | ✅ |  |
+| `models audio download` |  | ⛔ | It downloads hundreds of megabytes; cli-core's speech install tests cover the download and its sha256 check. |
 | `watch` |  | ✅ |  |
 | `watch` | `--since-time` | ✅ |  |
 | `watch` | `--lookback-days` | ✅ |  |
