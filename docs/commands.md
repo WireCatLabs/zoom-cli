@@ -1314,6 +1314,59 @@ zm search recordings <directory> <query> [options]
 
 **Example:** `zm search recordings ./zoom-archive "example plan" --limit 100 --offline --json`
 
+## `zm stats`
+
+numbers about the stored meetings
+
+### `zm stats meetings`
+
+talk time, lines and words, by speaker and by week
+
+#### `zm stats meetings show`
+
+meetings, lines, words and talk time by week, with the top speakers
+
+```sh
+zm stats meetings show [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--since-time <time>` | meetings starting at or after this date or time (ISO 8601, or 30d ago). |
+| `--until-time <time>` | meetings starting at or before this date or time; a date alone is that whole day. |
+| `--timezone <zone>` | the IANA zone dates and weeks are read in (default: this computer's). |
+| `--event-id <id>` | only meetings linked to this stored event. |
+| `--project <name>` | meetings confirmed in this project, by name, key or alias. |
+| `--topic <name>` | meetings with this topic, by name or alias. |
+| `--max-rows <n>` | most transcript lines to read (default and at most 500000). |
+
+**Returns:** meetings, lines, words and talk time by week, with the top speakers
+
+**Example:** `zm personal stats meetings show --since-time 30d --json`
+
+#### `zm stats meetings top`
+
+speakers by talk time: lines, words, meetings and their share of the talk
+
+```sh
+zm stats meetings top [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--since-time <time>` | meetings starting at or after this date or time (ISO 8601, or 30d ago). |
+| `--until-time <time>` | meetings starting at or before this date or time; a date alone is that whole day. |
+| `--timezone <zone>` | the IANA zone dates and weeks are read in (default: this computer's). |
+| `--event-id <id>` | only meetings linked to this stored event. |
+| `--project <name>` | meetings confirmed in this project, by name, key or alias. |
+| `--topic <name>` | meetings with this topic, by name or alias. |
+| `--max-rows <n>` | most transcript lines to read (default and at most 500000). |
+| `--limit <n>` | how many speakers (default 20). |
+
+**Returns:** speakers by talk time: lines, words, meetings and their share of the talk
+
+**Example:** `zm personal stats meetings top --project RES --limit 5 --json`
+
 ## `zm batch`
 
 run bounded stored meeting reads: search meetings and meetings passage

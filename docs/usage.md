@@ -221,6 +221,23 @@ missing records or save findings. Use the producing tool's import/index commands
 coverage identifies missing indexed data. A refused old schema needs a normal store upgrade before
 preparation can read it.
 
+## Count who talks and how much
+
+```sh
+zm personal stats meetings show --since-time 30d --json
+zm personal stats meetings top --project RES --limit 5 --json
+```
+
+`show` gives the meetings, lines, words and talk time in the selection, by week (weeks start on Monday in
+`--timezone`, the computer's zone by default), with the ten speakers who talked most. `top` lists speakers by talk
+time, with their lines, words, meetings and share of the talk. Both take `--since-time`, `--until-time`,
+`--event-id`, `--project` and `--topic`, read as `search meetings` reads them.
+
+A speaker is the person a participant is linked to, else the participant, else the name the transcript gives; a line
+with no speaker counts as `unknown`. Talk time is each line's length, so two people talking at once both count. A
+meeting with both Zoom's transcript and a local one counts Zoom's (the earliest) only; meetings with no transcript are
+not counted. Only numbers are read: no transcript text is shown.
+
 ## Choose local or remote data
 
 | Need | Command family | Where it works |
@@ -279,6 +296,7 @@ does not import that transcript into the meeting database until you request arch
 | `remote-meetings list\|show\|invitation` | read upcoming Zoom meetings and invitations |
 | `remote-meetings create\|update\|cancel` | a simple Zoom meeting change, asked first; `--dry-run` previews |
 | `mcp` | serve zm's commands to an MCP agent over stdio, as the profile's permissions allow |
+| `stats meetings show\|top` | talk time, lines and words by speaker and by week |
 | `skill show`, `skill install --for agents` | print or explicitly install the packaged agent guide |
 
 Stored `meetings` commands use local database ids; `remote-meetings` uses Zoom's numeric ids.

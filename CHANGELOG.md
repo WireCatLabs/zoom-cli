@@ -4,6 +4,9 @@
 
 ### Added
 
+- **`zm <profile> stats meetings show|top`: who talks and how much** (cli-core 0.389.0). Talk time, lines and words
+  per speaker (the linked person, else the participant, else the transcript's name) and meetings and talk time per
+  week, over a date window, a project, a topic or an event. Numbers only; no transcript text is read.
 - **Permissions per profile** (WC-PERM-1..3, 9, 10): `zm <profile> config set permissions '{"recordings": "readonly"}'`.
   A key is a command path, dotted; a level is `deny`, `readonly`, `ask` or `allow`, and the most specific key wins.
   `--yes` answers `ask` and never lifts `deny` or `readonly`. Settings, login, help and the MCP server are never gated.
