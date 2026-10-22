@@ -9,7 +9,7 @@ import { afterEach, expect, it, vi } from "vitest"
 import { useProfile } from "../scripts/testing/profile.js"
 import type { RemoteMeetingsService } from "./archive-commands.js"
 import { setConfig } from "./config.js"
-import { createZoomMcpServer, type ZoomMcpOptions } from "./mcp.js"
+import { createZoomMcpServer, serveZoomMcp, type ZoomMcpOptions } from "./mcp.js"
 import { runForAgent } from "./mcp-command.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
 import { createStoreConnector } from "./store-connection.js"
@@ -163,4 +163,22 @@ it("points the old serve command at the profile's mcp command", async () => {
   expect(await run(["work", "serve", "--mcp"], { ...deps, serveMcp, diagnostic: (text) => errors.push(text) })).toBe(2)
   expect(errors.join("")).toContain("zm <profile> mcp")
   expect(serveMcp).not.toHaveBeenCalled()
+})
+
+it("serves over a transport until the command is stopped", async () => {
+  const [serverSide, clientSide] = InMemoryTransport.createLinkedPair()
+  const controller = new AbortController()
+  const serving = serveZoomMcp({
+    profile: "work",
+    commands: [],
+    permissions: () => ({}),
+    run: async () => ({ code: 0, stdout: "{}", stderr: "" }),
+    signal: controller.signal,
+    transport: serverSide,
+  })
+  const client = new Client({ name: "example", version: "1" })
+  await client.connect(clientSide)
+  expect((await client.listTools()).tools.map((tool) => tool.name)).toContain("zm_tools_search")
+  controller.abort()
+  await expect(serving).resolves.toBeUndefined()
 })

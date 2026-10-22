@@ -18,6 +18,8 @@ export interface ZoomMcpOptions {
   permissions: () => Readonly<Record<string, Level>>
   run: RunCommand
   signal?: AbortSignal
+  /** Where the protocol runs; stdin and stdout when not given. */
+  transport?: Parameters<McpServer["connect"]>[0]
 }
 
 /**
@@ -118,7 +120,7 @@ export const serveZoomMcp = async (options: ZoomMcpOptions): Promise<void> => {
         void server.close().then(resolve, reject)
       }
       options.signal?.addEventListener("abort", stop, { once: true })
-      void server.connect(new StdioServerTransport()).catch(reject)
+      void server.connect(options.transport ?? new StdioServerTransport()).catch(reject)
     })
   } finally {
     options.signal?.removeEventListener("abort", stop)
