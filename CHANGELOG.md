@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.35.0 — 22.10.2026
 
 ### Added
 
@@ -24,22 +24,6 @@
 
 ### Changed — may break callers
 
-- **`search meetings --model` ranks words and meaning together** (cli-core 0.385.0 → 0.388.0). It searched by meaning
-  alone, ranked each page on its own and ignored the meeting filters. Now the date, meeting, series, event, person,
-  project and tag filters apply, one ranking runs across pages, a line found both ways ranks first and is cited by its
-  line, and a question — "what did we decide about pricing?" — is searched by its content words, where the word
-  search alone refused the «?» and found nothing without it. The answer is a list of hits with `by`, `score` and
-  `passage`; it was one item holding `items`. A cursor from an earlier version is refused.
-- **`zm <profile> mcp` replaces `zm serve --mcp`** (WC-MCP-1..10, WC-CMD-5). One server offers zm's commands as the
-  shared three tools `zm_tools_search`, `zm_read`, `zm_write`, and runs each call as the command line does. The eight
-  fixed tools and the serve flags (`--meeting-context`, `--meeting-preparation`, `--semantic` and the rest) are gone;
-  each tool they added is a command the server offers. The profile's permissions decide what it offers; over MCP a
-  change at level `ask` runs without a question, so give an agent's profile `{"remote-meetings": "readonly"}` to keep
-  it from changing Zoom meetings. MCP entries change `args` to `["<profile>", "mcp"]`; `zm serve` now says so. The
-  library exports `createMeetingMcpServer` and `serveMeetingMcp` are removed.
-- **Creating, updating or cancelling a Zoom meeting asks first.** At a terminal zm asks y/N; without one and without
-  `--yes` the command fails with `confirmation_required` (exit 7). It printed a preview and exited 0; `--dry-run`
-  still previews. A profile with `"remote-meetings": "allow"` applies without `--yes`.
 - **The profile is the first word: `zm personal meetings list`.** `ZM_PROFILE` names it for a shell session and
   `ZM_PROFILE_LOCK` pins a process to one (another named profile → `permission_error`). The `account.profile`
   setting no longer picks the profile, and `zm config set account.profile` is refused. A command that uses an
@@ -52,6 +36,22 @@
 - **`context.sources` belongs to the profile named on the command**: `zm research config set context.sources …`.
 - **A recording schedule's timer runs `zm <profile> recordings schedule run`.** A timer installed by an earlier
   version names no profile; create the schedule again.
+- **Creating, updating or cancelling a Zoom meeting asks first.** At a terminal zm asks y/N; without one and without
+  `--yes` the command fails with `confirmation_required` (exit 7). It printed a preview and exited 0; `--dry-run`
+  still previews. A profile with `"remote-meetings": "allow"` applies without `--yes`.
+- **`zm <profile> mcp` replaces `zm serve --mcp`** (WC-MCP-1..10, WC-CMD-5). One server offers zm's commands as the
+  shared three tools `zm_tools_search`, `zm_read`, `zm_write`, and runs each call as the command line does. The eight
+  fixed tools and the serve flags (`--meeting-context`, `--meeting-preparation`, `--semantic` and the rest) are gone;
+  each tool they added is a command the server offers. The profile's permissions decide what it offers; over MCP a
+  change at level `ask` runs without a question, so give an agent's profile `{"remote-meetings": "readonly"}` to keep
+  it from changing Zoom meetings. MCP entries change `args` to `["<profile>", "mcp"]`; `zm serve` now says so. The
+  library exports `createMeetingMcpServer` and `serveMeetingMcp` are removed.
+- **`search meetings --model` ranks words and meaning together** (cli-core 0.385.0 → 0.388.0). It searched by meaning
+  alone, ranked each page on its own and ignored the meeting filters. Now the date, meeting, series, event, person,
+  project and tag filters apply, one ranking runs across pages, a line found both ways ranks first and is cited by its
+  line, and a question — "what did we decide about pricing?" — is searched by its content words, where the word
+  search alone refused the «?» and found nothing without it. The answer is a list of hits with `by`, `score` and
+  `passage`; it was one item holding `items`. A cursor from an earlier version is refused.
 
 ## 0.34.0 — 22.10.2026
 
