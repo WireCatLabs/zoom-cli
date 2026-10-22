@@ -22,6 +22,7 @@ import { createZoomProjectCandidateReader } from "./meeting-project-candidates.j
 import { addMeetingReadBindings } from "./meeting-read-command-bindings.js"
 import { addMeetingSearchCommands } from "./meeting-search-commands.js"
 import { addMeetingEmbeddingCommand } from "./meeting-semantic-commands.js"
+import { addMeetingStatsCommands } from "./meeting-stats-commands.js"
 import type { ProgramDeps } from "./program.js"
 import type { StoreConnection, StoreConnectRequest } from "./store-connection.js"
 import { runUnifiedSearch } from "./unified-search.js"
@@ -125,6 +126,15 @@ export const addStoreCommands = (program: Command, context: StoreCommandContext)
     },
   })
   const meetingSemantic = async () => (await connected()).meetingSemantic
+  addMeetingStatsCommands(program, {
+    signal,
+    output,
+    read: async () => {
+      const read = (await connected()).meetingStats
+      if (!read) throw new CliError("configuration_error", "the selected store connector does not count meetings")
+      return read
+    },
+  })
   addMeetingSearchCommands(program, {
     signal,
     offline: () => Boolean(program.opts().offline),

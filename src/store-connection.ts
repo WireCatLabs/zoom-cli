@@ -17,6 +17,7 @@ import type { MeetingPreparationBinding } from "./meeting-preparation.js"
 import { type MeetingHitSearch, validateMeetingHitSearch } from "./meeting-search-commands.js"
 import { createMeetingSemanticCapabilities } from "./meeting-semantic.js"
 import type { MeetingSemanticCapabilities } from "./meeting-semantic-commands.js"
+import type { MeetingStatsRead } from "./meeting-stats-commands.js"
 import { profilePattern } from "./profile.js"
 import { type UnifiedSearch, validateUnifiedSearch } from "./unified-search.js"
 
@@ -35,6 +36,7 @@ export interface StoreConnection {
   unifiedSearch: UnifiedSearch
   meetingContext: MeetingContextCapabilities
   meetingSemantic: MeetingSemanticCapabilities
+  meetingStats?: MeetingStatsRead
 }
 export interface StoreConnectRequest {
   profile: string
@@ -241,6 +243,10 @@ export const createStoreConnector =
         },
         meetingContext: createMeetingContextCapabilities(connected, meetings, accountId),
         meetingSemantic: createMeetingSemanticCapabilities(connected, accountId, { env: options.env }),
+        meetingStats: async (request) => {
+          const { readMeetingStats } = await import("@wirecat/cli-core/services")
+          return readMeetingStats(connected, { ...request, accountId })
+        },
       }
     } catch (error) {
       await store?.close().catch(() => undefined)

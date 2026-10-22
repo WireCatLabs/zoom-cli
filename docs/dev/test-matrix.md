@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**264 ✅ · 2 ⛔ · 0 ❌** — 63 commands, 203 options.
+**281 ✅ · 2 ⛔ · 0 ❌** — 65 commands, 218 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -262,6 +262,23 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `search meetings` | `--max-text-bytes` | ✅ |  |
 | `search recordings` |  | ✅ |  |
 | `search recordings` | `--limit` | ✅ |  |
+| `stats meetings show` |  | ✅ |  |
+| `stats meetings show` | `--since-time` | ✅ |  |
+| `stats meetings show` | `--until-time` | ✅ |  |
+| `stats meetings show` | `--timezone` | ✅ |  |
+| `stats meetings show` | `--event-id` | ✅ |  |
+| `stats meetings show` | `--project` | ✅ |  |
+| `stats meetings show` | `--topic` | ✅ |  |
+| `stats meetings show` | `--max-rows` | ✅ |  |
+| `stats meetings top` |  | ✅ |  |
+| `stats meetings top` | `--since-time` | ✅ |  |
+| `stats meetings top` | `--until-time` | ✅ |  |
+| `stats meetings top` | `--timezone` | ✅ |  |
+| `stats meetings top` | `--event-id` | ✅ |  |
+| `stats meetings top` | `--project` | ✅ |  |
+| `stats meetings top` | `--topic` | ✅ |  |
+| `stats meetings top` | `--max-rows` | ✅ |  |
+| `stats meetings top` | `--limit` | ✅ |  |
 | `batch` |  | ✅ |  |
 | `batch` | `--max-read-bytes` | ✅ |  |
 | `batch` | `--format` | ✅ |  |
