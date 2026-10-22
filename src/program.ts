@@ -23,7 +23,7 @@ import {
 } from "./archive-commands.js"
 import { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
 import { annotateMeetingCommands } from "./commands.js"
-import { addProfile, filesZone, profileAccountKey, readConfig } from "./config.js"
+import { filesZone, profileAccountKey, readConfig } from "./config.js"
 import { cancellableStore, checkCancelled, ZoneAssumptions } from "./errors.js"
 import { bytes, duration, type ExecutionState, resetCliOptions, startExecution } from "./execution.js"
 import { fileNamesHelp, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
@@ -35,8 +35,8 @@ import { addZoomInventoryCommand } from "./meeting-inventory.js"
 import { addZoomMcpCommand, type ZoomMcpServeOptions } from "./meeting-mcp-command.js"
 import type { ZoomPreparationOptions } from "./meeting-preparation.js"
 import { configuredMeetingSource } from "./meeting-source.js"
-import { PROFILE_HELP, profileSelection, showProfileInUsage } from "./profile-word.js"
-import { refuseChangeWhenReadOnly } from "./read-only.js"
+import { guardCommand } from "./permissions.js"
+import { PROFILE_HELP, profileSelection, recordProfile, showProfileInUsage } from "./profile-word.js"
 import type { RecordingScheduleService } from "./recording-schedule.js"
 import { addRecordingScheduleCommands } from "./recording-schedule-commands.js"
 import { zoomRecordingSchedule } from "./recording-schedule-setup.js"
@@ -82,6 +82,8 @@ export interface ProgramDeps {
   writeFile?: (path: string, content: string, options?: { signal?: AbortSignal }) => Promise<void>
   openBrowser: (url: string, browser?: string) => Promise<void>
   readPaste?: (signal: AbortSignal) => Promise<string>
+  /** A y/N question, default no; only at a terminal. */
+  confirm?: (question: string) => Promise<boolean>
   readBatchInput?: (path: string, signal?: AbortSignal) => Promise<string>
   data: (text: string) => void
   diagnostic: (text: string) => void
@@ -146,12 +148,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
     try {
       const connection = await connectSelectedProfile(deps.connectStore, selected, intent, context)
       // Importing or syncing is what puts a profile's meetings here, so it lists the profile from then on.
-      if (intent === "ingestion" && !getConfig().profiles.includes(selected)) {
-        const here = getConfig().profiles
-        if (here.length && !program.opts().quiet)
-          deps.diagnostic(`new profile ${selected}; the other profiles here: ${here.join(", ")}\n`)
-        addProfile(deps.configPath, selected)
-      }
+      if (intent === "ingestion")
+        recordProfile(deps.configPath, selected, program.opts().quiet ? undefined : deps.diagnostic)
       return connection
     } catch (error) {
       if (isCliError(error)) throw error
@@ -160,6 +158,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
   }
   const connected = (intent: StoreConnectRequest["intent"] = "read") => (connecting ??= openStore(intent))
   const zones = new ZoneAssumptions()
+  const ask = () => (program.opts().input === false ? undefined : deps.confirm)
   const program = new Command()
     .name("zm")
     .version(VERSION)
@@ -201,7 +200,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
       throw new CliError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
   }
   program.hook("preAction", async (_root, action) => {
-    refuseChangeWhenReadOnly(action, deps.env ?? process.env)
+    const asking = guardCommand(action, deps.env ?? process.env, { profile: selection.named, config: getConfig }, ask())
+    if (asking) await asking
     const opts = action.optsWithGlobals()
     if (opts.json && opts.jsonl) throw new CliError("validation_error", "choose --json or --jsonl")
     checkJson(action, { json: opts.json === true, ...(fields ? { fields: fields.join(",") } : {}) }, false)

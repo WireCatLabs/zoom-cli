@@ -104,6 +104,17 @@ try {
           resolve()
         })
       }),
+    confirm:
+      process.stdin.isTTY && process.stderr.isTTY
+        ? async (question) => {
+            const input = createInterface({ input: process.stdin, output: process.stderr })
+            try {
+              return /^y(es)?$/i.test((await input.question(`${question} [y/N] `)).trim())
+            } finally {
+              input.close()
+            }
+          }
+        : undefined,
     readPaste: process.stdin.isTTY
       ? async (signal) => {
           const input = createInterface({ input: process.stdin, output: process.stderr })
