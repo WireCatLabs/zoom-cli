@@ -298,7 +298,8 @@ it("searches confirmed project aliases and participant identities through the pu
 })
 
 it("says when an import makes a profile beside others, and lists the profiles a bare command could mean", async () => {
-  const { path, env, directory } = await fixture()
+  const { path, env: fixed, directory } = await fixture()
+  const env: NodeJS.ProcessEnv = { ...fixed }
   const configPath = join(directory, "config.json")
   useProfile(configPath, "AliceExample", env)
   const transcripts = join(directory, "transcripts")
