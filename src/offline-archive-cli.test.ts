@@ -69,7 +69,7 @@ const latest = (output: string[]) =>
 it("reads verified local archive cues as finite listed JSON without config, credentials or database access", async () => {
   const { deps, directory, output, paths, uuid } = await setup()
   const timestamp = (await stat(paths[0] ?? "")).mtimeMs
-  const load = vi.spyOn(deps.tokens, "load")
+  const load = vi.spyOn(deps.tokens.options.keyring, "get")
   expect(await run(["recordings", "archive", "transcript", directory, "--offline", "--json"], deps)).toBe(0)
   expect(latest(output)).toMatchObject({ page: { limit: 2, has_more: false } })
   expect(latest(output).items).toHaveLength(2)

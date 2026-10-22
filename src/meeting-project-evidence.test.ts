@@ -11,7 +11,8 @@ import { sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { openStore } from "@wirecat/cli-core/store"
 import { expect, it, vi } from "vitest"
 import { readJsonl } from "../scripts/testing/answers.js"
-import { profileAccountKey, setConfig } from "./config.js"
+import { useProfile } from "../scripts/testing/profile.js"
+import { profileAccountKey } from "./config.js"
 import { createMeetingMcpServer } from "./mcp-server.js"
 import { readProjectEvidenceTool } from "./meeting-project-evidence-mcp.js"
 import { type ProgramDeps, run } from "./program.js"
@@ -91,7 +92,7 @@ const fixture = async () => {
     },
     diagnostic: (text) => errors.push(text),
   }
-  setConfig(deps.configPath, "account.profile", "AliceExample")
+  useProfile(deps.configPath, "AliceExample")
   const request = {
     profile: "AliceExample",
     externalId: profileAccountKey("AliceExample"),

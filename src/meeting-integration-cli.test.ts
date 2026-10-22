@@ -8,7 +8,7 @@ import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-core/meetings/te
 import { expect, it, vi } from "vitest"
 import { readAnswer, readJsonlPage, readReceipt } from "../scripts/testing/answers.js"
 import { fakeConnection } from "../scripts/testing/connection.js"
-import { setConfig } from "./config.js"
+import { useProfile } from "../scripts/testing/profile.js"
 import type { LocalTranscriptionOptions } from "./local-transcription.js"
 import { type ProgramDeps, run } from "./program.js"
 import type { StoreConnection } from "./store-connection.js"
@@ -39,7 +39,7 @@ const setup = async () => {
     actions: ["event.link", "person.link"],
     apply: writes,
   })
-  setConfig(deps.configPath, "account.profile", "AliceExample")
+  useProfile(deps.configPath, "AliceExample")
   parts.meetingIntegration = {
     change: async (reference, change, options) => {
       const parsed = parseMeetingReference(reference)

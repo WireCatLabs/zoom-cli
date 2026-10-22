@@ -154,7 +154,7 @@ invoke(["batch", "-", "--json"], 2, {}, " ".repeat(262145))
 assert.equal(existsSync(environment.ZM_CONFIG_DIR), false)
 assert.equal(existsSync(environment.MESSAGING_STORE), false)
 const missingProfileArchive = join(sandbox, "missing-profile-archive")
-invoke(["recordings", "download", "example-occurrence", "--output-dir", missingProfileArchive, "--resume", "--json"], 3)
+invoke(["recordings", "download", "example-occurrence", "--output-dir", missingProfileArchive, "--resume", "--json"], 2)
 invoke(
   [
     "recordings",
@@ -168,10 +168,10 @@ invoke(
     "--resume",
     "--jsonl",
   ],
-  3,
+  2,
 )
 assert.equal(existsSync(missingProfileArchive), false)
-json("config", "set", "account.profile", "invented-platform")
+environment.ZM_PROFILE = "invented-platform"
 json("config", "set", "zoom.client_id", "example-public-client")
 const scheduleArchive = join(sandbox, "scheduled-archive")
 const schedulePreview = json(
@@ -425,13 +425,13 @@ assert.equal(
   2,
   "append preserves unrelated history",
 )
-// Seed a distinct account, then restore the initial profile before the MCP process starts.
-json("config", "set", "account.profile", "invented-foreign-platform")
+// Seed a distinct account, then name the initial profile again before the MCP process starts.
+environment.ZM_PROFILE = "invented-foreign-platform"
 writeFileSync(vtt, original.replace("Original invented plan", "Foreign invented boundary"))
 json("meetings", "import", folder)
 const foreignMeetingId = String(json("meetings", "list").items[0].id)
 assert.notEqual(foreignMeetingId, meetingId)
-json("config", "set", "account.profile", "invented-platform")
+environment.ZM_PROFILE = "invented-platform"
 const { installedMeetingIntegration } = await import("./installed-meeting-integration.mjs")
 const meetingIntegration = await installedMeetingIntegration({
   root,
@@ -510,11 +510,16 @@ try {
     firstScope.items.some((meeting) => String(meeting.id) === foreignMeetingId),
     false,
   )
-  json("config", "set", "account.profile", "invented-foreign-platform")
+  environment.ZM_PROFILE = "invented-foreign-platform"
+  assert.ok(json("meetings", "list").items.some((meeting) => String(meeting.id) === foreignMeetingId))
   const secondResult = await client.callTool({ name: "meetings_list", arguments: {} })
   assert.notEqual(secondResult.isError, true)
   const secondScope = secondResult.structuredContent ?? JSON.parse(secondResult.content[0].text)
-  assert.deepEqual(secondScope.items, firstScope.items, "an initialized MCP account cannot change through config edits")
+  assert.deepEqual(
+    secondScope.items,
+    firstScope.items,
+    "an initialized MCP account cannot change when later commands name another profile",
+  )
   assert.deepEqual(secondScope.page, firstScope.page)
   assert.equal(typeof firstScope.meta.run_id, "string")
   assert.notEqual(secondScope.meta.run_id, firstScope.meta.run_id)
@@ -534,7 +539,7 @@ try {
   await exited
 }
 assert.equal(existsSync(denied), false)
-json("config", "set", "account.profile", "invented-platform")
+environment.ZM_PROFILE = "invented-platform"
 // A separate fixture process answers synchronous CLI children. Only its exact loopback endpoint
 // is allowed by the runtime guard; no credentials, real model, Zoom or internet are involved.
 const modelServer = join(root, "model-server.cjs")

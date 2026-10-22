@@ -9,8 +9,8 @@ import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-core/meetings/te
 import { expect, it, vi } from "vitest"
 import { readReceipt } from "../scripts/testing/answers.js"
 import { fakeConnection } from "../scripts/testing/connection.js"
+import { useProfile } from "../scripts/testing/profile.js"
 import { applyArchiveImport, preflightArchiveImport } from "./archive-import.js"
-import { setConfig } from "./config.js"
 import { type ProgramDeps, run } from "./program.js"
 import { writeStream } from "./streaming.js"
 import { TokenManager } from "./tokens.js"
@@ -355,7 +355,7 @@ it("validates opaque plans and account bounds and sanitizes append failures", as
 it("CLI preflights later corruption and aggregate bounds before opening or registering an account", async () => {
   const { root, paths } = await archiveFixture({ assets: 2 })
   const { deps, output } = await cli()
-  setConfig(deps.configPath, "account.profile", "example")
+  useProfile(deps.configPath, "example")
   const store = memoryMeetingStore()
   const connect = vi.fn(async () =>
     fakeConnection({ store, accountId: 1, ...memoryReceipts(store), close: async () => {} }),
@@ -371,7 +371,7 @@ it("CLI preflights later corruption and aggregate bounds before opening or regis
 it("CLI closes finite imports before output and streams acknowledged receipts with backpressure", async () => {
   const { root, uuid } = await archiveFixture({ assets: 2 })
   const { deps, output } = await cli()
-  setConfig(deps.configPath, "account.profile", "example")
+  useProfile(deps.configPath, "example")
   const store = memoryMeetingStore()
   const order: string[] = []
   deps.connectStore = vi.fn(async (request) => {
@@ -433,7 +433,7 @@ it("CLI leaves empty archives disconnected and refuses an import without a selec
   output.length = 0
   const { root } = await archiveFixture()
   deps.connectStore = vi.fn()
-  expect(await run(["recordings", "archive", "import", root, "--json"], deps)).toBe(3)
+  expect(await run(["recordings", "archive", "import", root, "--json"], deps)).toBe(2)
   expect(deps.connectStore).not.toHaveBeenCalled()
   expect(output).toEqual([])
 })
@@ -444,7 +444,7 @@ it("CLI preserves one acknowledged JSONL receipt after append cancellation and c
   const { deps, output } = await cli()
   const controller = new AbortController()
   deps.signal = controller.signal
-  setConfig(deps.configPath, "account.profile", "example")
+  useProfile(deps.configPath, "example")
   const store = memoryMeetingStore()
   const close = vi.fn(async () => {})
   const append = vi.fn(async (input: Parameters<typeof store.appendTranscripts>[0]) => {
@@ -480,7 +480,7 @@ it("preserves uncertain append outcomes over cancellation in library and CLI, wi
   const { deps, output, errors } = await cli()
   const cancellation = new AbortController()
   deps.signal = cancellation.signal
-  setConfig(deps.configPath, "account.profile", "example")
+  useProfile(deps.configPath, "example")
   const close = vi.fn(async () => {})
   deps.connectStore = async () =>
     fakeConnection({

@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+### Changed — may break callers
+
+- **The profile is the first word: `zm personal meetings list`.** `ZM_PROFILE` names it for a shell session and
+  `ZM_PROFILE_LOCK` pins a process to one (another named profile → `permission_error`). The `account.profile`
+  setting no longer picks the profile, and `zm config set account.profile` is refused. A command that uses an
+  account and names no profile fails with `validation_error`, listing the profiles in `details.profiles` (it was
+  `configuration_error`, exit 3). Login, import and sync record a profile; `doctor` lists them (`profiles`, was
+  `data_profile`).
+- **Each profile has its own Zoom login**, in the keyring as `<client id>:<profile>`. The login saved before this
+  version moves to the profile that `account.profile` named, the first time that profile is used.
+  `session status` names the `profile`; the verified Zoom user is now `zoom_user`.
+- **`context.sources` belongs to the profile named on the command**: `zm research config set context.sources …`.
+- **A recording schedule's timer runs `zm <profile> recordings schedule run`.** A timer installed by an earlier
+  version names no profile; create the schedule again.
+- **MCP clients pass the profile:** `"args": ["personal", "serve", "--mcp"]`.
+
 ## 0.34.0 — 22.10.2026
 
 ### Fixed

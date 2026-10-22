@@ -53,6 +53,7 @@ const unitPlan = (value: RecordingScheduleJob): RecordingScheduleUnits => {
   const args = [
     job.capture.runtime,
     job.capture.cliPath,
+    job.capture.profile,
     "recordings",
     "schedule",
     "run",

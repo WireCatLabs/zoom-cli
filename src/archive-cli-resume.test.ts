@@ -5,6 +5,7 @@ import { memoryKeyring } from "@wirecat/cli-base"
 import { planRecordingArchiveSchedule } from "@wirecat/cli-core/meetings"
 import { expect, it, vi } from "vitest"
 import { readReceipt } from "../scripts/testing/answers.js"
+import { useProfile } from "../scripts/testing/profile.js"
 import { profileAccountKey, setConfig } from "./config.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
 import { fileRecordingScheduleStore } from "./recording-schedule-store.js"
@@ -50,13 +51,13 @@ const setup = async () => {
     now: () => Date.parse("2026-10-11T00:00:00Z"),
   }
   setConfig(deps.configPath, "zoom.clientId", "example-client")
-  const tokenAccess = vi.spyOn(deps.tokens, "withSignal")
+  const tokenAccess = vi.spyOn(deps.tokens, "forProfile")
   return { deps, directory, download, list, catalog, tokenAccess, output, errors }
 }
 
 it("defaults configured profiles to durable downloads and explicitly disables or enables resume", async () => {
   const { deps, download, tokenAccess } = await setup()
-  setConfig(deps.configPath, "account.profile", "AliceExample")
+  useProfile(deps.configPath, "AliceExample")
   const args = ["recordings", "download", meeting.uuid, "--output-dir", "example", "--json"]
   for (const [flags, resume] of [
     [[], true],
@@ -104,8 +105,11 @@ it("refuses downloads and syncs without a local profile before API, tokens or ar
       "--jsonl",
     ],
   ] as const) {
-    expect(await run([...args], deps)).toBe(3)
-    expect(JSON.parse(errors.at(-1) ?? "{}").error).toMatchObject({ code: "configuration_error" })
+    expect(await run([...args], deps)).toBe(2)
+    expect(JSON.parse(errors.at(-1) ?? "{}").error).toMatchObject({
+      code: "validation_error",
+      details: { profiles: [] },
+    })
   }
   expect(download).not.toHaveBeenCalled()
   expect(list).not.toHaveBeenCalled()
@@ -117,9 +121,9 @@ it("refuses downloads and syncs without a local profile before API, tokens or ar
 
 it("captures account scope before an asynchronous download and refreshes it only for the next command", async () => {
   const { deps, download } = await setup()
-  setConfig(deps.configPath, "account.profile", "AliceExample")
+  useProfile(deps.configPath, "AliceExample")
   download.mockImplementation(async (_id, options) => {
-    setConfig(deps.configPath, "account.profile", "BobSample")
+    useProfile(deps.configPath, "BobSample")
     await Promise.resolve()
     expect(options.account).toBe(profileAccountKey("AliceExample"))
     return report
@@ -137,7 +141,7 @@ it("captures account scope before an asynchronous download and refreshes it only
 
 it("uses paged account-bound discovery and an explicit durable checkpoint with rechecks and limits", async () => {
   const { deps, directory, download, list, output } = await setup()
-  setConfig(deps.configPath, "account.profile", "AliceExample")
+  useProfile(deps.configPath, "AliceExample")
   const catalogList = vi.fn(async (options: { cursor?: string }) => ({
     items: options.cursor ? [] : [{ ...meeting, externalId: meeting.uuid }],
     nextCursor: options.cursor ? null : "example-page",
@@ -189,7 +193,7 @@ it("uses paged account-bound discovery and an explicit durable checkpoint with r
 
 it("prevalidates bounds, dates, selections and resume conflicts before provider work", async () => {
   const { deps, directory, download, list, tokenAccess } = await setup()
-  setConfig(deps.configPath, "account.profile", "AliceExample")
+  useProfile(deps.configPath, "AliceExample")
   const sync = [
     "recordings",
     "sync",
@@ -236,7 +240,7 @@ it("prevalidates bounds, dates, selections and resume conflicts before provider 
 
 it("refuses saved backup jobs after profile or client changes before keyring or network access", async () => {
   const { deps, directory, output, errors } = await setup()
-  setConfig(deps.configPath, "account.profile", "AliceExample")
+  useProfile(deps.configPath, "AliceExample")
   const schedule = planRecordingArchiveSchedule(
     {
       name: "Alice Example backup",
@@ -268,13 +272,12 @@ it("refuses saved backup jobs after profile or client changes before keyring or 
     throw new Error("unexpected network")
   })
   deps.fetch = network
-  for (const [key, value] of [
-    ["account.profile", "BobSample"],
-    ["zoom.clientId", "other-example-client"],
+  for (const [profile, clientId] of [
+    ["BobSample", "example-client"],
+    ["AliceExample", "other-example-client"],
   ] as const) {
-    setConfig(deps.configPath, "account.profile", "AliceExample")
-    setConfig(deps.configPath, "zoom.clientId", "example-client")
-    setConfig(deps.configPath, key, value)
+    useProfile(deps.configPath, profile)
+    setConfig(deps.configPath, "zoom.clientId", clientId)
     expect(await run(["recordings", "schedule", "run", schedule.id, "--jsonl"], deps)).toBe(3)
     expect(JSON.parse(errors.at(-1) ?? "{}").error.message).toMatch(/saved profile.*client/)
   }
@@ -282,11 +285,11 @@ it("refuses saved backup jobs after profile or client changes before keyring or 
   expect(network).not.toHaveBeenCalled()
   expect(output).toEqual([])
   await expect(access(schedule.destination)).rejects.toMatchObject({ code: "ENOENT" })
-  setConfig(deps.configPath, "account.profile", "AliceExample")
+  useProfile(deps.configPath, "AliceExample")
   setConfig(deps.configPath, "zoom.clientId", "example-client")
   deps.tokens.options.keyring.set(
     `zoom-cli:${directory}`,
-    "example-client",
+    "example-client:AliceExample",
     JSON.stringify({
       accessToken: "example-scheduled-access",
       refreshToken: "example-scheduled-refresh",
@@ -296,7 +299,7 @@ it("refuses saved backup jobs after profile or client changes before keyring or 
   )
   network.mockImplementation(async () => new Response(JSON.stringify({ meetings: [], next_page_token: "" })))
   expect(await run(["recordings", "schedule", "run", schedule.id, "--jsonl"], deps)).toBe(0)
-  expect(keyring).toHaveBeenCalledWith(`zoom-cli:${directory}`, "example-client")
+  expect(keyring).toHaveBeenCalledWith(`zoom-cli:${directory}`, "example-client:AliceExample")
   expect(network).toHaveBeenCalledTimes(1)
   const saved = JSON.parse(await readFile(join(schedule.destination, ".zoom-archive-sync.json"), "utf8"))
   expect(saved.scope).toEqual({ provider: "zoom", account: profileAccountKey("AliceExample") })
@@ -304,9 +307,9 @@ it("refuses saved backup jobs after profile or client changes before keyring or 
 
 it("previews native schedules offline without persisting jobs, units or opening credentials", async () => {
   const { deps, directory, output, tokenAccess } = await setup()
-  setConfig(deps.configPath, "account.profile", "AliceExample")
   deps.recordingScheduleTarget = { runtime: process.execPath, cliPath: join(directory, "example-cli.js") }
   deps.env = { HOME: directory, XDG_CONFIG_HOME: join(directory, "config-home") }
+  useProfile(deps.configPath, "AliceExample", deps.env)
   expect(
     await run(
       [

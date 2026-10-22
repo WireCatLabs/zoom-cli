@@ -23,8 +23,8 @@ import {
 } from "./archive-commands.js"
 import { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
 import { annotateMeetingCommands } from "./commands.js"
-import { filesZone, profileAccountKey, readConfig } from "./config.js"
-import { checkCancelled, ZoneAssumptions } from "./errors.js"
+import { addProfile, filesZone, profileAccountKey, readConfig } from "./config.js"
+import { cancellableStore, checkCancelled, ZoneAssumptions } from "./errors.js"
 import { bytes, duration, type ExecutionState, resetCliOptions, startExecution } from "./execution.js"
 import { fileNamesHelp, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { installFirstScreen } from "./first-screen.js"
@@ -35,6 +35,7 @@ import { addZoomInventoryCommand } from "./meeting-inventory.js"
 import { addZoomMcpCommand, type ZoomMcpServeOptions } from "./meeting-mcp-command.js"
 import type { ZoomPreparationOptions } from "./meeting-preparation.js"
 import { configuredMeetingSource } from "./meeting-source.js"
+import { PROFILE_HELP, profileSelection, showProfileInUsage } from "./profile-word.js"
 import { refuseChangeWhenReadOnly } from "./read-only.js"
 import type { RecordingScheduleService } from "./recording-schedule.js"
 import { addRecordingScheduleCommands } from "./recording-schedule-commands.js"
@@ -104,6 +105,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
   let execution: ExecutionState | undefined
   let fields: string[] | undefined
   let activeTokens: TokenManager | undefined
+  const selection = profileSelection(deps.env ?? process.env, () => getConfig().profiles)
+  const profile = selection.profile
   const currentExecution = () => execution
   const signal = () => currentExecution()?.deadline.signal ?? deps.signal
   const fetchWithSignal =
@@ -118,25 +121,15 @@ export const createProgram = (deps: ProgramDeps): Command => {
         signal: operation && init?.signal ? AbortSignal.any([operation, init.signal]) : (operation ?? init?.signal),
       })
     }
-  const tokens = () => (activeTokens ??= deps.tokens.withSignal(signal(), fetchWithSignal(deps.tokens.options.fetch)))
+  const tokens = () =>
+    (activeTokens ??= deps.tokens
+      .forProfile(profile(), getConfig().legacyProfile)
+      .withSignal(signal(), fetchWithSignal(deps.tokens.options.fetch)))
   const buffer = (text: string) => {
     if (!execution) throw new CliError("configuration_error", "command execution is not initialized")
     execution.output.data(text)
   }
-  const guardedStore = (store: MeetingStore): MeetingStore =>
-    new Proxy(store, {
-      get(target, key, receiver) {
-        const method = Reflect.get(target, key, receiver)
-        return typeof method === "function"
-          ? async (...args: unknown[]) => {
-              checkCancelled(signal())
-              const result = await method.apply(target, args)
-              checkCancelled(signal())
-              return result
-            }
-          : method
-      },
-    })
+  const guardedStore = (store: MeetingStore): MeetingStore => cancellableStore(store, signal)
   let selectedStore = deps.store
   let selectedAccountId = deps.accountId
   const requireAccount = (): number => {
@@ -149,9 +142,17 @@ export const createProgram = (deps: ProgramDeps): Command => {
     context?: ContextCapture,
   ): Promise<StoreConnection> => {
     if (!deps.connectStore) return storeUnavailable()
-    const profile = getConfig().accountProfile
+    const selected = profile()
     try {
-      return await connectSelectedProfile(deps.connectStore, profile, intent, context)
+      const connection = await connectSelectedProfile(deps.connectStore, selected, intent, context)
+      // Importing or syncing is what puts a profile's meetings here, so it lists the profile from then on.
+      if (intent === "ingestion" && !getConfig().profiles.includes(selected)) {
+        const here = getConfig().profiles
+        if (here.length && !program.opts().quiet)
+          deps.diagnostic(`new profile ${selected}; the other profiles here: ${here.join(", ")}\n`)
+        addProfile(deps.configPath, selected)
+      }
+      return connection
     } catch (error) {
       if (isCliError(error)) throw error
       throw new CliError("configuration_error", "could not open the shared meeting store")
@@ -162,7 +163,8 @@ export const createProgram = (deps: ProgramDeps): Command => {
   const program = new Command()
     .name("zm")
     .version(VERSION)
-    .description("Zoom meeting transcripts and summaries")
+    .usage("[profile] [options] <command>")
+    .description(`Zoom meeting transcripts and summaries\n\n${PROFILE_HELP}`)
     .option("--json", "one JSON value; --json=id,title keeps only those fields")
     .option("--jsonl", "one JSON object per item")
     .option("--no-input", "disable interactive login")
@@ -230,7 +232,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     }
     output(wholeList("list", items))
   }
-  addConfigCommands(program, { configPath: deps.configPath, getConfig, output })
+  addConfigCommands(program, { configPath: deps.configPath, getConfig, output, profile })
   const fetchApi = () => fetchWithSignal(deps.fetch)
   const configured = configuredMeetingSource({ deps, getConfig, tokens, fetch: fetchApi, zones })
   const source = configured.source
@@ -273,6 +275,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     formatOf,
     fields: () => fields,
     api,
+    profile,
     tokens,
     fetch: () => fetchWithSignal(deps.fetch),
     signal,
@@ -280,6 +283,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
   const watch = createWatchService({
     deps,
     getConfig,
+    profile,
     tokens,
     fetch: () => fetchWithSignal(deps.fetch),
     offline: () => Boolean(program.opts().offline),
@@ -320,10 +324,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     receipt,
     outputIsTTY: deps.outputIsTTY,
     api,
-    account: () => {
-      const profile = getConfig().accountProfile
-      return profile ? profileAccountKey(profile) : undefined
-    },
+    account: () => profileAccountKey(profile()),
     signal,
     now: deps.now ?? Date.now,
     recordings: () =>
@@ -338,7 +339,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     },
   })
   addRecordingScheduleCommands(program, {
-    ...zoomRecordingSchedule({ deps, getConfig, withSignal: fetchWithSignal, signal, remoteOptions, zones }),
+    ...zoomRecordingSchedule({ deps, getConfig, profile, withSignal: fetchWithSignal, signal, remoteOptions, zones }),
     offline: () => Boolean(program.opts().offline),
     signal,
     output,
@@ -365,8 +366,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
   let capturedContext: ContextCapture | undefined
   const preparationOptions: ZoomPreparationOptions = {
     context: () => {
-      const config = getConfig()
-      capturedContext ??= captureContextSources(config.contextSources, config.accountProfile)
+      capturedContext ??= captureContextSources(getConfig().contextSources, profile())
       return capturedContext
     },
     credentials: () => {
@@ -377,7 +377,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     remoteOptions,
   }
   const inventory = addZoomInventoryCommand(program, {
-    config: getConfig,
+    profile,
     ...preparationOptions,
     signal,
     now: deps.now,
@@ -387,6 +387,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     fields: () => fields,
     signal,
     serve: deps.serveMcp,
+    profile,
     preparation: preparationOptions,
     inventory,
   })
@@ -409,6 +410,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
   })
   annotateMeetingCommands(program)
   installFirstScreen(program)
+  showProfileInUsage(program)
   const parseAsync = program.parseAsync.bind(program)
   program.parseAsync = async (...args) => {
     if (parsing) throw new CliError("validation_error", "concurrent command parsing is unavailable")
@@ -420,7 +422,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
     execution = undefined
     activeTokens = undefined
     watch.reset()
-    const lifted = liftJsonFields(program, args)
+    const lifted = liftJsonFields(program, selection.lift(program, args))
     fields = lifted.fields
     let result = program
     let failed = false

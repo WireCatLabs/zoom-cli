@@ -21,9 +21,9 @@ listing needs `meeting:read:list_meetings`; details and invitations need the ext
 ## Read upcoming meetings
 
 ```sh
-zm remote-meetings list --json
-zm remote-meetings show 123456789 --json
-zm remote-meetings invitation 123456789 --json
+zm personal remote-meetings list --json
+zm personal remote-meetings show 123456789 --json
+zm personal remote-meetings invitation 123456789 --json
 ```
 
 Remote meeting ids are Zoom's numeric ids; stored `meetings` commands use local database ids.
@@ -43,9 +43,9 @@ Create, update and cancel show the proposed request by default. Add `--yes` to a
 `--dry-run` always keeps the preview, including when `--yes` is present.
 
 ```sh
-zm remote-meetings create --title "Example planning" --start-time 2026-10-20T10:00:00Z --duration-minutes 30 --json
-zm remote-meetings update 123456789 --title "Example review" --yes --json
-zm remote-meetings cancel 123456789 --dry-run --json
+zm personal remote-meetings create --title "Example planning" --start-time 2026-10-20T10:00:00Z --duration-minutes 30 --json
+zm personal remote-meetings update 123456789 --title "Example review" --yes --json
+zm personal remote-meetings cancel 123456789 --dry-run --json
 ```
 
 Only instant and scheduled creation and basic changes are supported. Remote writes are never

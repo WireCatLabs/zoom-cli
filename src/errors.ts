@@ -1,6 +1,6 @@
 import { CliError, isCliError } from "@wirecat/cli-base"
 import { timezoneOf, wallTime } from "@wirecat/cli-base/query"
-import type { JsonValue } from "@wirecat/cli-core/meetings"
+import type { JsonValue, MeetingStore } from "@wirecat/cli-core/meetings"
 
 export const checkCancelled = (signal?: AbortSignal): void => {
   if (!signal?.aborted) return
@@ -8,6 +8,21 @@ export const checkCancelled = (signal?: AbortSignal): void => {
   const timedOut = signal.reason instanceof Error && signal.reason.name === "TimeoutError"
   throw new CliError(timedOut ? "timeout" : "cancelled", timedOut ? "command timed out" : "command cancelled")
 }
+/** Every store call checks the command's signal before and after, so a deadline stops between calls. */
+export const cancellableStore = (store: MeetingStore, signal: () => AbortSignal | undefined): MeetingStore =>
+  new Proxy(store, {
+    get(target, key, receiver) {
+      const method = Reflect.get(target, key, receiver)
+      return typeof method === "function"
+        ? async (...args: unknown[]) => {
+            checkCancelled(signal())
+            const result = await method.apply(target, args)
+            checkCancelled(signal())
+            return result
+          }
+        : method
+    },
+  })
 export const object = (value: unknown): Record<string, unknown> => {
   if (typeof value !== "object" || value === null || Array.isArray(value))
     throw new CliError("invalid_response", "Zoom returned an invalid response")

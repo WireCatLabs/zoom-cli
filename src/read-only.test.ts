@@ -44,7 +44,7 @@ describe("ZM_READ_ONLY", () => {
     [["meetings", "import", "./downloaded"], "outside a sync"],
     [["meetings", "link", "1", "--participant-id", "1", "--person", "p1", "--yes"], "outside a sync"],
     [["meetings", "embeddings", "--model", "e5-small", "--yes"], "embedding service"],
-    [["config", "set", "account.profile", "personal"], "outside a sync"],
+    [["config", "set", "files.timezone", "UTC"], "outside a sync"],
     [["skill", "install"], "outside a sync"],
     [
       [
@@ -90,7 +90,7 @@ describe("ZM_READ_ONLY", () => {
 
   it("is off when set to 0", async () => {
     const { deps, stderr } = await setup({ ZM_READ_ONLY: "0" })
-    await run(["config", "set", "account.profile", "personal", "--json"], deps)
+    await run(["config", "set", "files.timezone", "UTC", "--json"], deps)
     expect(stderr.join("")).not.toContain("read-only")
   })
 })

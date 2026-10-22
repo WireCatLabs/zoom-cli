@@ -11,6 +11,7 @@ import type { PreparationStoreRequest } from "../../src/meeting-preparation.js"
 import type { ProgramDeps } from "../../src/program.js"
 import { createStoreConnector } from "../../src/store-connection.js"
 import { TokenManager } from "../../src/tokens.js"
+import { useProfile } from "./profile.js"
 
 export const now = Date.parse("2026-10-14T12:00:00Z")
 export const preparationFixture = async (
@@ -125,7 +126,7 @@ export const preparationFixture = async (
     fetch: network,
     now: () => now,
   })
-  tokens.save({
+  tokens.forProfile("AliceExample", null).save({
     accessToken: "invented-access",
     refreshToken: "invented-refresh",
     expiresAt: now + 3600000,
@@ -158,7 +159,7 @@ export const preparationFixture = async (
     },
     diagnostic: (text) => errors.push(text),
   }
-  setConfig(deps.configPath, "account.profile", "AliceExample")
+  useProfile(deps.configPath, "AliceExample")
   setConfig(deps.configPath, "zoom.clientId", "invented-client")
   return {
     path,
@@ -187,7 +188,7 @@ export const preparationFixture = async (
           intent: preparation ? "preparation" : "read",
           ...(preparation?.context ? { context: preparation.context } : {}),
         }),
-      preparation: { credentials: () => tokens, fetch: network },
+      preparation: { credentials: () => tokens.forProfile("AliceExample", null), fetch: network },
     },
   }
 }

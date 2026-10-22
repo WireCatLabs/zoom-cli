@@ -6,7 +6,7 @@ import { sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { openStore } from "@wirecat/cli-core/store"
 import { expect, it, vi } from "vitest"
 import { fakeConnection } from "../scripts/testing/connection.js"
-import { setConfig } from "./config.js"
+import { useProfile } from "../scripts/testing/profile.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
 import { createStoreConnector } from "./store-connection.js"
 import { TokenManager } from "./tokens.js"
@@ -77,7 +77,7 @@ it("reuses one connection, closes before stdout and emits independent real store
     expect(closed).toBe(true)
     f.output.push(text)
   }
-  setConfig(f.deps.configPath, "account.profile", "AliceExample")
+  useProfile(f.deps.configPath, "AliceExample")
   f.deps.readBatchInput = async () =>
     requests(
       { id: "q1", command: ["search", "meetings"], args: ["budget"] },
@@ -130,7 +130,7 @@ it("cancels cooperatively, closes once and prints no successful stream", async (
   f.deps.connectStore = vi.fn(async () =>
     fakeConnection({ accountId: 1, close, meetingBatch: { passage: read, search: read, index: read } }),
   )
-  setConfig(f.deps.configPath, "account.profile", "AliceExample")
+  useProfile(f.deps.configPath, "AliceExample")
   f.deps.readBatchInput = async () => requests({ id: "p", command: ["meetings", "passage"], args: ["meeting:1/1/1/0"] })
   expect(await run(["batch", "-", "--jsonl"], f.deps)).not.toBe(0)
   expect(close).toHaveBeenCalledTimes(1)
@@ -163,7 +163,7 @@ it("discards buffered batch output when closing the selected store fails", async
     read = vi.fn(async () => {
       throw new CliError("not_found", "fixture cue missing")
     })
-  setConfig(f.deps.configPath, "account.profile", "AliceExample")
+  useProfile(f.deps.configPath, "AliceExample")
   f.deps.connectStore = vi.fn(async () =>
     fakeConnection({ accountId: 1, close, meetingBatch: { passage: read, search: read, index: read } }),
   )

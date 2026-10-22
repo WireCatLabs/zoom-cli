@@ -10,7 +10,7 @@ recording files and inspect an uncertain remote change before retrying it.
 
 The browser approved the app, but its callback has not reached the waiting process. Leave that
 terminal open. On the WireCat callback page, copy `code=…&state=…` or the full callback URL, paste
-it into **the same running `zm session start` terminal**, and press Enter. The command must report
+it into **the same running `zm personal session start` terminal**, and press Enter. The command must report
 `logged_in: true` and return to the prompt. If it timed out, start a new login and use its new callback.
 A callback from an earlier attempt cannot finish a later one.
 
@@ -30,7 +30,7 @@ Use [the full app checklist](zoom-app.md#create-your-own-app), then verify termi
 Try an installed browser explicitly:
 
 ```sh
-zm session start --browser firefox
+zm personal session start --browser firefox
 ```
 
 In an interactive terminal, open the authorization URL printed by that running login yourself,
@@ -49,7 +49,7 @@ shows the settings to check. Authorized VTT files can still be imported without 
 The system password store must be installed, running and accessible to this user. Log in from the
 same operating-system account/session where the keyring is available; a headless environment may
 lack it. The tool does not fall back to a plaintext token file. After repairing keyring access,
-run login again and check `zm session status --json`.
+run login again and check `zm personal session status --json`.
 
 ### Commands stop with "Zoom token request failed"
 
@@ -58,12 +58,12 @@ Each token request records its outcome in `~/.local/share/zm/runs/<date>/<run>/e
 a new refresh token, whether the keyring save worked, a timeout or cancellation, and the process id.
 It never holds a token. Two records with different process ids close together suggest two commands
 refreshing at once. Read them with `cat ~/.local/share/zm/runs/*/*/events.jsonl`, then run
-`zm session start` again. Runs older than 30 days are removed.
+`zm personal session start` again. Runs older than 30 days are removed.
 
 ### A required scope is missing
 
 The error names the exact permission. The app owner adds it in **Scopes** and saves; then the user
-runs `zm session start` again. Check the granted scopes with `zm session status --json` and retry the failed
+runs `zm personal session start` again. Check the granted scopes with `zm personal session status --json` and retry the failed
 read. Tokens already issued do not gain newly configured scopes. Archive, remote meeting details,
 remote verification and meeting changes have [separate permissions](zoom-app.md#add-archive-or-management-access).
 
@@ -86,11 +86,11 @@ OAuth callback values, tokens and private transcript text.
 
 | Symptom | Check and repair | Success check |
 |---|---|---|
-| No stored profile or empty list (exit 3, "no stored meetings for the selected profile") | Choose a profile and import or pull; reads do not register accounts | `zm meetings list --json` shows the selected profile's meetings |
+| No stored profile or empty list (exit 3, "no stored meetings for the selected profile") | Choose a profile and import or pull; reads do not register accounts | `zm personal meetings list --json` shows the selected profile's meetings |
 | No hosted meetings in the recent window | Confirm the logged-in Zoom user, API source and date range; try an older explicit `--since-time` | Compare returned dates with expected hosted occurrences |
 | Meeting exists but transcript is empty | Check Zoom's transcript generation/retention and host permissions; expired or never-saved text cannot be recreated by pull | Open the transcript after Zoom makes it available and you pull again |
 | An attended meeting is missing | Ask the host for a VTT file or download it if allowed, then import | Check imported date/title and text |
-| Transcript appeared after the first pull | Revisit with `zm meetings sync --lookback-days 7`, or an older explicit `--since-time` | Open the newly stored transcript |
+| Transcript appeared after the first pull | Revisit with `zm personal meetings sync --lookback-days 7`, or an older explicit `--since-time` | Open the newly stored transcript |
 | Pull failed partway | Repair the reported error and retry; failed occurrences do not advance the cursor | Inspect the completion receipt and meeting list |
 | Import rejects a filename or time | Use `YYYY-MM-DD_HHMM_topic.vtt` and the filename's timezone; resolve conflicting or ambiguous times | Import succeeds with the intended date/title |
 | Search gives no matches | Check transcript availability, selected profile and indexing coverage before changing the query | Open a known passage and confirm its indexed/searchable state |

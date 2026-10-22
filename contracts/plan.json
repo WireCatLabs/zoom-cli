@@ -36,7 +36,7 @@
     }
   ],
   "mcp": {
-    "args": ["serve", "--mcp"],
+    "args": ["contract", "serve", "--mcp"],
     "snapshot": "mcp-tools.json"
   }
 }

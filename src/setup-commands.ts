@@ -1,10 +1,19 @@
 import { CliError, createRenderer, isCliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { type Body, itemOf, LOCAL_READ, LOCAL_WRITE, NO_EFFECTS, REMOTE_WRITE } from "@wirecat/cli-core/cli"
+import {
+  type Body,
+  commandWords,
+  itemOf,
+  LOCAL_READ,
+  LOCAL_WRITE,
+  NO_EFFECTS,
+  REMOTE_WRITE,
+  refuseCommandName,
+} from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import type { AnswerFormat } from "./answer-output.js"
 import { addStandardCommands } from "./commands.js"
-import { setConfig, type ZoomConfig } from "./config.js"
+import { addProfile, setConfig, type ZoomConfig } from "./config.js"
 import { login } from "./login.js"
 import type { ProgramDeps } from "./program.js"
 import { getZoomProfile } from "./recordings.js"
@@ -13,7 +22,12 @@ import { VERSION } from "./version.js"
 
 export const addConfigCommands = (
   program: Command,
-  { configPath, getConfig, output }: { configPath: string; getConfig: () => ZoomConfig; output: (body: Body) => void },
+  {
+    configPath,
+    getConfig,
+    output,
+    profile,
+  }: { configPath: string; getConfig: () => ZoomConfig; output: (body: Body) => void; profile: () => string },
 ): void => {
   const cfg = annotate(program.command("config"), { effects: NO_EFFECTS }).description("local Zoom configuration")
   annotate(cfg.command("show"), { effects: LOCAL_READ })
@@ -23,10 +37,10 @@ export const addConfigCommands = (
     })
   annotate(cfg.command("set"), { effects: LOCAL_WRITE })
     .description("set a configuration value")
-    .argument("<key>", "setting name, such as account.profile")
+    .argument("<key>", "setting name, such as zoom.client_id")
     .argument("<value>", "new value")
     .action((key: string, value: string) => {
-      output(itemOf(setConfig(configPath, key, value)))
+      output(itemOf(setConfig(configPath, key, value, profile)))
     })
 }
 
@@ -49,6 +63,7 @@ export interface SessionCommandDeps {
   formatOf: () => AnswerFormat
   fields: () => string[] | undefined
   api: () => void
+  profile: () => string
   tokens: () => TokenManager
   fetch: () => typeof fetch
   signal: () => AbortSignal | undefined
@@ -56,7 +71,7 @@ export interface SessionCommandDeps {
 
 /** The shared discovery, doctor and session status commands, plus Zoom's browser login. */
 export const addSessionCommands = (program: Command, context: SessionCommandDeps): void => {
-  const { deps, getConfig, output, buffer, formatOf, fields, api, tokens, fetch, signal } = context
+  const { deps, getConfig, output, buffer, formatOf, fields, api, profile, tokens, fetch, signal } = context
   addStandardCommands(program, {
     output,
     discovery: (value) =>
@@ -77,7 +92,7 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
           version: VERSION,
           runtime: { node: process.versions.node },
           config: { readable: false, path: deps.configPath, error: error.message },
-          dataProfile: null,
+          profiles: null,
           authentication: { configured: null, state: "not_checked" },
           database: "not_checked",
         }
@@ -86,15 +101,15 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
         version: VERSION,
         runtime: { node: process.versions.node },
         config: { readable: true, path: deps.configPath, source: config.source },
-        dataProfile: config.accountProfile,
+        profiles: config.profiles,
         authentication: { configured: config.clientId !== null, state: "not_checked" },
         database: "not_checked",
       }
     },
     sessionStatus: async (check) => {
       const config = getConfig()
-      if (!config.clientId)
-        return { configured: false, state: "not_configured", dataProfile: config.accountProfile, verified: false }
+      const selected = profile()
+      if (!config.clientId) return { configured: false, state: "not_configured", profile: selected, verified: false }
       if (check) {
         if (program.opts().offline)
           throw new CliError("configuration_error", "session verification requires network access; remove --offline")
@@ -102,18 +117,18 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
         return {
           configured: true,
           state: "verified",
-          dataProfile: config.accountProfile,
+          profile: selected,
           verified: true,
-          profile: await (deps.checkSession
+          zoomUser: await (deps.checkSession
             ? deps.checkSession({ signal: signal() })
             : getZoomProfile(tokens(), fetch(), { signal: signal() })),
         }
       }
-      const saved = deps.tokens.load()
+      const saved = tokens().load()
       return {
         configured: true,
         state: saved ? (saved.expiresAt > (deps.now?.() ?? Date.now()) ? "saved" : "expired") : "missing",
-        dataProfile: config.accountProfile,
+        profile: selected,
         verified: false,
         ...(saved ? { expiresAt: saved.expiresAt, scopes: saved.scopes } : {}),
       }
@@ -127,6 +142,8 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
     .option("--browser <program>", "browser program")
     .action(async (opts: { browser?: string }) => {
       const config = getConfig()
+      const selected = profile()
+      refuseCommandName(selected, commandWords(program), "zm")
       if (!config.clientId)
         throw new CliError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
       const globals = program.opts()
@@ -134,19 +151,20 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
       if (globals.input === false)
         throw new CliError("configuration_error", "login requires browser approval; remove --no-input")
       if (deps.env?.CI)
-        throw new CliError("configuration_error", "login requires browser approval; run zm session start yourself")
-      output(
-        itemOf(
-          await login({
-            tokens: tokens(),
-            signal: signal(),
-            openBrowser: (url) => deps.openBrowser(url, opts.browser),
-            readPaste: deps.readPaste,
-            // Without a terminal this line is all an agent can pass on, so --quiet keeps it.
-            showUrl: (url) => deps.diagnostic(`Open this URL to approve Zoom login:\n${url}\n`),
-          }),
-        ),
-      )
+        throw new CliError(
+          "configuration_error",
+          `login requires browser approval; run zm ${selected} session start yourself`,
+        )
+      const done = await login({
+        tokens: tokens(),
+        signal: signal(),
+        openBrowser: (url) => deps.openBrowser(url, opts.browser),
+        readPaste: deps.readPaste,
+        // Without a terminal this line is all an agent can pass on, so --quiet keeps it.
+        showUrl: (url) => deps.diagnostic(`Open this URL to approve Zoom login:\n${url}\n`),
+      })
+      addProfile(deps.configPath, selected)
+      output(itemOf({ ...done, profile: selected }))
     })
   annotate(start, { effects: REMOTE_WRITE, lifetime: "interactive" })
 }

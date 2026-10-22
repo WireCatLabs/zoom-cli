@@ -692,9 +692,10 @@ describe("zm", () => {
     expect(await run(["meetings", "import", "example-folder"], missing.deps)).toBe(3)
     expect(await run(["meetings", "show", "1"], missing.deps)).toBe(3)
     expect(await run(["--json", "--jsonl", "config", "show"], deps)).toBe(2)
-    expect(await run(["session", "start"], deps)).toBe(3)
+    expect(await run(["session", "start"], deps)).toBe(2)
+    expect(await run(["example", "session", "start"], deps)).toBe(3)
     setConfig(deps.configPath, "zoom.clientId", "example-client")
-    expect(await run(["--no-input", "session", "start"], deps)).toBe(3)
+    expect(await run(["--no-input", "example", "session", "start"], deps)).toBe(3)
   })
   it("logs in through an injected browser and exposes only status and grants", async () => {
     const setup = await programSetup({
@@ -706,8 +707,8 @@ describe("zm", () => {
       },
     })
     setConfig(setup.deps.configPath, "zoom.clientId", "example-client")
-    expect(await run(["--json", "session", "start", "--browser", "example-browser"], setup.deps)).toBe(0)
-    expect(readAnswer(setup.stdout[0] ?? "{}")).toEqual({ logged_in: true, scopes })
+    expect(await run(["example", "--json", "session", "start", "--browser", "example-browser"], setup.deps)).toBe(0)
+    expect(readAnswer(setup.stdout[0] ?? "{}")).toEqual({ logged_in: true, scopes, profile: "example" })
     expect(setup.stdout.join("")).not.toContain("example-access")
   })
 })
@@ -733,7 +734,7 @@ it("config reads expose only supported public fields and parser failures are one
   )
   expect(() => readConfig(setup.deps.configPath)).toThrow(`${setup.deps.configPath}: unexpected is an unknown setting`)
   expect(() => readConfig(setup.deps.configPath)).not.toThrow(/example-private-value/)
-  expect(await run(["unknown-command"], setup.deps)).toBe(2)
+  expect(await run(["example", "unknown-command"], setup.deps)).toBe(2)
   expect(setup.stdout).toEqual([])
   expect(setup.stderr).toHaveLength(1)
   expect(JSON.parse(setup.stderr[0] ?? "{}")).toHaveProperty("error.code", "validation_error")

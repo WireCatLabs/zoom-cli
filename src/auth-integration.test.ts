@@ -7,8 +7,10 @@ import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { describe, expect, it } from "vitest"
 import { readAnswer } from "../scripts/testing/answers.js"
 import { fakeConnection } from "../scripts/testing/connection.js"
+import { useProfile } from "../scripts/testing/profile.js"
 import { setConfig } from "./config.js"
 import { login } from "./login.js"
+import { chooseProfile } from "./profile.js"
 import { type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
 
@@ -145,6 +147,14 @@ describe("authentication termination", () => {
 })
 
 describe("token validation and refresh recovery", () => {
+  it("lets only the legacy profile take over a login saved under the plain client id, and copies it", () => {
+    const tokens = manager()
+    const saved = { accessToken: "example-old", refreshToken: "example-old-refresh", expiresAt: 60000, scopes: [] }
+    tokens.save(saved)
+    expect(tokens.forProfile("other-example", "legacy-example").load()).toBeNull()
+    expect(tokens.forProfile("legacy-example", "legacy-example").load()).toEqual(saved)
+    expect(tokens.options.keyring.get("example", "example-client:legacy-example")).toBe(JSON.stringify(saved))
+  })
   it("sanitizes invalid JSON and transport failures without retrying token exchange", async () => {
     let calls = 0
     const tokens = manager(async () => {
@@ -153,7 +163,7 @@ describe("token validation and refresh recovery", () => {
     })
     await expect(tokens.exchange({})).rejects.toMatchObject({
       code: "outcome_unknown",
-      message: "Zoom token exchange did not finish; run zm session start again before retrying",
+      message: "Zoom token exchange did not finish; run zm <profile> session start again before retrying",
     })
     expect(calls).toBe(1)
     await expect(manager(async () => new Response("invalid JSON")).exchange({})).rejects.toMatchObject({
@@ -233,17 +243,17 @@ describe("CLI configuration isolation", () => {
     expect(stderr).toHaveLength(1)
     setConfig(deps.configPath, "zoom.clientId", "example-client")
     expect(await run(["--json", "--jsonl", "config", "show"], deps)).toBe(2)
-    expect(await run(["--no-input", "session", "start"], deps)).toBe(3)
+    expect(await run(["--no-input", "example", "session", "start"], deps)).toBe(3)
   })
   it("reports browser and token exchange failures with their structured exit codes", async () => {
     const { deps, stderr } = await setup()
     setConfig(deps.configPath, "zoom.clientId", "example-client")
-    expect(await run(["session", "start"], deps)).toBe(3)
+    expect(await run(["example", "session", "start"], deps)).toBe(3)
     expect(JSON.parse(stderr.at(-1) ?? "{}").error.code).toBe("configuration_error")
     deps.openBrowser = async (url) => {
       await fetch(callback(url, { code: "example-code" }))
     }
-    expect(await run(["session", "start"], deps)).toBe(14)
+    expect(await run(["example", "session", "start"], deps)).toBe(14)
     expect(JSON.parse(stderr.at(-1) ?? "{}").error.code).toBe("outcome_unknown")
   })
   it("delegates all configured file-source parts without changing the source port", async () => {
@@ -267,14 +277,14 @@ it("constructs the API source lazily and respects an injected source", async () 
   const { deps } = await setup()
   deps.store = memoryMeetingStore()
   deps.accountId = 1
-  deps.tokens.save({
+  deps.tokens.forProfile("example", null).save({
     accessToken: "example-access",
     refreshToken: "example-refresh",
     expiresAt: 3600000,
     scopes: ["meeting:read:list_meetings"],
   })
   deps.fetch = async () => reply({ meetings: [] })
-  expect(await run(["meetings", "sync", "--since-time", "2026-10-01"], deps)).toBe(0)
+  expect(await run(["example", "meetings", "sync", "--since-time", "2026-10-01"], deps)).toBe(0)
   const { FilesSource } = await import("./files.js")
   deps.source = new FilesSource([])
   expect(await run(["meetings", "sync", "--since-time", "2026-10-01"], deps)).toBe(0)
@@ -287,7 +297,7 @@ it("reads zone-less Zoom times in the computer's zone, marks them and warns once
     const { deps, stderr } = await setup()
     deps.store = memoryMeetingStore()
     deps.accountId = 1
-    deps.tokens.save({
+    deps.tokens.forProfile("example", null).save({
       accessToken: "example-access",
       refreshToken: "example-refresh",
       expiresAt: 3600000,
@@ -312,7 +322,7 @@ it("reads zone-less Zoom times in the computer's zone, marks them and warns once
       if (path.endsWith("/meeting_summary")) return missing(3001)
       throw new Error(`unscripted request ${path}`)
     }
-    expect(await run(["meetings", "sync", "--since-time", "2026-10-01", "--json"], deps)).toBe(0)
+    expect(await run(["example", "meetings", "sync", "--since-time", "2026-10-01", "--json"], deps)).toBe(0)
     const [meeting] = await deps.store.meetings()
     expect(meeting?.startedAt).toBe(Date.parse("2026-10-10T05:30:00Z"))
     expect(meeting?.metadata).toMatchObject({ issues: ["time_without_zone"] })
@@ -350,7 +360,7 @@ it("preflights every normalized import key before saving and deduplicates identi
 it("connects lazily once with read intent and closes direct program parsing", async () => {
   const { createProgram } = await import("./program.js")
   const { deps, stdout } = await setup()
-  setConfig(deps.configPath, "account.profile", "example-work")
+  useProfile(deps.configPath, "example-work")
   let opened = 0
   let closed = 0
   deps.connectStore = async (request) => {
@@ -379,15 +389,16 @@ it("never connects for help, version, config, parser failures or login", async (
   deps.connectStore = async () => {
     throw new Error("unexpected store access")
   }
-  for (const args of [
-    ["--help"],
-    ["--version"],
-    ["config", "show"],
-    ["config", "set", "account.profile", "example"],
-    ["unknown-command"],
-    ["--no-input", "session", "start"],
-  ])
-    expect(await run(args, deps)).toBe(args[0] === "unknown-command" ? 2 : args.includes("start") ? 3 : 0)
+  for (const [args, code] of [
+    [["--help"], 0],
+    [["--version"], 0],
+    [["config", "show"], 0],
+    [["config", "set", "files.timezone", "UTC"], 0],
+    [["config", "set", "account.profile", "example"], 2],
+    [["example", "unknown-command"], 2],
+    [["example", "--no-input", "session", "start"], 3],
+  ] as const)
+    expect(await run([...args], deps)).toBe(code)
 })
 
 it("requires an explicit local profile before connecting and a valid account before fetching", async () => {
@@ -404,10 +415,13 @@ it("requires an explicit local profile before connecting and a valid account bef
       },
     })
   }
-  expect(await run(["meetings", "sync", "--since-time", "2026-10-01"], deps)).toBe(3)
+  expect(await run(["meetings", "sync", "--since-time", "2026-10-01"], deps)).toBe(2)
   expect(opens).toBe(0)
-  expect(JSON.parse(stderr.at(-1) ?? "{}").error.message).toContain("account.profile")
-  setConfig(deps.configPath, "account.profile", "example")
+  expect(JSON.parse(stderr.at(-1) ?? "{}").error).toMatchObject({
+    message: expect.stringContaining("name a profile"),
+    details: { profiles: [] },
+  })
+  useProfile(deps.configPath, "example")
   expect(await run(["meetings", "sync", "--since-time", "2026-10-01"], deps)).toBe(3)
   expect(opens).toBe(1)
   expect(closes).toBe(1)
@@ -418,7 +432,7 @@ it("requires an explicit local profile before connecting and a valid account bef
 
 it("uses the same selected local account for file import and API pull", async () => {
   const { deps } = await setup()
-  setConfig(deps.configPath, "account.profile", "example")
+  useProfile(deps.configPath, "example")
   const store = memoryMeetingStore()
   let opens = 0
   let closes = 0
@@ -441,7 +455,7 @@ it("uses the same selected local account for file import and API pull", async ()
   ]
   expect(await run(["meetings", "import", "example-folder"], deps)).toBe(0)
   expect((await store.meetings())[0]?.accountId).toBe(2)
-  deps.tokens.save({
+  deps.tokens.forProfile("example", null).save({
     accessToken: "example",
     refreshToken: "example",
     expiresAt: 3600000,
@@ -455,7 +469,7 @@ it("uses the same selected local account for file import and API pull", async ()
 
 it("closes after command failures and preserves the primary error if close also fails", async () => {
   const { deps, stderr, stdout } = await setup()
-  setConfig(deps.configPath, "account.profile", "example")
+  useProfile(deps.configPath, "example")
   let closes = 0
   deps.connectStore = async () =>
     fakeConnection({
@@ -479,7 +493,7 @@ it("closes after command failures and preserves the primary error if close also 
 it("closes after source and rejected-save errors and sanitizes connector failures", async () => {
   const { deps, stderr, stdout } = await setup()
   const { fakeMeetingSource } = await import("@wirecat/cli-core/meetings/testing")
-  setConfig(deps.configPath, "account.profile", "example")
+  useProfile(deps.configPath, "example")
   let closes = 0
   const store = memoryMeetingStore()
   deps.connectStore = async () =>
@@ -523,12 +537,18 @@ it("reads canonical configuration without an optional profile and validates opti
     deps.configPath,
     JSON.stringify({ client_id: "example-client", source: "api", files_folder: null, files_timezone: "UTC" }),
   )
-  expect(readConfig(deps.configPath).accountProfile).toBeNull()
-  setConfig(deps.configPath, "account.profile", "Example-work_1.2")
-  expect(readConfig(deps.configPath).accountProfile).toBe("Example-work_1.2")
+  expect(readConfig(deps.configPath)).toMatchObject({ profiles: [], legacyProfile: null })
+  useProfile(deps.configPath, "Example-work_1.2")
+  expect(readConfig(deps.configPath)).toMatchObject({ profiles: ["Example-work_1.2"], legacyProfile: null })
   expect(profileAccountKey("Example-work_1.2")).toBe("zm-profile:Example-work_1.2")
-  for (const value of ["", "has space", "../example", "-example", "a".repeat(65)])
-    expect(() => setConfig(deps.configPath, "account.profile", value)).toThrow(/profile/)
+  expect(() =>
+    chooseProfile({ word: "other-example", env: { ZM_PROFILE_LOCK: "locked-example" }, profiles: () => [] }),
+  ).toThrow(expect.objectContaining({ code: "permission_error" }))
+  expect(chooseProfile({ env: { ZM_PROFILE_LOCK: "locked-example" }, profiles: () => [] })).toBe("locked-example")
+  for (const value of ["has space", "../example", "-example", "a".repeat(65)]) {
+    expect(() => chooseProfile({ env: { ZM_PROFILE: value }, profiles: () => [] })).toThrow(CliError)
+    expect(() => setConfig(deps.configPath, "account.profile", value)).toThrow(/first word/)
+  }
   await writeFile(
     deps.configPath,
     JSON.stringify({
@@ -551,10 +571,8 @@ it("refreshes profile and source configuration between sequential direct parses"
     return fakeConnection({ store: memoryMeetingStore(), accountId: 1, close: async () => {} })
   }
   const program = createProgram(deps)
-  await program.parseAsync(["config", "set", "account.profile", "first-example"], { from: "user" })
-  await program.parseAsync(["meetings", "list"], { from: "user" })
-  await program.parseAsync(["config", "set", "account.profile", "second-example"], { from: "user" })
-  await program.parseAsync(["meetings", "list"], { from: "user" })
+  await program.parseAsync(["first-example", "meetings", "list"], { from: "user" })
+  await program.parseAsync(["second-example", "meetings", "list"], { from: "user" })
   expect(profiles).toEqual(["first-example", "second-example"])
   let apiCalls = 0
   deps.readFiles = async () => []
@@ -562,7 +580,7 @@ it("refreshes profile and source configuration between sequential direct parses"
     apiCalls++
     return reply({ meetings: [] })
   }
-  deps.tokens.save({
+  deps.tokens.forProfile("second-example", null).save({
     accessToken: "example",
     refreshToken: "example",
     expiresAt: 3600000,
@@ -570,17 +588,17 @@ it("refreshes profile and source configuration between sequential direct parses"
   })
   await program.parseAsync(["config", "set", "source", "files"], { from: "user" })
   await program.parseAsync(["config", "set", "files.folder", "example-folder"], { from: "user" })
-  await program.parseAsync(["meetings", "sync", "--since-time", "2026-10-01"], { from: "user" })
+  await program.parseAsync(["second-example", "meetings", "sync", "--since-time", "2026-10-01"], { from: "user" })
   expect(apiCalls).toBe(0)
   await program.parseAsync(["config", "set", "source", "api"], { from: "user" })
-  await program.parseAsync(["meetings", "sync", "--since-time", "2026-10-01"], { from: "user" })
+  await program.parseAsync(["second-example", "meetings", "sync", "--since-time", "2026-10-01"], { from: "user" })
   expect(apiCalls).toBe(1)
 })
 
 it("rejects concurrent direct parses without disturbing the running connection", async () => {
   const { createProgram } = await import("./program.js")
   const { deps } = await setup()
-  setConfig(deps.configPath, "account.profile", "example")
+  useProfile(deps.configPath, "example")
   let release: () => void = () => {}
   const wait = new Promise<void>((resolve) => {
     release = resolve

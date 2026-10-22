@@ -6,6 +6,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js"
 import { memoryKeyring } from "@wirecat/cli-base"
 import { expect, it, vi } from "vitest"
 import { readAnswer, readJsonl } from "../scripts/testing/answers.js"
+import { useProfile } from "../scripts/testing/profile.js"
 import { setConfig } from "./config.js"
 import { createMeetingMcpServer } from "./mcp-server.js"
 import { createZoomInventoryReader } from "./meeting-inventory.js"
@@ -31,7 +32,8 @@ const fixture = () => {
     fetch: fetcher,
     now: () => now,
   })
-  tokens.save({
+  const alice = tokens.forProfile("AliceExample", null)
+  alice.save({
     accessToken: "invented-access",
     refreshToken: "invented-refresh",
     expiresAt: now + 3600000,
@@ -52,11 +54,11 @@ const fixture = () => {
     data: (text) => output.push(text),
     diagnostic: (text) => errors.push(text),
   }
-  setConfig(deps.configPath, "account.profile", "AliceExample")
+  useProfile(deps.configPath, "AliceExample")
   setConfig(deps.configPath, "zoom.client_id", "invented-client")
   const inventory = createZoomInventoryReader(() => ({
     account: "zm-profile:AliceExample",
-    credentials: tokens,
+    credentials: alice,
     fetch: fetcher,
   }))
   return { deps, inventory, fetcher, tokens, connectStore, output, errors }
@@ -203,7 +205,7 @@ it("serve snapshots inventory intent without credentials and refuses offline sta
 it("MCP startup freezes the profile selection before later configuration edits", async () => {
   const f = fixture()
   const serveMcp = vi.fn(async (options: ZoomMcpServeOptions) => {
-    setConfig(f.deps.configPath, "account.profile", "BobExample")
+    useProfile(f.deps.configPath, "BobExample")
     const result = await options.inventory?.(window)
     expect(result?.scope.account).toBe("zm-profile:AliceExample")
   })

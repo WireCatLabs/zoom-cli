@@ -6,6 +6,7 @@ import { fakeMeetingSource, memoryMeetingStore } from "@wirecat/cli-core/meeting
 import { expect, it, vi } from "vitest"
 import { readReceipt } from "../scripts/testing/answers.js"
 import { fakeConnection } from "../scripts/testing/connection.js"
+import { useProfile } from "../scripts/testing/profile.js"
 import { readConfig, setConfig } from "./config.js"
 import { type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
@@ -45,7 +46,7 @@ it("validates watch options and offline policy before any account, keyring or ne
     throw new Error("unexpected store")
   })
   deps.connectStore = connect
-  const load = vi.spyOn(deps.tokens, "load")
+  const load = vi.spyOn(deps.tokens.options.keyring, "get")
   for (const args of [
     ["invalid"],
     ["./downloads"],
@@ -61,7 +62,7 @@ it("validates watch options and offline policy before any account, keyring or ne
   ])
     expect(await run(["watch", ...args, "--jsonl"], deps)).toBe(2)
   setConfig(deps.configPath, "zoom.clientId", "example-client")
-  setConfig(deps.configPath, "account.profile", "example-profile")
+  useProfile(deps.configPath, "example-profile")
   expect(await run(["watch", "api", "--offline", "--jsonl"], deps)).toBe(3)
   expect(await run(["watch", "files", "--jsonl"], deps)).toBe(3)
   expect(await run(["watch", "api"], deps)).toBe(2)
@@ -74,7 +75,7 @@ it("resolves a configured files folder and keeps its profile/timezone bound desp
   setConfig(deps.configPath, "source", "files")
   setConfig(deps.configPath, "files.folder", directory)
   setConfig(deps.configPath, "files.timezone", "UTC")
-  setConfig(deps.configPath, "account.profile", "example-first")
+  useProfile(deps.configPath, "example-first")
   const store = memoryMeetingStore()
   const profiles: string[] = [],
     folders: string[] = []
@@ -91,7 +92,7 @@ it("resolves a configured files folder and keeps its profile/timezone bound desp
   deps.sleep = async () => {
     if (profiles.length === 2) controller.abort(new CliError("cancelled", "example completed"))
     else {
-      setConfig(deps.configPath, "account.profile", "example-second")
+      useProfile(deps.configPath, "example-second")
       setConfig(deps.configPath, "files.folder", "example-other-folder")
       setConfig(deps.configPath, "files.timezone", "America/New_York")
       setConfig(deps.configPath, "source", "api")
@@ -106,14 +107,14 @@ it("resolves a configured files folder and keeps its profile/timezone bound desp
 it("uses shared cursor lookback to discover a late API transcript with fresh sources and pinned OAuth identity", async () => {
   const { deps, controller, output } = await setup()
   setConfig(deps.configPath, "zoom.clientId", "example-first-client")
-  setConfig(deps.configPath, "account.profile", "example-first")
+  useProfile(deps.configPath, "example-first")
   deps.tokens = new TokenManager({
     ...deps.tokens.options,
     get clientId() {
       return readConfig(deps.configPath).clientId ?? ""
     },
   })
-  deps.tokens.save({
+  deps.tokens.forProfile("example-first", null).save({
     accessToken: "example-first-token",
     refreshToken: "example-refresh",
     expiresAt: Date.UTC(2040, 0, 1),
@@ -184,7 +185,7 @@ it("uses shared cursor lookback to discover a late API transcript with fresh sou
     if (cycles === 2) controller.abort(new CliError("cancelled", "example completed"))
     else {
       now = Date.parse("2026-10-11T12:00:00Z")
-      setConfig(deps.configPath, "account.profile", "example-second")
+      useProfile(deps.configPath, "example-second")
       setConfig(deps.configPath, "zoom.clientId", "example-second-client")
       setConfig(deps.configPath, "source", "files")
     }
@@ -235,7 +236,7 @@ it("delegates an injected source without requiring a real client and never overl
 
 it("closes an interrupted API cycle without advancing its cursor or issuing later reads", async () => {
   const { deps, controller, output } = await setup()
-  setConfig(deps.configPath, "account.profile", "example-profile")
+  useProfile(deps.configPath, "example-profile")
   const store = memoryMeetingStore()
   await store.setCursor(1, "2026-10-10T00:00:00Z", 0)
   const close = vi.fn(async () => {})
@@ -256,7 +257,7 @@ it("closes an interrupted API cycle without advancing its cursor or issuing late
 it("rejects mismatched OAuth configuration before opening a store and preserves uncertain grants", async () => {
   const { deps, controller } = await setup()
   setConfig(deps.configPath, "zoom.clientId", "different-example-client")
-  setConfig(deps.configPath, "account.profile", "example-profile")
+  useProfile(deps.configPath, "example-profile")
   const connect = vi.fn(async () =>
     fakeConnection({ store: memoryMeetingStore(), accountId: 1, close: async () => {} }),
   )
@@ -310,7 +311,7 @@ it("uses an explicit initial bound until an acknowledged cursor advance, then ap
 
 it("does not acknowledge an uncertain or cancelled cursor write and always closes the cycle", async () => {
   const { deps, controller, output } = await setup()
-  setConfig(deps.configPath, "account.profile", "example-profile")
+  useProfile(deps.configPath, "example-profile")
   const store = memoryMeetingStore()
   const close = vi.fn(async () => {})
   deps.connectStore = async () => fakeConnection({ store, accountId: 1, close })

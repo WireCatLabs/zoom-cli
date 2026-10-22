@@ -1,7 +1,6 @@
-import { CliError } from "@wirecat/cli-base"
 import { addMeetingSeriesInventoryCommand, type MeetingSeriesInventoryReader } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
-import { profileAccountKey, type ZoomConfig } from "./config.js"
+import { profileAccountKey } from "./config.js"
 import type { RemoteOptions } from "./remote-http.js"
 import { createZoomSeriesInventoryReader } from "./series-inventory.js"
 import type { ZoomUpcomingCredentials } from "./upcoming-meetings.js"
@@ -43,17 +42,15 @@ export const createZoomInventoryReader = (capture: () => ZoomInventoryBinding) =
 export const addZoomInventoryCommand = (
   program: Command,
   deps: Omit<Parameters<typeof addMeetingSeriesInventoryCommand>[1], "read"> & {
-    config: () => ZoomConfig
+    profile: () => string
     credentials: () => ZoomUpcomingCredentials
     fetch: typeof fetch
     remoteOptions?: RemoteOptions
   },
 ) => {
   const inventory = createZoomInventoryReader(() => {
-    const profile = deps.config().accountProfile
-    if (!profile) throw new CliError("configuration_error", "select a local profile before reading meeting inventory")
     return {
-      account: profileAccountKey(profile),
+      account: profileAccountKey(deps.profile()),
       credentials: { withSignal: (signal) => deps.credentials().withSignal(signal) },
       fetch: deps.fetch,
       remoteOptions: deps.remoteOptions,

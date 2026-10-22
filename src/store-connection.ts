@@ -67,8 +67,7 @@ export const connectSelectedProfile = (
   intent: StoreConnectRequest["intent"],
   context?: ContextCapture,
 ): Promise<StoreConnection> => {
-  if (!profile)
-    throw new CliError("configuration_error", "select a local profile with zm config set account.profile <label>")
+  if (!profile) throw new CliError("validation_error", "name a profile: `zm <profile> …`")
   return connect({ profile, externalId: profileAccountKey(profile), intent, ...(context ? { context } : {}) })
 }
 

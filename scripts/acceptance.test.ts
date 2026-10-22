@@ -44,10 +44,12 @@ const invoke = (...args: string[]) => {
   const database = join(install, "unused.db")
   const existedBefore = existsSync(database)
   const timestampBefore = existedBefore ? statSync(database).mtimeMs : null
-  const command = args.find(
+  const words = args.filter(
     (arg, index) => !arg.startsWith("--") && !["--timeout", "--max-output-bytes"].includes(args[index - 1] ?? ""),
   )
-  const opensStore = !args.includes("--help") && ["meetings", "events", "watch", "search"].includes(command ?? "")
+  const storeCommands = ["meetings", "events", "watch", "search"]
+  const command = storeCommands.includes(words[0] ?? "") ? words[0] : words[1]
+  const opensStore = !args.includes("--help") && storeCommands.includes(command ?? "")
   const result = spawnSync(executable, args, {
     cwd: install,
     encoding: "utf8",
@@ -198,18 +200,12 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
     expect(readAnswer(read.stdout)).toEqual(readAnswer(saved.stdout))
     expect(read.stderr).toBe("")
     const disk = JSON.parse(readFileSync(join(config, "config.json"), "utf8"))
-    expect(Object.keys(disk).sort()).toEqual([
-      "account_profile",
-      "client_id",
-      "files_folder",
-      "files_timezone",
-      "source",
-    ])
+    expect(Object.keys(disk).sort()).toEqual(["client_id", "files_folder", "files_timezone", "profiles", "source"])
   })
 
-  it("discovers the installed MCP tools without a profile or database and exits on EOF", async () => {
+  it("discovers the installed MCP tools for a named profile without config or database and exits on EOF", async () => {
     const isolated = join(install, "mcp-config")
-    const child = spawn(executable, ["serve", "--mcp"], {
+    const child = spawn(executable, ["personal", "serve", "--mcp"], {
       cwd: install,
       env: { ...environment(), ZM_CONFIG_DIR: isolated, MESSAGING_STORE: join(install, "mcp-unused.db") },
       stdio: ["pipe", "pipe", "pipe"],
@@ -242,32 +238,38 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
     }
   }, 15000)
 
-  it("selects a local profile and rejects invalid labels", () => {
-    const selected = invoke("--json", "config", "set", "account.profile", "personal")
-    expect(selected.status).toBe(0)
-    expect(selected.stderr).toBe("")
-    expect(readAnswer(selected.stdout).account_profile).toBe("personal")
-    const invalid = invoke("config", "set", "account.profile", "bad profile")
+  it("refuses the old profile setting and rejects an invalid profile word", () => {
+    const setting = invoke("--json", "config", "set", "account.profile", "personal")
+    expect(setting.status).toBe(2)
+    expect(setting.stdout).toBe("")
+    expect(JSON.parse(setting.stderr).error).toMatchObject({
+      code: "validation_error",
+      message: expect.stringContaining("zm personal"),
+    })
+    const invalid = invoke("bad profile", "meetings", "list")
     expect(invalid.status).toBe(2)
     expect(invalid.stdout).toBe("")
     expect(JSON.parse(invalid.stderr).error.code).toBe("validation_error")
     const saved = invoke("--json", "config", "show")
-    expect(readAnswer(saved.stdout).account_profile).toBe("personal")
+    expect(readAnswer(saved.stdout)).toMatchObject({ legacy_profile: null, profiles: [] })
   })
 
   it("refuses noninteractive login before external access", () => {
-    const result = invoke("--no-input", "session", "start")
+    const result = invoke("--no-input", "personal", "session", "start")
     expect(result.status).toBe(3)
     expect(result.stdout).toBe("")
     expect(JSON.parse(result.stderr).error.code).toBe("configuration_error")
   })
 
-  it("classifies invalid commands and rejects a profile without stored data", () => {
-    const invalid = invoke("does-not-exist")
+  it("classifies invalid commands, requires a profile and rejects a profile without stored data", () => {
+    const invalid = invoke("personal", "does-not-exist")
     expect(invalid.status).toBe(2)
     expect(invalid.stdout).toBe("")
     expect(JSON.parse(invalid.stderr).error.code).toBe("validation_error")
-    const store = invoke("meetings", "list")
+    const unnamed = invoke("meetings", "list")
+    expect(unnamed.status).toBe(2)
+    expect(JSON.parse(unnamed.stderr).error).toMatchObject({ code: "validation_error", details: { profiles: [] } })
+    const store = invoke("personal", "meetings", "list")
     expect(store.status).toBe(3)
     expect(store.stdout).toBe("")
     expect(JSON.parse(store.stderr).error.code).toBe("configuration_error")
@@ -280,17 +282,17 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
     const original = "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nAlice Example: Original example\n"
     writeFileSync(transcript, original)
     for (let attempt = 0; attempt < 2; attempt++) {
-      const imported = invoke("--json", "meetings", "import", files)
+      const imported = invoke("personal", "--json", "meetings", "import", files)
       expect(imported.status, imported.stderr).toBe(0)
       expect(imported.stderr).toBe("")
     }
-    const listed = invoke("--json", "meetings", "list")
+    const listed = invoke("personal", "--json", "meetings", "list")
     expect(listed.status, listed.stderr).toBe(0)
     const meetings = JSON.parse(listed.stdout).items
     expect(meetings).toHaveLength(1)
     const id = String(meetings[0].id)
     importedMeetingId = id
-    expect(readAnswer(invoke("--json", "meetings", "show", id).stdout).transcripts).toHaveLength(1)
+    expect(readAnswer(invoke("personal", "--json", "meetings", "show", id).stdout).transcripts).toHaveLength(1)
   })
 
   it("retains the original revision when importing corrected transcript bytes", () => {
@@ -298,46 +300,48 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
     const transcript = join(files, "2026-10-10_1530_example.vtt")
     const original = readFileSync(transcript, "utf8")
     writeFileSync(transcript, original.replace("Original", "Corrected"))
-    const corrected = invoke("--json", "meetings", "import", files)
+    const corrected = invoke("personal", "--json", "meetings", "import", files)
     expect(corrected.status, corrected.stderr).toBe(0)
     const id = importedMeetingId
-    expect(readAnswer(invoke("--json", "meetings", "show", id).stdout).transcripts).toHaveLength(1)
-    expect(JSON.parse(invoke("--json", "meetings", "transcript", id, "--history").stdout).items).toHaveLength(2)
+    expect(readAnswer(invoke("personal", "--json", "meetings", "show", id).stdout).transcripts).toHaveLength(1)
+    expect(
+      JSON.parse(invoke("personal", "--json", "meetings", "transcript", id, "--history").stdout).items,
+    ).toHaveLength(2)
   })
 
   it("searches only the current correction", () => {
-    expect(JSON.parse(invoke("--json", "search", "meetings", "Corrected").stdout).items).toHaveLength(1)
-    expect(JSON.parse(invoke("--json", "search", "meetings", "Original").stdout).items).toHaveLength(0)
+    expect(JSON.parse(invoke("personal", "--json", "search", "meetings", "Corrected").stdout).items).toHaveLength(1)
+    expect(JSON.parse(invoke("personal", "--json", "search", "meetings", "Original").stdout).items).toHaveLength(0)
   })
 
   it("exposes retained history, stored events and absent summaries explicitly", () => {
     const id = importedMeetingId
-    expect(JSON.parse(invoke("--json", "events", "list").stdout).items).toHaveLength(1)
-    expect(JSON.parse(invoke("--json", "meetings", "transcript", id, "--history").stdout).items).toHaveLength(2)
-    expect(JSON.parse(invoke("--json", "meetings", "summary", id).stdout).items).toHaveLength(0)
+    expect(JSON.parse(invoke("personal", "--json", "events", "list").stdout).items).toHaveLength(1)
+    expect(
+      JSON.parse(invoke("personal", "--json", "meetings", "transcript", id, "--history").stdout).items,
+    ).toHaveLength(2)
+    expect(JSON.parse(invoke("personal", "--json", "meetings", "summary", id).stdout).items).toHaveLength(0)
   })
 
   it("exports the current revision without overwriting an existing destination", () => {
     const id = importedMeetingId
-    const exported = invoke("--json", "meetings", "export", id, "--format", "vtt")
+    const exported = invoke("personal", "--json", "meetings", "export", id, "--format", "vtt")
     expect(exported.status, exported.stderr).toBe(0)
     const content = readAnswer(exported.stdout).content
     expect(content).toContain("Corrected example")
     expect(content).not.toContain("Original example")
     const destination = join(install, "exported.vtt")
-    const written = invoke("--json", "meetings", "export", id, "--format", "vtt", "--output", destination)
+    const written = invoke("personal", "--json", "meetings", "export", id, "--format", "vtt", "--output", destination)
     expect(written.status, written.stderr).toBe(0)
     expect(readFileSync(destination, "utf8")).toBe(content)
-    const overwrite = invoke("--json", "meetings", "export", id, "--format", "vtt", "--output", destination)
+    const overwrite = invoke("personal", "--json", "meetings", "export", id, "--format", "vtt", "--output", destination)
     expect(overwrite.status).toBe(2)
     expect(overwrite.stdout).toBe("")
     expect(readFileSync(destination, "utf8")).toBe(content)
   })
 
   it("rejects an absent profile without registering a new account", () => {
-    const selected = invoke("config", "set", "account.profile", "absent-example")
-    expect(selected.status, selected.stderr).toBe(0)
-    const absent = invoke("--json", "meetings", "list")
+    const absent = invoke("absent-example", "--json", "meetings", "list")
     expect(absent.status).toBe(3)
     expect(absent.stdout).toBe("")
     expect(JSON.parse(absent.stderr).error.code).toBe("configuration_error")
@@ -365,7 +369,6 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
       expect.objectContaining({ provider: "zoom", account: "zm-profile:personal" }),
     ])
     expect(existsSync(marker)).toBe(false)
-    expect(invoke("config", "set", "account.profile", "personal").status).toBe(0)
   })
 
   it("stops an installed folder watch after its receipt and leaves persistent data readable", async () => {
@@ -375,7 +378,7 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
       join(folder, "2026-10-11_1530_watch-example.vtt"),
       "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nAlice Example: Watched example\n",
     )
-    const child = spawn(executable, ["watch", "files", folder, "--pause", "10s", "--jsonl"], {
+    const child = spawn(executable, ["personal", "watch", "files", folder, "--pause", "10s", "--jsonl"], {
       cwd: install,
       env: environment(),
       stdio: ["pipe", "pipe", "pipe"],
@@ -408,7 +411,7 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
       expect(receipts[1]).toMatchObject({ type: "end", complete: true })
       expect(receipts[0].data.meetings).toBe(1)
       expect(JSON.parse(diagnostics(errors)).error.code).toBe("cancelled")
-      const reopened = invoke("--json", "search", "meetings", "Watched")
+      const reopened = invoke("personal", "--json", "search", "meetings", "Watched")
       expect(reopened.status, reopened.stderr).toBe(0)
       expect(JSON.parse(reopened.stdout).items).toHaveLength(1)
       expect(existsSync(marker)).toBe(false)

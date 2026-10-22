@@ -68,10 +68,7 @@ const discoveryLimit = (text: string): number => {
 const archiveScope = (deps: ArchiveCommandsDeps, options: { resume?: boolean; checkpoint?: string }) => {
   const account = deps.account()
   if (!account)
-    throw new CliError(
-      "configuration_error",
-      "recording archives belong to a local profile; run zm config set account.profile <label>",
-    )
+    throw new CliError("configuration_error", "recording archives belong to a profile: `zm <profile> recordings …`")
   const resume = options.resume ?? true
   if (options.checkpoint !== undefined && !resume)
     throw new CliError("validation_error", "archive checkpoints require resume mode; remove --no-resume")

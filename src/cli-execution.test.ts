@@ -7,7 +7,8 @@ import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { describe, expect, it, vi } from "vitest"
 import { readAnswer, readJsonlPage } from "../scripts/testing/answers.js"
 import { fakeConnection } from "../scripts/testing/connection.js"
-import { profileAccountKey, setConfig } from "./config.js"
+import { useProfile } from "../scripts/testing/profile.js"
+import { profileAccountKey, readConfig, setConfig } from "./config.js"
 import { writeExportFile } from "./output-file.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
@@ -108,10 +109,10 @@ describe("command execution controls", () => {
   it("rejects offline API work before opening a store or loading credentials", async () => {
     const { deps, stdout } = await setup()
     setConfig(deps.configPath, "zoom.clientId", "example-client")
-    setConfig(deps.configPath, "account.profile", "example")
-    deps.tokens.load = () => {
+    useProfile(deps.configPath, "example")
+    vi.spyOn(deps.tokens.options.keyring, "get").mockImplementation(() => {
       throw new Error("unexpected keyring")
-    }
+    })
     deps.connectStore = async () => {
       throw new Error("unexpected database")
     }
@@ -127,7 +128,7 @@ describe("command execution controls", () => {
   })
   it("waits for an in-flight store operation before closing after cancellation", async () => {
     const { deps, stdout } = await setup()
-    setConfig(deps.configPath, "account.profile", "example")
+    useProfile(deps.configPath, "example")
     const controller = new AbortController()
     deps.signal = controller.signal
     let began: () => void = () => {}
@@ -176,7 +177,7 @@ describe("command execution controls", () => {
         signal?.addEventListener("abort", () => reject(new Error("timer disposed")), { once: true })
       })
     let calls = 0
-    deps.tokens.save({
+    deps.tokens.forProfile("example", null).save({
       accessToken: "example",
       refreshToken: "example",
       expiresAt: 3600000,
@@ -190,7 +191,10 @@ describe("command execution controls", () => {
       )
     }
     expect(
-      await run(["--timeout", "1s", "remote-meetings", "create", "--title", "Example", "--type", "1", "--yes"], deps),
+      await run(
+        ["example", "--timeout", "1s", "remote-meetings", "create", "--title", "Example", "--type", "1", "--yes"],
+        deps,
+      ),
     ).toBe(14)
     expect(calls).toBe(1)
     expect(stdout).toEqual([])
@@ -211,7 +215,7 @@ describe("command execution controls", () => {
     expect(durations).toEqual([2000, 30000])
     expect(Object.keys(value(stdout))).toContain("authentication")
     setConfig(deps.configPath, "zoom.clientId", "example-client")
-    setConfig(deps.configPath, "account.profile", "example-profile")
+    useProfile(deps.configPath, "example-profile")
     deps.recordings = { list: async () => [], show: async () => meeting, download: async () => archive, catalog }
     expect(await run(["recordings", "download", "example", "--output-dir", "invented"], deps)).toBe(0)
     expect(durations.at(-1)).toBe(3600000)
@@ -237,9 +241,10 @@ describe("login without a terminal", () => {
         `http://127.0.0.1:${state.split(".")[0]}/callback?${new URLSearchParams({ state, code: "example-code" })}`,
       )
     }
-    expect(await run(["--json", "--quiet", "session", "start"], deps)).toBe(0)
+    expect(await run(["example", "--json", "--quiet", "session", "start"], deps)).toBe(0)
     expect(stderr.join("")).toMatch(/^Open this URL to approve Zoom login:\nhttps:\/\/\S+\n$/)
-    expect(JSON.parse(stdout.join(""))).toBeTruthy()
+    expect(JSON.parse(stdout.join(""))).toMatchObject({ item: { logged_in: true, profile: "example" } })
+    expect(readConfig(deps.configPath).profiles).toEqual(["example"])
   })
 })
 
@@ -303,7 +308,7 @@ describe("archive and explicit remote command wiring", () => {
   it("lists/shows/downloads recording metadata with explicit options and no database", async () => {
     const { deps, stdout } = await setup()
     setConfig(deps.configPath, "zoom.clientId", "example-client")
-    setConfig(deps.configPath, "account.profile", "example-profile")
+    useProfile(deps.configPath, "example-profile")
     const list = vi.fn(async () => [meeting])
     const show = vi.fn(async () => meeting)
     const download = vi.fn(async () => archive)
@@ -357,9 +362,9 @@ describe("archive and explicit remote command wiring", () => {
   })
   it("inspects and verifies local archives without a client, token or DB and only explicitly repairs", async () => {
     const { deps, stdout } = await setup()
-    deps.tokens.load = () => {
+    vi.spyOn(deps.tokens.options.keyring, "get").mockImplementation(() => {
       throw new Error("unexpected keyring")
-    }
+    })
     const recover = vi.fn(async () => ({ locks: [], removed: [] }))
     const inspect = vi.fn(async () => [])
     const verify = vi.fn(async () => [])
@@ -377,9 +382,10 @@ describe("archive and explicit remote command wiring", () => {
   })
   it("previews remote mutations without login, and --dry-run wins over --yes", async () => {
     const { deps, stdout } = await setup()
-    deps.tokens.load = () => {
+    useProfile(deps.configPath)
+    vi.spyOn(deps.tokens.options.keyring, "get").mockImplementation(() => {
       throw new Error("unexpected keyring")
-    }
+    })
     expect(
       await run(
         [
@@ -597,15 +603,15 @@ it("starts MCP without touching configuration or the meeting store and preserves
   deps.serveMcp = vi.fn(async ({ signal }) => {
     expect(signal.aborted).toBe(false)
   })
-  expect(await run(["serve", "--mcp"], deps)).toBe(0)
-  expect(deps.serveMcp).toHaveBeenCalledOnce()
+  expect(await run(["example", "serve", "--mcp"], deps)).toBe(0)
+  expect(deps.serveMcp).toHaveBeenCalledWith(expect.objectContaining({ profile: "example" }))
   expect(deps.connectStore).not.toHaveBeenCalled()
   expect(stdout).toEqual([])
   expect(stderr).toEqual([])
-  expect(await run(["serve", "--mcp", "--json"], deps)).toBe(2)
+  expect(await run(["example", "serve", "--mcp", "--json"], deps)).toBe(2)
   expect(deps.serveMcp).toHaveBeenCalledOnce()
   delete deps.serveMcp
-  expect(await run(["serve", "--mcp"], deps)).toBe(3)
+  expect(await run(["example", "serve", "--mcp"], deps)).toBe(3)
 })
 
 it("classifies dispatched token failures as uncertain while preflight cancellation never dispatches", async () => {
