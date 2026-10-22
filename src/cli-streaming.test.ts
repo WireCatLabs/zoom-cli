@@ -8,6 +8,7 @@ import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { expect, it, vi } from "vitest"
 import { readReceipt } from "../scripts/testing/answers.js"
 import { fakeConnection } from "../scripts/testing/connection.js"
+import { useProfile } from "../scripts/testing/profile.js"
 import { setConfig } from "./config.js"
 import { writeExportFile } from "./output-file.js"
 import { type ProgramDeps, run } from "./program.js"
@@ -98,7 +99,7 @@ it("bounds each receipt and propagates stdout failure without enqueueing another
 it("streams bounded archive sync receipts with consumer backpressure", async () => {
   const { deps, output } = await setup()
   setConfig(deps.configPath, "zoom.clientId", "example")
-  setConfig(deps.configPath, "account.profile", "example-profile")
+  useProfile(deps.configPath, "example-profile")
   let release: (() => void) | undefined
   let writing: (() => void) | undefined
   const queued = new Promise<void>((resolve) => {
@@ -152,7 +153,7 @@ it("streams bounded archive sync receipts with consumer backpressure", async () 
 it("keeps completed sync receipts when a later occurrence fails and rejects headless aggregate output", async () => {
   const { deps, output } = await setup()
   setConfig(deps.configPath, "zoom.clientId", "example")
-  setConfig(deps.configPath, "account.profile", "example-profile")
+  useProfile(deps.configPath, "example-profile")
   deps.recordings = {
     list: async () => [],
     catalog: catalogOf([meeting, { ...meeting, uuid: "example-second" }]),
@@ -191,7 +192,7 @@ it("keeps completed sync receipts when a later occurrence fails and rejects head
 
 it("rescans watched folders with a fresh closed account connection before each receipt", async () => {
   const { deps, controller, output, folder } = await setup()
-  setConfig(deps.configPath, "account.profile", "example-profile")
+  useProfile(deps.configPath, "example-profile")
   const store = memoryMeetingStore()
   const order: string[] = []
   deps.connectStore = async () => {
@@ -226,7 +227,7 @@ it("rescans watched folders with a fresh closed account connection before each r
 
 it("closes failed watch connections and emits no successful receipt", async () => {
   const { deps, folder, output } = await setup()
-  setConfig(deps.configPath, "account.profile", "example-profile")
+  useProfile(deps.configPath, "example-profile")
   const close = vi.fn(async () => {})
   deps.connectStore = async () => fakeConnection({ store: memoryMeetingStore(), accountId: 0, close })
   expect(await run(["watch", "files", folder, "--jsonl"], deps)).toBe(3)
@@ -247,12 +248,12 @@ it("closes failed watch connections and emits no successful receipt", async () =
 
 it("validates watch profiles and classifies connection failures before reading files", async () => {
   const { deps, folder, output } = await setup()
-  expect(await run(["watch", "files", folder, "--jsonl"], deps)).toBe(3)
+  expect(await run(["watch", "files", folder, "--jsonl"], deps)).toBe(2)
   deps.connectStore = async () => {
     throw new Error("example private database cause")
   }
-  expect(await run(["watch", "files", folder, "--jsonl"], deps)).toBe(3)
-  setConfig(deps.configPath, "account.profile", "example-profile")
+  expect(await run(["watch", "files", folder, "--jsonl"], deps)).toBe(2)
+  useProfile(deps.configPath, "example-profile")
   expect(await run(["watch", "files", folder, "--jsonl"], deps)).toBe(3)
   deps.connectStore = async () => {
     throw new CliError("permission_error", "example permission")
@@ -366,9 +367,9 @@ it("rescans real downloaded files so corrections replace current search while pr
 it("publishes usable serve/login discovery examples and forwards MCP per-tool bounds", async () => {
   const { deps, output } = await setup()
   expect(await run(["commands", "serve", "--json"], deps)).toBe(0)
-  expect(JSON.parse(output.at(-1) ?? "{}").commands[0].examples).toEqual(["zm serve --mcp"])
+  expect(JSON.parse(output.at(-1) ?? "{}").commands[0].examples).toEqual(["zm personal serve --mcp"])
   expect(await run(["commands", "session", "start", "--json"], deps)).toBe(0)
-  expect(JSON.parse(output.at(-1) ?? "{}").commands[0].examples).toEqual(["zm session start"])
+  expect(JSON.parse(output.at(-1) ?? "{}").commands[0].examples).toEqual(["zm personal session start"])
   expect(JSON.parse(output.at(-1) ?? "{}").commands[0].lifetime).toBe("interactive")
   expect(await run(["commands", "watch", "--json"], deps)).toBe(0)
   expect(JSON.parse(output.at(-1) ?? "{}").commands[0].lifetime).toBe("persistent")
@@ -377,7 +378,7 @@ it("publishes usable serve/login discovery examples and forwards MCP per-tool bo
   deps.serveMcp = vi.fn(async ({ maxResultBytes }) => {
     expect(maxResultBytes).toBe(0)
   })
-  expect(await run(["serve", "--mcp", "--max-output-bytes", "0"], deps)).toBe(0)
+  expect(await run(["example", "serve", "--mcp", "--max-output-bytes", "0"], deps)).toBe(0)
   expect(deps.serveMcp).toHaveBeenCalledOnce()
 })
 
@@ -411,7 +412,7 @@ it("uses published summary/history/export commands and writes exact VTT without 
 
 it("flushes one completed receipt after late close cancellation through the real stream writer", async () => {
   const { deps, controller, folder, output } = await setup()
-  setConfig(deps.configPath, "account.profile", "example-profile")
+  useProfile(deps.configPath, "example-profile")
   const open = vi.fn(async () =>
     fakeConnection({
       store: memoryMeetingStore(),
@@ -438,7 +439,7 @@ it("flushes one completed receipt after late close cancellation through the real
 
 it("bounds late completed-receipt flushing when output remains blocked", async () => {
   const { deps, controller, folder } = await setup()
-  setConfig(deps.configPath, "account.profile", "example-profile")
+  useProfile(deps.configPath, "example-profile")
   const open = vi.fn(async () =>
     fakeConnection({
       store: memoryMeetingStore(),

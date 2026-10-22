@@ -8,7 +8,7 @@ export default defineConfig({
     // Agents run suites side by side on 24 cores; one worker per core ran the machine out of memory (2026-10-11).
     maxWorkers: 4,
     globalSetup: ["scripts/testing/argv-setup.ts"],
-    setupFiles: ["@wirecat/cli-base/testing/setup", "scripts/testing/argv-trace.ts"],
+    setupFiles: ["@wirecat/cli-base/testing/setup", "scripts/testing/argv-trace.ts", "scripts/testing/profile.ts"],
     sequence: { hooks: "stack" },
     include: ["src/**/*.test.ts", "scripts/**/*.test.ts"],
     coverage: {

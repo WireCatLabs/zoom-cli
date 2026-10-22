@@ -7,10 +7,10 @@ something. [Install and connect](installation.md) first if no meetings have been
 ## Read your first meeting
 
 ```sh
-zm meetings list --json
-zm meetings show <meeting-id> --json
-zm meetings transcript <meeting-id> --json
-zm meetings summary <meeting-id> --json
+zm personal meetings list --json
+zm personal meetings show <meeting-id> --json
+zm personal meetings transcript <meeting-id> --json
+zm personal meetings summary <meeting-id> --json
 ```
 
 Replace `<meeting-id>` with an ID from the list. Check the date and title before relying on its text.
@@ -21,7 +21,7 @@ Stored reads use your selected local profile and do not fetch newer Zoom data. U
 To save a portable copy of the available content:
 
 ```sh
-zm meetings export <meeting-id> --format markdown --json
+zm personal meetings export <meeting-id> --format markdown --json
 ```
 
 Read the returned export before saving it to a file. MCP can return exports as text but does not
@@ -40,7 +40,7 @@ preparing its context.
 ```
 
 ```sh
-zm meetings scheduled --limit 20 --json
+zm personal meetings scheduled --limit 20 --json
 ```
 
 The answer keeps the selected account, titles, provider `meeting_id` values, an absolute search
@@ -75,7 +75,7 @@ Use the provider series ID from [the Zoom schedule](remote-meetings.md), with di
 rather than the internal ID printed by `meetings list`. In a terminal:
 
 ```sh
-zm meetings prepare 123456789 --json
+zm personal meetings prepare 123456789 --json
 ```
 
 This reads the selected series from Zoom and joins it to your selected local profile's stored
@@ -133,7 +133,7 @@ matches separate from confirmed project links, and tell me where more results re
 For a terminal request, add `--project`:
 
 ```sh
-zm meetings prepare 123456789 --project RES --json
+zm personal meetings prepare 123456789 --project RES --json
 ```
 
 `project_evidence.pages` keeps each matched name or alias beside cited passages, offsets and source
@@ -189,7 +189,7 @@ source, preserve disagreements, and tell me which sources or indexes were incomp
 For a terminal request, name each source explicitly and supply a literal word query:
 
 ```sh
-zm meetings prepare 123456789 --context-source project-notes --context-query "launch" --json
+zm personal meetings prepare 123456789 --context-source project-notes --context-query "launch" --json
 ```
 
 Repeat `--context-source` for other configured IDs. The query takes up to sixteen literal words;

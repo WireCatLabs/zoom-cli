@@ -54,7 +54,6 @@ export const installFirstScreen = (program: Command): void => {
         does: "blocks changes to Zoom, login, settings, files and the store; syncs run",
       },
     ],
-    profile: false,
-    start: "zm session start",
+    start: "zm personal session start",
   })
 }

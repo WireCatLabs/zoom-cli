@@ -20,8 +20,8 @@ a decision or promise. An empty search result does not prove that a discussion n
 Search the stored meetings:
 
 ```sh
-zm search meetings "example plan" --json
-zm search meetings "example plan" --limit 20 --cursor <next_cursor> --json
+zm personal search meetings "example plan" --json
+zm personal search meetings "example plan" --limit 20 --cursor <next_cursor> --json
 ```
 
 This searches the stored profile, not Zoom's live history. [Pull or import missing meetings](archive.md)
@@ -33,11 +33,11 @@ hits come first, and a widened hit has `match: "corrected"` and the stored word 
 [messages query language](https://github.com/WireCatLabs/cli-core/blob/main/docs/search/query-language.md#встречи):
 
 ```sh
-zm search meetings 'риелтор OR агент' --json             # either word
-zm search meetings '(ипотека OR кредит) -квартира' --json # groups and exclusions
-zm search meetings '"циан риелтор"~3' --json              # the words at most 3 lines apart
-zm search meetings 'exact:риелтор' --json                 # the typed form only, no widening
-zm search meetings 'from:"Alice Example" бюджет' --json   # lines Alice said
+zm personal search meetings 'риелтор OR агент' --json             # either word
+zm personal search meetings '(ипотека OR кредит) -квартира' --json # groups and exclusions
+zm personal search meetings '"циан риелтор"~3' --json              # the words at most 3 lines apart
+zm personal search meetings 'exact:риелтор' --json                 # the typed form only, no widening
+zm personal search meetings 'from:"Alice Example" бюджет' --json   # lines Alice said
 ```
 
 `from:` is who said the line; who attended is `--identity-id` or `--person-id`. `--meeting-id`, `--event-id`, `--series-id`, `--since-time` and `--until-time`
@@ -54,13 +54,13 @@ meeting reference `meeting`, `excerpt` and `offset_ms`; expand a cue with `meeti
 any import, with no store, configuration or login:
 
 ```sh
-zm search recordings ./zoom-archive "example plan" --limit 100 --offline --json
+zm personal search recordings ./zoom-archive "example plan" --limit 100 --offline --json
 ```
 
 Its hits are the ones `search all` answers with: `ref` (`recording:<file id>/<cue position>`), `title`,
 `timestamp`, `excerpt`, `sender_name` and `offset_ms`; `account` is the archive folder.
 
-## Why zm does not search on Zoom's side
+## Why zm personal does not search on Zoom's side
 
 Zoom's API has no way to search transcript text. The [Meetings API reference](https://developers.zoom.us/docs/api/meetings/)
 only hands transcripts out as files: `GET /meetings/{meetingId}/transcript`, and recording files with
@@ -69,7 +69,7 @@ endpoints takes a text query (checked 2026-10-21). Searching text inside transcr
 web portal only: "You can search for text within audio transcripts", and an admin can search every transcript in
 the account ([Using audio transcription for cloud recordings](https://support.zoom.com/hc/en/article?id=zm_kb&sysparm_article=KB0064927)).
 
-So zm downloads each transcript once and searches its own copy: that works offline, keeps meetings Zoom has
+So zm personal downloads each transcript once and searches its own copy: that works offline, keeps meetings Zoom has
 deleted, and lets a word match its other forms and garbled spellings.
 
 ## Narrow by people and work
@@ -77,10 +77,10 @@ deleted, and lets a word match its other forms and garbled spellings.
 Combine a participant identity or explicitly linked person with a project and date range:
 
 ```sh
-zm meetings people "Alice Example" --json
-zm search meetings "launch" --identity-id 12 --project RES --since-time 2026-09-12 --until-time 2026-10-12 --json
-zm search meetings "budget" --person-id 7 --topic costs --since-time 2026-09-12 --json
-zm search meetings "launch" --tag planning --limit 20 --json
+zm personal meetings people "Alice Example" --json
+zm personal search meetings "launch" --identity-id 12 --project RES --since-time 2026-09-12 --until-time 2026-10-12 --json
+zm personal search meetings "budget" --person-id 7 --topic costs --since-time 2026-09-12 --json
+zm personal search meetings "launch" --tag planning --limit 20 --json
 ```
 
 The IDs and labels above are fictional: replace them with records in your local store. Use the
@@ -112,7 +112,7 @@ Follow the report's `item.next` step or repeat the same query with `--cursor`. A
 Distinct identity IDs are candidates to review, never automatic person links. Archive completeness remains unknown.
 
 `meetings list` filters metadata with a query, for example
-`zm meetings list 'started_at:[2026-09-12 TO 2026-10-12]' --json`.
+`zm personal meetings list 'started_at:[2026-09-12 TO 2026-10-12]' --json`.
 JSON returns `items`, `page` and optional `next` steps. JSONL emits each meeting in an item record,
 then an end record with the page and completeness. Use `--page` to continue.
 The date query replaces the former list-only `--since-time` and `--until-time` flags;
@@ -120,10 +120,10 @@ those flags remain available on transcript search and ingestion commands. `searc
 service and searches only meetings by default:
 
 ```sh
-zm search all "example plan" --limit 100 --max-meetings 100 --json
-zm meetings evidence meeting:3/15/20/0 --cues 100 --bytes 65536 --json
-zm meetings context person:7 --meetings 10 --scan-limit 1000 --json
-zm meetings task-proposal meeting:3/15/20/0 --type promise --json
+zm personal search all "example plan" --limit 100 --max-meetings 100 --json
+zm personal meetings evidence meeting:3/15/20/0 --cues 100 --bytes 65536 --json
+zm personal meetings context person:7 --meetings 10 --scan-limit 1000 --json
+zm personal meetings task-proposal meeting:3/15/20/0 --type promise --json
 ```
 
 Broader search requires explicit `--only messages,mail,notes,meetings`. Message reads use the
@@ -148,8 +148,8 @@ continuation and completeness fields rather than assuming a bounded response is 
 Use a transcript hit's `ref` to check the discussion immediately before and after the matching line:
 
 ```sh
-zm meetings passage meeting:3/15/20/4 --before-n 3 --after-n 4 --format markdown
-zm meetings passage meeting:3/15/20/4 --before-n 0 --after-n 0 --json
+zm personal meetings passage meeting:3/15/20/4 --before-n 3 --after-n 4 --format markdown
+zm personal meetings passage meeting:3/15/20/4 --before-n 0 --after-n 0 --json
 ```
 
 Replace the fictional reference with one from your search result. The passage shows timestamps,
@@ -175,7 +175,7 @@ fingerprints; Markdown quotes transcript content as text. Use
 `--json=items.ref,items.start_ms,items.speaker_name,items.text` for compact structured cues.
 Coverage and continuation remain available; field selection does not reduce the stored read.
 
-For agents using `zm serve --mcp --meeting-context`, `meeting_passage` provides the same read,
+For agents using `zm personal serve --mcp --meeting-context`, `meeting_passage` provides the same read,
 with `reference`, `before`, `after`, `bytes`, `max_read_bytes`, `expected_fingerprint` and
 `format` (`json`, `text` or `markdown`). Its account is fixed by the server. Ask the agent to quote
 and cite the surrounding passage before suggesting a fact or follow-up task.
@@ -200,9 +200,9 @@ from your search results:
 ```
 
 ```sh
-zm batch requests.json --json
-zm batch requests.json --format markdown
-cat requests.json | zm batch - --jsonl
+zm personal batch requests.json --json
+zm personal batch requests.json --format markdown
+cat requests.json | zm personal batch - --jsonl
 ```
 
 Each result retains its `id`, `command`, `status` and `complete`. Successful results carry the normal
@@ -242,9 +242,9 @@ Stored meeting references use `meeting:<accountId>/<meetingId>`. A retained tran
 revision id, and a cue appends its position. Event and person linking accept root references:
 
 ```sh
-zm meetings update meeting:1/1 --event-id 1 --expected-event-id none --json
-zm meetings update meeting:1/1 --event-id 1 --expected-event-id none --yes --json
-zm meetings link meeting:1/1 --participant-id 1 --person 1 --expected-person none --yes --json
+zm personal meetings update meeting:1/1 --event-id 1 --expected-event-id none --json
+zm personal meetings update meeting:1/1 --event-id 1 --expected-event-id none --yes --json
+zm personal meetings link meeting:1/1 --participant-id 1 --person 1 --expected-person none --yes --json
 ```
 
 These local changes preview by default; `--yes` applies once and `--dry-run` overrides it. Expected
@@ -259,8 +259,8 @@ A confirmed-project filter can miss a relevant meeting that has never been linke
 existing project from the shared catalog to search its canonical name, key and explicit aliases:
 
 ```sh
-zm meetings people "Alice Example" --limit 50 --json
-zm meetings projects evidence RES 'identity_id:12 started_at:[2026-09-14 TO 2026-10-14]' --limit 20 --json
+zm personal meetings people "Alice Example" --limit 50 --json
+zm personal meetings projects evidence RES 'identity_id:12 started_at:[2026-09-14 TO 2026-10-14]' --limit 20 --json
 ```
 
 The project key and identity ID are fictional. Review participant pages before choosing the
@@ -287,7 +287,7 @@ negation and confirmed project-membership filters are refused. The MCP tool
 `meeting_project_evidence` takes `project`, optional `query`, `limit`, `cursor` and
 `max_read_bytes`; its account is fixed by the server.
 
-For every relevant retained cue, open `zm meetings passage <ref> --format markdown` and check the
+For every relevant retained cue, open `zm personal meetings passage <ref> --format markdown` and check the
 surrounding words. `association: "unconfirmed-word-evidence"` means candidate evidence: a key
 may be incidental, and repeated refs across names are the same evidence. Propose associations
 only after reviewing the passage. If no project record exists yet, ordinary word search remains
@@ -310,7 +310,7 @@ parent meeting reference. A transcript hit’s own `ref` points to a cue and is 
 scan. For example, with a fictional parent reference:
 
 ```sh
-zm meetings projects scan meeting:1/2 --cues 20 --json
+zm personal meetings projects scan meeting:1/2 --cues 20 --json
 ```
 
 The answer keeps each canonical project reference, matched name/key/alias and supporting source.

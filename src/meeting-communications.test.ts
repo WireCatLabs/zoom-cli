@@ -63,7 +63,7 @@ it("joins conflicting dated statements through the actual read-only SDK without 
 
 it("rejects an unconfigured selection before credentials, database opening or Zoom reads", async () => {
   const f = await communicationsFixture(),
-    load = vi.spyOn(f.tokens, "load")
+    load = vi.spyOn(f.tokens.options.keyring, "get")
   expect(
     await run(
       ["meetings", "prepare", "123", "--context-source", "foreign", "--context-query", "launch", "--json"],
@@ -77,7 +77,7 @@ it("rejects an unconfigured selection before credentials, database opening or Zo
 
 it("validates raw MCP nested arguments before any protected reads", async () => {
   const f = await communicationsFixture(),
-    load = vi.spyOn(f.tokens, "load")
+    load = vi.spyOn(f.tokens.options.keyring, "get")
   const result = await readPreparationTool(
     f.mcp,
     { ...input, communications: { ...input.communications, account_id: 99 } },
@@ -134,6 +134,7 @@ it("exposes only captured MCP selection IDs and cannot expand after source confi
         ...f.sources,
         { id: "foreign", kind: "message", provider: "example-messenger", account: "BobSample" },
       ]),
+      () => "AliceExample",
     )
     const bad = await client.callTool({
       name: "meeting_prepare",
@@ -158,6 +159,7 @@ it("does not let an unavailable unrequested configured source block a valid sour
     JSON.stringify(
       f.sources.map((source) => (source.id === "project-files" ? { ...source, account: "notes:9000000" } : source)),
     ),
+    () => "AliceExample",
   )
   expect(
     await run(

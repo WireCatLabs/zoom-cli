@@ -92,14 +92,23 @@
       "kind": "json",
       "json": {
         "item": {
-          "account_profile": "contract",
+          "legacy_profile": "contract",
+          "profiles": ["contract"],
           "files_timezone": "UTC"
         }
       }
     },
     {
-      "id": "candidate-list",
+      "id": "candidate-profile-named",
       "args": ["meetings", "list", "--json"],
+      "exit": 2,
+      "stream": "stderr",
+      "kind": "json",
+      "errorCode": "validation_error"
+    },
+    {
+      "id": "candidate-list",
+      "args": ["contract", "meetings", "list", "--json"],
       "exit": 0,
       "stream": "stdout",
       "kind": "json",
@@ -116,7 +125,7 @@
     },
     {
       "id": "candidate-transcript",
-      "args": ["meetings", "transcript", "{{meeting}}", "--json"],
+      "args": ["contract", "meetings", "transcript", "{{meeting}}", "--json"],
       "exit": 0,
       "stream": "stdout",
       "kind": "json",
@@ -125,14 +134,14 @@
     },
     {
       "id": "candidate-import-repeat",
-      "args": ["meetings", "import", "{{root}}/transcripts", "--json"],
+      "args": ["contract", "meetings", "import", "{{root}}/transcripts", "--json"],
       "exit": 0,
       "stream": "stdout",
       "kind": "json"
     },
     {
       "id": "candidate-list-repeat",
-      "args": ["meetings", "list", "--json"],
+      "args": ["contract", "meetings", "list", "--json"],
       "exit": 0,
       "stream": "stdout",
       "kind": "json",
@@ -147,7 +156,17 @@
     },
     {
       "id": "candidate-export",
-      "args": ["meetings", "export", "{{meeting}}", "--format", "vtt", "--output", "{{root}}/exported.vtt", "--json"],
+      "args": [
+        "contract",
+        "meetings",
+        "export",
+        "{{meeting}}",
+        "--format",
+        "vtt",
+        "--output",
+        "{{root}}/exported.vtt",
+        "--json"
+      ],
       "exit": 0,
       "stream": "stdout",
       "kind": "json",
@@ -160,7 +179,17 @@
     },
     {
       "id": "export-no-overwrite",
-      "args": ["meetings", "export", "{{meeting}}", "--format", "vtt", "--output", "{{root}}/exported.vtt", "--json"],
+      "args": [
+        "contract",
+        "meetings",
+        "export",
+        "{{meeting}}",
+        "--format",
+        "vtt",
+        "--output",
+        "{{root}}/exported.vtt",
+        "--json"
+      ],
       "exit": 2,
       "stream": "stderr",
       "kind": "json",
@@ -174,7 +203,7 @@
     },
     {
       "id": "search-retained",
-      "args": ["search", "meetings", "wirecat-synthetic-transcript-canary", "--json"],
+      "args": ["contract", "search", "meetings", "wirecat-synthetic-transcript-canary", "--json"],
       "exit": 0,
       "stream": "stdout",
       "kind": "json",
@@ -182,7 +211,7 @@
     },
     {
       "id": "missing-meeting",
-      "args": ["meetings", "show", "999999", "--json"],
+      "args": ["contract", "meetings", "show", "999999", "--json"],
       "exit": 6,
       "stream": "stderr",
       "kind": "json",

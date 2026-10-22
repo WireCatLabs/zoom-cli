@@ -7,7 +7,7 @@ import { snakeKeys } from "@wirecat/cli-core/cli"
 import { expect, it, vi } from "vitest"
 import { readReceipt } from "../scripts/testing/answers.js"
 import { fakeConnection } from "../scripts/testing/connection.js"
-import { setConfig } from "./config.js"
+import { useProfile } from "../scripts/testing/profile.js"
 import {
   createMeetingContextCapabilities,
   validateEvidenceOptions,
@@ -111,7 +111,7 @@ const setup = async () => {
   return { deps, output }
 }
 const connectWith = (deps: ProgramDeps, parts: Partial<StoreConnection>) => {
-  setConfig(deps.configPath, "account.profile", "example")
+  useProfile(deps.configPath, "example")
   deps.connectStore = async () => fakeConnection({ store: {} as never, accountId: 3, close: async () => {}, ...parts })
 }
 
@@ -320,8 +320,8 @@ it("CLI validates before connection, uses one read connection and closes before 
   expect(await run(["meetings", "task-proposal", reference, "--type", "invalid", "--json"], deps)).toBe(2)
   expect(await run(["meetings", "context", "person:7", "--since-time", "invalid", "--json"], deps)).toBe(2)
   expect(connect).not.toHaveBeenCalled()
-  expect(await run(["meetings", "evidence", reference, "--json"], deps)).toBe(3)
-  setConfig(deps.configPath, "account.profile", "example")
+  expect(await run(["meetings", "evidence", reference, "--json"], deps)).toBe(2)
+  useProfile(deps.configPath, "example")
   expect(await run(["meetings", "evidence", reference, "--json"], deps)).toBe(0)
   expect(connect).toHaveBeenCalledOnce()
   expect(connect).toHaveBeenCalledWith({ profile: "example", externalId: "zm-profile:example", intent: "read" })
@@ -448,7 +448,7 @@ it("refuses remote semantic models offline before connecting, querying, generati
   const connect = vi.fn(async () =>
     fakeConnection({ store: {} as never, accountId: 3, close: async () => {}, meetingSemantic: { search, generate } }),
   )
-  setConfig(deps.configPath, "account.profile", "example")
+  useProfile(deps.configPath, "example")
   deps.connectStore = connect
   deps.serveMcp = serve
   const remote = ["--model", "served-example", "--base-url", "https://example.invalid/v1", "--dims", "2"]
@@ -574,9 +574,9 @@ it("opens only the selected semantic read connection and closes it before finite
   const connect = vi.fn<NonNullable<ProgramDeps["connectStore"]>>(async () => connection)
   deps.connectStore = connect
   const args = ["search", "meetings", "example", "--model", "installed-example", "--json"]
-  expect(await run(args, deps)).toBe(3)
+  expect(await run(args, deps)).toBe(2)
   expect(connect).not.toHaveBeenCalled()
-  setConfig(deps.configPath, "account.profile", "example")
+  useProfile(deps.configPath, "example")
   expect(await run(args, deps)).toBe(0)
   expect(connect).toHaveBeenCalledWith({ profile: "example", externalId: "zm-profile:example", intent: "read" })
   expect(search).toHaveBeenCalledOnce()

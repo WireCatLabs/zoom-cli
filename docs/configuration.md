@@ -11,21 +11,22 @@ Set a value with `zm config set <key> <value>` and see them all with `zm config 
 | Key | Meaning |
 |---|---|
 | `zoom.client_id` | Public Client ID of the [existing or new app](zoom-app.md); unset by default, required for API login |
-| `account.profile` | [Local label](sessions.md#select-a-local-profile) for stored meetings; unset by default, required for store operations |
 | `source` | Where `meetings sync` and `watch` read from: `api` (default) or `files` |
 | `files.folder` | Transcript folder for file-source pull/watch; unset by default |
 | `context.sources` | JSON array of explicitly selected message, mail or document accounts for this profile; empty by default ([setup below](#select-communications-for-preparation)) |
 | `files.timezone` | the IANA zone of downloaded transcript filenames, for example `Europe/Madrid`; unset: this computer's zone |
 
-Check `zm config show` after editing. Switching `account.profile` does not switch the authenticated
-Zoom user. Changing the client ID selects a different keyring entry, so authorize that app before
+Check `zm config show` after editing. The profile is not a setting: it is the first word of each
+command ([profiles](sessions.md#select-a-local-profile)). Changing the client ID selects a different keyring entry, so authorize that app before
 using its API. `ZOOM_CLIENT_ID` is not a runtime setting for the installed `zm` command; use
 `zm config set zoom.client_id` rather than an environment variable copied from a development probe.
 
-The file stores these settings as `client_id`, `files_folder`, `files_timezone`, `account_profile` and `source`.
+The file stores these settings as `client_id`, `files_folder`, `files_timezone` and `source`, and the
+profiles on this computer under `profiles`. An `account_profile` left by 0.34 or earlier only says
+which profile takes over the login saved then.
 JSON files must use these snake_case keys. Legacy camelCase files are refused and are not rewritten.
 Before upgrading an older file, rename `clientId` to `client_id`, `filesFolder` to `files_folder`,
-`filesTimezone` to `files_timezone` and `accountProfile` to `account_profile`. Preserve their values.
+and `filesTimezone` to `files_timezone`. Preserve their values.
 The command setting selector `zoom.clientId` remains an alias for
 `zoom.client_id`; it is not a supported JSON file key.
 
@@ -73,8 +74,7 @@ copy those identities from the producing tool's account settings or canonical re
 use a display name in place of an account identity.
 
 ```sh
-zm config set account.profile research
-zm config set context.sources '[{"id":"project-notes","kind":"document","provider":"folder","account":"notes:5"}]'
+zm research config set context.sources '[{"id":"project-notes","kind":"document","provider":"folder","account":"notes:5"}]'
 zm config show
 ```
 

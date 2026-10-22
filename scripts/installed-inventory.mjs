@@ -17,7 +17,8 @@ export const checkInstalledInventory = async ({ load, root }) => {
     },
     now: () => now,
   })
-  tokens.save({
+  const alice = tokens.forProfile("AliceExample", null)
+  alice.save({
     accessToken: "invented-access",
     refreshToken: "invented-refresh",
     expiresAt: now + 3600000,
@@ -47,7 +48,6 @@ export const checkInstalledInventory = async ({ load, root }) => {
     )
   }
   const configPath = join(root, "inventory-config.json")
-  setConfig(configPath, "account.profile", "AliceExample")
   setConfig(configPath, "zoom.client_id", "invented-client")
   const output = []
   const deps = {
@@ -65,7 +65,7 @@ export const checkInstalledInventory = async ({ load, root }) => {
       throw Error("unexpected store")
     },
   }
-  assert.equal(await run(["meetings", "scheduled", "--limit", "1", "--json"], deps), 0)
+  assert.equal(await run(["AliceExample", "meetings", "scheduled", "--limit", "1", "--json"], deps), 0)
   const answer = JSON.parse(output.join(""))
   assert.equal(answer.item.items[0].meeting_id, "123")
   assert.equal(answer.item.coverage.date_hints_outside_window, 1)
@@ -74,9 +74,9 @@ export const checkInstalledInventory = async ({ load, root }) => {
   assert.ok(!JSON.stringify(answer).includes("join_url"))
   assert.ok(answer.item.page.next_cursor)
   const before = requests
-  assert.notEqual(await run(["--offline", "meetings", "scheduled", "--json"], deps), 0)
+  assert.notEqual(await run(["AliceExample", "--offline", "meetings", "scheduled", "--json"], deps), 0)
   assert.equal(requests, before)
-  const reader = createZoomSeriesInventoryReader("zm-profile:AliceExample", tokens, fetcher)
+  const reader = createZoomSeriesInventoryReader("zm-profile:AliceExample", alice, fetcher)
   const server = createMeetingMcpServer({
     connectStore: deps.connectStore,
     inventory: (request) => reader.page(request),

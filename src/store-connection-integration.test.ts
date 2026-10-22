@@ -5,7 +5,7 @@ import { memoryKeyring } from "@wirecat/cli-base"
 import { sampleEvent, sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { openStore } from "@wirecat/cli-core/store"
 import { expect, it } from "vitest"
-import { setConfig } from "./config.js"
+import { useProfile } from "../scripts/testing/profile.js"
 import { type ProgramDeps, run } from "./program.js"
 import { createStoreConnector } from "./store-connection.js"
 import { TokenManager } from "./tokens.js"
@@ -185,10 +185,10 @@ it("mounts real durable connector capabilities and rejects absent local profiles
   const links = ["meetings", "update", reference, "--event-id", String(value.event.id)]
   const search = ["search", "meetings", "example"]
   const transcribe = ["meetings", "transcribe", reference, audio, "--model", "parakeet-v3", "--models-dir", models]
-  expect(await run([...search, "--json"], deps)).toBe(3)
-  expect(await run([...transcribe, "--json"], deps)).toBe(3)
+  expect(await run([...search, "--json"], deps)).toBe(2)
+  expect(await run([...transcribe, "--json"], deps)).toBe(2)
   expect(connections).toBe(0)
-  setConfig(deps.configPath, "account.profile", request.profile)
+  useProfile(deps.configPath, request.profile)
   for (const command of [links, search, transcribe]) {
     expect(await run([...command, "--json"], deps)).toBe(0)
     expect(output.at(-1)).toBeDefined()
@@ -295,4 +295,38 @@ it("searches confirmed project aliases and participant identities through the pu
   } finally {
     await connection.close()
   }
+})
+
+it("says when an import makes a profile beside others, and lists the profiles a bare command could mean", async () => {
+  const { path, env: fixed, directory } = await fixture()
+  const env: NodeJS.ProcessEnv = { ...fixed }
+  const configPath = join(directory, "config.json")
+  useProfile(configPath, "AliceExample", env)
+  const transcripts = join(directory, "transcripts")
+  mkdirSync(transcripts)
+  writeFileSync(
+    join(transcripts, "2026-10-01_1000_example-planning.vtt"),
+    "WEBVTT\n\n1\n00:00:00.000 --> 00:00:01.000\nAlice Example: Ship the example plan.\n",
+  )
+  const stdout: string[] = []
+  const stderr: string[] = []
+  const deps: ProgramDeps = {
+    configPath,
+    env,
+    tokens: new TokenManager({ clientId: "", keyring: memoryKeyring(), service: "invented", fetch }),
+    fetch,
+    connectStore: createStoreConnector({ path, env }),
+    openBrowser: async () => {},
+    data: (text) => stdout.push(text),
+    diagnostic: (text) => stderr.push(text),
+  }
+  expect(await run(["AliceExampel", "meetings", "import", transcripts, "--json"], deps)).toBe(0)
+  expect(stderr.join("")).toContain("new profile AliceExampel; the other profiles here: AliceExample")
+  stderr.length = 0
+  delete env.ZM_PROFILE
+  expect(await run(["meetings", "list", "--json"], deps)).toBe(2)
+  expect(JSON.parse(stderr.join("")).error).toMatchObject({
+    code: "validation_error",
+    details: { profiles: ["AliceExampel", "AliceExample"] },
+  })
 })

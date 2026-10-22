@@ -48,12 +48,12 @@ zm config set <key> <value>
 
 | Argument | | What it is |
 |---|---|---|
-| `key` | required | setting name, such as account.profile. |
+| `key` | required | setting name, such as zoom.client_id. |
 | `value` | required | new value. |
 
 **Returns:** set a configuration value
 
-**Example:** `zm config set account.profile personal --json`
+**Example:** `zm config set files.timezone Europe/Madrid --json`
 
 ## `zm meetings`
 
@@ -82,7 +82,7 @@ zm meetings list [query] [options]
 
 **Next usually:** `zm meetings show <meeting>`, `zm meetings transcript <meeting>`, `zm meetings summary <meeting>`
 
-**Example:** `zm meetings list --json`
+**Example:** `zm personal meetings list --json`
 
 ### `zm meetings show`
 
@@ -105,7 +105,7 @@ zm meetings show <meeting> [options]
 
 **Next usually:** `zm meetings transcript <meeting>`, `zm meetings summary <meeting>`, `zm recordings show <meeting>`
 
-**Example:** `zm meetings show 1 --json`
+**Example:** `zm personal meetings show 1 --json`
 
 ### `zm meetings transcript`
 
@@ -127,7 +127,7 @@ zm meetings transcript <meeting> [options]
 
 **Returns:** meeting transcript — ref, meeting, source, language, superseded_at, created_at, lines
 
-**Example:** `zm meetings transcript 1 --json`
+**Example:** `zm personal meetings transcript 1 --json`
 
 ### `zm meetings summary`
 
@@ -150,7 +150,7 @@ zm meetings summary <meeting> [options]
 
 **Next usually:** `zm meetings show <meeting>`, `zm meetings transcript <meeting>`, `zm recordings show <meeting>`
 
-**Example:** `zm meetings summary 1 --json`
+**Example:** `zm personal meetings summary 1 --json`
 
 ### `zm meetings export`
 
@@ -176,7 +176,7 @@ zm meetings export <meeting> [options]
 
 **Returns:** export a meeting as Markdown or one transcript as WebVTT
 
-**Example:** `zm meetings export 1 --format markdown --json`
+**Example:** `zm personal meetings export 1 --format markdown --json`
 
 ### `zm meetings people`
 
@@ -201,7 +201,7 @@ zm meetings people <query> [options]
 
 **Returns:** find meeting participants by name or email
 
-**Example:** `zm meetings people "Alice Example" --json`
+**Example:** `zm personal meetings people "Alice Example" --json`
 
 ### `zm meetings sync`
 
@@ -222,7 +222,7 @@ zm meetings sync [options]
 
 **Returns:** bring the stored meetings up to date from the connected account
 
-**Example:** `zm meetings sync --json`
+**Example:** `zm personal meetings sync --json`
 
 ### `zm meetings import`
 
@@ -245,7 +245,7 @@ zm meetings import <folder> [options]
 
 **Returns:** import downloaded meeting transcripts
 
-**Example:** `zm meetings import ./downloaded-transcripts --json`
+**Example:** `zm personal meetings import ./downloaded-transcripts --json`
 
 ### `zm meetings scheduled`
 
@@ -293,7 +293,7 @@ zm meetings projects evidence <project> [query] [options]
 
 **Returns:** meeting project evidence — schema_version, kind, account_id, query, project, term, hits, association, and 5 more
 
-**Example:** `zm meetings projects evidence RES "identity_id:12" --json`
+**Example:** `zm personal meetings projects evidence RES "identity_id:12" --json`
 
 #### `zm meetings projects scan`
 
@@ -572,7 +572,7 @@ zm events list [options]
 
 **Returns:** list stored events
 
-**Example:** `zm events list --json`
+**Example:** `zm personal events list --json`
 
 ## `zm commands`
 
@@ -654,7 +654,7 @@ zm session start [options]
 
 **Returns:** log in to Zoom through your browser
 
-**Example:** `zm session start`
+**Example:** `zm personal session start`
 
 ## `zm watch`
 
@@ -1178,7 +1178,7 @@ zm serve [options]
 
 **Returns:** serve read-only meeting tools over MCP stdio
 
-**Example:** `zm serve --mcp`
+**Example:** `zm personal serve --mcp`
 
 ## `zm search`
 

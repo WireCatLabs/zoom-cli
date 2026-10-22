@@ -1,7 +1,8 @@
 zm — your Zoom meetings for agents: transcripts and summaries in a local store, every answer
 pointing at its line.
 
-Usage: zm <command> [options]
+Usage: zm <profile> <command> [options]
+Account commands start with your profile, a name you choose; none is ever assumed.
 
 What you can do:
   meetings sync                         meetings, transcripts and summaries into the store
@@ -20,8 +21,8 @@ Works with:
   drive                                 Google Drive and Docs as local text, searchable with your messages
   memo context <person>                 one person across messengers, mail, notes and meetings
 
-Start here:   zm session start
-Next:         zm commands       every command, by section
-              zm guide          scenarios: command sequences for common tasks
-              zm help options   output, offline, timeouts
-For agents:   zm skill show     rules and the discovery loop
+Start here:   zm personal session start  (any profile name works)
+Next:         zm commands                every command, by section
+              zm guide                   scenarios: command sequences for common tasks
+              zm help options            output, offline, timeouts
+For agents:   zm skill show              rules and the discovery loop

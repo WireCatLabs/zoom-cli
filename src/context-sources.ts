@@ -41,7 +41,7 @@ export const replaceContextSources = (
   profile: string | null,
   existing: readonly ConfiguredContextSource[] = [],
 ) => {
-  if (!profile) throw new CliError("configuration_error", "select account.profile before configuring context.sources")
+  if (!profile) throw new CliError("configuration_error", "name a profile: `zm <profile> config set context.sources …`")
   let input: unknown
   try {
     input = JSON.parse(value)

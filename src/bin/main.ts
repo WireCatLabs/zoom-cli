@@ -64,7 +64,7 @@ try {
     serveMcp: async (options) => {
       const { serveMeetingMcp } = await import("../mcp-server.js")
       const config = readConfig(configPath)
-      const profile = config.accountProfile
+      const profile = options.profile
       const context = captureContextSources(config.contextSources, profile)
       await serveMeetingMcp({
         ...options,

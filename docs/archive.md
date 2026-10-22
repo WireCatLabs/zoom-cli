@@ -9,8 +9,8 @@ folder are separate copies; a recording backup is not automatically searchable i
 
 | Source you have | Use | Check afterwards |
 |---|---|---|
-| Hosted meetings available to your app | `zm meetings sync --lookback-days 7` | List meetings, open one transcript and inspect missing parts |
-| Downloaded VTT transcript files | `zm meetings import ./downloaded-transcripts` | Compare the imported date/title with the original |
+| Hosted meetings available to your app | `zm personal meetings sync --lookback-days 7` | List meetings, open one transcript and inspect missing parts |
+| Downloaded VTT transcript files | `zm personal meetings import ./downloaded-transcripts` | Compare the imported date/title with the original |
 | Cloud recording assets | Recording list, download or sync | Verify the destination manifest and checksums |
 | Archived VTT files to add to search | Archive import | Check its receipt, then search the stored text |
 
@@ -37,12 +37,12 @@ With the API source selected, pull a recent period and inspect the result:
 
 ```sh
 zm config set source api
-zm meetings sync --lookback-days 7
-zm meetings list --json
-zm meetings transcript <meeting-id> --json
+zm personal meetings sync --lookback-days 7
+zm personal meetings list --json
+zm personal meetings transcript <meeting-id> --json
 ```
 
-Use an ID from the list. `zm meetings sync` retrieves hosted occurrences with available participants,
+Use an ID from the list. `zm personal meetings sync` retrieves hosted occurrences with available participants,
 transcripts and AI summaries. It does not create missing transcripts. Check Zoom's
 [generation and retention settings](zoom-app.md#before-your-first-zm-meetings-sync) if the text is absent.
 
@@ -59,10 +59,9 @@ chosen folder and rename it with the meeting date/time/title, for example
 `2026-10-01_1000_example-planning.vtt`. Renaming does not change its transcript contents.
 
 ```sh
-zm config set account.profile personal
 zm config set files.timezone Europe/Madrid
-zm meetings import ./downloaded-transcripts
-zm meetings list --json
+zm personal meetings import ./downloaded-transcripts
+zm personal meetings list --json
 ```
 
 The files source reads `.vtt` and `.txt` files directly inside a folder, without recursion.
@@ -72,8 +71,8 @@ title replaces the one in the file name; its time (like the file name's) is when
 become participants of that meeting only, keyed by name — never one person across meetings. A `.txt` and a `.vtt`
 with one name are one meeting, and the `.txt` is read. Occurrence IDs derive from timestamp and normalized
 topic; these files carry no Zoom occurrence UUID. A `.vtt`'s participants remain unknown: speaker names are
-preserved as text, without guessing a person's identity. `zm meetings import` names the zone it read the file
-times in (`timezone`), and `zm meetings import --help` shows it before you run it. Check the imported date, title and transcript
+preserved as text, without guessing a person's identity. `zm personal meetings import` names the zone it read the file
+times in (`timezone`), and `zm personal meetings import --help` shows it before you run it. Check the imported date, title and transcript
 before attaching project or person records.
 
 A file name's time is read in this computer's zone. Set `files.timezone` to the IANA zone the filenames were
@@ -84,7 +83,7 @@ importing a partial folder.
 
 ## Watch for new meetings
 
-For repeated API ingestion, use `zm watch api --lookback-days 7 --jsonl`. `zm watch files [folder]` watches
+For repeated API ingestion, use `zm personal watch api --lookback-days 7 --jsonl`. `zm personal watch files [folder]` watches
 a transcript folder, `files.folder` when none is given. With neither, the configured source applies.
 API watching accepts `--since-time` and revisits zero through 31 days, and requires online access.
 `--since-time` sets the initial lower bound; after a successful cursor write, later cycles use the cursor
@@ -98,7 +97,7 @@ receipt. Stop with Ctrl-C.
 To watch a transcript folder:
 
 ```sh
-zm watch files ./downloaded-transcripts --pause 10s --jsonl
+zm personal watch files ./downloaded-transcripts --pause 10s --jsonl
 ```
 
 Watching rescans the folder for each cycle, so corrected older files are revisited. It imports serially,
@@ -116,10 +115,10 @@ store close. A blocked output pipe stops that flush; no later cycle starts.
 and download its available files to an explicit destination:
 
 ```sh
-zm recordings list --since-time 2026-10-01 --until-time 2026-10-10 --json
-zm recordings show <zoom-occurrence-uuid> --json
-zm recordings download <zoom-occurrence-uuid> --output-dir ./zoom-archive --json
-zm recordings archive check ./zoom-archive --offline --json
+zm personal recordings list --since-time 2026-10-01 --until-time 2026-10-10 --json
+zm personal recordings show <zoom-occurrence-uuid> --json
+zm personal recordings download <zoom-occurrence-uuid> --output-dir ./zoom-archive --json
+zm personal recordings archive check ./zoom-archive --offline --json
 ```
 
 Replace `<zoom-occurrence-uuid>` with an occurrence UUID returned by the recording list, not a
@@ -132,7 +131,7 @@ list ends today in the computer's zone, or in `--timezone`, and `meta.timezone` 
 For recording history across months, use:
 
 ```sh
-zm recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl
+zm personal recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl
 ```
 
 Sync accepts explicit ordered dates spanning at most ten calendar years. It splits them into monthly
@@ -158,7 +157,7 @@ Each occurrence has a manifest containing metadata, file sizes and SHA-256 check
 download URLs and OAuth tokens are excluded. Repeating a download verifies existing manifest files
 and skips matching assets; a file whose size and modification time are unchanged since it was last
 verified (`.zoom-verified.json`) is not hashed again. `recordings archive check` always hashes every file. Existing files are never overwritten; a mismatch requires a new destination.
-Downloads and syncs need a selected local profile (`zm config set account.profile <label>`); the
+Downloads and syncs act for the profile named first (`zm personal recordings …`); the
 archive belongs to its account. Interrupted downloads retain verified partial bytes and resume only
 when a strong validator and the returned range agree. Changed representations restart safely.
 `--no-resume` uses ephemeral partials. Completed manifest entries remain available if a later transfer fails.
@@ -182,10 +181,10 @@ after files were saved, even when no successful download receipt was returned.
 To plan a daily backup, choose an absolute destination and timer timezone:
 
 ```sh
-zm recordings schedule create --name daily --output-dir /home/AliceExample/zoom-archive --since-time 2026-01-01 --at 03:15 --timezone Europe/Madrid --json
-zm recordings schedule list --offline --json
-zm recordings schedule run <schedule-id> --jsonl
-zm recordings schedule disable <schedule-id> --yes --json
+zm personal recordings schedule create --name daily --output-dir /home/AliceExample/zoom-archive --since-time 2026-01-01 --at 03:15 --timezone Europe/Madrid --json
+zm personal recordings schedule list --offline --json
+zm personal recordings schedule run <schedule-id> --jsonl
+zm personal recordings schedule disable <schedule-id> --yes --json
 ```
 
 Creation previews by default. Add `--yes` to install a Linux systemd user timer; `--dry-run`
@@ -203,8 +202,8 @@ Cloud archive assets use hashed filenames and retain their identity in manifests
 archived transcripts directly:
 
 ```sh
-zm recordings archive transcript ./zoom-archive --offline --json
-zm search recordings ./zoom-archive "example plan" --limit 100 --offline --json
+zm personal recordings archive transcript ./zoom-archive --offline --json
+zm personal search recordings ./zoom-archive "example plan" --limit 100 --offline --json
 ```
 
 Both commands verify each WebVTT file they read against manifest sizes and SHA-256 digests before
@@ -221,7 +220,7 @@ failed verification emits no successful result.
 Use a separate command to import these assets into the selected local profile:
 
 ```sh
-zm recordings archive import ./zoom-archive --offline --jsonl
+zm personal recordings archive import ./zoom-archive --offline --jsonl
 ```
 
 Import verifies every selected VTT asset before opening the store. The default limits are 8 MiB
@@ -240,8 +239,8 @@ Earlier acknowledged occurrences can remain committed if a later append fails.
 Create an independent local transcript from an audio file for an existing stored meeting:
 
 ```sh
-zm meetings transcribe 1 ./AliceExample.wav --model parakeet-v3 --json
-zm meetings transcribe 1 ./AliceExample.wav --model parakeet-v3 --yes --json
+zm personal meetings transcribe 1 ./AliceExample.wav --model parakeet-v3 --json
+zm personal meetings transcribe 1 ./AliceExample.wav --model parakeet-v3 --yes --json
 ```
 
 Preview verifies the input and describes the chosen model without loading it. `--yes` recognizes

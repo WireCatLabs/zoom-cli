@@ -25,7 +25,7 @@ Choose how to connect:
 ```sh
 zm config set zoom.client_id <public-client-id>
 zm config set source api
-zm session start
+zm personal session start
 ```
 
 Replace the placeholder without angle brackets. Sign in as the Zoom user whose meetings you want,
@@ -41,7 +41,7 @@ you authorize your own account.
 
 An app in development is not automatically available to users in another Zoom account. Check access
 with its owner; a company administrator may also need to approve it. A Marketplace authorization
-link by itself does not configure `zm` or complete its login: start `zm session start` so its current callback
+link by itself does not configure `zm` or complete its login: start `zm personal session start` so its current callback
 and verification key exist. If you cannot authorize the shared app, create your own with the steps below.
 
 ## Create your own app
@@ -69,7 +69,7 @@ redirects for eligible public clients, but that is not the redirect this tool se
    scopes and save. Explain their use if Zoom asks for a scope description. Add recording or write
    permissions only if you need those tasks.
 6. Check **Local Test** for app installation/access and any account approval requirement. Zoom's
-   **Add App Now** can authorize a development app, but return to the terminal and run `zm session start`
+   **Add App Now** can authorize a development app, but return to the terminal and run `zm personal session start`
    to establish this tool's session. Other-account distribution has a separate Zoom review process.
 7. Return to [installation's first run](installation.md#first-run) with the Public Client ID.
 
@@ -86,7 +86,7 @@ in-client features. If Marketplace offers creation from
 an app manifest, save that JSON file and import it when creating the General app.
 
 **The manifest does not include scopes or enable Public Client OAuth.** Complete steps 3–6 above
-manually after import. Do not assume that a successful import made the app ready for `zm session start`.
+manually after import. Do not assume that a successful import made the app ready for `zm personal session start`.
 Manual creation is the complete path when the import option is unavailable.
 
 <a id="what-the-manifest-asks-for" />
@@ -104,22 +104,22 @@ permission; a granted scope authorizes an API call, not the existence of the req
 | `meeting:read:list_past_participants` | Read participant records and their join/leave sessions |
 | `meeting:read:summary` | Retrieve an available Zoom AI summary |
 
-Configure all five for `zm meetings sync`: it reads these parts during ingestion, even though transcript
+Configure all five for `zm personal meetings sync`: it reads these parts during ingestion, even though transcript
 or summary content may be absent. Zoom's plan, host settings and retention determine which parts
 exist. For a schedule-only workflow, `meetings scheduled` needs just its list scope. Verifying a selected
 series with preparation also needs `meeting:read:meeting`, listed below.
 
 ## Add archive or management access
 
-The app owner adds the required scope in **Scopes**, saves it, then the user runs `zm session start` again.
+The app owner adds the required scope in **Scopes**, saves it, then the user runs `zm personal session start` again.
 Already issued tokens do not acquire new permissions automatically. Check actual granted scopes
-with `zm session status --json`.
+with `zm personal session status --json`.
 
 | Scope | Feature |
 |---|---|
 | `cloud_recording:read:list_user_recordings` | Discover your cloud recording occurrences |
 | `cloud_recording:read:list_recording_files` | Inspect and download available recording assets |
-| `user:read:user` | Verify the remote session with `zm session status --check` |
+| `user:read:user` | Verify the remote session with `zm personal session status --check` |
 | `meeting:read:meeting` | Show remote details and prepare a selected upcoming series with stored context |
 | `meeting:read:invitation` | Retrieve its invitation text |
 | `meeting:write:meeting` | Create a remote meeting |

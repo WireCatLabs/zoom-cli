@@ -3,9 +3,10 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { CliError, memoryKeyring } from "@wirecat/cli-base"
 import { describeProgram, flatten, parseCommandsDocument } from "@wirecat/cli-base/commands"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { readAnswer } from "../scripts/testing/answers.js"
 import { fakeConnection } from "../scripts/testing/connection.js"
+import { useProfile } from "../scripts/testing/profile.js"
 import { setConfig } from "./config.js"
 import { checkCancelled } from "./errors.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
@@ -43,9 +44,9 @@ describe("portable CLI discovery and diagnostics", () => {
   it("discovers commands and completion without loading even corrupt config", async () => {
     const { deps, stdout, stderr } = await setup()
     await writeFile(deps.configPath, "broken")
-    deps.tokens.load = () => {
+    vi.spyOn(deps.tokens.options.keyring, "get").mockImplementation(() => {
       throw new Error("unexpected keyring")
-    }
+    })
     deps.connectStore = async () => {
       throw new Error("unexpected database")
     }
@@ -54,7 +55,7 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(commands.find((item) => item.path.join(" ") === "config set")).toMatchObject({
       origin: "handwritten",
       effects: { remote: "none", local: "write" },
-      examples: ["zm config set account.profile personal --json"],
+      examples: ["zm config set files.timezone Europe/Madrid --json"],
     })
     expect(commands.find((item) => item.path.join(" ") === "search meetings")?.examples).toContain(
       'zm search meetings "example plan" --model e5-small --json',
@@ -111,16 +112,16 @@ describe("portable CLI discovery and diagnostics", () => {
   it("reports local health and explicitly unknown authentication without keyring/DB access", async () => {
     const { deps, stdout } = await setup()
     setConfig(deps.configPath, "zoom.clientId", "example-client")
-    setConfig(deps.configPath, "account.profile", "example")
-    deps.tokens.load = () => {
+    useProfile(deps.configPath, "example")
+    vi.spyOn(deps.tokens.options.keyring, "get").mockImplementation(() => {
       throw new Error("unexpected keyring")
-    }
+    })
     deps.connectStore = async () => {
       throw new Error("unexpected database")
     }
     expect(await run(["--json", "doctor"], deps)).toBe(0)
     expect(readAnswer(stdout[0] ?? "{}")).toMatchObject({
-      data_profile: "example",
+      profiles: ["example"],
       authentication: { configured: true, state: "not_checked" },
       database: "not_checked",
     })
@@ -147,14 +148,23 @@ describe("portable CLI discovery and diagnostics", () => {
     expect([...stdout, ...stderr].join("")).not.toContain("example-old-client")
   })
   it("inspects cached OAuth status without refresh and keeps local profiles distinct", async () => {
-    const { deps, stdout } = await setup()
-    expect(await run(["--json", "session", "status"], deps)).toBe(0)
-    expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({ configured: false, state: "not_configured" })
+    const { deps, stdout, stderr } = await setup()
+    expect(await run(["--json", "session", "status"], deps)).toBe(2)
+    expect(JSON.parse(stderr.at(-1) ?? "{}").error).toMatchObject({
+      code: "validation_error",
+      details: { profiles: [] },
+    })
+    expect(await run(["local-example", "--json", "session", "status"], deps)).toBe(0)
+    expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({
+      configured: false,
+      state: "not_configured",
+      profile: "local-example",
+    })
     setConfig(deps.configPath, "zoom.clientId", "example-client")
-    setConfig(deps.configPath, "account.profile", "local-example")
+    useProfile(deps.configPath, "local-example")
     expect(await run(["--json", "session", "status"], deps)).toBe(0)
     expect(readAnswer(stdout.at(-1) ?? "{}").state).toBe("missing")
-    deps.tokens.save({
+    deps.tokens.forProfile("local-example", null).save({
       accessToken: "example-access-secret",
       refreshToken: "example-refresh-secret",
       expiresAt: 1000,
@@ -164,28 +174,34 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({
       state: "saved",
       verified: false,
-      data_profile: "local-example",
+      profile: "local-example",
       scopes: ["example:read"],
     })
+    expect(await run(["other-example", "--json", "session", "status"], deps)).toBe(0)
+    expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({ state: "missing", profile: "other-example" })
     deps.now = () => 1000
     expect(await run(["--json", "session", "status"], deps)).toBe(0)
     expect(readAnswer(stdout.at(-1) ?? "{}").state).toBe("expired")
     expect(stdout.join("")).not.toContain("example-access-secret")
     expect(stdout.join("")).not.toContain("example-refresh-secret")
-    deps.tokens.save({ accessToken: "example", refreshToken: "example", expiresAt: 3600000, scopes: ["example:read"] })
+    deps.tokens
+      .forProfile("local-example", null)
+      .save({ accessToken: "example", refreshToken: "example", expiresAt: 3600000, scopes: ["example:read"] })
     expect(await run(["--json", "session", "status", "--check"], deps)).toBe(3)
     deps.checkSession = async () => ({ id: "example-user" })
     expect(await run(["--json", "session", "status", "--check"], deps)).toBe(0)
     expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({
       state: "verified",
       verified: true,
-      profile: { id: "example-user" },
+      profile: "local-example",
+      zoom_user: { id: "example-user" },
     })
   })
   it("uses shared errors and exit mappings without private generic details", async () => {
     expect(new CliError("rate_limited", "example")).toBeInstanceOf(CliError)
     const { deps, stderr } = await setup()
     setConfig(deps.configPath, "zoom.clientId", "example-client")
+    useProfile(deps.configPath)
     for (const [code, exit] of [
       ["rate_limited", 8],
       ["timeout", 9],
@@ -220,10 +236,10 @@ describe("portable CLI discovery and diagnostics", () => {
     const message = () => JSON.parse(stderr.at(-1) ?? "{}").error.message
     setConfig(deps.configPath, "zoom.clientId", "example-client")
     deps.env = { CI: "1" }
-    expect(await run(["session", "start"], deps)).toBe(3)
-    expect(message()).toContain("run zm session start yourself")
+    expect(await run(["example", "session", "start"], deps)).toBe(3)
+    expect(message()).toContain("run zm example session start yourself")
     deps.env = {}
-    expect(await run(["--no-input", "session", "start"], deps)).toBe(3)
+    expect(await run(["--no-input", "example", "session", "start"], deps)).toBe(3)
     expect(message()).toContain("remove --no-input")
     expect(stdout).toEqual([])
     const program = createProgram(deps)
@@ -247,7 +263,7 @@ describe("portable CLI discovery and diagnostics", () => {
 it("quiet keeps the login URL, the one thing an agent can pass on, and the failure envelope", async () => {
   const { deps, stdout, stderr } = await setup()
   setConfig(deps.configPath, "zoom.clientId", "example-client")
-  expect(await run(["--quiet", "session", "start"], deps)).toBe(3)
+  expect(await run(["example", "--quiet", "session", "start"], deps)).toBe(3)
   expect(stdout).toEqual([])
   expect(stderr).toHaveLength(2)
   expect(stderr[0]).toContain("Open this URL to approve Zoom login:")
@@ -256,7 +272,7 @@ it("quiet keeps the login URL, the one thing an agent can pass on, and the failu
 
 it("prints a partial non-search answer before returning its source error exit code", async () => {
   const { deps, stdout, stderr } = await setup()
-  setConfig(deps.configPath, "account.profile", "example")
+  useProfile(deps.configPath, "example")
   const meetingContext = {
     evidence: async () => ({
       item: { available: [] },

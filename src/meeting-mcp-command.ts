@@ -9,6 +9,7 @@ import { type MeetingModelOptions, validateMeetingModel } from "./meeting-semant
 
 export interface ZoomMcpServeOptions {
   signal: AbortSignal
+  profile: string
   commandRegistry: Command
   maxResultBytes?: number
   includeUnifiedSearch?: boolean
@@ -24,6 +25,7 @@ export const addZoomMcpCommand = (
     fields: () => string[] | undefined
     signal: () => AbortSignal | undefined
     serve?: (options: ZoomMcpServeOptions) => Promise<void>
+    profile: () => string
     preparation: ZoomPreparationOptions
     inventory?: ReturnType<typeof createZoomInventoryReader>
   },
@@ -74,6 +76,7 @@ export const addZoomMcpCommand = (
           throw new CliError("configuration_error", "meeting inventory capability is unavailable")
         inventory?.capture()
         await deps.serve({
+          profile: deps.profile(),
           commandRegistry: program,
           signal: deps.signal() as AbortSignal,
           maxResultBytes: opts.maxOutputBytes,

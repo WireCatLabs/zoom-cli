@@ -105,7 +105,7 @@ commands one at a time in an ordinary terminal. Leave it open while approving in
 ```sh
 zm config set zoom.client_id <public-client-id>
 zm config set source api
-zm session start
+zm personal session start
 ```
 
 1. Sign in to the Zoom account whose hosted meetings you want and review the permissions.
@@ -117,19 +117,17 @@ zm session start
    paste it into that **same waiting terminal**, and press Enter. Do not paste it into the agent
    chat or start it as a shell command. After the five-minute deadline, start a new login.
 
-Choose a **profile**, a local label for these stored meetings, then retrieve a small period:
+The first word, `personal`, is the **profile**: this login and its stored meetings. Retrieve a small period:
 
 ```sh
-zm session status --json
-zm config set account.profile personal
-zm meetings sync --lookback-days 7
-zm meetings list --json
+zm personal session status --json
+zm personal meetings sync --lookback-days 7
+zm personal meetings list --json
 ```
 
 Session status should show saved credentials with `state: saved`; it does not contact Zoom to
 check whether access still works. Sync makes the remote requests and stores available hosted
-meeting data. List reads that local copy. Changing the profile label does not switch the Zoom
-account you approved. See [sessions and profiles](sessions.md#select-a-local-profile).
+meeting data. List reads that local copy. Another Zoom user is another profile with its own login. See [sessions and profiles](sessions.md#select-a-local-profile).
 
 If the list is empty, check the Zoom account, dates and [recording/transcript availability](zoom-app.md#before-your-first-zm-meetings-sync).
 A meeting you attended but did not host may require a file supplied by its host. A missing-scope
@@ -142,10 +140,9 @@ folder, with a name such as `2026-10-01_1000_example-planning.vtt`. The filename
 date, time and title; the timezone setting determines how that time is interpreted:
 
 ```sh
-zm config set account.profile personal
 zm config set files.timezone Europe/Madrid
-zm meetings import ./downloaded-transcripts
-zm meetings list --json
+zm personal meetings import ./downloaded-transcripts
+zm personal meetings list --json
 ```
 
 Replace the folder path and timezone with yours. Import does not recurse into subfolders or infer
@@ -169,8 +166,8 @@ using MCP, follow [MCP and skills](mcp.md) instead; its meeting tools are read-o
 Use a meeting ID returned by list, replacing `<meeting-id>` without angle brackets:
 
 ```sh
-zm meetings show <meeting-id> --json
-zm meetings transcript <meeting-id> --json
+zm personal meetings show <meeting-id> --json
+zm personal meetings transcript <meeting-id> --json
 ```
 
 You should see the saved meeting and any transcript Zoom supplied or you imported. A meeting can

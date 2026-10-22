@@ -104,11 +104,14 @@ export const annotateMeetingCommands = (program: Command): void => {
     annotate(command, { origin: "handwritten", ...(item.examples ? {} : { examples: [exampleFor(path)] }) })
   }
 }
+/** The top-level commands that act for no account, so their examples carry no profile word. */
+export const PROFILE_FREE = new Set(["commands", "complete", "config", "doctor", "guide", "help", "skill"])
 const exampleFor = (path: string): string => {
-  if (path === "serve") return "zm serve --mcp"
-  if (path === "session start") return "zm session start"
+  const profile = PROFILE_FREE.has(path.split(" ")[0] ?? "") ? "" : "personal "
+  if (path === "serve") return "zm personal serve --mcp"
+  if (path === "session start") return "zm personal session start"
   const argumentsByPath: Record<string, string> = {
-    "config set": "account.profile personal",
+    "config set": "files.timezone Europe/Madrid",
     "meetings show": "1",
     "meetings transcript": "1",
     "meetings summary": "1",
@@ -117,7 +120,7 @@ const exampleFor = (path: string): string => {
     "meetings projects evidence": 'RES "identity_id:12"',
     "meetings import": "./downloaded-transcripts",
   }
-  return `zm ${path}${argumentsByPath[path] ? ` ${argumentsByPath[path]}` : ""} --json`
+  return `zm ${profile}${path}${argumentsByPath[path] ? ` ${argumentsByPath[path]}` : ""} --json`
 }
 
 const scopeOf = (all: readonly CommandInfo[], path: readonly string[]) => {

@@ -6,6 +6,7 @@ import { planRecordingArchiveSchedule } from "@wirecat/cli-core/meetings"
 import { Command } from "commander"
 import { expect, it, vi } from "vitest"
 import { readReceipt } from "../scripts/testing/answers.js"
+import { useProfile } from "../scripts/testing/profile.js"
 import { setConfig } from "./config.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
 import type { RecordingScheduleJob, RecordingScheduleService } from "./recording-schedule.js"
@@ -57,7 +58,7 @@ const setup = async () => {
     keyring: memoryKeyring(),
     fetch: fail,
   })
-  const tokenAccess = vi.spyOn(tokens, "withSignal")
+  const tokenAccess = vi.spyOn(tokens, "forProfile")
   const deps: ProgramDeps = {
     configPath: join(root, "missing-config.json"),
     recordings: {
@@ -121,6 +122,7 @@ it("CLI discovery never obtains scheduling capture or service, and missing captu
   expect(
     await run(
       [
+        "example",
         "recordings",
         "schedule",
         "create",
@@ -214,7 +216,7 @@ it.each(["create", "disable"] as const)(
       cliPath: fixture.job.capture.cliPath,
     }
     setConfig(fixture.deps.configPath, "zoom.clientId", "example-client")
-    setConfig(fixture.deps.configPath, "account.profile", "AliceExample")
+    useProfile(fixture.deps.configPath, "AliceExample")
     const committed = {
       applied: true,
       backend: "invented-local",

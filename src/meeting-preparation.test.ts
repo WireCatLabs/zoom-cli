@@ -82,7 +82,7 @@ it("CLI and MCP include direct meeting notes without importing notes from other 
 
 it("refuses invalid fields, provider IDs and offline reads before store or credentials", async () => {
   const f = await fixture()
-  const load = vi.spyOn(f.tokens, "load")
+  const load = vi.spyOn(f.tokens.options.keyring, "get")
   for (const command of [
     ["meetings", "prepare", "../123"],
     ["meetings", "prepare", "123", "--cues", "101"],
@@ -98,7 +98,7 @@ it("refuses invalid fields, provider IDs and offline reads before store or crede
 
 it("raw MCP refuses communications without a captured grant before protected reads", async () => {
   const f = await fixture()
-  const load = vi.spyOn(f.tokens, "load")
+  const load = vi.spyOn(f.tokens.options.keyring, "get")
   const result = await readPreparationTool(
     f.mcp,
     { series_id: "123", communications: { sources: [{ id: "unconfigured" }], query: "launch" } },
@@ -114,7 +114,7 @@ it("raw MCP refuses communications without a captured grant before protected rea
 
 it("refuses unconfigured communications before store access or credentials, without output", async () => {
   const f = await fixture()
-  const load = vi.spyOn(f.tokens, "load")
+  const load = vi.spyOn(f.tokens.options.keyring, "get")
   for (const option of [
     [],
     ["--context-since-time", "2026-10-01T00:00:00Z"],

@@ -368,7 +368,7 @@ export const installedMeetingIntegration = async ({
     ],
     2,
   )
-  json("config", "set", "account.profile", "invented-foreign-platform")
+  environment.ZM_PROFILE = "invented-foreign-platform"
   invoke(
     [
       "--json",
@@ -386,7 +386,7 @@ export const installedMeetingIntegration = async ({
     2,
   )
   invoke(["--json", "meetings", "update", reference, "--event-id", "none", "--yes"], 6)
-  json("config", "set", "account.profile", "invented-platform")
+  environment.ZM_PROFILE = "invented-platform"
   const audio = join(sandbox, "AliceExample-transcription.wav")
   const dataSize = 32000
   const wav = Buffer.alloc(44 + dataSize)

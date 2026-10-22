@@ -19,6 +19,7 @@ import { TokenManager } from "./tokens.js"
 export const zoomRecordingSchedule = ({
   deps,
   getConfig,
+  profile,
   withSignal,
   signal,
   remoteOptions,
@@ -29,6 +30,7 @@ export const zoomRecordingSchedule = ({
     "configPath" | "env" | "tokens" | "now" | "fetch" | "recordingSchedule" | "recordingScheduleTarget"
   >
   getConfig: () => ZoomConfig
+  profile: () => string
   withSignal: (fetcher: typeof fetch) => typeof fetch
   signal: () => AbortSignal | undefined
   remoteOptions: RemoteOptions
@@ -49,7 +51,7 @@ export const zoomRecordingSchedule = ({
             const selected = readConfig(deps.configPath)
             if (
               dirname(deps.configPath) !== job.capture.configDir ||
-              selected.accountProfile !== job.capture.profile ||
+              profile() !== job.capture.profile ||
               selected.clientId !== job.capture.clientId
             )
               throw new CliError(
@@ -59,6 +61,8 @@ export const zoomRecordingSchedule = ({
             return new ZoomRecordings(
               new TokenManager({
                 clientId: job.capture.clientId,
+                account: `${job.capture.clientId}:${job.capture.profile}`,
+                ...(selected.legacyProfile === job.capture.profile ? { legacyAccount: job.capture.clientId } : {}),
                 keyring: deps.tokens.options.keyring,
                 service: `zoom-cli:${job.capture.configDir}`,
                 fetch: withSignal(deps.tokens.options.fetch),
@@ -78,15 +82,13 @@ export const zoomRecordingSchedule = ({
     },
     capture: () => {
       const selected = getConfig()
-      if (!selected.accountProfile || !selected.clientId)
-        throw new CliError(
-          "configuration_error",
-          "archive schedules require a configured local profile and Zoom client id",
-        )
+      const named = profile()
+      if (!selected.clientId)
+        throw new CliError("configuration_error", "archive schedules require a configured Zoom client id")
       if (!deps.recordingScheduleTarget)
         throw new CliError("configuration_error", "archive scheduler requires an explicit runtime and CLI path")
       return {
-        profile: selected.accountProfile,
+        profile: named,
         clientId: selected.clientId,
         configDir: dirname(deps.configPath),
         runtime: deps.recordingScheduleTarget.runtime,

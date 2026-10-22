@@ -6,7 +6,7 @@ import { snakeKeys } from "@wirecat/cli-core/cli"
 import { expect, it, vi } from "vitest"
 import { readReceipt } from "../scripts/testing/answers.js"
 import { fakeConnection } from "../scripts/testing/connection.js"
-import { setConfig } from "./config.js"
+import { useProfile } from "../scripts/testing/profile.js"
 import { type ProgramDeps, run } from "./program.js"
 import type { StoreConnection } from "./store-connection.js"
 import { TokenManager } from "./tokens.js"
@@ -53,7 +53,7 @@ const setup = async () => {
   return { deps, output, errors }
 }
 const searchWith = (deps: ProgramDeps, unifiedSearch: StoreConnection["unifiedSearch"]) => {
-  setConfig(deps.configPath, "account.profile", "example")
+  useProfile(deps.configPath, "example")
   deps.connectStore = async () =>
     fakeConnection({ store: {} as never, accountId: 3, close: async () => {}, unifiedSearch })
 }
@@ -148,8 +148,8 @@ it("resolves read intent only after validating query options and closes before f
   expect(await run(["search", "all", "example", "--limit", "0", "--json"], deps)).toBe(2)
   expect(await run(["search", "all", "example", "--meeting-cursor", "not-json", "--json"], deps)).toBe(2)
   expect(connect).not.toHaveBeenCalled()
-  expect(await run(["search", "all", "example", "--json"], deps)).toBe(3)
-  setConfig(deps.configPath, "account.profile", "example")
+  expect(await run(["search", "all", "example", "--json"], deps)).toBe(2)
+  useProfile(deps.configPath, "example")
   expect(await run(["search", "all", "example", "--json"], deps)).toBe(0)
   expect(connect).toHaveBeenCalledWith({ profile: "example", externalId: "zm-profile:example", intent: "read" })
   expect(output).toHaveLength(1)

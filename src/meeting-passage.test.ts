@@ -8,7 +8,7 @@ import { sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { openStore } from "@wirecat/cli-core/store"
 import { expect, it, vi } from "vitest"
 import { readReceipt } from "../scripts/testing/answers.js"
-import { setConfig } from "./config.js"
+import { useProfile } from "../scripts/testing/profile.js"
 import { createMeetingMcpServer } from "./mcp-server.js"
 import { type ProgramDeps, run } from "./program.js"
 import { createStoreConnector } from "./store-connection.js"
@@ -71,7 +71,7 @@ const setup = async () => {
     data: (text) => output.push(text),
     diagnostic: () => {},
   }
-  setConfig(deps.configPath, "account.profile", "AliceExample")
+  useProfile(deps.configPath, "AliceExample")
   return { ...f, deps, output, close, opened, network, connectStore }
 }
 it("projects cited cues while retaining coverage, source and execution metadata", async () => {

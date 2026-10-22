@@ -25,7 +25,7 @@ the default is both. Installation is explicit and does not run when a command st
 
 ## The MCP server
 
-`zm serve --mcp` uses MCP's stdio protocol and serves eight read-only tools: meeting list/show,
+`zm personal serve --mcp` uses MCP's stdio protocol and serves eight read-only tools: meeting list/show,
 transcripts, summaries, exports, word and participant searches, and evidence for project names.
 Tool discovery does not open a
 database. Each read uses the selected local account and closes its connection before the response;
@@ -37,7 +37,7 @@ MCP clients can launch `zm` with arguments `["serve", "--mcp"]`. In the `mcpServ
 ```json
 {
   "mcpServers": {
-    "zoom": { "command": "zm", "args": ["serve", "--mcp"] }
+    "zoom": { "command": "zm", "args": ["personal", "serve", "--mcp"] }
   }
 }
 ```
@@ -48,8 +48,8 @@ server does not start, use the full path from `command -v zm` on Linux/macOS or 
 in the entry's `env`, or the server reads a different profile or database.
 
 Keep stdout for protocol messages; omit `--json` and `--jsonl`. `--max-output-bytes`
-bounds each tool result, with zero meaning unlimited. Select a profile and import or pull its data
-before reading tools; discovery is available without stored data.
+bounds each tool result, with zero meaning unlimited. The server speaks for the profile named in its
+`args` (`personal` above); import or pull its data before reading tools; discovery is available without stored data.
 
 `meeting_people` searches saved participant names/emails within the server-selected account.
 Use `limit`, `scan_limit`, `max_read_bytes` and `cursor` for bounded reads. The report's `item.page`
@@ -74,7 +74,7 @@ List my stored meetings. Open the latest one and show its date, available transc
 passage supporting its main decision. Tell me if the data is incomplete.
 ```
 
-Check the selected meeting against `zm meetings list --json` in your terminal. If discovery works
+Check the selected meeting against `zm personal meetings list --json` in your terminal. If discovery works
 but no data appears, verify the same profile and store path, then pull or import data. If the app
 cannot launch the command, use `where.exe zm` on Windows or `command -v zm` on Linux/macOS to find it,
 and put that executable's full path in the entry. A remote web chat cannot run this local command
@@ -103,7 +103,7 @@ and task creation are never MCP tools.
 For broader meeting context across projects, notes and documents, continue with
 [search and evidence](search.md#notes-tags-and-memories-with-memo); connect Memo separately where needed.
 
-With `zm serve --mcp --meeting-inventory`, the agent can call `meeting_series_inventory` to
+With `zm personal serve --mcp --meeting-inventory`, the agent can call `meeting_series_inventory` to
 read one scheduled series page from the account captured at startup. It accepts optional ISO
 `after`/`until`, `limit`, `max_read_bytes`, `bytes` and `cursor`; it cannot choose an account.
 The default window is now through seven days later. Preserve the returned absolute window when
@@ -113,7 +113,7 @@ remote-read grant, requires `meeting:read:list_meetings`, and refuses offline st
 meeting database and saves nothing. Use the selected provider ID with `meeting_prepare` to verify
 the next occurrence. See [find a scheduled series](usage.md#find-a-scheduled-meeting-series).
 
-With `zm serve --mcp --meeting-project-candidates`, the agent can call
+With `zm personal serve --mcp --meeting-project-candidates`, the agent can call
 `meeting_project_candidates` with a parent meeting `ref` and optional `limit`, `cues`, `bytes`,
 `max_read_bytes` and `cursor`. This grants access to the shared project-name catalog alongside
 the selected meeting evidence, so it is a separate opt-in. It opens the existing store read-only,
@@ -121,7 +121,7 @@ works offline and saves no project link. Keep candidate ambiguity and both outpu
 coverage; resume with `item.evidence.coverage.next_cursor` and the same `ref`. See
 [suggest projects for one meeting](search.md#suggest-projects-for-one-meeting) for limits and review.
 
-With `zm serve --mcp --meeting-preparation`, the agent can call `meeting_prepare` with `series_id`
+With `zm personal serve --mcp --meeting-preparation`, the agent can call `meeting_prepare` with `series_id`
 and optional `project` plus ISO `after`, `until`, `history_after`, plus `meetings`, `cues`, `context_limit`,
 `max_read_bytes` and `bytes`. The server selects the account and reads Zoom schedule details, requiring
 `meeting:read:meeting`. This opt-in tool is unavailable with `--offline`; it does not change your
@@ -157,7 +157,7 @@ escaped cues the MCP client receives. Metadata that cannot fit returns `validati
 ## Selected communications in meeting preparation
 
 Configure [source selections](configuration.md#select-communications-for-preparation) before starting
-`zm serve --mcp --meeting-preparation`. Tool discovery lists only the source IDs captured for the
+`zm personal serve --mcp --meeting-preparation`. Tool discovery lists only the source IDs captured for the
 selected profile, without opening the database. The tool omits communications input when no sources
 are configured. Restart the server after configuration changes, including revocations.
 

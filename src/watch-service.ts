@@ -17,6 +17,7 @@ import type { WatchCommandDeps, WatchPlan } from "./watch-commands.js"
 export interface WatchServiceDeps {
   deps: Pick<ProgramDeps, "source" | "store" | "accountId" | "readFiles" | "now" | "sleep">
   getConfig: () => ZoomConfig
+  profile: () => string
   tokens: () => TokenManager
   fetch: () => typeof fetch
   offline: () => boolean
@@ -29,6 +30,7 @@ export interface WatchServiceDeps {
 export const createWatchService = ({
   deps,
   getConfig,
+  profile,
   tokens,
   fetch,
   offline,
@@ -72,8 +74,7 @@ export const createWatchService = ({
             )
         }
       }
-      if (!deps.store && !config.accountProfile)
-        throw new CliError("configuration_error", "select a local profile with zm config set account.profile <label>")
+      if (!deps.store) profile()
       watchConfig = config
       watchSince = plan.since
       return plan

@@ -27,10 +27,10 @@ what you promised in yesterday's call, and get the answer with a reference to th
 > **You:** I have a call with Bob Sample at three. What did we agree last time, and what do I owe him?
 
 ```sh
-zm remote-meetings list --json                      # your upcoming meetings
-zm meetings people "Bob Sample" --json              # him among past participants
-zm search meetings "quote" --since-time 2026-09-01 --json
-zm meetings passage meeting:1/42/57/118 --format markdown  # the line and its context
+zm personal remote-meetings list --json                      # your upcoming meetings
+zm personal meetings people "Bob Sample" --json              # him among past participants
+zm personal search meetings "quote" --since-time 2026-09-01 --json
+zm personal meetings passage meeting:1/42/57/118 --format markdown  # the line and its context
 ```
 
 > **Agent:** You last spoke on 2 October in "Pricing review". You promised Bob a revised quote by
@@ -48,15 +48,14 @@ walks through app settings, browser approval and callback completion.
 ```sh
 npm install -g @wirecat/zoom-cli
 zm config set zoom.client_id <public-client-id>
-zm session start                          # approve in your browser; the token goes to the keyring
-zm config set account.profile personal    # a label for your stored meetings
-zm meetings sync --lookback-days 7
-zm meetings list
+zm personal session start                 # "personal" is the profile; approve in your browser
+zm personal meetings sync --lookback-days 7
+zm personal meetings list
 ```
 
 Check Zoom's transcript generation and retention settings first: the API reads available hosted
 meeting text, and permission does not create a transcript. For an attended meeting, obtain a VTT
-file from the host or download one if allowed, then run `zm meetings import <folder>`. Full guide:
+file from the host or download one if allowed, then run `zm personal meetings import <folder>`. Full guide:
 [installation][docs/installation.md].
 
 More: [installation][docs/installation.md] · [your Zoom app][docs/zoom-app.md] ·
@@ -72,7 +71,7 @@ bring back past meetings with the same people. Inventory date hints alone do not
 Participant discovery accepts `--limit`, `--scan-limit`, `--max-read-bytes` and `--cursor`;
 follow `item.page.next_cursor` even after an empty scan page. It returns observed `identity_id` candidates,
 never inferred person links. Stored meeting lists accept metadata queries, for example
-`zm meetings list 'started_at:[2026-09-01 TO 2026-10-01]' --json`.
+`zm personal meetings list 'started_at:[2026-09-01 TO 2026-10-01]' --json`.
 
 **Find the project behind a call.** *"Which of my saved projects might this meeting concern?"*
 `meetings projects scan <ref>` compares one bounded page of local meeting evidence with existing
@@ -94,7 +93,7 @@ More: [the local archive][docs/archive.md] · [search and evidence][docs/search.
 
 - **Command line + skill.** `zm skill install` adds the packaged guide for Claude Code, Codex and
   Gemini CLI. Every command speaks `--json` or `--jsonl`, and `zm commands --json` describes them all.
-- **MCP.** `zm serve --mcp` is a read-only stdio server for Claude Desktop, Cursor and other MCP
+- **MCP.** `zm personal serve --mcp` is a read-only stdio server for Claude Desktop, Cursor and other MCP
   clients: meetings, transcripts, summaries, exports and search.
   [Connecting a client][docs/mcp.md].
 
@@ -129,7 +128,7 @@ links meetings to events and people, and creates, changes or cancels simple meet
   covers participants already linked to a person, for example with `meetings link`.
 - **Local transcription takes PCM16 WAV only** (16 or 48 kHz) and an already installed speech model;
   video files are not decoded, and speakers stay unknown.
-- **Attended meetings need a manual download** from your Zoom portal, then `zm meetings import`.
+- **Attended meetings need a manual download** from your Zoom portal, then `zm personal meetings import`.
 - **A company-managed Zoom account** may need an admin to approve your app.
 - **Daily archive jobs install only on Linux.** Other platforms can preview them.
 - **Zoom only, for now.** Google Meet and Microsoft Teams are
@@ -170,11 +169,11 @@ The optional starter manifest supplies neither scopes nor Public Client OAuth. Z
 Client Secret, but `zm` does not use it. Recording archives and management need additional scopes.
 Follow the [app setup guide][docs/zoom-app.md]; no credentials file is downloaded.
 
-`zm session start` opens Zoom's consent page. Zoom redirects to the static page
+`zm personal session start` opens Zoom's consent page. Zoom redirects to the static page
 `https://wirecat.dev/zoom-callback`, which passes the answer to a listener on your machine; if it
 cannot, paste the `code=…&state=…` parameters it shows. Login checks the state and PKCE verifier and
 stores tokens only in the system keyring. Without a terminal, as in an agent's shell, login prints the URL
-on stderr for the agent to pass on and waits for the callback; `--no-input` and CI refuse it. `zm session status` reads the cached state without refreshing it;
+on stderr for the agent to pass on and waits for the callback; `--no-input` and CI refuse it. `zm personal session status` reads the cached state without refreshing it;
 `--check` asks Zoom.
 
 More: [your Zoom app][docs/zoom-app.md] · [login and sessions][docs/sessions.md] ·
@@ -182,10 +181,11 @@ More: [your Zoom app][docs/zoom-app.md] · [login and sessions][docs/sessions.md
 
 ## Profiles and the local store
 
-`account.profile` is a label (1–64 letters, digits, dots, underscores or hyphens) that groups the
-meetings you store; use separate labels for data you want kept apart. Import and pull register the
-profile; read commands never do, so pull or import first. Unlike `tg` and `max`, `zm` takes no
-profile argument: the profile is the `account.profile` setting.
+The first word is the profile: `zm personal meetings list`. A profile is one Zoom login and its own
+meetings in the store; `zm work session start` makes a second one. `ZM_PROFILE` names it for a shell
+session, and `ZM_PROFILE_LOCK` pins a process to one profile. Nothing picks a profile for you: without
+one, a command that uses an account stops and lists the profiles on this computer. Names have 1–64
+letters, digits, dots, underscores or hyphens. Login, import and pull record the profile.
 
 Meetings live in the shared WireCat database `wirecat.db`, next to data from other WireCat tools.
 `MESSAGING_STORE` selects another path. Store opens preserve legacy `messages.db` files and their
@@ -197,9 +197,9 @@ More: [profiles][docs/sessions.md#select-a-local-profile] ·
 ## Pull, import and watch
 
 ```sh
-zm meetings sync --lookback-days 7                       # hosted meetings, revisiting late transcripts
-zm meetings import ./downloaded-transcripts              # .vtt or zoom-searcher .txt files
-zm watch api --lookback-days 7 --jsonl                   # keep pulling in the foreground
+zm personal meetings sync --lookback-days 7                       # hosted meetings, revisiting late transcripts
+zm personal meetings import ./downloaded-transcripts              # .vtt or zoom-searcher .txt files
+zm personal watch api --lookback-days 7 --jsonl                   # keep pulling in the foreground
 ```
 
 The cursor alone does not revisit transcripts that appear late; use `--lookback-days` or an older
@@ -213,9 +213,9 @@ More: [the local archive][docs/archive.md] · [Zoom on wirecat.dev][wirecat/en/d
 ## Archive cloud recordings
 
 ```sh
-zm recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl
-zm recordings archive check ./zoom-archive --offline --json
-zm search recordings ./zoom-archive "example plan" --offline --json
+zm personal recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl
+zm personal recordings archive check ./zoom-archive --offline --json
+zm personal search recordings ./zoom-archive "example plan" --offline --json
 ```
 
 Sync covers up to ten years in monthly requests and downloads serially, streaming to disk. Each
@@ -234,9 +234,9 @@ More: [archive cloud recordings][docs/archive.md#archive-cloud-recordings] ·
 ## Search and evidence
 
 ```sh
-zm search meetings "example plan" --limit 20 --json       # word search with continuation
-zm meetings evidence meeting:3/15/20/0 --cues 100 --json  # the exact passage
-zm meetings context person:7 --meetings 10 --json         # meetings linked to a person
+zm personal search meetings "example plan" --limit 20 --json       # word search with continuation
+zm personal meetings evidence meeting:3/15/20/0 --cues 100 --json  # the exact passage
+zm personal meetings context person:7 --meetings 10 --json         # meetings linked to a person
 ```
 
 `search meetings` indexes new meetings first, matches every word by prefix or by stored English, Spanish
@@ -251,7 +251,7 @@ More: [search and evidence][docs/search.md] · [topic search][docs/topic-search.
 
 ## Local transcription
 
-No Zoom transcript? `zm meetings transcribe 1 ./call.wav --model <model> --yes` recognizes a PCM16 WAV
+No Zoom transcript? `zm personal meetings transcribe 1 ./call.wav --model <model> --yes` recognizes a PCM16 WAV
 file (mono or stereo, 16 or 48 kHz) with an already installed local speech model and appends it as a
 separate transcript. The preview checks the file without loading the model. Timestamps cover windows
 of up to 30 seconds and speakers stay unknown.
@@ -282,8 +282,8 @@ More: [MCP and skills][docs/mcp.md] · [MCP and skills on wirecat.dev][wirecat/e
 ## Manage Zoom meetings
 
 ```sh
-zm remote-meetings create --title "Example planning" --start-time 2026-10-20T10:00:00Z --duration-minutes 30 --json
-zm remote-meetings cancel 123456789 --dry-run --json
+zm personal remote-meetings create --title "Example planning" --start-time 2026-10-20T10:00:00Z --duration-minutes 30 --json
+zm personal remote-meetings cancel 123456789 --dry-run --json
 ```
 
 Creation, updates and cancellation preview until you add `--yes`, and are never retried
@@ -308,7 +308,6 @@ More: [usage][docs/usage.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
 | Setting | Meaning |
 |---|---|
 | `zoom.client_id` | your Zoom app's Public Client ID |
-| `account.profile` | the local profile label |
 | `source` | `api` or `files` for `meetings sync` and `watch` |
 | `files.folder`, `files.timezone` | the transcript folder and the zone of its filenames |
 | `ZM_CONFIG_DIR` | another configuration directory (also changes the keyring entry) |
@@ -339,10 +338,10 @@ More: [security][docs/security.md] · [security on wirecat.dev][wirecat/en/docs/
 - **"Invalid redirect" from Zoom:** the manifest import left the redirect URL or Public Client OAuth
   unset; fill them in by hand.
 - **No transcripts:** check generation, retention and permissions in the [app guide][docs/zoom-app.md].
-  Enabling a setting does not restore deleted text; attended meetings may need `zm meetings import`.
-- **Missing-scope error:** add the named scope in your app, then `zm session start` again.
-- **Browser does not start:** `zm session start --browser firefox`, or paste the callback parameters.
-- **Lock left after a crash:** `zm recordings archive locks`, then `recover` with `--yes`.
+  Enabling a setting does not restore deleted text; attended meetings may need `zm personal meetings import`.
+- **Missing-scope error:** add the named scope in your app, then `zm personal session start` again.
+- **Browser does not start:** `zm personal session start --browser firefox`, or paste the callback parameters.
+- **Lock left after a crash:** `zm personal recordings archive locks`, then `recover` with `--yes`.
 
 More: [troubleshooting][docs/troubleshooting.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
 
@@ -350,7 +349,7 @@ More: [troubleshooting][docs/troubleshooting.md] · [Zoom on wirecat.dev][wireca
 
 `zm` is part of [WireCat](https://wirecat.dev), an open-source, local-first context layer for AI
 agents. Meetings land in the same local store as your Telegram, MAX and memo data, and
-`zm search all "<query>" --only meetings,notes` searches them together with your memo notes.
+`zm personal search all "<query>" --only meetings,notes` searches them together with your memo notes.
 Start with Zoom. Add more context when you need it. Your context. Any agent.
 
 More: [wirecat.dev](https://wirecat.dev) · [connect your AI agent][wirecat/en/docs/agents]
