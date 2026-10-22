@@ -256,6 +256,33 @@ it("keeps bounded search cursors and coverage in JSONL and forwards typed date/b
   expect(search).toHaveBeenLastCalledWith("example", expect.objectContaining({ topic: "costs" }))
 })
 
+it("names the zone a zone-less --since-time was read in and gives the window in UTC", async () => {
+  const saved = process.env.TZ
+  process.env.TZ = "Asia/Vladivostok"
+  try {
+    const { deps, output, parts } = await setup()
+    parts.meetingSearch = vi.fn(async () => ({
+      items: [],
+      hasMore: false,
+      nextCursor: null,
+      coverage: {
+        archiveCompleteness: "unknown" as const,
+        currentRevisions: true as const,
+        indexing: "ready" as const,
+        indexCompleteness: "unknown" as const,
+      },
+    }))
+    expect(await run(["search", "meetings", "example", "--since-time", "2026-09-01", "--json"], deps)).toBe(0)
+    expect(latest(output).meta).toMatchObject({
+      timezone: "Asia/Vladivostok",
+      window: { since: "2026-08-31T14:00:00.000Z" },
+    })
+  } finally {
+    if (saved === undefined) delete process.env.TZ
+    else process.env.TZ = saved
+  }
+})
+
 it("rejects impossible search dates, oversized bounds and opaque cursor tampering before lookup", async () => {
   const { deps, connect, parts } = await setup()
   const search = vi.fn(async () => {

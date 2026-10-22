@@ -9,6 +9,7 @@ import {
   type MeetingSearchFlags,
   meetingHitSearchRequest,
   meetingSearchArguments,
+  meetingSearchMeta,
 } from "@wirecat/cli-core/meetings/cli"
 import type { Command } from "commander"
 import type { ArchiveTranscriptService } from "./archive-commands.js"
@@ -130,6 +131,7 @@ export const addMeetingSearchCommands = (
       request.limit ?? 100,
       "search meetings",
       meetingSearchArguments(query, options),
+      meetingSearchMeta(options),
     )
   }
   const command = createMeetingSearchCommand(program).action(async (query: string, options: SearchOptions) => {
