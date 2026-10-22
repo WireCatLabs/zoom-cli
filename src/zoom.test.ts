@@ -559,6 +559,13 @@ describe("API source", () => {
       ).transcript("example"),
     ).rejects.toThrow(/HTTP 403/)
     await expect(new ZoomApiSource(tokens, async () => response({})).transcript("example")).rejects.toThrow(/required/)
+    const refused = (reason: string) =>
+      new ZoomApiSource(tokens, async () =>
+        response({ can_download: false, download_restriction_reason: reason }),
+      ).transcript("example")
+    await expect(refused("NOT_READY")).rejects.toThrow(/not finished this transcript yet/)
+    for (const reason of ["NO_TRANSCRIPT_DATA", "DELETED_OR_TRASHED", "UNSUPPORTED"])
+      expect(await refused(reason)).toBeNull()
   })
 })
 describe("downloaded files", () => {

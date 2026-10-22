@@ -237,6 +237,12 @@ export class ZoomApiSource implements MeetingSource {
       3322,
     )
     if (!body) return null
+    if (body.can_download === false) {
+      // A failed read keeps the meeting due, so the next sync asks again.
+      if (body.download_restriction_reason === "NOT_READY")
+        throw new CliError("provider_error", "Zoom has not finished this transcript yet; a later sync reads it")
+      return null
+    }
     const url = requiredString(body.download_url)
     const tokens = await this.tokens.tokens()
     // One deadline covers every redirect and the streamed body.

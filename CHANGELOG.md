@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **A transcript Zoom has not finished yet is no longer reported as a broken answer.** Sync said "Zoom response is
+  missing a required field"; it now says the transcript is not ready, and a later sync reads it. A meeting whose
+  transcript Zoom has no data for, deleted or cannot export is stored without one, with no warning.
+
 ## 0.36.0 — 22.10.2026
 
 ### Changed — may break callers
