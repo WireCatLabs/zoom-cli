@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- **A store the pre-rename `cli-messaging` wrote is refused again, and left untouched** (cli-core 0.385.0). Since
+  cli-core 0.382.0 such a file was opened and failed with `internal_error`; it now fails with `configuration_error`.
 - **`zm search meetings` names the zone it read a date in and gives the window in UTC** (cli-core 0.384.0).
   With `--since-time`/`--until-time`, the JSON answer carries `meta.timezone` (the zone a date without its own
   zone was read in) and `meta.window` (`since`/`until` in UTC).
