@@ -26,7 +26,7 @@ export const addLocalTranscriptionCommands = (
     runsLong(meetings.command("transcribe"))
       .description("preview transcribing a recording on this machine; --yes adds the transcript")
       .argument("<meeting>", "stored meeting id or meeting reference")
-      .argument("<file>", "local PCM16 WAV file (16 or 48 kHz, mono/stereo)")
+      .argument("<file>", "a recording: WAV as it is, MP4, M4A or other audio and video through an installed ffmpeg")
       .requiredOption("--model <model>", "installed speech model")
       .option("--models-dir <dir>", "shared installed speech-model directory")
       .option("--max-bytes <bytes>", "largest audio file to read, in bytes (default 1 GiB)", bytes)
@@ -68,7 +68,7 @@ export const addLocalTranscriptionCommands = (
     {
       origin: "handwritten",
       effects: LOCAL_WRITE,
-      examples: ["zm meetings transcribe meeting:3/12 ./AliceExample.wav --model parakeet-v3 --json"],
+      examples: ["zm personal meetings transcribe meeting:3/12 ./AliceExample.m4a --model parakeet-v3 --json"],
     },
   )
 }

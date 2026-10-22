@@ -7,6 +7,17 @@
 - **Permissions per profile** (WC-PERM-1..3, 9, 10): `zm <profile> config set permissions '{"recordings": "readonly"}'`.
   A key is a command path, dotted; a level is `deny`, `readonly`, `ask` or `allow`, and the most specific key wins.
   `--yes` answers `ask` and never lifts `deny` or `readonly`. Settings, login, help and the MCP server are never gated.
+- **`meetings transcribe` takes Zoom's recordings.** A file that is not already a 16 or 48 kHz PCM16 WAV — MP4, M4A,
+  other audio and video — is decoded by the installed `ffmpeg` into a private temporary folder first, bit-exact, so
+  transcribing it again is a replay. zm does not install ffmpeg.
+- **`zm models audio list|download`.** The speech models transcription runs, in the folder every WireCat CLI shares.
+  `download` checks every file's sha256, also the voice-activity model, and fetches again what does not match, so it
+  repairs a model left by another version.
+
+### Fixed
+
+- **A speech model of the wrong version no longer crashes transcription with "this is a bug".** The engine throws a
+  bare number when it cannot read a file; zm now says to run `zm models audio download <model>`, which repairs it.
 
 ### Changed — may break callers
 

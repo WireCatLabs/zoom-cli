@@ -15,6 +15,7 @@ import type { AnswerFormat } from "./answer-output.js"
 import { addStandardCommands } from "./commands.js"
 import { addProfile, setConfig, type ZoomConfig } from "./config.js"
 import { login } from "./login.js"
+import { addModelsCommands } from "./models-commands.js"
 import { permissionKeys } from "./permissions.js"
 import type { ProgramDeps } from "./program.js"
 import { getZoomProfile } from "./recordings.js"
@@ -137,6 +138,7 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
     },
   })
   addUpgradeCommand(program, { data: buffer, diagnostic: deps.diagnostic })
+  addModelsCommands(program, { env: () => deps.env ?? process.env, output, diagnostic: deps.diagnostic })
   const session = program.commands.find((command) => command.name() === "session")
   if (!session) throw new CliError("configuration_error", "session command group is unavailable")
   const start = session
