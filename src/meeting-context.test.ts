@@ -321,17 +321,45 @@ it("CLI validates before connection, uses one read connection and closes before 
   expect(close).toHaveBeenCalledOnce()
 })
 
+const combinedPage = (overrides: Record<string, unknown> = {}) => ({
+  items: [
+    {
+      ref: "meeting:3/2/7/4",
+      meetingId: 2,
+      scope: "transcript" as const,
+      text: "Example plan",
+      startMs: 4000,
+      source: { title: "Example planning", startedAt: 0, url: null },
+      by: ["words", "meaning"] as ("words" | "meaning")[],
+      score: 0.9,
+      passage: { first: "meeting:3/2/7/3", last: "meeting:3/2/7/6" },
+    },
+  ],
+  hasMore: true,
+  nextCursor: "next-example",
+  selection: [],
+  words: { query: "example" },
+  model: { key: "local:installed-example:2", model: "installed-example", kind: "local", dims: 2 },
+  coverage: {
+    archiveCompleteness: "unknown",
+    indexCompleteness: "unknown",
+    indexing: "ready",
+    meaningScanComplete: false,
+    scanned: 5,
+    depth: 200,
+  },
+  ...overrides,
+})
+
 it("requires an explicit semantic model, preserves scan coverage, and previews generation until --yes", async () => {
   const { deps, output } = await setup()
-  const report = { items: [], ranking: "scanned-candidates", complete: false, hasMore: true, nextChunkId: 12 }
+  const report = combinedPage()
   const search = vi.fn(async () => report)
   const generate = vi.fn(async (options: MeetingEmbeddingOptions) => ({ applied: options.yes === true }))
   connectWith(deps, { meetingSemantic: { search, generate } })
   expect(await run(["search", "meetings", "example", "--max-chunks", "5", "--json"], deps)).toBe(2)
-  expect(await run(["search", "meetings", "example", "--model", "installed-example", "--event-id", "1"], deps)).toBe(2)
-  expect(await run(["search", "meetings", "example", "--model", "installed-example", "--cursor", "abc"], deps)).toBe(2)
   expect(
-    await run(["search", "meetings", "example", "--model", "installed-example", "--max-chunks", "10001"], deps),
+    await run(["search", "meetings", "example", "--model", "installed-example", "--max-chunks", "100001"], deps),
   ).toBe(2)
   expect(
     await run(
@@ -350,40 +378,32 @@ it("requires an explicit semantic model, preserves scan coverage, and previews g
       ),
     ).toBe(2)
   expect(search).not.toHaveBeenCalled()
-  expect(
-    await run(
-      [
-        "search",
-        "meetings",
-        "example",
-        "--model",
-        "installed-example",
-        "--cursor",
-        "4",
-        "--limit",
-        "2",
-        "--max-chunks",
-        "10",
-        "--max-rows",
-        "20",
-        "--max-text-bytes",
-        "1000",
-        "--jsonl",
-      ],
-      deps,
-    ),
-  ).toBe(0)
-  expect(readReceipt(output.pop() ?? "{}")).toEqual(snakeKeys({ ...report, nextCursor: "12" }))
+  const flags = ["--cursor", "next-example", "--limit", "2", "--max-chunks", "10", "--max-rows", "20"]
+  const args = ["search", "meetings", "example", "--model", "installed-example", "--event-id", "1", ...flags]
+  expect(await run([...args, "--max-text-bytes", "1000", "--json"], deps)).toBe(0)
+  const answer = JSON.parse(output.pop() ?? "{}")
+  expect(answer.items[0]).toMatchObject({
+    ref: "meeting:3/2/7/4",
+    meeting: "meeting:3/2",
+    excerpt: "Example plan",
+    offset_ms: 4000,
+    by: ["words", "meaning"],
+    score: 0.9,
+    passage: { first: "meeting:3/2/7/3", last: "meeting:3/2/7/6" },
+  })
+  expect(answer.page).toMatchObject({ has_more: true, next_cursor: "next-example" })
+  expect(JSON.stringify(answer.missing)).toContain("raise --max-chunks")
   expect(search).toHaveBeenCalledWith(
     "example",
     expect.objectContaining({
       model: "installed-example",
       buildMissing: true,
-      afterChunkId: 4,
+      after: "next-example",
       limit: 2,
       maxChunks: 10,
       maxRows: 20,
       maxTextBytes: 1000,
+      selection: expect.objectContaining({ eventId: 1 }),
     }),
   )
   expect(await run(["meetings", "embeddings", "--model", "installed-example", "--json"], deps)).toBe(0)
@@ -456,7 +476,7 @@ it("refuses remote semantic models offline before connecting, querying, generati
   expect(generate).not.toHaveBeenCalled()
   expect(serve).not.toHaveBeenCalled()
   expect(output).toEqual([])
-  search.mockResolvedValue({ items: [] })
+  search.mockResolvedValue(combinedPage())
   expect(
     await run(["search", "meetings", "example", "--model", "installed-example", "--offline", "--json"], deps),
   ).toBe(0)
@@ -553,7 +573,7 @@ it("bounds cancelled embedding receipt backpressure and emits no receipt for rej
 
 it("opens only the selected semantic read connection and closes it before finite query output", async () => {
   const { deps, output } = await setup()
-  const search = vi.fn(async () => ({ items: [], coverage: { archiveCompleteness: "unknown" } }))
+  const search = vi.fn(async () => combinedPage({ items: [], hasMore: false, nextCursor: null }))
   const close = vi.fn(async () => {
     expect(output).toEqual([])
   })
@@ -573,7 +593,7 @@ it("opens only the selected semantic read connection and closes it before finite
   expect(connect).toHaveBeenCalledWith({ profile: "example", externalId: "zm-profile:example", intent: "read" })
   expect(search).toHaveBeenCalledOnce()
   expect(close).toHaveBeenCalledOnce()
-  expect(readReceipt(output.pop() ?? "{}").coverage.archive_completeness).toBe("unknown")
+  expect(JSON.parse(output.pop() ?? "{}").items).toEqual([])
 })
 
 it("rejects unsafe remote configuration and invalid generation cursors before opening a store", async () => {

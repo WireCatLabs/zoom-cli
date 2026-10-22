@@ -1,6 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { type Body, FETCH, itemOf, LOCAL_READ, NO_EFFECTS } from "@wirecat/cli-core/cli"
+import { type Body, FETCH, LOCAL_READ, listOf, NO_EFFECTS } from "@wirecat/cli-core/cli"
 import { meetingHitsList } from "@wirecat/cli-core/meetings"
 import {
   createMeetingSearchCommand,
@@ -31,18 +31,6 @@ interface SearchOptions extends MeetingSearchFlags {
   maxRows?: number
   maxTextBytes?: number
 }
-const STORE_FILTERS = [
-  "meetingId",
-  "identityId",
-  "personId",
-  "eventId",
-  "seriesId",
-  "project",
-  "tag",
-  "topic",
-  "sinceTime",
-  "untilTime",
-] as const
 const FLAG = {
   meetingId: "--meeting-id",
   identityId: "--identity-id",
@@ -67,12 +55,6 @@ const refuse = (options: SearchOptions, keys: readonly (keyof typeof FLAG)[], mo
   const given = keys.filter((key) => options[key] !== undefined).map((key) => FLAG[key])
   if (given.length) throw new CliError("validation_error", `${given.join(", ")} do not apply ${mode}`)
 }
-const chunkCursor = (cursor: string | undefined): number | undefined => {
-  if (cursor === undefined) return undefined
-  if (!/^[1-9]\d*$/.test(cursor) || !Number.isSafeInteger(Number(cursor)))
-    throw new CliError("validation_error", "--cursor by meaning takes the previous page's next_cursor")
-  return Number(cursor)
-}
 
 /** An archive cue as a `search all` hit: an archive has no store ids, so the ref names the asset and cue. */
 const recordingHit = (directory: string) => (match: ArchiveTranscriptMatch) => {
@@ -92,7 +74,42 @@ const recordingHit = (directory: string) => (match: ArchiveTranscriptMatch) => {
   }
 }
 
-/** One meeting search: stored words by default, meaning with --model. */
+type CombinedPage = Awaited<ReturnType<typeof import("@wirecat/cli-core/services").searchMeetingsCombined>>
+
+/** Combined hits as the list answer: each cites a line, says how it was found, and keeps its passage. */
+const combinedList = (found: CombinedPage, limit: number, args: Record<string, unknown>): Body =>
+  listOf("search meetings", {
+    items: found.items.map((hit) => ({
+      ref: hit.ref,
+      meeting: hit.ref.split("/").slice(0, 2).join("/"),
+      scope: hit.scope,
+      excerpt: hit.text,
+      offset_ms: hit.startMs,
+      by: hit.by,
+      score: hit.score,
+      ...(hit.passage ? { passage: hit.passage } : {}),
+      ...(hit.match ? { match: hit.match } : {}),
+      ...(hit.corrections ? { corrections: hit.corrections } : {}),
+      source: {
+        title: hit.source.title,
+        started_at: hit.source.startedAt === null ? null : new Date(hit.source.startedAt).toISOString(),
+        url: hit.source.url,
+      },
+    })),
+    limit,
+    has_more: found.hasMore,
+    paging: "cursor",
+    ...(found.nextCursor ? { cursor: found.nextCursor } : {}),
+    args,
+    missing: [
+      ...(found.coverage.meaningScanComplete
+        ? []
+        : [{ field: "items", why: `meaning compared only ${found.coverage.scanned} passages; raise --max-chunks` }]),
+      ...(found.words.refused ? [{ field: "items", why: `found by meaning only: ${found.words.refused}` }] : []),
+    ],
+  }) as Body
+
+/** One meeting search: stored words by default, words and meaning ranked together with --model. */
 export const addMeetingSearchCommands = (
   program: Command,
   deps: {
@@ -106,24 +123,29 @@ export const addMeetingSearchCommands = (
 ): void => {
   const execute = async (query: string, request: MeetingHitSearchOptions, options: SearchOptions): Promise<Body> => {
     if (options.model !== undefined) {
-      refuse(options, [...STORE_FILTERS, "maxReadBytes"], "to a search by meaning")
+      refuse(options, ["maxReadBytes"], "to a search by meaning")
+      const { limit, after, maxReadBytes: _bytes, signal, ...selection } = request
       const meaning = {
         model: options.model,
         baseUrl: options.baseUrl,
         dims: options.dims,
-        limit: options.limit,
+        limit: limit ?? 20,
         maxChunks: options.maxChunks,
-        afterChunkId: chunkCursor(options.cursor),
+        after,
+        selection,
         maxRows: options.maxRows,
         maxTextBytes: options.maxTextBytes,
         buildMissing: true,
-        signal: deps.signal(),
+        signal,
       }
       validateMeetingSemantic(query, meaning)
       if (meaning.baseUrl !== undefined && deps.offline())
         throw new CliError("configuration_error", "remote embeddings require network access; remove --offline")
-      const found = (await (await deps.meaning()).search(query, meaning)) as { nextChunkId?: number }
-      return itemOf({ ...found, nextCursor: found.nextChunkId === undefined ? null : String(found.nextChunkId) })
+      return combinedList(
+        (await (await deps.meaning()).search(query, meaning)) as CombinedPage,
+        meaning.limit,
+        meetingSearchArguments(query, options),
+      )
     }
     refuse(options, ["baseUrl", "dims", "maxChunks", "maxRows", "maxTextBytes"], "without --model")
     return meetingHitsList(
@@ -140,10 +162,13 @@ export const addMeetingSearchCommands = (
   })
   command
     .description("find words in stored meetings, or by meaning with --model")
-    .option("--model <model>", "search by meaning with this embedding model, building missing vectors first")
+    .option(
+      "--model <model>",
+      "rank words and meaning together with this embedding model, building missing vectors first",
+    )
     .option("--base-url <url>", "remote embedding service for --model; OpenAI reads OPENAI_API_KEY")
     .option("--dims <n>", "vector size the remote service returns, in dimensions", bytes)
-    .option("--max-chunks <n>", "by meaning: most stored passages to compare", bytes)
+    .option("--max-chunks <n>", "by meaning: most stored passages to compare (default 10000)", bytes)
     .option("--max-rows <n>", "by meaning: most transcript lines to read, 1 through 100000", bytes)
     .option("--max-text-bytes <bytes>", "by meaning: most transcript text to read (default 4 MiB)", bytes)
   annotate(command, {

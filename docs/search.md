@@ -47,8 +47,8 @@ meeting reference `meeting`, `excerpt` and `offset_ms`; expand a cue with `meeti
 
 ## Search by meaning or in an archive
 
-`--model <model>` searches by meaning instead of by words, building missing vectors first; see
-[topic search](topic-search.md). Store filters do not apply to a search by meaning.
+`--model <model>` ranks words and meaning together, with the same filters, building missing vectors first; a
+question («что решили по цене?») is asked by its content words and by meaning. See [topic search](topic-search.md).
 
 `search recordings <directory> <query>` searches the transcripts of a downloaded archive folder before
 any import, with no store, configuration or login:

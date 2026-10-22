@@ -1,6 +1,7 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
 import { type Body, FETCH, itemOf } from "@wirecat/cli-core/cli"
+import type { MeetingHitSearchOptions } from "@wirecat/cli-core/meetings/cli"
 import type { Command } from "commander"
 import { bytes } from "./execution.js"
 
@@ -10,11 +11,14 @@ export interface MeetingModelOptions {
   dims?: number
 }
 export interface MeetingSemanticOptions extends MeetingModelOptions {
-  /** Split new transcripts and embed passages that have no vector first; MCP reads never write. */
+  /** Split new transcripts and embed passages that have no vector first. */
   buildMissing?: boolean
   limit?: number
   maxChunks?: number
-  afterChunkId?: number
+  /** The meetings both searches read: the word search's own filters, names unresolved. */
+  selection?: Omit<MeetingHitSearchOptions, "limit" | "after" | "maxReadBytes" | "signal">
+  /** The previous page's cursor. */
+  after?: string
   maxRows?: number
   maxTextBytes?: number
   signal?: AbortSignal
@@ -70,8 +74,7 @@ export const validateMeetingSemantic = (query: string, options: MeetingSemanticO
     !query.trim() ||
     Buffer.byteLength(query, "utf8") > 65536 ||
     !bounded(options.limit, 1000) ||
-    !bounded(options.maxChunks, 10000) ||
-    !bounded(options.afterChunkId, Number.MAX_SAFE_INTEGER) ||
+    !bounded(options.maxChunks, 100000) ||
     !bounded(options.maxRows, 100000) ||
     !bounded(options.maxTextBytes, 64 * 1024 * 1024)
   )

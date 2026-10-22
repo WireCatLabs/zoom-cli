@@ -240,7 +240,7 @@ export const createStoreConnector =
           return searchAllIncludingMeetings(connected, key, { ...request, meetingAccount: key, env: options.env })
         },
         meetingContext: createMeetingContextCapabilities(connected, meetings, accountId),
-        meetingSemantic: createMeetingSemanticCapabilities(connected.meetingVectors, accountId, { env: options.env }),
+        meetingSemantic: createMeetingSemanticCapabilities(connected, accountId, { env: options.env }),
       }
     } catch (error) {
       await store?.close().catch(() => undefined)
