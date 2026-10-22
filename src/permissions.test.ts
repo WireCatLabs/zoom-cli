@@ -27,7 +27,7 @@ const setup = async (permissions?: Record<string, string>) => {
     data: (text) => stdout.push(text),
     diagnostic: (text) => stderr.push(text),
     remoteMeetings: {
-      create: async (_change, options) => {
+      create: async (_change: unknown, options?: { apply?: boolean }) => {
         applied.push(options?.apply)
         return { action: "create", applied: options?.apply === true, request: { method: "POST", path: "/x" } }
       },
