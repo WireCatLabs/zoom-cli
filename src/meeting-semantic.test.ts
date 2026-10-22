@@ -10,6 +10,7 @@ const fixture = () => {
     nearest: vi.fn(),
     status: vi.fn(),
     saveCurrent: vi.fn(),
+    ranked: vi.fn(),
   } satisfies MeetingVectors
   const descriptor = {
     key: "local:example:2",
@@ -28,19 +29,20 @@ const fixture = () => {
       shorten: false,
     })),
     openMeetingEmbedder: vi.fn(async () => embedder),
-    readMeetingSemantic: vi.fn(async () => ({
-      accountId: 3,
-      model: descriptor,
+    searchMeetingsCombined: vi.fn(async () => ({
       items: [],
-      ranking: "scanned-candidates" as const,
-      scanned: 0,
-      complete: false,
       hasMore: false,
+      nextCursor: null,
+      selection: [],
+      words: { query: "example" },
+      model: descriptor,
       coverage: {
-        scope: "current-indexed-vectors" as const,
-        candidateScanComplete: false,
-        indexCompleteness: "unknown" as const,
         archiveCompleteness: "unknown" as const,
+        indexCompleteness: "unknown" as const,
+        indexing: "ready" as const,
+        meaningScanComplete: false,
+        scanned: 0,
+        depth: 200,
       },
     })),
     proposeMeetingEmbedding: vi.fn(async () => ({
@@ -61,12 +63,13 @@ const fixture = () => {
     })),
   }
   const load = vi.fn(async () => api)
-  return { vectors, descriptor, embedder, api, load }
+  const store = { meetingVectors: vectors, meetings: {} as never }
+  return { vectors, store, descriptor, embedder, api, load }
 }
 
 it("previews existing vector counts without opening a model or rebuilding transcript chunks", async () => {
-  const { vectors, descriptor, api, load } = fixture()
-  const capability = createMeetingSemanticCapabilities(vectors, 3, { load })
+  const { vectors, store, descriptor, api, load } = fixture()
+  const capability = createMeetingSemanticCapabilities(store, 3, { load })
   expect(await capability.generate({ model: "example" })).toMatchObject({
     applied: false,
     status: { chunks: 2, embedded: 0 },
@@ -79,18 +82,17 @@ it("previews existing vector counts without opening a model or rebuilding transc
 })
 
 it("scopes query reads to the connection account and closes the model on producer failure", async () => {
-  const { vectors, embedder, api, load } = fixture()
-  const capability = createMeetingSemanticCapabilities(vectors, 3, { load })
-  api.readMeetingSemantic.mockRejectedValue(new Error("example query failure"))
-  await expect(capability.search("example", { model: "example", afterChunkId: 4 })).rejects.toThrow(
+  const { vectors, store, embedder, api, load } = fixture()
+  const capability = createMeetingSemanticCapabilities(store, 3, { load })
+  api.searchMeetingsCombined.mockRejectedValue(new Error("example query failure"))
+  await expect(capability.search("example", { model: "example", after: "example-cursor" })).rejects.toThrow(
     "example query failure",
   )
-  expect(api.readMeetingSemantic).toHaveBeenCalledWith(
-    vectors,
-    3,
-    "example",
+  expect(api.searchMeetingsCombined).toHaveBeenCalledWith(
+    store,
     embedder,
-    expect.objectContaining({ afterChunkId: 4 }),
+    "example",
+    expect.objectContaining({ accountId: 3, after: "example-cursor" }),
   )
   expect(embedder.close).toHaveBeenCalledOnce()
   expect(vectors.rebuild).not.toHaveBeenCalled()
@@ -98,8 +100,8 @@ it("scopes query reads to the connection account and closes the model on produce
 })
 
 it("applies only an explicit bounded generation batch and retains producer continuation and rebuild coverage", async () => {
-  const { vectors, embedder, api, load } = fixture()
-  const capability = createMeetingSemanticCapabilities(vectors, 3, { load })
+  const { vectors, store, embedder, api, load } = fixture()
+  const capability = createMeetingSemanticCapabilities(store, 3, { load })
   const result = await capability.generate({
     model: "example",
     yes: true,
@@ -129,9 +131,9 @@ it("applies only an explicit bounded generation batch and retains producer conti
 })
 
 it("leaves stored chunks unchanged when the explicit generation model cannot open", async () => {
-  const { vectors, api, load } = fixture()
+  const { vectors, store, api, load } = fixture()
   api.openMeetingEmbedder.mockRejectedValue(new Error("example model unavailable"))
-  const capability = createMeetingSemanticCapabilities(vectors, 3, { load })
+  const capability = createMeetingSemanticCapabilities(store, 3, { load })
   await expect(capability.generate({ model: "example", yes: true })).rejects.toThrow("example model unavailable")
   expect(vectors.rebuild).not.toHaveBeenCalled()
   expect(vectors.saveCurrent).not.toHaveBeenCalled()
@@ -139,8 +141,8 @@ it("leaves stored chunks unchanged when the explicit generation model cannot ope
 })
 
 it("selects an explicit remote endpoint and keeps search read-only", async () => {
-  const { vectors, embedder, api, load } = fixture()
-  const capability = createMeetingSemanticCapabilities(vectors, 3, { load })
+  const { vectors, store, embedder, api, load } = fixture()
+  const capability = createMeetingSemanticCapabilities(store, 3, { load })
   await capability.search("example", { model: "served-example", baseUrl: "https://example.invalid/v1", dims: 2 })
   expect(api.createMeetingRemoteModel).toHaveBeenCalledWith({
     model: "served-example",
@@ -165,13 +167,13 @@ it("selects an explicit remote endpoint and keeps search read-only", async () =>
 })
 
 it("settles the model without generating after cancelled rebuilding or a rebuild failure", async () => {
-  const { vectors, embedder, api, load } = fixture()
+  const { vectors, store, embedder, api, load } = fixture()
   const controller = new AbortController()
   vectors.rebuild.mockImplementation(async () => {
     controller.abort()
     return { transcripts: 1, chunks: 2, hasMore: true, nextTranscriptId: 20 }
   })
-  const capability = createMeetingSemanticCapabilities(vectors, 3, { load })
+  const capability = createMeetingSemanticCapabilities(store, 3, { load })
   await expect(capability.generate({ model: "example", yes: true, signal: controller.signal })).rejects.toMatchObject({
     code: "cancelled",
   })
@@ -184,9 +186,9 @@ it("settles the model without generating after cancelled rebuilding or a rebuild
 })
 
 it("rejects invalid accounts and cancellation before loading or opening the model", async () => {
-  const { vectors, api, load } = fixture()
-  expect(() => createMeetingSemanticCapabilities(vectors, 0, { load })).toThrow()
-  const capability = createMeetingSemanticCapabilities(vectors, 3, { load })
+  const { store, api, load } = fixture()
+  expect(() => createMeetingSemanticCapabilities(store, 0, { load })).toThrow()
+  const capability = createMeetingSemanticCapabilities(store, 3, { load })
   const controller = new AbortController()
   controller.abort()
   await expect(capability.search("example", { model: "example", signal: controller.signal })).rejects.toMatchObject({
@@ -200,7 +202,7 @@ it("rejects invalid accounts and cancellation before loading or opening the mode
 })
 
 it("splits every transcript page and embeds every missing passage page before a search that builds", async () => {
-  const { vectors, descriptor, embedder, api, load } = fixture()
+  const { vectors, store, descriptor, embedder, api, load } = fixture()
   vectors.rebuild
     .mockResolvedValueOnce({ transcripts: 1, chunks: 2, hasMore: true, nextTranscriptId: 20 })
     .mockResolvedValueOnce({ transcripts: 1, chunks: 1, hasMore: false, nextTranscriptId: 21 })
@@ -212,11 +214,11 @@ it("splits every transcript page and embeds every missing passage page before a 
     hasMore: false,
     nextHash: "b".repeat(64),
   })
-  const capability = createMeetingSemanticCapabilities(vectors, 3, { load })
+  const capability = createMeetingSemanticCapabilities(store, 3, { load })
   await capability.search("example", { model: "example", buildMissing: true })
   expect(vectors.rebuild).toHaveBeenCalledTimes(2)
   expect(vectors.rebuild).toHaveBeenLastCalledWith(expect.objectContaining({ afterTranscriptId: 20 }))
   expect(api.applyMeetingEmbedding).toHaveBeenCalledTimes(1)
-  expect(api.readMeetingSemantic).toHaveBeenCalledOnce()
+  expect(api.searchMeetingsCombined).toHaveBeenCalledOnce()
   expect(embedder.close).toHaveBeenCalledOnce()
 })

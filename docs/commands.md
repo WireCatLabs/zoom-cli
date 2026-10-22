@@ -1280,10 +1280,10 @@ zm search meetings <query> [options]
 | `--limit <n>` | how many hits, 1 through 1000 (default 100). |
 | `--cursor <cursor>` | continue from the previous page's page.next_cursor, with the same query and filters. |
 | `--max-read-bytes <bytes>` | most stored bytes to read, 1 through 67108864 (default 4194304). |
-| `--model <model>` | search by meaning with this embedding model, building missing vectors first. |
+| `--model <model>` | rank words and meaning together with this embedding model, building missing vectors first. |
 | `--base-url <url>` | remote embedding service for --model; OpenAI reads OPENAI_API_KEY. |
 | `--dims <n>` | vector size the remote service returns, in dimensions. |
-| `--max-chunks <n>` | by meaning: most stored passages to compare. |
+| `--max-chunks <n>` | by meaning: most stored passages to compare (default 10000). |
 | `--max-rows <n>` | by meaning: most transcript lines to read, 1 through 100000. |
 | `--max-text-bytes <bytes>` | by meaning: most transcript text to read (default 4 MiB). |
 

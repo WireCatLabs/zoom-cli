@@ -21,6 +21,12 @@
 
 ### Changed — may break callers
 
+- **`search meetings --model` ranks words and meaning together** (cli-core 0.385.0 → 0.388.0). It searched by meaning
+  alone, ranked each page on its own and ignored the meeting filters. Now the date, meeting, series, event, person,
+  project and tag filters apply, one ranking runs across pages, a line found both ways ranks first and is cited by its
+  line, and a question — "what did we decide about pricing?" — is searched by its content words, where the word
+  search alone refused the «?» and found nothing without it. The answer is a list of hits with `by`, `score` and
+  `passage`; it was one item holding `items`. A cursor from an earlier version is refused.
 - **`zm <profile> mcp` replaces `zm serve --mcp`** (WC-MCP-1..10, WC-CMD-5). One server offers zm's commands as the
   shared three tools `zm_tools_search`, `zm_read`, `zm_write`, and runs each call as the command line does. The eight
   fixed tools and the serve flags (`--meeting-context`, `--meeting-preparation`, `--semantic` and the rest) are gone;

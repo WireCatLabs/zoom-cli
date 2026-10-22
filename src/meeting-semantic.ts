@@ -1,6 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
 import type { MeetingEmbedder, ModelChoice } from "@wirecat/cli-core/services"
-import type { MeetingVectors } from "@wirecat/cli-core/store"
+import type { MessageStore } from "@wirecat/cli-core/store"
 import { checkCancelled } from "./errors.js"
 import {
   type MeetingEmbeddingOptions,
@@ -16,14 +16,14 @@ type ProducerSemanticApi = Pick<
   | "meetingEmbeddingModel"
   | "createMeetingRemoteModel"
   | "openMeetingEmbedder"
-  | "readMeetingSemantic"
+  | "searchMeetingsCombined"
   | "proposeMeetingEmbedding"
   | "applyMeetingEmbedding"
 >
 const loadProducer = async (): Promise<ProducerSemanticApi> => import("@wirecat/cli-core/services")
 /** The connection selects the account; explicit command options select the model. */
 export const createMeetingSemanticCapabilities = (
-  vectors: MeetingVectors,
+  store: Pick<MessageStore, "meetings" | "meetingVectors"> & { knowledge?: MessageStore["knowledge"] },
   accountId: number,
   options: { env?: NodeJS.ProcessEnv; load?: () => Promise<ProducerSemanticApi> } = {},
 ): MeetingSemanticCapabilities => {
@@ -45,14 +45,17 @@ export const createMeetingSemanticCapabilities = (
     let afterTranscriptId: number | undefined
     for (;;) {
       checkCancelled(input.signal)
-      const page = await vectors.rebuild({ accountId, limit: 1000, afterTranscriptId, ...budget(input) })
+      const page = await store.meetingVectors.rebuild({ accountId, limit: 1000, afterTranscriptId, ...budget(input) })
       if (!page.hasMore || page.nextTranscriptId === undefined) break
       afterTranscriptId = page.nextTranscriptId
     }
     let afterHash: string | undefined
     for (;;) {
       checkCancelled(input.signal)
-      const batch = await api.applyMeetingEmbedding(vectors, accountId, embedder, { afterHash, ...budget(input) })
+      const batch = await api.applyMeetingEmbedding(store.meetingVectors, accountId, embedder, {
+        afterHash,
+        ...budget(input),
+      })
       if (!batch.hasMore || batch.nextHash === undefined) return
       afterHash = batch.nextHash
     }
@@ -67,13 +70,15 @@ export const createMeetingSemanticCapabilities = (
       const embedder = await api.openMeetingEmbedder(selected, { env: options.env, signal: input.signal })
       try {
         if (input.buildMissing) await buildMissing(api, embedder, input)
-        return await api.readMeetingSemantic(vectors, accountId, query, embedder, {
-          limit: input.limit,
-          maxChunks: input.maxChunks,
-          afterChunkId: input.afterChunkId,
-          maxRows: input.maxRows,
-          maxTextBytes: input.maxTextBytes,
-          signal: input.signal,
+        return await api.searchMeetingsCombined(store, embedder, query, {
+          ...input.selection,
+          accountId,
+          ...(input.limit === undefined ? {} : { limit: input.limit }),
+          ...(input.after === undefined ? {} : { after: input.after }),
+          ...(input.maxChunks === undefined ? {} : { maxChunks: input.maxChunks }),
+          ...(input.maxRows === undefined ? {} : { maxRows: input.maxRows }),
+          ...(input.maxTextBytes === undefined ? {} : { maxTextBytes: input.maxTextBytes }),
+          ...(input.signal ? { signal: input.signal } : {}),
         })
       } finally {
         await embedder.close()
@@ -87,11 +92,11 @@ export const createMeetingSemanticCapabilities = (
       const selected = choice(api, input)
       const descriptor = api.meetingEmbeddingModel(selected)
       if (input.yes !== true)
-        return api.proposeMeetingEmbedding(vectors, accountId, descriptor, { signal: input.signal })
+        return api.proposeMeetingEmbedding(store.meetingVectors, accountId, descriptor, { signal: input.signal })
       const embedder = await api.openMeetingEmbedder(selected, { env: options.env, signal: input.signal })
       try {
         checkCancelled(input.signal)
-        const rebuild = await vectors.rebuild({
+        const rebuild = await store.meetingVectors.rebuild({
           accountId,
           limit: input.limit,
           afterTranscriptId: input.afterTranscriptId,
@@ -100,7 +105,7 @@ export const createMeetingSemanticCapabilities = (
           signal: input.signal,
         })
         checkCancelled(input.signal)
-        const result = await api.applyMeetingEmbedding(vectors, accountId, embedder, {
+        const result = await api.applyMeetingEmbedding(store.meetingVectors, accountId, embedder, {
           maxChunks: input.limit,
           afterHash: input.afterHash,
           maxRows: input.maxRows,
