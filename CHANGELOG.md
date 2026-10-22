@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Changed — may break callers
+
+- **An import or sync that names an unknown profile is refused when other profiles exist.** It made the profile and,
+  at a terminal, said so; a typo — `zm persnal meetings import …` — stored meetings under a new name. Now it fails
+  with `validation_error` and `details.profiles`, before anything is stored. A new profile starts with
+  `zm <name> session start`; on a computer with no profile, the first import still makes one.
+
+### Fixed
+
+- **`models audio download` says how much it will really download.** It printed the whole model's size when only the
+  voice-activity file was missing.
+
 ## 0.35.0 — 22.10.2026
 
 ### Added

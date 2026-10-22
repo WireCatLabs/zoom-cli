@@ -75,9 +75,12 @@ without a profile, a command that uses an account fails with `validation_error` 
 profiles here in `details.profiles`. Names have 1–64 letters, digits, dots, underscores or hyphens
 and start with a letter or digit; a command word such as `meetings` cannot be a profile.
 
-`zm <name> session start` logs that profile in; import and pull record it too, so a files-only
-profile needs no Zoom login. Read commands only look a profile up: pull or import once before
-expecting `meetings list` to find it.
+`zm <name> session start` logs that profile in and makes it. On a computer with no profile yet, the first import or
+pull makes one too, so a files-only setup needs no Zoom login. Beside other profiles, an import or pull that names an
+unknown one is refused before anything is stored — `zm persnal meetings import …` fails and lists the profiles —
+so a new account starts with its login; `zm <name> config set permissions '{}'` also makes a profile, for one
+that only imports files. Read commands only look a profile up: pull or import once before expecting
+`meetings list` to find it.
 
 For another Zoom user, start a second profile — `zm work session start` — and choose that user in
 the browser. Each profile's login is its own keyring entry, `<client id>:<profile>`.

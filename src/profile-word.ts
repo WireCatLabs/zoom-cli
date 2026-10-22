@@ -1,3 +1,4 @@
+import { CliError } from "@wirecat/cli-base"
 import { commandWords, liftProfile } from "@wirecat/cli-core/cli"
 import { type Command, Help } from "commander"
 import { PROFILE_FREE } from "./commands.js"
@@ -62,18 +63,19 @@ export const profileSelection = (env: NodeJS.ProcessEnv, profiles: () => readonl
 }
 
 /**
- * Importing or syncing is what puts a profile's meetings here, so it lists the profile from then on. A new one beside
- * others is said at a terminal, since it may be a typo; a script reads stderr as failure, so it is told nothing.
+ * Importing or syncing lists the profile it stores for. On a computer with no profile that makes the first one; beside
+ * others an unknown name is refused before anything is stored, since it is far more often a typo than a new account —
+ * a new one starts with its login.
  */
-export const recordProfile = (
-  configPath: string,
-  profile: string,
-  terminal: { outputIsTTY?: boolean; diagnostic: (text: string) => void },
-  quiet = false,
-): void => {
+export const recordProfile = (configPath: string, profile: string): void => {
   const here = readConfig(configPath).profiles
   if (here.includes(profile)) return
-  if (here.length && terminal.outputIsTTY && !quiet)
-    terminal.diagnostic(`new profile ${profile}; the other profiles here: ${here.join(", ")}\n`)
+  if (here.length)
+    throw new CliError(
+      "validation_error",
+      `there is no profile ${profile} here — profiles here: ${here.join(", ")}. A new one starts with ` +
+        `\`zm ${profile} session start\`; a typo stores nothing`,
+      { profiles: here },
+    )
   addProfile(configPath, profile)
 }

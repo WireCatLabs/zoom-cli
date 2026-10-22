@@ -146,7 +146,8 @@ selection before atomic per-occurrence appends. Byte limits bound both files and
 Unknown start times require an existing occurrence; corrected revisions and pull cursors are preserved.
 Receipts acknowledge completed appends; optional exact counts distinguish creation/replay/correction.
 
-A profile is one Zoom login and its stored meetings; import and sync record it. Reads require
+A profile is one Zoom login and its stored meetings; an import or sync naming an unknown profile beside others is
+refused, so never invent a profile name. Reads require
 existing profile data and do not register profiles. `MESSAGING_STORE` selects an explicit database.
 Store opens preserve legacy messages.db files and sidecars; manage their retention separately. Serialize ingestion for an account. `meetings sync --lookback-days` revisits late
 transcripts. Legacy folder imports use `meetings import`; cloud archive assets use `archive import`.
