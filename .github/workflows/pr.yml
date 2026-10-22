@@ -1,0 +1,17 @@
+name: Pull request validation
+
+# The full validation main.yml runs, before merge, so a pull request that breaks a contract or the command lint
+# fails here and not on main (WC-CI-5).
+on:
+  pull_request:
+
+concurrency:
+  group: pr-validation-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validation:
+    uses: ./.github/workflows/ci.yml
