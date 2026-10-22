@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **`zm search meetings` names the zone it read a date in and gives the window in UTC** (cli-core 0.384.0).
+  With `--since-time`/`--until-time`, the JSON answer carries `meta.timezone` (the zone a date without its own
+  zone was read in) and `meta.window` (`since`/`until` in UTC).
+
 ## 0.33.0 — 22.10.2026
 
 ### Changed — may break callers
