@@ -67,3 +67,34 @@ it.skipIf(!ffmpeg)("decodes a recording to the same PCM16 WAV every time, in a f
 it("refuses a file that is not there", async () => {
   await expect(wavFor(join(tmpdir(), "zm-missing-example.m4a"))).rejects.toMatchObject({ code: "not_found" })
 })
+
+it("says ffmpeg could not decode, and that a stopped run was cancelled", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "zm-test-decode-"))
+  const input = join(directory, "broken.m4a")
+  await writeFile(input, "not audio")
+  const failing = join(directory, "ffmpeg")
+  await writeFile(failing, "#!/bin/sh\necho 'invented decoder failure' >&2\nexit 1\n", { mode: 0o755 })
+  await expect(wavFor(input, { ffmpeg: failing })).rejects.toMatchObject({
+    code: "validation_error",
+    message: expect.stringContaining("invented decoder failure"),
+  })
+  const slow = join(directory, "slow-ffmpeg")
+  await writeFile(slow, "#!/bin/sh\nsleep 5\n", { mode: 0o755 })
+  const controller = new AbortController()
+  const decoding = wavFor(input, { ffmpeg: slow, signal: controller.signal })
+  controller.abort()
+  await expect(decoding).rejects.toMatchObject({ code: "cancelled" })
+})
+
+it("finds the format after other chunks, as a WAV from an editor has them", async () => {
+  const listed = wav(16000)
+  const extra = Buffer.alloc(8 + 4)
+  extra.write("LIST", 0)
+  extra.writeUInt32LE(4, 4)
+  extra.write("INFO", 8)
+  const bytes = Buffer.concat([listed.subarray(0, 12), extra, listed.subarray(12)])
+  bytes.writeUInt32LE(bytes.length - 8, 4)
+  const path = join(await mkdtemp(join(tmpdir(), "zm-test-decode-")), "listed.wav")
+  await writeFile(path, bytes)
+  expect(await wavFor(path, { ffmpeg: "/nonexistent/ffmpeg" })).toMatchObject({ path, decoded: false })
+})

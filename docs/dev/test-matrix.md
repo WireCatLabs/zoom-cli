@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**263 ✅ · 3 ⛔ · 0 ❌** — 63 commands, 203 options.
+**264 ✅ · 2 ⛔ · 0 ❌** — 63 commands, 203 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -146,7 +146,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `upgrade` |  | ✅ |  |
 | `upgrade` | `--check` | ✅ |  |
 | `models audio list` |  | ✅ |  |
-| `models audio download` |  | ⛔ | It downloads hundreds of megabytes; cli-core's speech install tests cover the download and its sha256 check. |
+| `models audio download` |  | ✅ |  |
 | `watch` |  | ✅ |  |
 | `watch` | `--since-time` | ✅ |  |
 | `watch` | `--lookback-days` | ✅ |  |

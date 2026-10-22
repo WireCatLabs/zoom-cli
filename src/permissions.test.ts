@@ -100,3 +100,9 @@ it("keeps housekeeping open under deny, and refuses an unknown key or level", as
   )
   expect(readConfig(deps.configPath).permissions).toEqual({ work: { meetings: "deny" } })
 })
+
+it("refuses permissions that are not one JSON object", async () => {
+  const { deps } = await setup()
+  for (const value of ["{not json", "[]", "null"])
+    expect(() => setConfig(deps.configPath, "permissions", value, () => "work", keys)).toThrow(/a JSON object/)
+})
