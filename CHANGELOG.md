@@ -2,8 +2,17 @@
 
 ## Unreleased
 
+### Added
+
+- **Permissions per profile** (WC-PERM-1..3, 9, 10): `zm <profile> config set permissions '{"recordings": "readonly"}'`.
+  A key is a command path, dotted; a level is `deny`, `readonly`, `ask` or `allow`, and the most specific key wins.
+  `--yes` answers `ask` and never lifts `deny` or `readonly`. Settings, login, help and the MCP server are never gated.
+
 ### Changed — may break callers
 
+- **Creating, updating or cancelling a Zoom meeting asks first.** At a terminal zm asks y/N; without one and without
+  `--yes` the command fails with `confirmation_required` (exit 7). It printed a preview and exited 0; `--dry-run`
+  still previews. A profile with `"remote-meetings": "allow"` applies without `--yes`.
 - **The profile is the first word: `zm personal meetings list`.** `ZM_PROFILE` names it for a shell session and
   `ZM_PROFILE_LOCK` pins a process to one (another named profile → `permission_error`). The `account.profile`
   setting no longer picks the profile, and `zm config set account.profile` is refused. A command that uses an

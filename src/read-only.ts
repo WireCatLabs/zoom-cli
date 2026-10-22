@@ -40,7 +40,7 @@ const usesEmbeddings = (command: Command, path: string): boolean => {
   return path === "serve" && options.semantic === true && options.baseUrl !== undefined
 }
 
-const refusalOf = (command: Command): string | undefined => {
+export const refusalOf = (command: Command): string | undefined => {
   const effects = metaOf(command).effects
   const path = pathOf(command)
   if (path === "session start") return "log in or out"

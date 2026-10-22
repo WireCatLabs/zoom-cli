@@ -1,6 +1,7 @@
 import { commandWords, liftProfile } from "@wirecat/cli-core/cli"
 import { type Command, Help } from "commander"
 import { PROFILE_FREE } from "./commands.js"
+import { addProfile, readConfig } from "./config.js"
 import { chooseProfile } from "./profile.js"
 
 export const PROFILE_HELP =
@@ -42,6 +43,10 @@ export const showProfileInUsage = (program: Command): void => {
 export const profileSelection = (env: NodeJS.ProcessEnv, profiles: () => readonly string[]) => {
   let word: string | undefined
   let chosen: string | undefined
+  const profile = (): string => {
+    chosen ??= chooseProfile({ word, env, profiles })
+    return chosen
+  }
   return {
     lift: (program: Command, args: Parameters<Command["parseAsync"]>): Parameters<Command["parseAsync"]> => {
       const named = liftProfileWord(program, args)
@@ -49,6 +54,17 @@ export const profileSelection = (env: NodeJS.ProcessEnv, profiles: () => readonl
       chosen = undefined
       return named.args
     },
-    profile: (): string => (chosen ??= chooseProfile({ word, env, profiles })),
+    profile,
+    /** The profile when one is named, by word or environment; undefined instead of the error that lists them. */
+    named: (): string | undefined =>
+      word !== undefined || env.ZM_PROFILE?.trim() || env.ZM_PROFILE_LOCK?.trim() ? profile() : undefined,
   }
+}
+
+/** A profile is listed once something is stored for it; a new one beside others is said, since it may be a typo. */
+export const recordProfile = (configPath: string, profile: string, diagnostic?: (text: string) => void): void => {
+  const here = readConfig(configPath).profiles
+  if (here.includes(profile)) return
+  if (here.length) diagnostic?.(`new profile ${profile}; the other profiles here: ${here.join(", ")}\n`)
+  addProfile(configPath, profile)
 }

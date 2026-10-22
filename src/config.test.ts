@@ -27,7 +27,7 @@ describe("config names", () => {
     writeFileSync(path, JSON.stringify(file), { mode: 0o600 })
     const before = readFileSync(path, "utf8")
     const { accountProfile: _legacy, ...rest } = oldFile
-    expect(readConfig(path)).toEqual({ ...rest, profiles: ["example"], legacyProfile: "example" })
+    expect(readConfig(path)).toEqual({ ...rest, profiles: ["example"], legacyProfile: "example", permissions: {} })
     expect(readFileSync(path, "utf8")).toBe(before)
     expect(statSync(path).mode & 0o777).toBe(0o600)
   })

@@ -47,6 +47,26 @@ actual path without checking the saved OAuth session.
 Older macOS layouts are no longer moved automatically; doctor shows the path actually in use. Keep
 public app settings separate from keyring tokens and the shared meeting database.
 
+## Permissions
+
+Each profile says what it may do in `permissions`: a command path, dotted, to a level.
+
+```sh
+zm personal config set permissions '{"remote-meetings": "allow", "recordings": "readonly"}'
+```
+
+| Level | Effect |
+|---|---|
+| `deny` | the command is refused |
+| `readonly` | it runs only when it changes nothing, as under `ZM_READ_ONLY` |
+| `ask` | a change to Zoom asks y/N at a terminal; without one it needs `--yes` (exit 7 otherwise) |
+| `allow` | it runs; a change to Zoom applies without `--yes` |
+
+The most specific key wins (`remote-meetings.cancel` over `remote-meetings`). Built in, `remote-meetings` is `ask`;
+a broader key the owner sets never loosens it, a key as deep does. `--yes` only answers `ask`: it never lifts
+`deny` or `readonly`. Settings, login, help and the MCP server are never gated. A key that names no command, or
+a level that is not one of the four, is refused when set. `ZM_READ_ONLY` applies on top of every level.
+
 ## Environment variables
 
 | Variable | Effect |

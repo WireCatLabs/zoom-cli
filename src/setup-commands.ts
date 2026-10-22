@@ -15,6 +15,7 @@ import type { AnswerFormat } from "./answer-output.js"
 import { addStandardCommands } from "./commands.js"
 import { addProfile, setConfig, type ZoomConfig } from "./config.js"
 import { login } from "./login.js"
+import { permissionKeys } from "./permissions.js"
 import type { ProgramDeps } from "./program.js"
 import { getZoomProfile } from "./recordings.js"
 import type { TokenManager } from "./tokens.js"
@@ -40,7 +41,7 @@ export const addConfigCommands = (
     .argument("<key>", "setting name, such as zoom.client_id")
     .argument("<value>", "new value")
     .action((key: string, value: string) => {
-      output(itemOf(setConfig(configPath, key, value, profile)))
+      output(itemOf(setConfig(configPath, key, value, profile, permissionKeys(program))))
     })
 }
 

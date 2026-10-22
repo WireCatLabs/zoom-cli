@@ -1,8 +1,10 @@
 import { existsSync } from "node:fs"
 import { CliError, isCliError, saveConfigFile } from "@wirecat/cli-base"
 import { loadSnakeCaseConfig } from "@wirecat/cli-core/cli"
+import { LEVELS, type Level } from "@wirecat/cli-core/sends"
 import * as v from "valibot"
 import { type ConfiguredContextSource, contextSourcesSchema, replaceContextSources } from "./context-sources.js"
+import { parsePermissions } from "./permissions.js"
 import { profilePattern } from "./profile.js"
 
 export { profileAccountKey } from "./profile.js"
@@ -15,12 +17,16 @@ export interface ZoomConfig {
   filesTimezone: string | null
   /** The profiles on this computer: each one a Zoom login and an account in the shared store. */
   profiles: string[]
+  /** What each profile may do: a command path, dotted, to a level (WC-PERM-1). */
+  permissions: Record<string, Record<string, Level>>
   /** The profile that owns a login saved before profiles were words; only that one may take it over. */
   legacyProfile: string | null
   contextSources?: ConfiguredContextSource[]
 }
 
-const ProfileEntry = v.strictObject({})
+const ProfileEntry = v.strictObject({
+  permissions: v.optional(v.record(v.pipe(v.string(), v.regex(/^[a-z][a-z.-]*$/)), v.picklist(LEVELS))),
+})
 
 const ConfigFile = v.strictObject({
   client_id: v.nullable(
@@ -79,6 +85,11 @@ export const readConfig = (path: string): ZoomConfig => {
         ...new Set([...Object.keys(file.profiles ?? {}), ...(file.account_profile ? [file.account_profile] : [])]),
       ].sort(),
       legacyProfile: file.account_profile ?? null,
+      permissions: Object.fromEntries(
+        Object.entries(file.profiles ?? {}).flatMap(([name, entry]) =>
+          entry.permissions ? [[name, entry.permissions]] : [],
+        ),
+      ),
       ...(file.context_sources === undefined ? {} : { contextSources: file.context_sources }),
     }
   } catch (error) {
@@ -94,14 +105,32 @@ const saveConfig = (path: string, config: ZoomConfig): void =>
     files_folder: config.filesFolder,
     files_timezone: config.filesTimezone,
     ...(config.legacyProfile ? { account_profile: config.legacyProfile } : {}),
-    profiles: Object.fromEntries(config.profiles.map((name) => [name, {}])),
+    profiles: Object.fromEntries(
+      config.profiles.map((name) => [name, config.permissions[name] ? { permissions: config.permissions[name] } : {}]),
+    ),
     ...(config.contextSources === undefined ? {} : { context_sources: config.contextSources }),
   })
 
-/** `profile`: the one named on the command line, for the settings that belong to a profile. */
-export const setConfig = (path: string, key: string, value: string, profile?: () => string): ZoomConfig => {
+/**
+ * `profile`: the one named on the command line, for the settings that belong to a profile. `permissionKeys`: the
+ * command paths a permission may name.
+ */
+export const setConfig = (
+  path: string,
+  key: string,
+  value: string,
+  profile?: () => string,
+  permissionKeys?: ReadonlySet<string>,
+): ZoomConfig => {
   const config = readConfig(path)
   switch (key) {
+    case "permissions": {
+      const name = profile?.()
+      if (!name) throw new CliError("validation_error", "name a profile: `zm <profile> config set permissions …`")
+      config.permissions[name] = parsePermissions(value, permissionKeys ?? new Set())
+      if (!config.profiles.includes(name)) config.profiles = [...config.profiles, name].sort()
+      break
+    }
     case "context.sources":
       config.contextSources = replaceContextSources(value, profile?.() ?? null, config.contextSources)
       break

@@ -39,8 +39,11 @@ coverage rather than treating a listed date as proof of a future call.
 
 ## Create, update or cancel
 
-Create, update and cancel show the proposed request by default. Add `--yes` to apply it once;
-`--dry-run` always keeps the preview, including when `--yes` is present.
+Create, update and cancel ask first: at a terminal zm asks y/N (default no); without one, the
+command stops with `confirmation_required` (exit 7) unless `--yes` applies it once. `--dry-run`
+always shows the proposed request without applying it, including when `--yes` is present. A
+profile whose [permissions](configuration.md#permissions) allow `remote-meetings` applies without
+asking; `readonly` or `deny` refuses even with `--yes`.
 
 ```sh
 zm personal remote-meetings create --title "Example planning" --start-time 2026-10-20T10:00:00Z --duration-minutes 30 --json
