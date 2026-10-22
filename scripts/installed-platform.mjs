@@ -425,8 +425,11 @@ assert.equal(
   2,
   "append preserves unrelated history",
 )
-// Seed a distinct account, then name the initial profile again before the MCP process starts.
+// Seed a distinct account, then name the initial profile again before the MCP process starts. Beside a profile, an
+// unknown one is refused on import, so the second is made explicitly first, as a login or its settings would.
 environment.ZM_PROFILE = "invented-foreign-platform"
+invoke(["meetings", "import", folder, "--json"], 2)
+json("config", "set", "permissions", "{}")
 writeFileSync(vtt, original.replace("Original invented plan", "Foreign invented boundary"))
 json("meetings", "import", folder)
 const foreignMeetingId = String(json("meetings", "list").items[0].id)

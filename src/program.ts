@@ -146,10 +146,9 @@ export const createProgram = (deps: ProgramDeps): Command => {
   ): Promise<StoreConnection> => {
     if (!deps.connectStore) return storeUnavailable()
     const selected = profile()
+    if (intent === "ingestion") recordProfile(deps.configPath, selected)
     try {
-      const connection = await connectSelectedProfile(deps.connectStore, selected, intent, context)
-      if (intent === "ingestion") recordProfile(deps.configPath, selected, deps, program.opts().quiet)
-      return connection
+      return await connectSelectedProfile(deps.connectStore, selected, intent, context)
     } catch (error) {
       if (isCliError(error)) throw error
       throw new CliError("configuration_error", "could not open the shared meeting store")

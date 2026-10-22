@@ -185,7 +185,8 @@ The first word is the profile: `zm personal meetings list`. A profile is one Zoo
 meetings in the store; `zm work session start` makes a second one. `ZM_PROFILE` names it for a shell
 session, and `ZM_PROFILE_LOCK` pins a process to one profile. Nothing picks a profile for you: without
 one, a command that uses an account stops and lists the profiles on this computer. Names have 1–64
-letters, digits, dots, underscores or hyphens. Login, import and pull record the profile.
+letters, digits, dots, underscores or hyphens. Login makes a profile; so does the first import on a computer with
+none. An import or pull naming an unknown profile beside others is refused, so a typo stores nothing.
 
 Meetings live in the shared WireCat database `wirecat.db`, next to data from other WireCat tools.
 `MESSAGING_STORE` selects another path. Store opens preserve legacy `messages.db` files and their

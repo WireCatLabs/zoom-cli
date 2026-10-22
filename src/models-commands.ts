@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import { createReadStream } from "node:fs"
+import { createReadStream, existsSync } from "node:fs"
 import { rm } from "node:fs/promises"
 import { join } from "node:path"
 import { annotate } from "@wirecat/cli-base/commands"
@@ -82,7 +82,11 @@ export const addModelsCommands = (
       for (const file of await removeMismatched(model, directory))
         deps.diagnostic(`${file}: not the file this version expects, downloading it again\n`)
       if (!isInstalled(model, directory)) {
-        deps.diagnostic(`${model.id}: ${megabytes(installedBytes(model))} from Hugging Face\n`)
+        const path = modelPath(directory, model)
+        const missing = [...model.files.map((file) => [file.bytes, path(file.name)]), [VAD.bytes, vadPath(directory)]]
+          .filter(([, file]) => !existsSync(file as string))
+          .reduce((sum, [bytes]) => sum + (bytes as number), 0)
+        deps.diagnostic(`${model.id}: ${megabytes(missing)} to download\n`)
         await install(model, directory, { progress: (line) => deps.diagnostic(`${line}\n`) })
       }
       deps.output(itemOf(itemOfModel(model, directory)))
