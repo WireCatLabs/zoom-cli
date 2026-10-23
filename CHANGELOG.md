@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Seven more commands name their answer type**: `review`, `mentions list`, `stats meetings show` and `top`,
+  `meetings people`, `meetings passage` and `meetings task-proposal`. `commands --json` and the MCP tools now
+  describe their fields, and `--json=a,b` checks the names you ask for.
+
+### Fixed
+
+- **`searches run` names its answer type as `search meetings` does (`meeting_hit`).** It said `hit`, so
+  `--json=scope` was refused and the published schema was wrong.
+
 ## 0.37.0 — 23.10.2026
 
 ### Added

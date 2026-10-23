@@ -1,6 +1,6 @@
 import { annotate } from "@wirecat/cli-base/commands"
 import { type Body, LOCAL_READ, listOf, NO_EFFECTS } from "@wirecat/cli-core/cli"
-import { formatMeetingReference, type MeetingReview } from "@wirecat/cli-core/meetings"
+import { type MeetingReview, meetingLinkItem, meetingReviewItem } from "@wirecat/cli-core/meetings"
 import type { MeetingLink, MeetingLinksRequest, MeetingReviewRequest } from "@wirecat/cli-core/services"
 import type { Command } from "commander"
 import { bytes } from "./execution.js"
@@ -14,9 +14,6 @@ export type MeetingLinksRead = (
 /** Fewer words than this is a transcript that holds next to nothing: a few lines before the recording stopped. */
 const NEAR_EMPTY_WORDS = 50
 const REVIEW_SINCE = "7d"
-
-const iso = (ms: number | null) => (ms === null ? null : new Date(ms).toISOString())
-const ref = (accountId: number, meetingId: number) => formatMeetingReference({ type: "meeting", accountId, meetingId })
 
 /**
  * `review`: the meetings since a point, each with what was decided and who talked — tg's `review` for meetings.
@@ -33,6 +30,7 @@ export const addMeetingReviewCommands = (
 ): void => {
   annotate(selectionOptions(program.command("review")), {
     effects: LOCAL_READ,
+    output: { entity: "meeting_review" },
     examples: ["zm personal review --json", "zm personal review --since-time 30d --project RES --json"],
   })
     .description("meetings since a point: summary, next steps and who talked how long")
@@ -45,24 +43,7 @@ export const addMeetingReviewCommands = (
       const nearEmpty = found.items.filter((one) => one.transcript && one.transcript.words < NEAR_EMPTY_WORDS).length
       deps.output(
         listOf("review", {
-          items: found.items.map((one) => ({
-            ref: ref(one.accountId, one.meetingId),
-            id: String(one.meetingId),
-            title: one.title,
-            started_at: iso(one.startedAt),
-            duration_ms: one.durationMs,
-            participants_count: one.participantsCount,
-            projects: one.projects,
-            transcript: one.transcript,
-            speakers: one.speakers.map((speaker) => ({ name: speaker.name, talk_ms: speaker.talkMs })),
-            summary: one.summary && {
-              source: one.summary.source,
-              title: one.summary.title,
-              overview: one.summary.overview,
-              next_steps: one.summary.nextSteps,
-              url: one.summary.url,
-            },
-          })),
+          items: found.items.map(meetingReviewItem),
           limit,
           has_more: found.hasMore,
           meta,
@@ -95,6 +76,7 @@ export const addMeetingReviewCommands = (
     )
   annotate(selectionOptions(mentions.command("list")), {
     effects: LOCAL_READ,
+    output: { entity: "meeting_link" },
     examples: ["zm personal mentions list --since-time 30d --json"],
   })
     .description("links shared in meeting chat, most shared first, by whom and where")
@@ -109,16 +91,7 @@ export const addMeetingReviewCommands = (
       })
       deps.output(
         listOf("mentions list", {
-          items: found.items.slice(0, limit).map((link) => ({
-            url: link.url,
-            domain: link.domain,
-            document_id: link.documentId,
-            count: link.count,
-            first_at: iso(link.firstAt),
-            last_at: iso(link.lastAt),
-            senders: link.senders,
-            meetings: link.meetings.map((one) => ({ ref: ref(one.accountId, one.meetingId), title: one.title })),
-          })),
+          items: found.items.slice(0, limit).map(meetingLinkItem),
           limit,
           has_more: found.items.length > limit,
           meta,

@@ -24,8 +24,13 @@ export const addMeetingContextCommands = (
 ) => {
   const meetings = program.commands.find((command) => command.name() === "meetings")
   if (!meetings) throw new CliError("configuration_error", "meeting command group is unavailable")
-  const label = (command: Command, example: string) =>
-    annotate(command, { origin: "handwritten", effects: LOCAL_READ, examples: [example] })
+  const label = (command: Command, example: string, entity?: string) =>
+    annotate(command, {
+      origin: "handwritten",
+      effects: LOCAL_READ,
+      examples: [example],
+      ...(entity ? { output: { entity } } : {}),
+    })
   const limits = (command: Command) =>
     command
       .option("--cues <n>", "how many transcript lines, 1 through 1000", bytes)
@@ -114,5 +119,6 @@ export const addMeetingContextCommands = (
         deps.output(itemOf(proposal))
       }),
     "zm meetings task-proposal meeting:3/15/20/0 --type promise --json",
+    "meeting_task_proposal",
   )
 }
