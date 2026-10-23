@@ -16,6 +16,10 @@ moves there when it becomes P2.
 - **ZM-17** · P3 · Tag suggestions and reviewed synonym merging over the existing vocabulary audit (Memo/cli-core).
 - **ZM-18** · P3 · Team Chat — not proposed; new scopes, large. Research only.
 
+- **ZM-25** · P3 · Calls you only attend: record their audio on this computer with no bot joining, then
+  transcribe locally — note-takers that record the device's audio capture these; zm sees only meetings you host.
+- **ZM-26** · P3 · Notes per meeting: decisions, open questions and action items, each citing its transcript line.
+
 ## Standards and tooling
 
 - **ZM-19** · P3 · Sync progress shape (WC-LIFE-14) for `meetings sync`, `recordings sync`.
