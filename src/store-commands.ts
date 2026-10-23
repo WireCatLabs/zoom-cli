@@ -20,6 +20,7 @@ import { addMeetingIntegrationCommands } from "./meeting-integration-commands.js
 import type { ZoomPreparationOptions } from "./meeting-preparation.js"
 import { createZoomProjectCandidateReader } from "./meeting-project-candidates.js"
 import { addMeetingReadBindings } from "./meeting-read-command-bindings.js"
+import { addMeetingReviewCommands } from "./meeting-review-commands.js"
 import { addMeetingSearchCommands } from "./meeting-search-commands.js"
 import { addMeetingEmbeddingCommand } from "./meeting-semantic-commands.js"
 import { addMeetingStatsCommands } from "./meeting-stats-commands.js"
@@ -134,6 +135,19 @@ export const addStoreCommands = (program: Command, context: StoreCommandContext)
       if (!read) throw new CliError("configuration_error", "the selected store connector does not count meetings")
       return read
     },
+  })
+  const reader =
+    <K extends "meetingReview" | "meetingLinks">(name: K, what: string) =>
+    async (): Promise<NonNullable<StoreConnection[K]>> => {
+      const read = (await connected())[name]
+      if (!read) throw new CliError("configuration_error", `the selected store connector does not ${what}`)
+      return read as NonNullable<StoreConnection[K]>
+    }
+  addMeetingReviewCommands(program, {
+    signal,
+    output,
+    review: reader("meetingReview", "review meetings"),
+    links: reader("meetingLinks", "read meeting chat links"),
   })
   addMeetingSearchCommands(program, {
     signal,

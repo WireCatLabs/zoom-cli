@@ -1,17 +1,12 @@
 import { annotate } from "@wirecat/cli-base/commands"
-import { type Body, dateWindow, itemOf, LOCAL_READ, listOf, NO_EFFECTS } from "@wirecat/cli-core/cli"
+import { type Body, itemOf, LOCAL_READ, listOf, NO_EFFECTS } from "@wirecat/cli-core/cli"
 import type { MeetingStats } from "@wirecat/cli-core/meetings"
 import type { MeetingStatsRequest } from "@wirecat/cli-core/services"
 import type { Command } from "commander"
 import { bytes } from "./execution.js"
+import { type SelectionFlags, selectionOf, selectionOptions } from "./meeting-selection-options.js"
 
-interface StatsFlags {
-  eventId?: number
-  project?: string
-  topic?: string
-  sinceTime?: string
-  untilTime?: string
-  timezone?: string
+interface StatsFlags extends SelectionFlags {
   maxRows?: number
   limit?: number
 }
@@ -19,30 +14,17 @@ interface StatsFlags {
 export type MeetingStatsRead = (request: Omit<MeetingStatsRequest, "accountId">) => Promise<MeetingStats>
 
 const filters = (command: Command): Command =>
-  command
-    .option("--since-time <time>", "meetings starting at or after this date or time (ISO 8601, or 30d ago)")
-    .option("--until-time <time>", "meetings starting at or before this date or time; a date alone is that whole day")
-    .option("--timezone <zone>", "the IANA zone dates and weeks are read in (default: this computer's)")
-    .option("--event-id <id>", "only meetings linked to this stored event", bytes)
-    .option("--project <name>", "meetings confirmed in this project, by name, key or alias")
-    .option("--topic <name>", "meetings with this topic, by name or alias")
-    .option("--max-rows <n>", "most transcript lines to read (default and at most 500000)", bytes)
+  selectionOptions(command).option(
+    "--max-rows <n>",
+    "most transcript lines to read (default and at most 500000)",
+    bytes,
+  )
 
 const requestOf = (flags: StatsFlags, signal?: AbortSignal) => {
-  const zone = flags.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
-  const window = dateWindow({ sinceTime: flags.sinceTime, untilTime: flags.untilTime, zone })
+  const { request, zone, meta } = selectionOf(flags, signal)
   return {
-    request: {
-      ...(flags.eventId === undefined ? {} : { eventId: flags.eventId }),
-      ...(flags.project === undefined ? {} : { project: flags.project }),
-      ...(flags.topic === undefined ? {} : { topic: flags.topic }),
-      ...(window.since === undefined ? {} : { since: window.since }),
-      ...(window.until === undefined ? {} : { until: window.until }),
-      ...(flags.maxRows === undefined ? {} : { maxRows: flags.maxRows }),
-      timeZone: zone,
-      ...(signal ? { signal } : {}),
-    },
-    meta: { ...window.meta, timezone: zone },
+    request: { ...request, ...(flags.maxRows === undefined ? {} : { maxRows: flags.maxRows }), timeZone: zone },
+    meta,
   }
 }
 

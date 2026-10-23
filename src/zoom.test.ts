@@ -402,7 +402,7 @@ describe("API source", () => {
       externalCreatedAt: Date.parse("2026-10-10T15:30:00Z"),
       metadata: { example_hint: "invented" },
     })
-    expect(await source.chat()).toBeNull()
+    expect(await source.chat("example")).toBeNull()
     expect(await source.files()).toBeNull()
     expect(encodeUuid("/example//uuid")).toBe(encodeURIComponent(encodeURIComponent("/example//uuid")))
     expect(encodeUuid("example+uuid")).toBe("example%2Buuid")
@@ -566,6 +566,32 @@ describe("API source", () => {
     await expect(refused("NOT_READY")).rejects.toThrow(/not finished this transcript yet/)
     for (const reason of ["NO_TRANSCRIPT_DATA", "DELETED_OR_TRASHED", "UNSUPPORTED"])
       expect(await refused(reason)).toBeNull()
+  })
+
+  it("reads the chat saved with the cloud recording, and none without the scope or a chat file", async () => {
+    const recorded = (files: unknown[]) => async (input: string | URL | Request) =>
+      String(input).includes("example-chat")
+        ? new Response("00:00:30\tAlice Example:\tSee https://example.com/plan\n")
+        : response({ start_time: "2026-10-20T09:00:00Z", recording_files: files })
+    const chatFile = {
+      file_type: "CHAT",
+      status: "completed",
+      recording_start: "2026-10-20T09:01:00Z",
+      download_url: "https://zoom.us/example-chat",
+    }
+    expect(await new ZoomApiSource(authorize(tokenManager()), recorded([chatFile])).chat("example")).toBeNull()
+    const tokens = tokenManager()
+    tokens.save({
+      accessToken: "example-access",
+      refreshToken: "example-refresh",
+      scopes: [...scopes, "cloud_recording:read:list_recording_files"],
+      expiresAt: 3600000,
+    })
+    expect(await new ZoomApiSource(tokens, recorded([chatFile])).chat("example")).toEqual([
+      { sentAt: "2026-10-20T09:01:30.000Z", sender: "Alice Example", text: "See https://example.com/plan" },
+    ])
+    expect(await new ZoomApiSource(tokens, recorded([{ ...chatFile, file_type: "MP4" }])).chat("example")).toBeNull()
+    expect(await new ZoomApiSource(tokens, async () => response({ code: 3301 }, 404)).chat("example")).toBeNull()
   })
 })
 describe("downloaded files", () => {

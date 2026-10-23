@@ -19,8 +19,8 @@ importers:
         specifier: 0.49.0
         version: 0.49.0(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.3)
       '@wirecat/cli-core':
-        specifier: 0.389.0
-        version: 0.389.0(@wirecat/cli-base@0.49.0(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.3))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.5)
+        specifier: 0.394.0
+        version: 0.394.0(@wirecat/cli-base@0.49.0(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.3))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)
       commander:
         specifier: 15.0.0
         version: 15.0.0
@@ -1016,13 +1016,13 @@ packages:
   '@wirecat/cli-core-sqlite@1.0.1':
     resolution: {integrity: sha512-dFkTE3+XdvZwrt7bZZEd2fzdqR2vFgnnGPOhmBKGNa7uKQHjOdqJL8Q9O5cajIjy5o8Gl0LVn0OZbYajhLvQ1A==}
 
-  '@wirecat/cli-core@0.389.0':
-    resolution: {integrity: sha512-wdG/U/30VDKC44wmUhrNCT5emBWagx9PQnQbQzw6j8f+OMVPaWWNdeNaBfwXpdb2FtvsIuGGMWFkmdu4KD3FUw==}
+  '@wirecat/cli-core@0.394.0':
+    resolution: {integrity: sha512-9l5zrn7pdZnN22hg7hxQhz8uw8tj9apGgrahuNmxknTz7Zc/TsXZpNB0KPS7ESZDtttm0SRyFqC0VpLf2HXE1g==}
     engines: {node: ^22.16.0 || >=24}
     hasBin: true
     peerDependencies:
       '@napi-rs/canvas': '>=0.1.69 <2'
-      '@wirecat/cli-base': '>=0.49.0 <0.50.0'
+      '@wirecat/cli-base': '>=0.49.0 <0.51.0'
       commander: '>=15'
     peerDependenciesMeta:
       '@napi-rs/canvas':
@@ -2514,12 +2514,12 @@ packages:
 
 snapshots:
 
-  '@anthropic-ai/sdk@0.131.0(zod@4.6.5)':
+  '@anthropic-ai/sdk@0.131.0(zod@4.6.7)':
     dependencies:
       json-schema-to-ts: 3.1.1
       standardwebhooks: 1.1.1
     optionalDependencies:
-      zod: 4.6.5
+      zod: 4.6.7
 
   '@babel/helper-string-parser@7.29.7': {}
 
@@ -3213,9 +3213,9 @@ snapshots:
 
   '@wirecat/cli-core-sqlite@1.0.1': {}
 
-  '@wirecat/cli-core@0.389.0(@wirecat/cli-base@0.49.0(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.3))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.5)':
+  '@wirecat/cli-core@0.394.0(@wirecat/cli-base@0.49.0(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.3))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)':
     dependencies:
-      '@anthropic-ai/sdk': 0.131.0(zod@4.6.5)
+      '@anthropic-ai/sdk': 0.131.0(zod@4.6.7)
       '@bomb.sh/tab': 0.0.22(commander@15.0.0)
       '@huggingface/tokenizers': 0.2.0
       '@modelcontextprotocol/server': 2.1.0

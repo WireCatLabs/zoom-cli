@@ -238,6 +238,32 @@ with no speaker counts as `unknown`. Talk time is each line's length, so two peo
 meeting with both Zoom's transcript and a local one counts Zoom's (the earliest) only; meetings with no transcript are
 not counted. Only numbers are read: no transcript text is shown.
 
+## Review the last week
+
+```sh
+zm personal review --json
+zm personal review --since-time 30d --project RES --json
+```
+
+`review` lists the meetings since a point, newest first: the last 7 days unless `--since-time` says otherwise, at most
+`--limit` (50, up to 200). Each has its newest summary (overview and next steps), its confirmed projects, its
+transcript's lines and words, and the three people who talked longest. `missing` says how many meetings have no
+summary — Zoom writes one only when AI Companion summarised the meeting, and imported transcripts carry none — and how
+many transcripts hold fewer than 50 words, where an empty search means nothing was recorded rather than nothing said.
+It takes the same filters as `stats meetings`.
+
+## Find links shared in meeting chat
+
+```sh
+zm personal mentions list --since-time 30d --json
+```
+
+`meetings sync` stores the chat Zoom saves with a cloud recording, when the login has
+`cloud_recording:read:list_recording_files`. `mentions list` lists the links in that chat, most shared first, with
+who shared each, in which meetings, when, and the Google file a Docs, Sheets or Drive link names. Tracking parameters
+such as `utm_source` are dropped, so one page shared twice counts once. A meeting without a cloud recording has no
+chat to read.
+
 ## Choose local or remote data
 
 | Need | Command family | Where it works |

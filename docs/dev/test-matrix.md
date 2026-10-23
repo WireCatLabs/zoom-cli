@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**281 ✅ · 2 ⛔ · 0 ❌** — 65 commands, 218 options.
+**298 ✅ · 2 ⛔ · 0 ❌** — 67 commands, 233 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -279,6 +279,23 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `stats meetings top` | `--topic` | ✅ |  |
 | `stats meetings top` | `--max-rows` | ✅ |  |
 | `stats meetings top` | `--limit` | ✅ |  |
+| `review` |  | ✅ |  |
+| `review` | `--since-time` | ✅ |  |
+| `review` | `--until-time` | ✅ |  |
+| `review` | `--timezone` | ✅ |  |
+| `review` | `--event-id` | ✅ |  |
+| `review` | `--project` | ✅ |  |
+| `review` | `--topic` | ✅ |  |
+| `review` | `--limit` | ✅ |  |
+| `mentions list` |  | ✅ |  |
+| `mentions list` | `--since-time` | ✅ |  |
+| `mentions list` | `--until-time` | ✅ |  |
+| `mentions list` | `--timezone` | ✅ |  |
+| `mentions list` | `--event-id` | ✅ |  |
+| `mentions list` | `--project` | ✅ |  |
+| `mentions list` | `--topic` | ✅ |  |
+| `mentions list` | `--limit` | ✅ |  |
+| `mentions list` | `--max-messages` | ✅ |  |
 | `batch` |  | ✅ |  |
 | `batch` | `--max-read-bytes` | ✅ |  |
 | `batch` | `--format` | ✅ |  |
