@@ -34,7 +34,7 @@ zm config show
 
 **Returns:** show local configuration
 
-**Example:** `zm config show --json`
+**Example:** `zm personal config show --json`
 
 ### `zm config set`
 
@@ -53,7 +53,7 @@ zm config set <key> <value>
 
 **Returns:** set a configuration value
 
-**Example:** `zm config set files.timezone Europe/Madrid --json`
+**Example:** `zm personal config set files.timezone Europe/Madrid --json`
 
 ## `zm meetings`
 
@@ -199,7 +199,7 @@ zm meetings people <query> [options]
 | `--max-read-bytes <bytes>` | most stored name and email bytes to read (default 1048576). |
 | `--cursor <cursor>` | continue with the same name query and selected account. |
 
-**Returns:** find meeting participants by name or email
+**Returns:** meeting participants — schema_version, kind, account_id, query, items, ambiguity, coverage, page
 
 **Example:** `zm personal meetings people "Alice Example" --json`
 
@@ -266,7 +266,7 @@ zm meetings scheduled [options]
 
 **Returns:** meeting series inventory — schema_version, kind, scope, after, until, items, page, fingerprint, and 2 more
 
-**Example:** `zm meetings scheduled --json`
+**Example:** `zm personal meetings scheduled --json`
 
 ### `zm meetings projects`
 
@@ -317,7 +317,7 @@ zm meetings projects scan <ref> [options]
 
 **Returns:** meeting project candidates — schema_version, kind, source, input_fingerprint, vocabulary_fingerprint, association, items, limits, and 2 more
 
-**Example:** `zm meetings projects scan meeting:1/2 --json`
+**Example:** `zm personal meetings projects scan meeting:1/2 --json`
 
 ### `zm meetings prepare`
 
@@ -349,7 +349,7 @@ zm meetings prepare <series-id> [options]
 
 **Returns:** meeting preparation — schema_version, kind, account_id, upcoming, series, history_window, meetings, related, and 6 more
 
-**Example:** `zm meetings prepare 123 --json`
+**Example:** `zm personal meetings prepare 123 --json`
 
 ### `zm meetings update`
 
@@ -374,7 +374,7 @@ zm meetings update <reference> [options]
 
 **Returns:** preview linking a stored meeting to an event; --yes applies it
 
-**Example:** `zm meetings update meeting:1/1 --event-id 1 --yes --json`
+**Example:** `zm personal meetings update meeting:1/1 --event-id 1 --yes --json`
 
 ### `zm meetings link`
 
@@ -401,7 +401,7 @@ zm meetings link <reference> [options]
 
 **Returns:** preview linking a meeting participant to a stored person; --yes applies it
 
-**Example:** `zm meetings link meeting:1/1 --participant-id 1 --person 1 --yes --json`
+**Example:** `zm personal meetings link meeting:1/1 --participant-id 1 --person 1 --yes --json`
 
 ### `zm meetings transcribe`
 
@@ -454,9 +454,9 @@ zm meetings evidence <reference> [options]
 | `--max-read-bytes <bytes>` | most stored bytes to read per page (default 4 MiB). |
 | `--max-transcript-pages <n>` | most transcript pages to read, 1 through 1000. |
 
-**Returns:** read the stored transcript lines, chat or summary behind a meeting reference
+**Returns:** meeting evidence — schema_version, kind, source, fingerprint, limits, content_bytes, coverage, items
 
-**Example:** `zm meetings evidence meeting:3/15 --json`
+**Example:** `zm personal meetings evidence meeting:3/15 --json`
 
 ### `zm meetings context`
 
@@ -478,9 +478,9 @@ zm meetings context <person> [options]
 | `--scan-limit <n>` | most identity links to look at, 1 through 1000. |
 | `--since-time <time>` | only identity links since this ISO 8601 time. |
 
-**Returns:** what the stored meetings say about a person, through linked identities
+**Returns:** meeting person context — person, items, limits, content_bytes, coverage
 
-**Example:** `zm meetings context person:7 --meetings 10 --json`
+**Example:** `zm personal meetings context person:7 --meetings 10 --json`
 
 ### `zm meetings task-proposal`
 
@@ -498,9 +498,9 @@ zm meetings task-proposal <reference> [options]
 |---|---|
 | `--type <type>` | question, request, mention or promise. |
 
-**Returns:** preview the task a meeting line would become, without creating it
+**Returns:** meeting task proposal — id, source, source_kind, group, account_id, kind, preview, revision, and 2 more
 
-**Example:** `zm meetings task-proposal meeting:3/15/20/0 --type promise --json`
+**Example:** `zm personal meetings task-proposal meeting:3/15/20/0 --type promise --json`
 
 ### `zm meetings passage`
 
@@ -523,9 +523,9 @@ zm meetings passage <reference> [options]
 | `--expected-fingerprint <hash>` | reject a changed anchor using its previously read cue fingerprint. |
 | `--format <format>` | compact text, Markdown or structured JSON. One of: `text`, `markdown`, `json`. Default: `text`. |
 
-**Returns:** read a cited cue with bounded context before and after it
+**Returns:** meeting passage — schema_version, kind, source, target_ref, target_fingerprint, fingerprint, revision, limits, and 3 more
 
-**Example:** `zm meetings passage meeting:1/1/1/0 --json`
+**Example:** `zm personal meetings passage meeting:1/1/1/0 --json`
 
 ### `zm meetings embeddings`
 
@@ -551,7 +551,7 @@ zm meetings embeddings [options]
 
 **Returns:** preview building meeting vectors; --yes builds one batch
 
-**Example:** `zm meetings embeddings --model e5-small --json`
+**Example:** `zm personal meetings embeddings --model e5-small --json`
 
 ## `zm events`
 
@@ -570,7 +570,7 @@ zm events list [options]
 | `--json` | one JSON value. |
 | `--jsonl` | one JSON object per item. |
 
-**Returns:** list stored events
+**Returns:** event — id, event_series_id, title, description, location, starts_at, ends_at, timezone, and 4 more
 
 **Example:** `zm personal events list --json`
 
@@ -616,7 +616,7 @@ zm doctor
 
 **Returns:** check local runtime and public config without a login or database
 
-**Example:** `zm doctor --json`
+**Example:** `zm personal doctor --json`
 
 ## `zm session`
 
@@ -636,7 +636,7 @@ zm session status [options]
 
 **Returns:** show cached login state; remote verification is explicit
 
-**Example:** `zm session status --json`, `zm session status --check --json`
+**Example:** `zm personal session status --json`, `zm personal session status --check --json`
 
 ### `zm session start`
 
@@ -692,7 +692,7 @@ zm models audio list
 
 **Returns:** the speech models this version knows, and which are downloaded
 
-**Example:** `zm models audio list --json`
+**Example:** `zm personal models audio list --json`
 
 #### `zm models audio download`
 
@@ -710,7 +710,7 @@ zm models audio download <model>
 
 **Returns:** download a speech model, or repair one, checking every file's sha256
 
-**Example:** `zm models audio download parakeet-v3 --json`
+**Example:** `zm personal models audio download parakeet-v3 --json`
 
 ## `zm watch`
 
@@ -735,7 +735,7 @@ zm watch [target] [folder] [options]
 
 **Returns:** keep fetching new meetings from Zoom, or rescanning a folder, until stopped
 
-**Example:** `zm watch files ./downloads --pause 10s --jsonl`, `zm watch api --lookback-days 2 --jsonl`
+**Example:** `zm personal watch files ./downloads --pause 10s --jsonl`, `zm personal watch api --lookback-days 2 --jsonl`
 
 ## `zm recordings`
 
@@ -757,7 +757,7 @@ zm recordings list [options]
 
 **Returns:** list cloud recording occurrences (last 30 days by default)
 
-**Example:** `zm recordings list --since-time 2026-10-01 --until-time 2026-10-10 --json`
+**Example:** `zm personal recordings list --since-time 2026-10-01 --until-time 2026-10-10 --json`
 
 ### `zm recordings sync`
 
@@ -784,7 +784,7 @@ zm recordings sync [options]
 
 **Returns:** download a date range of recordings into an archive folder, a month at a time
 
-**Example:** `zm recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./archive --jsonl`
+**Example:** `zm personal recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./archive --jsonl`
 
 ### `zm recordings show`
 
@@ -800,7 +800,7 @@ zm recordings show <meeting>
 
 **Returns:** show downloadable asset metadata without signed URLs
 
-**Example:** `zm recordings show example-occurrence --json`
+**Example:** `zm personal recordings show example-occurrence --json`
 
 ### `zm recordings download`
 
@@ -826,7 +826,7 @@ zm recordings download <meeting> [options]
 
 **Returns:** stream recording assets into a verified local archive
 
-**Example:** `zm recordings download example-occurrence --output-dir ./zoom-archive --json`
+**Example:** `zm personal recordings download example-occurrence --output-dir ./zoom-archive --json`
 
 ### `zm recordings archive`
 
@@ -852,7 +852,7 @@ zm recordings archive transcript <directory> [options]
 
 **Returns:** read the transcripts of a local archive, checking each file first
 
-**Example:** `zm recordings archive transcript ./zoom-archive --uuid example-occurrence --json`
+**Example:** `zm personal recordings archive transcript ./zoom-archive --uuid example-occurrence --json`
 
 #### `zm recordings archive show`
 
@@ -868,7 +868,7 @@ zm recordings archive show <directory>
 
 **Returns:** show what a local archive holds, from its transfer records
 
-**Example:** `zm recordings archive show ./zoom-archive --json`
+**Example:** `zm personal recordings archive show ./zoom-archive --json`
 
 #### `zm recordings archive check`
 
@@ -884,7 +884,7 @@ zm recordings archive check <directory>
 
 **Returns:** check the size and checksum of every file in a local archive
 
-**Example:** `zm recordings archive check ./zoom-archive --json`
+**Example:** `zm personal recordings archive check ./zoom-archive --json`
 
 #### `zm recordings archive locks`
 
@@ -900,7 +900,7 @@ zm recordings archive locks <directory>
 
 **Returns:** list the locks on a local archive: active, stale or another machine's
 
-**Example:** `zm recordings archive locks ./zoom-archive --json`
+**Example:** `zm personal recordings archive locks ./zoom-archive --json`
 
 #### `zm recordings archive recover`
 
@@ -923,7 +923,7 @@ zm recordings archive recover <directory> [options]
 
 **Returns:** preview removing stale locks; --yes removes them
 
-**Example:** `zm recordings archive recover ./zoom-archive --dry-run --json`
+**Example:** `zm personal recordings archive recover ./zoom-archive --dry-run --json`
 
 #### `zm recordings archive import`
 
@@ -948,7 +948,7 @@ zm recordings archive import <directory> [options]
 
 **Returns:** check an archive's transcripts, then add them to the stored meetings
 
-**Example:** `zm recordings archive import ./archive --jsonl`
+**Example:** `zm personal recordings archive import ./archive --jsonl`
 
 ### `zm recordings schedule`
 
@@ -978,7 +978,7 @@ zm recordings schedule create [options]
 
 **Returns:** preview a daily archive job; --yes installs its timer
 
-**Example:** `zm recordings schedule create --name daily --output-dir /home/AliceExample/archive --since-time 2026-01-01 --at 03:15 --timezone UTC --json`
+**Example:** `zm personal recordings schedule create --name daily --output-dir /home/AliceExample/archive --since-time 2026-01-01 --at 03:15 --timezone UTC --json`
 
 #### `zm recordings schedule list`
 
@@ -990,7 +990,7 @@ zm recordings schedule list
 
 **Returns:** list saved local jobs; live timer state is not checked
 
-**Example:** `zm recordings schedule list --offline --json`
+**Example:** `zm personal recordings schedule list --offline --json`
 
 #### `zm recordings schedule show`
 
@@ -1006,7 +1006,7 @@ zm recordings schedule show <job>
 
 **Returns:** show one saved local job and its captured settings
 
-**Example:** `zm recordings schedule show example-job --offline --json`
+**Example:** `zm personal recordings schedule show example-job --offline --json`
 
 #### `zm recordings schedule run`
 
@@ -1024,7 +1024,7 @@ zm recordings schedule run <job>
 
 **Returns:** run the captured job once with durable archive progress
 
-**Example:** `zm recordings schedule run example-job --jsonl`
+**Example:** `zm personal recordings schedule run example-job --jsonl`
 
 #### `zm recordings schedule disable`
 
@@ -1047,7 +1047,7 @@ zm recordings schedule disable <job> [options]
 
 **Returns:** preview disabling a saved timer; --yes disables it without deleting files
 
-**Example:** `zm recordings schedule disable example-job --yes --json`
+**Example:** `zm personal recordings schedule disable example-job --yes --json`
 
 ## `zm remote-meetings`
 
@@ -1063,7 +1063,7 @@ zm remote-meetings list
 
 **Returns:** list upcoming meetings
 
-**Example:** `zm remote-meetings list --json`
+**Example:** `zm personal remote-meetings list --json`
 
 ### `zm remote-meetings show`
 
@@ -1079,7 +1079,7 @@ zm remote-meetings show <meeting>
 
 **Returns:** show an upcoming meeting
 
-**Example:** `zm remote-meetings show 123456789 --json`
+**Example:** `zm personal remote-meetings show 123456789 --json`
 
 ### `zm remote-meetings invitation`
 
@@ -1095,7 +1095,7 @@ zm remote-meetings invitation <meeting>
 
 **Returns:** read invitation text
 
-**Example:** `zm remote-meetings invitation 123456789 --json`
+**Example:** `zm personal remote-meetings invitation 123456789 --json`
 
 ### `zm remote-meetings create`
 
@@ -1120,7 +1120,7 @@ zm remote-meetings create [options]
 
 **Returns:** create a Zoom meeting; asks first, --dry-run previews
 
-**Example:** `zm remote-meetings create --title "Example planning" --start-time 2026-10-10T15:30:00Z --dry-run --json`
+**Example:** `zm personal remote-meetings create --title "Example planning" --start-time 2026-10-10T15:30:00Z --dry-run --json`
 
 ### `zm remote-meetings update`
 
@@ -1149,7 +1149,7 @@ zm remote-meetings update <meeting> [options]
 
 **Returns:** change a Zoom meeting; asks first, --dry-run previews
 
-**Example:** `zm remote-meetings update 123456789 --title "Example planning" --dry-run --json`
+**Example:** `zm personal remote-meetings update 123456789 --title "Example planning" --dry-run --json`
 
 ### `zm remote-meetings cancel`
 
@@ -1173,7 +1173,7 @@ zm remote-meetings cancel <meeting> [options]
 
 **Returns:** cancel a Zoom meeting; asks first, --dry-run previews
 
-**Example:** `zm remote-meetings cancel 123456789 --dry-run --json`
+**Example:** `zm personal remote-meetings cancel 123456789 --dry-run --json`
 
 ## `zm skill`
 
@@ -1243,13 +1243,13 @@ zm search all <query> [options]
 |---|---|
 | `--only <resources>` | comma-separated meetings,messages,mail,notes (default meetings). |
 | `--limit <n>` | how many results, 1 through 1000 (default 100). Default: `100`. |
-| `--max-meetings <n>` | most meetings to look at, 1 through 1000 (default 100). Default: `100`. |
-| `--meeting-cursor <json>` | source-only continuation from meetings.next_cursor. |
+| `--page <n>` | which page, starting at 1. |
+| `--max-meetings <n>` | most meetings to look through, newest first, or all (default 100). |
 | `--exact` | request exact matching; unsupported meeting queries are reported as skipped. |
 
-**Returns:** search meetings and, with --only, messages, mail and notes in the local store
+**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 6 more
 
-**Example:** `zm search all "example plan" --json`
+**Example:** `zm personal search all "example plan" --json`
 
 ### `zm search meetings`
 
@@ -1291,7 +1291,7 @@ zm search meetings <query> [options]
 
 **Next usually:** `zm meetings show <meeting>`, `zm meetings transcript <meeting>`, `zm meetings summary <meeting>`
 
-**Example:** `zm search meetings "example plan" --since-time 2026-09-01 --json`, `zm search meetings "example plan" --model e5-small --json`
+**Example:** `zm personal search meetings "example plan" --since-time 2026-09-01 --json`, `zm personal search meetings "example plan" --model e5-small --json`
 
 ### `zm search recordings`
 
@@ -1310,9 +1310,9 @@ zm search recordings <directory> <query> [options]
 |---|---|
 | `--limit <n>` | how many hits, 1 through 1000 (default 100). |
 
-**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 4 more
+**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 6 more
 
-**Example:** `zm search recordings ./zoom-archive "example plan" --limit 100 --offline --json`
+**Example:** `zm personal search recordings ./zoom-archive "example plan" --limit 100 --offline --json`
 
 ## `zm stats`
 
@@ -1340,7 +1340,7 @@ zm stats meetings show [options]
 | `--topic <name>` | meetings with this topic, by name or alias. |
 | `--max-rows <n>` | most transcript lines to read (default and at most 500000). |
 
-**Returns:** meetings, lines, words and talk time by week, with the top speakers
+**Returns:** meeting stats — time_zone, meetings, lines, words, talk_ms, weeks, top_speakers
 
 **Example:** `zm personal stats meetings show --since-time 30d --json`
 
@@ -1363,7 +1363,7 @@ zm stats meetings top [options]
 | `--max-rows <n>` | most transcript lines to read (default and at most 500000). |
 | `--limit <n>` | how many speakers (default 20). |
 
-**Returns:** speakers by talk time: lines, words, meetings and their share of the talk
+**Returns:** meeting speaker — key, name, person_id, identity_id, meetings, lines, words, talk_ms, and 1 more
 
 **Example:** `zm personal stats meetings top --project RES --limit 5 --json`
 
@@ -1385,7 +1385,7 @@ zm review [options]
 | `--topic <name>` | meetings with this topic, by name or alias. |
 | `--limit <n>` | most meetings, newest first (default 50, at most 200). |
 
-**Returns:** meetings since a point: summary, next steps and who talked how long
+**Returns:** meeting review — ref, id, title, started_at, duration_ms, participants_count, projects, transcript, and 2 more
 
 **Example:** `zm personal review --json`, `zm personal review --since-time 30d --project RES --json`
 
@@ -1412,7 +1412,7 @@ zm mentions list [options]
 | `--limit <n>` | how many links (default 100). |
 | `--max-messages <n>` | most chat messages to read (default and at most 100000). |
 
-**Returns:** links shared in meeting chat, most shared first, by whom and where
+**Returns:** meeting link — url, domain, document_id, count, first_at, last_at, senders, meetings
 
 **Example:** `zm personal mentions list --since-time 30d --json`
 
@@ -1470,7 +1470,9 @@ zm searches run <name>
 |---|---|---|
 | `name` | required | a saved search's name. |
 
-**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 4 more
+**Returns:** meeting hit — ref, meeting, scope, id, excerpt, offset_ms, match, corrections, and 1 more
+
+**Next usually:** `zm meetings show <meeting>`, `zm meetings transcript <meeting>`, `zm meetings summary <meeting>`
 
 **Example:** `zm personal searches run weekly-plan --json`
 
@@ -1545,7 +1547,7 @@ zm batch <file> [options]
 
 **Returns:** run bounded stored meeting reads: search meetings and meetings passage
 
-**Example:** `zm batch requests.json --json`
+**Example:** `zm personal batch requests.json --json`
 
 ## `zm guide`
 
