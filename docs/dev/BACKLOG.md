@@ -51,7 +51,7 @@ an item here names it when zm only adopts it.
 - **ZM-11** · P2 · Agent end-to-end check of the meeting workflow on invented data (aliases → cited calls →
   passages → Memo findings → prepare), with the result in cli-testing.
   [plan](https://github.com/WireCatLabs/cli-private/blob/main/plans/2026-10-14-zoom-next-tasks.md)
-- **ZM-24** · P2 · MCP offers every command it can: 11 of 63 are missing — ten in zm's own exclusion list
+- **ZM-24** · P2 · MCP offers every command it can: 14 of 63 are missing, 11 of them offerable — ten in zm's own exclusion list
   (`src/mcp.ts:29`: config, session, skill, `meetings embeddings`) and four in cli-core's (`meetings scheduled`,
   `meetings projects scan`, `guide`, `upgrade`). Only `watch`, `mcp` and `complete` stay out (owner, 2026-10-23).
   The MCP page already promises `meetings scheduled` and `projects scan`, which answer "no command".
