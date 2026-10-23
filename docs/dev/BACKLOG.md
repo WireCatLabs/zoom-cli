@@ -22,11 +22,13 @@ an item here names it when zm only adopts it.
 
 - **ZM-1** · P1 · Help examples and the packaged scenarios leave out the profile word, so copying one fails with
   `validation_error` (41 examples in `commands --json`, 39 in docs/commands.md, all 5 `scenarios/*.md`).
-  Start: `examples:` in `src/*-commands.ts`, `scenarios/`, then `pnpm generate`. [notes](BACKLOG-NOTES.md#zm-1)
+  Start: `examples:` in `src/*-commands.ts`, `scenarios/`, then `pnpm generate`. Also: the `archive-recordings` scenario step
+  `zm recordings schedule run daily` has no profile, and a `docs/search.md` heading reads "Why zm personal does not
+  search…" (a find-and-replace slip). [notes](BACKLOG-NOTES.md#zm-1)
 - **ZM-2** · P1 · Docs say the MCP server is read-only; it is not, and should not be: the owner ruled
   (2026-10-23) that MCP allows writing and exposes every command, limited only by the profile's permissions. Fix
   the six claims and name the permission that limits writes. Start: docs/security.md:36,67, README.md:328,
-  docs/installation.md:162, docs/index.md:31, docs/search.md:102. [notes](BACKLOG-NOTES.md#zm-2)
+  docs/installation.md:162, docs/index.md:31, docs/search.md:102. `zm --help` still lists `serve --mcp` as "read-only meeting tools". [notes](BACKLOG-NOTES.md#zm-2)
 - **ZM-3** · P1 · 🚩 Every new user must build their own Zoom Marketplace app before the first login; there is no
   shared WireCat app. Decide: publish one through Zoom's review, a beta app, or keep "bring your own" and say so
   plainly. Start: docs/zoom-app.md:36-46. [notes](BACKLOG-NOTES.md#zm-3)
