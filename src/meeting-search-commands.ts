@@ -5,13 +5,12 @@ import { meetingHitsList } from "@wirecat/cli-core/meetings"
 import {
   createMeetingSearchCommand,
   type MeetingHitSearch,
-  type MeetingHitSearchOptions,
   type MeetingSearchFlags,
   meetingHitSearchRequest,
   meetingSearchArguments,
   meetingSearchMeta,
 } from "@wirecat/cli-core/meetings/cli"
-import type { Command } from "commander"
+import { Command } from "commander"
 import type { ArchiveTranscriptService } from "./archive-commands.js"
 import type { ArchiveTranscriptMatch } from "./archive-transcripts.js"
 import { bytes } from "./execution.js"
@@ -109,6 +108,29 @@ const combinedList = (found: CombinedPage, limit: number, args: Record<string, u
     ],
   }) as Body
 
+/** zm's options beside the shared ones: by meaning, and the bounds of a search by meaning. */
+const withMeaningOptions = (command: Command): Command =>
+  command
+    .description("find words in stored meetings, or by meaning with --model")
+    .option(
+      "--model <model>",
+      "rank words and meaning together with this embedding model, building missing vectors first",
+    )
+    .option("--base-url <url>", "remote embedding service for --model; OpenAI reads OPENAI_API_KEY")
+    .option("--dims <n>", "vector size the remote service returns, in dimensions", bytes)
+    .option("--max-chunks <n>", "by meaning: most stored passages to compare (default 10000)", bytes)
+    .option("--max-rows <n>", "by meaning: most transcript lines to read, 1 through 100000", bytes)
+    .option("--max-text-bytes <bytes>", "by meaning: most transcript text to read (default 4 MiB)", bytes)
+
+/** A fresh `search meetings` to read saved options with: the same flags, parsers and checks as the real one. */
+export const meetingSearchDefinition = (): { program: Command; command: Command } => {
+  const program = new Command()
+  const command = withMeaningOptions(createMeetingSearchCommand(program))
+  return { program, command }
+}
+
+export type MeetingSearchRun = (query: string, options: SearchOptions) => Promise<Body>
+
 /** One meeting search: stored words by default, words and meaning ranked together with --model. */
 export const addMeetingSearchCommands = (
   program: Command,
@@ -120,8 +142,9 @@ export const addMeetingSearchCommands = (
     signal: () => AbortSignal | undefined
     output: (body: Body) => void
   },
-): void => {
-  const execute = async (query: string, request: MeetingHitSearchOptions, options: SearchOptions): Promise<Body> => {
+): MeetingSearchRun => {
+  const execute = async (query: string, options: SearchOptions): Promise<Body> => {
+    const request = meetingHitSearchRequest(query, options, deps.signal())
     if (options.model !== undefined) {
       refuse(options, ["maxReadBytes"], "to a search by meaning")
       const { limit, after, maxReadBytes: _bytes, signal, ...selection } = request
@@ -156,21 +179,11 @@ export const addMeetingSearchCommands = (
       meetingSearchMeta(options),
     )
   }
-  const command = createMeetingSearchCommand(program).action(async (query: string, options: SearchOptions) => {
-    const request = meetingHitSearchRequest(query, options, deps.signal())
-    deps.output(await execute(query, request, options))
-  })
-  command
-    .description("find words in stored meetings, or by meaning with --model")
-    .option(
-      "--model <model>",
-      "rank words and meaning together with this embedding model, building missing vectors first",
-    )
-    .option("--base-url <url>", "remote embedding service for --model; OpenAI reads OPENAI_API_KEY")
-    .option("--dims <n>", "vector size the remote service returns, in dimensions", bytes)
-    .option("--max-chunks <n>", "by meaning: most stored passages to compare (default 10000)", bytes)
-    .option("--max-rows <n>", "by meaning: most transcript lines to read, 1 through 100000", bytes)
-    .option("--max-text-bytes <bytes>", "by meaning: most transcript text to read (default 4 MiB)", bytes)
+  const command = withMeaningOptions(createMeetingSearchCommand(program)).action(
+    async (query: string, options: SearchOptions) => {
+      deps.output(await execute(query, options))
+    },
+  )
   annotate(command, {
     origin: "handwritten",
     effects: FETCH,
@@ -201,4 +214,5 @@ export const addMeetingSearchCommands = (
     output: { entity: "hit" },
     examples: ['zm search recordings ./zoom-archive "example plan" --limit 100 --offline --json'],
   })
+  return execute
 }

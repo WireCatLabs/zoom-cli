@@ -133,6 +133,27 @@ as skipped. A meetings-only continuation uses the returned `item.meetings.next_c
 `--meeting-cursor '<json>'`, bound to its account and query. JSONL emits the report in one item record, retaining skips, coverage and cursors, followed by an end
 record. Skipped sources set `complete` to false and appear in `issues`; search still exits zero.
 
+## Put filters in the query, and save a search
+
+The project, label and date filters can also be written in the query, joined to the words: `date:`, `project:`,
+`tag:` and `topic:` mean `--since-time`/`--until-time`, `--project`, `--tag` and `--topic`.
+
+```sh
+zm personal search meetings "launch project:RES date>=30d" --json
+zm personal searches create weekly-launch "launch date>=7d" --project RES
+zm personal searches run weekly-launch --json
+```
+
+They choose meetings, not lines, so they cannot sit inside `OR`, `NOT` or brackets, and one filter cannot be given
+both in the query and as an option. A query of filters alone, with no words, is an error.
+
+`searches create` checks the query and options as `search meetings` would, then saves them under a name. They are kept
+as typed and read again at each run, so `date>=7d` in the query always means the 7 days before that run;
+`--since-time` takes a fixed date only. `searches run` answers exactly as `search meetings`
+does; `searches list`, `show` and `delete` manage them. Store ids (`--meeting-id`, `--person-id` and the like) and
+`--tag` are not saved: a saved search names dates, a project or a topic. Saved searches share the store with tg's and
+max's but stay apart: a messenger never lists or runs a meeting search, and zm never runs a messenger's.
+
 ## Read evidence
 
 Meeting references have the form `meeting:<account>/<meeting>[/<transcript>[/<cue-position>]]`.

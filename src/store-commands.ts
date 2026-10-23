@@ -22,6 +22,7 @@ import { createZoomProjectCandidateReader } from "./meeting-project-candidates.j
 import { addMeetingReadBindings } from "./meeting-read-command-bindings.js"
 import { addMeetingReviewCommands } from "./meeting-review-commands.js"
 import { addMeetingSearchCommands } from "./meeting-search-commands.js"
+import { addMeetingSearchesCommands } from "./meeting-searches-commands.js"
 import { addMeetingEmbeddingCommand } from "./meeting-semantic-commands.js"
 import { addMeetingStatsCommands } from "./meeting-stats-commands.js"
 import type { ProgramDeps } from "./program.js"
@@ -149,13 +150,22 @@ export const addStoreCommands = (program: Command, context: StoreCommandContext)
     review: reader("meetingReview", "review meetings"),
     links: reader("meetingLinks", "read meeting chat links"),
   })
-  addMeetingSearchCommands(program, {
+  const searchMeetings = addMeetingSearchCommands(program, {
     signal,
     offline: () => Boolean(program.opts().offline),
     output,
     words: async () => (await connected()).meetingSearch,
     meaning: meetingSemantic,
     archive: (deps.archiveTranscripts ?? { search: searchArchiveTranscripts }).search,
+  })
+  addMeetingSearchesCommands(program, {
+    output,
+    search: searchMeetings,
+    searches: async () => {
+      const searches = (await connected()).meetingSearches
+      if (!searches) throw new CliError("configuration_error", "the selected store connector does not save searches")
+      return searches
+    },
   })
   addMeetingEmbeddingCommand(program, {
     signal,
