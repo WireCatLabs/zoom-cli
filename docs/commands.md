@@ -1187,7 +1187,7 @@ print SKILL.md — `zm skill install` puts it where Claude Code, Codex and Gemin
 zm skill show
 ```
 
-**Returns:** print SKILL.md — `zm skill install` puts it where Claude Code, Codex and Gemini CLI look…
+**Returns:** print the tool's instructions for AI agents
 
 **Example:** `zm skill show --json`
 
@@ -1205,7 +1205,7 @@ zm skill install [options]
 |---|---|
 | `--for <agents>` | which agents to install for. One of: `claude`, `agents`, `all`. Default: `all`. |
 
-**Returns:** write SKILL.md to ~/.claude/skills/zoom-cli/ (Claude Code) and ~/.agents/skills/zoom-cli/…
+**Returns:** install the tool's instructions for AI agents
 
 **Example:** `zm skill install --for agents --json`
 
@@ -1263,7 +1263,7 @@ zm search meetings <query> [options]
 
 | Argument | | What it is |
 |---|---|---|
-| `query` | required | words, OR, (groups), -word, "a phrase", "a b"\~N (within N lines), exact:word, from:"Name" (who said the line); a word also matches its other forms and spellings speech recognition garbled. |
+| `query` | required | words, OR, (groups), -word, "a phrase", "a b"\~N (within N lines), exact:word, from:"Name" (who said the line); date>=30d, project:, tag:, topic: choose meetings; a word also matches its other forms and spellings speech recognition garbled. |
 
 | Option | What it does |
 |---|---|
@@ -1415,6 +1415,114 @@ zm mentions list [options]
 **Returns:** links shared in meeting chat, most shared first, by whom and where
 
 **Example:** `zm personal mentions list --since-time 30d --json`
+
+## `zm searches`
+
+saved meeting searches: a query and its options under a name
+
+### `zm searches create`
+
+save a search meetings query and its options without running it
+
+**Changes local data.**
+
+```sh
+zm searches create <name> <query> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `name` | required | up to 64 letters a–z, digits and hyphens, not only digits. |
+| `query` | required | the query, as search meetings takes it. |
+
+| Option | What it does |
+|---|---|
+| `--replace` | overwrite a saved search of the same name. |
+| `--event-id <id>` | only meetings linked to this stored event. |
+| `--project <name>` | meetings confirmed in this project, by name, key or alias. |
+| `--topic <name>` | meetings with this topic, by name or alias. |
+| `--since-time <time>` | meetings starting at or after this ISO 8601 date or time. |
+| `--until-time <time>` | meetings starting at or before this ISO 8601 date or time; a date alone covers that whole local day. |
+| `--limit <n>` | how many hits, 1 through 1000 (default 100). |
+| `--max-read-bytes <bytes>` | most stored bytes to read, 1 through 67108864 (default 4194304). |
+| `--model <model>` | rank words and meaning together with this embedding model, building missing vectors first. |
+| `--base-url <url>` | remote embedding service for --model; OpenAI reads OPENAI_API_KEY. |
+| `--dims <n>` | vector size the remote service returns, in dimensions. |
+| `--max-chunks <n>` | by meaning: most stored passages to compare (default 10000). |
+| `--max-rows <n>` | by meaning: most transcript lines to read, 1 through 100000. |
+| `--max-text-bytes <bytes>` | by meaning: most transcript text to read (default 4 MiB). |
+
+**Returns:** saved search — id, name, command, params, language, version, fields_version, created_at, and 2 more
+
+**Example:** `zm personal searches create weekly-plan "example plan date>=7d" --project RES --json`
+
+### `zm searches run`
+
+run a saved search; answers as search meetings does
+
+**Changes local data.**
+
+```sh
+zm searches run <name>
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `name` | required | a saved search's name. |
+
+**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 4 more
+
+**Example:** `zm personal searches run weekly-plan --json`
+
+### `zm searches list`
+
+the saved meeting searches, by name
+
+```sh
+zm searches list [query]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `query` | optional | field:value terms; this list filters by none yet. |
+
+**Returns:** saved search — id, name, command, params, language, version, fields_version, created_at, and 2 more
+
+**Example:** `zm personal searches list --json`
+
+### `zm searches show`
+
+one saved search: its query, options and how often it ran
+
+```sh
+zm searches show <name>
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `name` | required | a saved search's name. |
+
+**Returns:** saved search — id, name, command, params, language, version, fields_version, created_at, and 2 more
+
+**Example:** `zm personal searches show weekly-plan`
+
+### `zm searches delete`
+
+delete a saved search
+
+**Changes local data.**
+
+```sh
+zm searches delete <name>
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `name` | required | a saved search's name. |
+
+**Returns:** saved search — id, name, command, params, language, version, fields_version, created_at, and 2 more
+
+**Example:** `zm personal searches delete weekly-plan`
 
 ## `zm batch`
 

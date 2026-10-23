@@ -89,7 +89,7 @@ OAuth callback values, tokens and private transcript text.
 | No stored profile or empty list (exit 3, "no stored meetings for the selected profile") | Choose a profile and import or pull; reads do not register accounts | `zm personal meetings list --json` shows the selected profile's meetings |
 | No hosted meetings in the recent window | Confirm the logged-in Zoom user, API source and date range; try an older explicit `--since-time` | Compare returned dates with expected hosted occurrences |
 | Meeting exists but transcript is empty | Check Zoom's transcript generation/retention and host permissions; expired or never-saved text cannot be recreated by pull | Open the transcript after Zoom makes it available and you pull again |
-| An attended meeting is missing | Ask the host for a VTT file or download it if allowed, then import | Check imported date/title and text |
+| A meeting someone else hosted is missing | Sync never reads it: Zoom's API lists only meetings you scheduled. Ask the host for the VTT file, then `meetings import` it | Check imported date/title and text |
 | Transcript appeared after the first pull | Revisit with `zm personal meetings sync --lookback-days 7`, or an older explicit `--since-time` | Open the newly stored transcript |
 | Pull failed partway | Repair the reported error and retry; failed occurrences do not advance the cursor | Inspect the completion receipt and meeting list |
 | Import rejects a filename or time | Use `YYYY-MM-DD_HHMM_topic.vtt` and the filename's timezone; resolve conflicting or ambiguous times | Import succeeds with the intended date/title |

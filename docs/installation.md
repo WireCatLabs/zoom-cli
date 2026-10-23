@@ -130,8 +130,10 @@ check whether access still works. Sync makes the remote requests and stores avai
 meeting data. List reads that local copy. Another Zoom user is another profile with its own login. See [sessions and profiles](sessions.md#select-a-local-profile).
 
 If the list is empty, check the Zoom account, dates and [recording/transcript availability](zoom-app.md#before-your-first-zm-meetings-sync).
-A meeting you attended but did not host may require a file supplied by its host. A missing-scope
-error names the permission to add; save the app's change and authorize again.
+A meeting someone else hosted never comes through sync: Zoom's API lists only the meetings your login
+scheduled, and has no list of meetings you only attended. Ask the host for the transcript file (`.vtt`) and
+[import it](#import-without-a-zoom-app); it joins the same store, search and review as a synced meeting. A
+missing-scope error names the permission to add; save the app's change and authorize again.
 
 ## Import without a Zoom app
 

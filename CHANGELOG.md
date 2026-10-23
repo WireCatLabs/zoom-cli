@@ -10,6 +10,11 @@
 - **Meeting chat is stored at sync, and `zm <profile> mentions list` lists the links in it.** zm reads the chat file
   Zoom saves with a cloud recording (needs `cloud_recording:read:list_recording_files`); the links come most shared
   first, with who shared them and in which meetings.
+- **Saved meeting searches: `zm <profile> searches create|run|list|show|delete`.** A query and its options under a
+  name, read again at each run, so `date>=7d` in a saved query is always the last week. `searches run` answers as
+  `search meetings` does.
+- **`search meetings` takes `date:`, `project:`, `tag:` and `topic:` in the query**, as the options of the same name:
+  `zm personal search meetings "launch project:RES date>=30d"`.
 
 ### Fixed
 

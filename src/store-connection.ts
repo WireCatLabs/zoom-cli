@@ -6,7 +6,7 @@ import {
   type MeetingTranscriptReceiptStore,
   validateMeetingContextChange,
 } from "@wirecat/cli-core/meetings"
-import type { StoredMeetingProjectCandidateReader } from "@wirecat/cli-core/services"
+import type { MeetingSearchesService, StoredMeetingProjectCandidateReader } from "@wirecat/cli-core/services"
 import type { MessageStore, StoreOptions } from "@wirecat/cli-core/store"
 import { profileAccountKey } from "./config.js"
 import { createLocalTranscriptionCapabilities, type LocalTranscriptionCapabilities } from "./local-transcription.js"
@@ -40,6 +40,7 @@ export interface StoreConnection {
   meetingStats?: MeetingStatsRead
   meetingReview?: MeetingReviewRead
   meetingLinks?: MeetingLinksRead
+  meetingSearches?: MeetingSearchesService
 }
 export interface StoreConnectRequest {
   profile: string
@@ -246,6 +247,10 @@ export const createStoreConnector =
         },
         meetingContext: createMeetingContextCapabilities(connected, meetings, accountId),
         meetingSemantic: createMeetingSemanticCapabilities(connected, accountId, { env: options.env }),
+        meetingSearches: await (async () => {
+          const { meetingSearchesService } = await import("@wirecat/cli-core/services")
+          return meetingSearchesService(async () => connected.searches)
+        })(),
         meetingStats: async (request) => {
           const { readMeetingStats } = await import("@wirecat/cli-core/services")
           return readMeetingStats(connected, { ...request, accountId })

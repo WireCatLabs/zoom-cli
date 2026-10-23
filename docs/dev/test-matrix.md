@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**298 ✅ · 2 ⛔ · 0 ❌** — 67 commands, 233 options.
+**317 ✅ · 2 ⛔ · 0 ❌** — 72 commands, 247 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -296,6 +296,25 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `mentions list` | `--topic` | ✅ |  |
 | `mentions list` | `--limit` | ✅ |  |
 | `mentions list` | `--max-messages` | ✅ |  |
+| `searches create` |  | ✅ |  |
+| `searches create` | `--replace` | ✅ |  |
+| `searches create` | `--event-id` | ✅ |  |
+| `searches create` | `--project` | ✅ |  |
+| `searches create` | `--topic` | ✅ |  |
+| `searches create` | `--since-time` | ✅ |  |
+| `searches create` | `--until-time` | ✅ |  |
+| `searches create` | `--limit` | ✅ |  |
+| `searches create` | `--max-read-bytes` | ✅ |  |
+| `searches create` | `--model` | ✅ |  |
+| `searches create` | `--base-url` | ✅ |  |
+| `searches create` | `--dims` | ✅ |  |
+| `searches create` | `--max-chunks` | ✅ |  |
+| `searches create` | `--max-rows` | ✅ |  |
+| `searches create` | `--max-text-bytes` | ✅ |  |
+| `searches run` |  | ✅ |  |
+| `searches list` |  | ✅ |  |
+| `searches show` |  | ✅ |  |
+| `searches delete` |  | ✅ |  |
 | `batch` |  | ✅ |  |
 | `batch` | `--max-read-bytes` | ✅ |  |
 | `batch` | `--format` | ✅ |  |
