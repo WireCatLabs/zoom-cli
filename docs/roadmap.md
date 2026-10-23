@@ -28,7 +28,7 @@ To use your Zoom account, you connect your own Zoom app first; [the app guide](z
 ## Next
 
 - Help examples you can copy as they are, with the profile word in them.
-- Clearer control over what an agent may change through MCP, and documentation that says exactly what it may do.
+- Every command available to an agent through MCP, with the profile's permissions deciding what it may change.
 - More search fields for meetings: date, project, tag and topic inside the query.
 - `doctor` tells you whether this computer can save a Zoom login.
 
