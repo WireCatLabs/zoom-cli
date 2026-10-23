@@ -2,14 +2,28 @@
 
 ## Unreleased
 
+### Changed — may break callers
+
+- **`search all` answers as tg's does: a list of hits.** It was one item holding the search's internals. Each
+  hit keeps what the old one knew: `ref`, `title`, `timestamp`, `excerpt` (was `text`), `offset_ms` (was
+  `start_ms`), and for a meeting its `scope` and stored line `id`. Skipped sources stay in `meta.issues`,
+  with the reason on stderr; a meeting scan that stopped says so in `missing`. Continue with `--page`, or
+  `--max-meetings all` (new); `--meeting-cursor` is gone, since no answer gives a cursor any more.
+- **`meetings evidence` and `meetings context` name each line by `ref` (was `reference`), its start by
+  `offset_ms` (was `start_ms`), and ids as strings**, as `meetings prepare` already did. No field is gone.
+- **`events list` writes times as ISO 8601 and ids as strings**; they were epoch milliseconds and numbers.
+
 ### Added
 
-- **Seven more commands name their answer type**: `review`, `mentions list`, `stats meetings show` and `top`,
-  `meetings people`, `meetings passage` and `meetings task-proposal`. `commands --json` and the MCP tools now
+- **Eleven more commands name their answer type**: `review`, `mentions list`, `stats meetings show` and
+  `top`, `meetings people`, `meetings passage`, `meetings task-proposal`, `meetings evidence`, `meetings
+  context`, `events list` and `search all`. `commands --json` and the MCP tools now
   describe their fields, and `--json=a,b` checks the names you ask for.
 
 ### Fixed
 
+- **`search all` pages meeting matches.** `--page 2` no longer repeats the first page's meetings, and
+  `has_more` holds while meeting matches remain.
 - **`searches run` names its answer type as `search meetings` does (`meeting_hit`).** It said `hit`, so
   `--json=scope` was refused and the published schema was wrong.
 

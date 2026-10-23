@@ -1,4 +1,7 @@
+import { AjvJsonSchemaValidator } from "@modelcontextprotocol/server/validators/ajv"
 import { itemEnvelopeSchema, jsonlEndSchema, jsonlItemSchema, listEnvelopeSchema } from "@wirecat/cli-base/standards"
+import { commandContract } from "@wirecat/cli-core/cli"
+import type { Command } from "commander"
 import * as v from "valibot"
 
 const envelope = v.union([itemEnvelopeSchema(v.unknown()), listEnvelopeSchema(v.unknown())])
@@ -44,4 +47,17 @@ export const readJsonlPage = (text: string) => {
   if (records.filter((record) => record.type === "end").length !== 1) throw new Error("expected one JSONL page")
   const end = records.at(-1)
   return { items, page: end.page, complete: end.complete, issues: end.issues }
+}
+
+/** The answer fits the output schema the command publishes for its declared entity; returns Ajv's message, if any. */
+export const declaredAnswerIssue = (program: Command, path: string, body: unknown) => {
+  let command = program
+  for (const word of path.split(" ")) {
+    const next = command.commands.find((one) => one.name() === word)
+    if (!next) return `no command ${path}`
+    command = next
+  }
+  const contract = commandContract(command)
+  if (contract.outputSchemaCoverage !== "declared-entity") return `${path} declares no entity`
+  return new AjvJsonSchemaValidator().getValidator<unknown>(contract.outputSchema)(body).errorMessage
 }

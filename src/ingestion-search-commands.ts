@@ -1,12 +1,11 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { type Body, itemOf, LOCAL_READ, LOCAL_WRITE, NO_EFFECTS } from "@wirecat/cli-core/cli"
-import type { MeetingSearchCursor, ResourceWithMeetings } from "@wirecat/cli-core/services"
+import { allAnswer, type Body, itemOf, LOCAL_READ, LOCAL_WRITE, NO_EFFECTS } from "@wirecat/cli-core/cli"
+import type { ResourceWithMeetings } from "@wirecat/cli-core/services"
 import type { Command } from "commander"
 import type { ArchiveImportPlan, applyArchiveImport, preflightArchiveImport } from "./archive-import.js"
 import { bytes } from "./execution.js"
-import { camelKeys } from "./keys.js"
-import { type UnifiedSearch, unifiedSearchAnswer, validateUnifiedSearch } from "./unified-search.js"
+import { type UnifiedSearch, validateUnifiedSearch } from "./unified-search.js"
 
 interface Deps {
   preflight: typeof preflightArchiveImport
@@ -16,13 +15,13 @@ interface Deps {
   outputItems: (items: AsyncIterable<unknown>) => Promise<void>
   receipt: (body: Body) => Promise<void>
   search: UnifiedSearch
+  note: (text: string) => void
 }
-const cursor = (value: string): MeetingSearchCursor => {
-  try {
-    return camelKeys(JSON.parse(value)) as MeetingSearchCursor
-  } catch {
-    throw new CliError("validation_error", "meeting cursor must be a JSON object")
-  }
+const meetingsOf = (value: string): number | "all" => {
+  if (value === "all") return "all"
+  if (!/^[1-9]\d*$/.test(value) || !Number.isSafeInteger(Number(value)))
+    throw new CliError("validation_error", "--max-meetings takes a whole number from 1, or all")
+  return Number(value)
 }
 export const addIngestionSearchCommands = (program: Command, deps: Deps): void => {
   const archive = program.commands
@@ -72,32 +71,42 @@ export const addIngestionSearchCommands = (program: Command, deps: Deps): void =
       .argument("<query>", "words to find; a word also matches longer words it starts")
       .option("--only <resources>", "comma-separated meetings,messages,mail,notes (default meetings)")
       .option("--limit <n>", "how many results, 1 through 1000 (default 100)", bytes, 100)
-      .option("--max-meetings <n>", "most meetings to look at, 1 through 1000 (default 100)", bytes, 100)
-      .option("--meeting-cursor <json>", "source-only continuation from meetings.next_cursor", cursor)
+      .option("--page <n>", "which page, starting at 1", bytes)
+      .option("--max-meetings <n>", "most meetings to look through, newest first, or all (default 100)", meetingsOf)
       .option("--exact", "request exact matching; unsupported meeting queries are reported as skipped")
       .action(
         async (
           query: string,
-          options: {
-            only?: string
-            limit: number
-            maxMeetings: number
-            meetingCursor?: MeetingSearchCursor
-            exact?: boolean
-          },
+          options: { only?: string; limit: number; page?: number; maxMeetings?: number | "all"; exact?: boolean },
         ) => {
+          const page = options.page ?? 1
           const request = validateUnifiedSearch({
             text: query,
             limit: options.limit,
-            maxMeetings: options.maxMeetings,
+            ...(page > 1 ? { offset: (page - 1) * options.limit } : {}),
+            ...(options.maxMeetings === undefined ? {} : { maxMeetings: options.maxMeetings }),
             only: options.only?.split(",").map((value) => value.trim()) as ResourceWithMeetings[] | undefined,
             exact: options.exact,
-            meetingCursor: options.meetingCursor,
             signal: deps.signal(),
           })
-          deps.output(unifiedSearchAnswer(await deps.search(request)))
+          const found = await deps.search(request)
+          for (const { resource, source, reason } of found.skipped)
+            deps.note(`${resource ?? source} not searched: ${reason}`)
+          const again = {
+            query,
+            ...(options.only === undefined ? {} : { only: options.only }),
+            ...(options.maxMeetings === undefined ? {} : { max_meetings: options.maxMeetings }),
+            ...(options.exact ? { exact: true } : {}),
+          }
+          deps.output(allAnswer("search all", found, { limit: options.limit, page, again }, options.exact === true))
         },
       ),
-    { origin: "handwritten", effects: LOCAL_READ, partial: true, examples: ['zm search all "example plan" --json'] },
+    {
+      origin: "handwritten",
+      effects: LOCAL_READ,
+      partial: true,
+      output: { entity: "hit" },
+      examples: ['zm search all "example plan" --json'],
+    },
   )
 }

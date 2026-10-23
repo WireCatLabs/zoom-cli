@@ -117,7 +117,11 @@ JSON returns `items`, `page` and optional `next` steps. JSONL emits each meeting
 then an end record with the page and completeness. Use `--page` to continue.
 The date query replaces the former list-only `--since-time` and `--until-time` flags;
 those flags remain available on transcript search and ingestion commands. `search all` uses the shared search
-service and searches only meetings by default:
+service and searches only meetings by default. It answers a list of hits, as tg's `search all` does: a
+meeting hit has `scope` (transcript, chat or summary) and the stored line `id`. Continue with `--page`;
+when `missing` says the scan stopped after `--max-meetings`, rerun with `--max-meetings all`.
+`meetings evidence` and `meetings context` name each line by `ref`, its start by `offset_ms`, and ids as
+strings, as `meetings prepare` does:
 
 ```sh
 zm personal search all "example plan" --limit 100 --max-meetings 100 --json

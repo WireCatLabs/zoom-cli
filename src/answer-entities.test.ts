@@ -1,14 +1,13 @@
 import { mkdtempSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { AjvJsonSchemaValidator } from "@modelcontextprotocol/server/validators/ajv"
 import { memoryKeyring } from "@wirecat/cli-base"
 import { metaOf } from "@wirecat/cli-base/commands"
-import { commandContract } from "@wirecat/cli-core/cli"
 import { sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { openStore } from "@wirecat/cli-core/store"
 import type { Command } from "commander"
 import { expect, it } from "vitest"
+import { declaredAnswerIssue } from "../scripts/testing/answers.js"
 import { useProfile } from "../scripts/testing/profile.js"
 import { profileAccountKey, setConfig } from "./config.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
@@ -23,13 +22,10 @@ const UNDECLARED = new Set([
   "config set",
   "config show",
   "doctor",
-  "events list",
   "guide",
   "help",
   "mcp",
-  "meetings context",
   "meetings embeddings",
-  "meetings evidence",
   "meetings export",
   "meetings import",
   "meetings link",
@@ -59,7 +55,6 @@ const UNDECLARED = new Set([
   "remote-meetings list",
   "remote-meetings show",
   "remote-meetings update",
-  "search all",
   "serve",
   "session start",
   "session status",
@@ -86,6 +81,23 @@ const fixture = async () => {
     chat: [{ ...sample.chat[0], text: "The plan is at https://example.com/plan" }],
   })
   await store.meetings.indexSearch({ accountId: account })
+  await store.meetings.createEvent(
+    {
+      eventSeriesId: null,
+      title: "Example planning",
+      description: null,
+      location: null,
+      startsAt: startedAt,
+      endsAt: null,
+      timezone: "UTC",
+      origin: "owner",
+      deletedAt: null,
+    },
+    startedAt,
+  )
+  const profile = { provider: "zoom", account: profileAccountKey("AliceExample") }
+  await store.people.savePeople(profile, [{ id: "alice-example", name: "Alice Example" }])
+  const person = await store.people.personOf({ provider: "zoom", id: "alice-example" })
   await store.close()
   const stdout: string[] = []
   const network = async () => {
@@ -109,7 +121,7 @@ const fixture = async () => {
     expect(await run([...argv, ...json], deps), argv.join(" ")).toBe(0)
     return JSON.parse(stdout.join("")) as Record<string, unknown> & { items?: { ref: string }[] }
   }
-  return { deps, answer, meeting: String(saved.meeting.id) }
+  return { deps, answer, meeting: String(saved.meeting.id), person: `person:${person?.uid}` }
 }
 
 const leaves = (command: Command): Command[] =>
@@ -121,8 +133,9 @@ const pathOf = (command: Command) => {
 }
 
 it("answers every command that declares an entity with that entity's schema", async () => {
-  const { deps, answer, meeting } = await fixture()
+  const { deps, answer, meeting, person } = await fixture()
   const passage = (await answer(["search", "meetings", "example plan"])).items?.[0]?.ref ?? ""
+  const meetingRef = (await answer(["meetings", "list"])).items?.[0]?.ref ?? ""
   const runs: [string, string[]][] = [
     ["meetings list", ["meetings", "list"]],
     ["meetings show", ["meetings", "show", meeting]],
@@ -131,6 +144,10 @@ it("answers every command that declares an entity with that entity's schema", as
     ["meetings people", ["meetings", "people", "alice"]],
     ["meetings passage", ["meetings", "passage", passage, "--format", "json"]],
     ["meetings task-proposal", ["meetings", "task-proposal", passage, "--type", "promise"]],
+    ["meetings evidence", ["meetings", "evidence", meetingRef]],
+    ["meetings context", ["meetings", "context", person]],
+    ["events list", ["events", "list"]],
+    ["search all", ["search", "all", "example"]],
     ["search meetings", ["search", "meetings", "example plan"]],
     ["searches create", ["searches", "create", "weekly", "example plan"]],
     ["searches list", ["searches", "list"]],
@@ -144,20 +161,15 @@ it("answers every command that declares an entity with that entity's schema", as
   ]
   const program = createProgram(deps)
   const commands = new Map(leaves(program).map((command) => [pathOf(command), command]))
-  const validators = new AjvJsonSchemaValidator()
   for (const [path, argv] of runs) {
-    const command = commands.get(path)
-    if (!command) throw new Error(`no command ${path}`)
-    const contract = commandContract(command)
-    expect(contract.outputSchemaCoverage, path).toBe("declared-entity")
     const body = await answer(argv)
     expect(body.items?.length ?? 1, `${path} answers something to check`).toBeGreaterThan(0)
-    const checked = validators.getValidator<unknown>(contract.outputSchema)(body)
-    expect(checked.errorMessage, path).toBeUndefined()
+    expect(declaredAnswerIssue(program, path, body), path).toBeUndefined()
   }
   const declared = [...commands.keys()].filter((path) => metaOf(commands.get(path) as Command).output)
   expect(declared.sort()).toEqual(
     [...runs.map(([path]) => path), "meetings projects evidence", "meetings projects scan", "meetings prepare"]
+      // checked where their own fixtures are: offline-archive-cli, meeting-project-evidence and the preparation tests
       .concat(["meetings scheduled", "search recordings"])
       .sort(),
   )

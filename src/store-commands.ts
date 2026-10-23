@@ -30,7 +30,7 @@ import type { StoreConnection, StoreConnectRequest } from "./store-connection.js
 import { runUnifiedSearch } from "./unified-search.js"
 
 export interface StoreCommandContext {
-  deps: Pick<ProgramDeps, "now" | "archiveTranscripts" | "readBatchInput">
+  deps: Pick<ProgramDeps, "now" | "archiveTranscripts" | "readBatchInput" | "diagnostic">
   /** The one connection a command run shares; opened on first use. */
   connected: (intent?: StoreConnectRequest["intent"]) => Promise<StoreConnection>
   /** A connection of its own, which the caller closes. */
@@ -79,6 +79,9 @@ export const addStoreCommands = (program: Command, context: StoreCommandContext)
         yield item
     },
     search: async (request) => runUnifiedSearch((await connected()).unifiedSearch, request),
+    note: (text) => {
+      if (!program.opts().quiet) deps.diagnostic(`${text}\n`)
+    },
   })
   addMeetingReadBindings(program, {
     project: {

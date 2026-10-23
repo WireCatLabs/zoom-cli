@@ -222,7 +222,21 @@ it("CLI forwards complete context envelopes and proposal-only previews with no a
   const meetingContext = {
     passage: vi.fn(),
     evidence: vi.fn(async () => evidence),
-    personContext: vi.fn(async () => ({ items: [], coverage: { complete: false, pending: 2 } })),
+    personContext: vi.fn(async () => ({
+      person: { uid: "person-7", name: "Alice Example" },
+      items: [],
+      limits: { meetings: 2, cues: 3, bytes: 512, scanLimit: 20 },
+      contentBytes: 0,
+      coverage: {
+        involvementsScanned: 0,
+        scanLimitReached: false,
+        pending: 2,
+        truncatedBy: null,
+        skippedUnavailable: 0,
+        complete: false as const,
+        input: "bounded-meeting-pages" as const,
+      },
+    })),
     taskProposal: async () => proposal,
   }
   connectWith(deps, { meetingContext })

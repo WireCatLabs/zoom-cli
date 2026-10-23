@@ -1,6 +1,12 @@
 import { CliError } from "@wirecat/cli-base"
 import type { MeetingPassageReader } from "@wirecat/cli-core/meetings"
-import type { MeetingReadStore, PersonMeetingReadStore, TaskKind } from "@wirecat/cli-core/services"
+import type {
+  MeetingEvidencePacket,
+  MeetingReadStore,
+  PersonMeetingContext,
+  PersonMeetingReadStore,
+  TaskKind,
+} from "@wirecat/cli-core/services"
 import type { MeetingContextReadCapabilities } from "@wirecat/cli-core/store"
 import { checkCancelled } from "./errors.js"
 
@@ -22,8 +28,8 @@ export interface PersonContextOptions extends Pick<EvidenceOptions, "cues" | "by
 /** Each callback is bound to the connection's selected account; producer DTOs pass through unchanged. */
 export interface MeetingContextCapabilities {
   passage: MeetingPassageReader
-  evidence: (reference: string, options?: EvidenceOptions) => Promise<unknown>
-  personContext: (person: string, options?: PersonContextOptions) => Promise<unknown>
+  evidence: (reference: string, options?: EvidenceOptions) => Promise<MeetingEvidencePacket>
+  personContext: (person: string, options?: PersonContextOptions) => Promise<PersonMeetingContext>
   taskProposal: (reference: string, kind: MeetingTaskKind, signal?: AbortSignal) => Promise<unknown>
 }
 type ProducerContextApi = Pick<
