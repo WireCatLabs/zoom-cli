@@ -14,6 +14,7 @@ import type { ContextCapture } from "./meeting-communications-binding.js"
 import { createMeetingContextCapabilities, type MeetingContextCapabilities } from "./meeting-context.js"
 import { integrationReference, type MeetingIntegrationCapabilities } from "./meeting-integration.js"
 import type { MeetingPreparationBinding } from "./meeting-preparation.js"
+import type { MeetingLinksRead, MeetingReviewRead } from "./meeting-review-commands.js"
 import { type MeetingHitSearch, validateMeetingHitSearch } from "./meeting-search-commands.js"
 import { createMeetingSemanticCapabilities } from "./meeting-semantic.js"
 import type { MeetingSemanticCapabilities } from "./meeting-semantic-commands.js"
@@ -37,6 +38,8 @@ export interface StoreConnection {
   meetingContext: MeetingContextCapabilities
   meetingSemantic: MeetingSemanticCapabilities
   meetingStats?: MeetingStatsRead
+  meetingReview?: MeetingReviewRead
+  meetingLinks?: MeetingLinksRead
 }
 export interface StoreConnectRequest {
   profile: string
@@ -246,6 +249,14 @@ export const createStoreConnector =
         meetingStats: async (request) => {
           const { readMeetingStats } = await import("@wirecat/cli-core/services")
           return readMeetingStats(connected, { ...request, accountId })
+        },
+        meetingReview: async (request) => {
+          const { readMeetingReview } = await import("@wirecat/cli-core/services")
+          return readMeetingReview(connected, { ...request, accountId })
+        },
+        meetingLinks: async (request) => {
+          const { readMeetingLinks } = await import("@wirecat/cli-core/services")
+          return readMeetingLinks(connected, { ...request, accountId })
         },
       }
     } catch (error) {

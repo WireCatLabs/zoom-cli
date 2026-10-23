@@ -4,10 +4,12 @@ import {
   type JsonValue,
   type MeetingSource,
   parseVtt,
+  type SourceChatLine,
   type SourceMeeting,
   type SourceParticipant,
   type SummaryContent,
 } from "@wirecat/cli-core/meetings"
+import { parseZoomChat } from "./chat-file.js"
 import { number, object, string, withIssue, ZoneAssumptions, zoomTime } from "./errors.js"
 import { type RemoteOptions, ZoomRemote } from "./remote-http.js"
 import type { TokenManager } from "./tokens.js"
@@ -230,6 +232,47 @@ export class ZoomApiSource implements MeetingSource {
     }
     return [...participants.values()]
   }
+  private async downloadText(url: string, what: "transcript" | "chat"): Promise<string> {
+    const label = what === "chat" ? "Chat" : "Transcript"
+    const tokens = await this.tokens.tokens()
+    // One deadline covers every redirect and the streamed body.
+    const signal = AbortSignal.timeout(30000)
+    const response = await this.remote.download(url, {
+      accessToken: tokens.accessToken,
+      signal,
+      what,
+      unreachable: () => new CliError("provider_error", `${label} download could not be completed`),
+    })
+    if (!response.ok)
+      throw new CliError(statusToCode(response.status), `${label} download failed (HTTP ${response.status})`)
+    const maxBytes = TRANSCRIPT_MAX_BYTES
+    const reader = response.body?.getReader()
+    if (!reader) throw new CliError("invalid_response", `Zoom returned an invalid ${what}`)
+    const chunks: Uint8Array[] = []
+    let size = 0
+    try {
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        size += value.byteLength
+        if (size > maxBytes) {
+          await reader.cancel()
+          throw new CliError("invalid_response", `Zoom ${what} exceeds the download size limit`)
+        }
+        chunks.push(value)
+      }
+    } catch (error) {
+      if (isCliError(error)) throw error
+      throw new CliError("provider_error", `${label} download could not be completed`)
+    }
+    const bytes = new Uint8Array(size)
+    let offset = 0
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset)
+      offset += chunk.byteLength
+    }
+    return new TextDecoder().decode(bytes)
+  }
   async transcript(id: string) {
     const body = await this.request(
       `/meetings/${encodeUuid(id)}/transcript`,
@@ -243,45 +286,7 @@ export class ZoomApiSource implements MeetingSource {
         throw new CliError("provider_error", "Zoom has not finished this transcript yet; a later sync reads it")
       return null
     }
-    const url = requiredString(body.download_url)
-    const tokens = await this.tokens.tokens()
-    // One deadline covers every redirect and the streamed body.
-    const signal = AbortSignal.timeout(30000)
-    const response = await this.remote.download(url, {
-      accessToken: tokens.accessToken,
-      signal,
-      what: "transcript",
-      unreachable: () => new CliError("provider_error", "Transcript download could not be completed"),
-    })
-    if (!response.ok)
-      throw new CliError(statusToCode(response.status), `Transcript download failed (HTTP ${response.status})`)
-    const maxBytes = TRANSCRIPT_MAX_BYTES
-    const reader = response.body?.getReader()
-    if (!reader) throw new CliError("invalid_response", "Zoom returned an invalid transcript")
-    const chunks: Uint8Array[] = []
-    let size = 0
-    try {
-      for (;;) {
-        const { done, value } = await reader.read()
-        if (done) break
-        size += value.byteLength
-        if (size > maxBytes) {
-          await reader.cancel()
-          throw new CliError("invalid_response", "Zoom transcript exceeds the download size limit")
-        }
-        chunks.push(value)
-      }
-    } catch (error) {
-      if (isCliError(error)) throw error
-      throw new CliError("provider_error", "Transcript download could not be completed")
-    }
-    const bytes = new Uint8Array(size)
-    let offset = 0
-    for (const chunk of chunks) {
-      bytes.set(chunk, offset)
-      offset += chunk.byteLength
-    }
-    const content = new TextDecoder().decode(bytes)
+    const content = await this.downloadText(requiredString(body.download_url), "transcript")
     try {
       return parseVtt(content)
     } catch {
@@ -329,8 +334,20 @@ export class ZoomApiSource implements MeetingSource {
         content !== null ? [] : Array.isArray(steps) ? steps.filter((s): s is string => typeof s === "string") : [],
     }
   }
-  async chat() {
-    return null
+  /** The chat Zoom saved with the cloud recording; a meeting without one, or a login without the scope, has none. */
+  async chat(id: string): Promise<SourceChatLine[] | null> {
+    const scope = "cloud_recording:read:list_recording_files"
+    const granted = (await this.tokens.tokens()).scopes
+    if (![scope, `${scope}:admin`].some((grant) => granted.includes(grant))) return null
+    const body = await this.request(`/meetings/${encodeUuid(id)}/recordings`, scope, 3301)
+    if (!body || !Array.isArray(body.recording_files)) return null
+    const file = body.recording_files
+      .map(object)
+      .find((row) => row.file_type === "CHAT" && row.status === "completed" && string(row.download_url) !== null)
+    if (!file) return null
+    const start = this.time(file.recording_start ?? body.start_time, { zoneless: false })
+    if (start === null) throw new CliError("invalid_response", "Zoom chat file is missing its start time")
+    return parseZoomChat(await this.downloadText(requiredString(file.download_url), "chat"), start)
   }
   async files() {
     return null

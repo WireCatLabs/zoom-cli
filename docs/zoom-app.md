@@ -118,7 +118,7 @@ with `zm personal session status --json`.
 | Scope | Feature |
 |---|---|
 | `cloud_recording:read:list_user_recordings` | Discover your cloud recording occurrences |
-| `cloud_recording:read:list_recording_files` | Inspect and download available recording assets |
+| `cloud_recording:read:list_recording_files` | Inspect and download available recording assets; store the meeting chat at sync |
 | `user:read:user` | Verify the remote session with `zm personal session status --check` |
 | `meeting:read:meeting` | Show remote details and prepare a selected upcoming series with stored context |
 | `meeting:read:invitation` | Retrieve its invitation text |

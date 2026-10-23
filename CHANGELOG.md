@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Added
+
+- **`zm <profile> review`: the meetings since a point, with what was decided and who talked.** Newest first, the
+  last 7 days by default: each meeting's summary and next steps, projects, transcript size and the three longest
+  speakers. It says how many meetings have no summary and how many transcripts are nearly empty.
+- **Meeting chat is stored at sync, and `zm <profile> mentions list` lists the links in it.** zm reads the chat file
+  Zoom saves with a cloud recording (needs `cloud_recording:read:list_recording_files`); the links come most shared
+  first, with who shared them and in which meetings.
+
 ### Fixed
 
 - **A transcript Zoom has not finished yet is no longer reported as a broken answer.** Sync said "Zoom response is

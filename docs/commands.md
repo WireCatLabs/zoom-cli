@@ -1367,6 +1367,55 @@ zm stats meetings top [options]
 
 **Example:** `zm personal stats meetings top --project RES --limit 5 --json`
 
+## `zm review`
+
+meetings since a point: summary, next steps and who talked how long
+
+```sh
+zm review [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--since-time <time>` | meetings starting at or after this date or time (ISO 8601, or 30d ago). |
+| `--until-time <time>` | meetings starting at or before this date or time; a date alone is that whole day. |
+| `--timezone <zone>` | the IANA zone dates and weeks are read in (default: this computer's). |
+| `--event-id <id>` | only meetings linked to this stored event. |
+| `--project <name>` | meetings confirmed in this project, by name, key or alias. |
+| `--topic <name>` | meetings with this topic, by name or alias. |
+| `--limit <n>` | most meetings, newest first (default 50, at most 200). |
+
+**Returns:** meetings since a point: summary, next steps and who talked how long
+
+**Example:** `zm personal review --json`, `zm personal review --since-time 30d --project RES --json`
+
+## `zm mentions`
+
+what the stored meetings point to: links shared in their chat
+
+### `zm mentions list`
+
+links shared in meeting chat, most shared first, by whom and where
+
+```sh
+zm mentions list [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--since-time <time>` | meetings starting at or after this date or time (ISO 8601, or 30d ago). |
+| `--until-time <time>` | meetings starting at or before this date or time; a date alone is that whole day. |
+| `--timezone <zone>` | the IANA zone dates and weeks are read in (default: this computer's). |
+| `--event-id <id>` | only meetings linked to this stored event. |
+| `--project <name>` | meetings confirmed in this project, by name, key or alias. |
+| `--topic <name>` | meetings with this topic, by name or alias. |
+| `--limit <n>` | how many links (default 100). |
+| `--max-messages <n>` | most chat messages to read (default and at most 100000). |
+
+**Returns:** links shared in meeting chat, most shared first, by whom and where
+
+**Example:** `zm personal mentions list --since-time 30d --json`
+
 ## `zm batch`
 
 run bounded stored meeting reads: search meetings and meetings passage
