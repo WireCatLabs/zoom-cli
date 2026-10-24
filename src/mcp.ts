@@ -49,7 +49,7 @@ const levelsOf = (own: Readonly<Record<string, Level>>): Record<string, Level> =
 /**
  * The shared WireCat MCP surface over zm's own commands: `zm_tools_search`, `zm_read`, `zm_write` (WC-MCP-1, 2). A
  * call runs the command line itself, so it answers and fails as the command does (WC-MCP-10); `ask` counts as yes,
- * since no one is at a terminal (WC-MCP-7), and what the profile denies is neither offered nor run (WC-MCP-6).
+ * since no one is at a terminal (WC-MCP-7), and denied commands stay discoverable with availability but cannot run (WC-MCP-6).
  */
 export const createZoomMcpServer = (options: ZoomMcpOptions): McpServer => {
   const server = new McpServer(
@@ -75,6 +75,8 @@ export const createZoomMcpServer = (options: ZoomMcpOptions): McpServer => {
   }
   const offered = () =>
     toolsFromCommands(options.commands, {
+      includeUnavailable: true,
+      currentLevels: () => levelsOf(options.permissions()),
       exclude: EXCLUDED,
       omit: OMITTED,
       levels: levelsOf(options.permissions()),
@@ -89,6 +91,7 @@ export const createZoomMcpServer = (options: ZoomMcpOptions): McpServer => {
         title: tool.title,
         description: tool.description,
         writes: tool.writes,
+        availability: tool.availability,
         input: tool.input,
         run: async (input) => {
           if (tool.command === "config set" && input.key === "permissions")
