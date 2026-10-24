@@ -6,5 +6,5 @@
     "@cspell/dict-ru_ru/cspell-ext.json"
   ],
   "ignorePaths": ["docs/dev/**", "CHANGELOG.md"],
-  "words": ["wirecat", "PKCE"]
+  "words": ["wirecat", "PKCE", "rvben", "sweatco"]
 }
