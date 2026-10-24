@@ -93,7 +93,7 @@ The generated [command reference](../commands.md) uses cli-base's shared command
 
 ## Installed platforms
 
-Full manual validation and release validation pack once, then install that exact tarball on Linux
+Full manual validation and release validation pack once, then install that exact tarball on Linux, macOS
 and Windows with Node 22.16.0 and 24.19.0. `scripts/installed-platform.mjs` exercises native SQLite
 imports across processes, corrections, historical reads, no-overwrite export, local archive
 verification, transcript append replays and corrections, fixed MCP account scope, cancellation and semantic
