@@ -20,6 +20,21 @@ export const DEFAULT_PERMISSIONS: Readonly<Record<string, Level>> = {
   "remote-meetings": "ask",
 }
 
+/** A saved denial must be reviewed when the two recording download paths become one. */
+export const recordingPermissions = (levels: Readonly<Record<string, Level>>): Readonly<Record<string, Level>> => {
+  if (Object.hasOwn(levels, "recordings.sync"))
+    throw new CliError(
+      "configuration_error",
+      "permission path moved — rename permissions.recordings.sync to permissions.recordings.download",
+      {
+        permission: "recordings.sync",
+        replacement: "recordings.download",
+        retryable: false,
+      },
+    )
+  return levels
+}
+
 export const discoveryLevels = (own: Readonly<Record<string, Level>>, env: NodeJS.ProcessEnv) => {
   const ceiling = setupPermissionCeiling(env)
   return {
@@ -106,7 +121,7 @@ export const checkPermission = (command: Command, context: PermissionContext): P
   if (!key) return
   const named = context.profile()
   const profile = named ?? "<profile>"
-  const own = named === undefined ? {} : (context.config().permissions[named] ?? {})
+  const own = recordingPermissions(named === undefined ? {} : (context.config().permissions[named] ?? {}))
   const levels = context.ceiling ? { ...own, [CEILING_KEY]: context.ceiling } : own
   const { level, key: by } = levelFor(levels, key, DEFAULT_PERMISSIONS)
   const at = by ?? key

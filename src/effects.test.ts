@@ -54,7 +54,7 @@ describe("command effects", () => {
   it("read Zoom for commands that call it", () => {
     for (const path of ["recordings list", "remote-meetings show", "session status"])
       expect(effectsOf(path)?.remote, path).toBe("read")
-    for (const path of ["watch", "recordings sync", "recordings schedule run", "search meetings"])
+    for (const path of ["watch", "recordings download", "recordings schedule run", "search meetings"])
       expect(effectsOf(path), path).toEqual({ remote: "read", local: "write" })
   })
 })

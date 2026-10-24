@@ -145,6 +145,7 @@ const json = (...args) => answer(invoke(["--json", ...args]).stdout)
 assert.equal(invoke(["--version"]).stdout.trim(), expectedVersion)
 invoke(["--help"])
 json("commands")
+invoke(["recordings", "sync", "--json"], 2)
 invoke(["--json", "meetings", "prepare", "123", "--cues", "101"], 2)
 const invalidBatch = join(sandbox, "invalid-batch.json")
 writeFileSync(invalidBatch, '{"requests":[{"id":"write","command":["meetings","sync"],"args":[]}]}')
@@ -158,7 +159,7 @@ invoke(["recordings", "download", "example-occurrence", "--output-dir", missingP
 invoke(
   [
     "recordings",
-    "sync",
+    "download",
     "--since-time",
     "2026-10-01",
     "--until-time",
@@ -209,11 +210,11 @@ for (const [path, flags] of [
     ["--file-ids", " "],
   ],
   [
-    ["recordings", "sync", "--since-time", "2026-10-01", "--until-time", "2026-10-11", "--jsonl"],
+    ["recordings", "download", "--since-time", "2026-10-01", "--until-time", "2026-10-11", "--jsonl"],
     ["--max-pages", "10001"],
   ],
   [
-    ["recordings", "sync", "--since-time", "2026-10-01", "--until-time", "2026-10-11", "--jsonl"],
+    ["recordings", "download", "--since-time", "2026-10-01", "--until-time", "2026-10-11", "--jsonl"],
     ["--checkpoint", join(sandbox, "contradictory-checkpoint"), "--no-resume"],
   ],
 ])

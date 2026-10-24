@@ -112,6 +112,10 @@ not remote OAuth users. File and API sources share the selected account and its 
 does not advance it. The standalone connector respects the producer's MESSAGING_STORE override and
 state-directory convention. No guessed numeric id or memory fallback is used.
 
+`recordings download` accepts one occurrence or a complete date range, validated before provider access.
+Both use the existing Core transfer/checkpoint orchestration. A range streams receipts for JSONL or a
+terminal, and uses the shared bounded list collector for JSON and MCP; the SDK and checkpoint formats stay unchanged.
+
 Cloud archives keep transfer metadata rather than creating a second meeting database. Manifests
 contain asset IDs, sizes and local digests, never signed URLs or tokens. Writes use temporary files
 and no-overwrite promotion; repeated downloads verify existing entries. Stale-lock recovery removes

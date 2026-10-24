@@ -131,9 +131,9 @@ The server captures source selections at startup; restart after changing or revo
 ## Archive and ingestion
 
 `recordings list` / `show` inspect cloud assets. Prefer occurrence UUIDs for recurring meetings.
-Attending a meeting does not grant recording API access. `recordings sync --since-time <date>
---until-time <date> --output-dir <dir> --jsonl` archives bounded history; `download` handles one
-occurrence. Existing files are never overwritten. Repeated runs skip verified manifest entries;
+Attending a meeting does not grant recording API access. `recordings download --since-time <date>
+--until-time <date> --output-dir <dir> --jsonl` archives bounded history. With a meeting ID instead of the date bounds, `download` handles one occurrence.
+Use `--json` for a bounded receipt list or `--jsonl` to retain completed receipts after a later failure. Existing files are never overwritten. Repeated runs skip verified manifest entries;
 completed files survive later failures. Interrupted transfers resume a verified prefix only when
 a strong validator and the returned byte range agree; changed representations restart safely.
 `--no-resume` uses ephemeral partials. Keep account/profile and archive destination consistent.

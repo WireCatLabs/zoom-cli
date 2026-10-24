@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**331 ✅ · 1 ⛔ · 0 ❌** — 75 commands, 257 options.
+**326 ✅ · 1 ⛔ · 0 ❌** — 74 commands, 253 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -157,24 +157,19 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `recordings list` | `--since-time` | ✅ |  |
 | `recordings list` | `--until-time` | ✅ |  |
 | `recordings list` | `--timezone` | ✅ |  |
-| `recordings sync` |  | ✅ |  |
-| `recordings sync` | `--since-time` | ✅ |  |
-| `recordings sync` | `--until-time` | ✅ |  |
-| `recordings sync` | `--output-dir` | ✅ |  |
-| `recordings sync` | `--max-bytes` | ✅ |  |
-| `recordings sync` | `--resume` | ✅ |  |
-| `recordings sync` | `--no-resume` | ✅ |  |
-| `recordings sync` | `--checkpoint` | ✅ |  |
-| `recordings sync` | `--recheck-since-time` | ✅ |  |
-| `recordings sync` | `--max-pages` | ✅ |  |
-| `recordings sync` | `--max-entries` | ✅ |  |
 | `recordings show` |  | ✅ |  |
 | `recordings download` |  | ✅ |  |
 | `recordings download` | `--output-dir` | ✅ |  |
+| `recordings download` | `--since-time` | ✅ |  |
+| `recordings download` | `--until-time` | ✅ |  |
 | `recordings download` | `--file-ids` | ✅ |  |
 | `recordings download` | `--max-bytes` | ✅ |  |
 | `recordings download` | `--resume` | ✅ |  |
 | `recordings download` | `--no-resume` | ✅ |  |
+| `recordings download` | `--checkpoint` | ✅ |  |
+| `recordings download` | `--recheck-since-time` | ✅ |  |
+| `recordings download` | `--max-pages` | ✅ |  |
+| `recordings download` | `--max-entries` | ✅ |  |
 | `recordings archive transcript` |  | ✅ |  |
 | `recordings archive transcript` | `--uuid` | ✅ |  |
 | `recordings archive transcript` | `--file-ids` | ✅ |  |

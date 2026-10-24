@@ -272,3 +272,65 @@ it("runs native shared discovery and guides with Core's agent environment and ke
     },
   })
 })
+
+it("runs date-range downloads through the same typed command over MCP", async () => {
+  const { deps, call } = await setup()
+  deps.recordings = {
+    list: vi.fn(),
+    show: vi.fn(),
+    catalog: () => ({
+      provider: "zoom",
+      list: async () => ({
+        items: [{ id: "123456789", externalId: "example-occurrence", title: "Example", startedAt: null, assets: [] }],
+        nextCursor: null,
+      }),
+    }),
+    download: async () => ({
+      uuid: "example-occurrence",
+      manifestPath: "example.json",
+      downloaded: [],
+      skipped: [],
+      unavailable: [],
+    }),
+  }
+  const answer = await call("zm_write", {
+    command: "recordings download",
+    arguments: {
+      since_time: "2026-10-01",
+      until_time: "2026-10-11",
+      output_dir: join(deps.configPath, "..", "archive"),
+      resume: false,
+    },
+  })
+  expect(answer.isError).toBeFalsy()
+  expect(answer.structuredContent).toMatchObject({ items: [{ meeting: { uuid: "example-occurrence" } }] })
+  const retired = await call("zm_write", { command: "recordings sync", arguments: {} })
+  expect(retired.isError).toBe(true)
+  expect(retired.structuredContent.error.code).toBe("validation_error")
+})
+
+it("refuses MCP startup with a retired recording permission", async () => {
+  await expect(setup({ "recordings.sync": "deny" })).rejects.toMatchObject({
+    code: "configuration_error",
+    details: { replacement: "recordings.download" },
+  })
+})
+
+it("fails closed if a retired recording permission appears after MCP startup", async () => {
+  const permissions: Record<string, string> = {}
+  const { call, deps } = await setup(permissions)
+  const fetch = vi.fn(async (): Promise<never> => {
+    throw new Error("unexpected network")
+  })
+  deps.fetch = fetch
+  permissions["recordings.sync"] = "deny"
+  const refused = await call("zm_write", {
+    command: "recordings download",
+    arguments: { meeting: "example", output_dir: "unused" },
+  })
+  expect(refused.isError).toBe(true)
+  expect(refused.structuredContent).toMatchObject({
+    error: { code: "configuration_error", message: expect.stringContaining("permissions.recordings.download") },
+  })
+  expect(fetch).not.toHaveBeenCalled()
+})

@@ -7,7 +7,7 @@ import type { RunOptions } from "@wirecat/cli-core/cli"
 import { isBody, itemAnswer } from "@wirecat/cli-core/cli"
 import { type McpCommand, registerCommands, runCommandForAgent, toolsFromCommands } from "@wirecat/cli-core/mcp"
 import type { Level } from "@wirecat/cli-core/sends"
-import { DEFAULT_PERMISSIONS, permissionKeyForPath } from "./permissions.js"
+import { DEFAULT_PERMISSIONS, permissionKeyForPath, recordingPermissions } from "./permissions.js"
 import { VERSION } from "./version.js"
 
 /** One run of the CLI for an agent: its exit code and what it printed, the answer on stdout or the error on stderr. */
@@ -44,7 +44,10 @@ const visible = (value: unknown): unknown => {
 }
 
 /** The levels a tool call is checked against: the built-in defaults under the profile's own, as on the command line. */
-const levelsOf = (own: Readonly<Record<string, Level>>): Record<string, Level> => ({ ...DEFAULT_PERMISSIONS, ...own })
+const levelsOf = (own: Readonly<Record<string, Level>>): Record<string, Level> => ({
+  ...DEFAULT_PERMISSIONS,
+  ...recordingPermissions(own),
+})
 
 /**
  * The shared WireCat MCP surface over zm's own commands: `zm_tools_search`, `zm_read`, `zm_write` (WC-MCP-1, 2). A
