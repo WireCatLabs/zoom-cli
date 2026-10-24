@@ -5,11 +5,14 @@ import { createInterface } from "node:readline/promises"
 import { addAbortSignal } from "node:stream"
 import { fileURLToPath } from "node:url"
 import { CliError, catchCrashes, isCliError, readBatchInput, systemKeyring } from "@wirecat/cli-base"
+import { readOnlyLockOf, setupAtStart } from "@wirecat/cli-core/cli"
 import { reportFailure } from "../answer-policy.js"
 import { readConfig } from "../config.js"
 import { loginService, zmPaths } from "../folders.js"
 import { writeExportFile } from "../output-file.js"
+import { pathOf } from "../permissions.js"
 import { run } from "../program.js"
+import { ZM } from "../read-only.js"
 import { lazyRunLog } from "../run-log.js"
 import { createStoreConnector } from "../store-connection.js"
 import { writeStream } from "../streaming.js"
@@ -102,6 +105,16 @@ try {
             }
           }
         : undefined,
+    atStart: (command) => {
+      const given = command.optsWithGlobals()
+      return setupAtStart({
+        command: "zm",
+        env: process.env,
+        path: pathOf(command),
+        headless: Boolean(given.json || given.jsonl || given.input === false || process.env.CI) || !outputIsTTY,
+        readOnlyLock: readOnlyLockOf(ZM, process.env),
+      })
+    },
     readPaste: process.stdin.isTTY
       ? async (signal) => {
           const input = createInterface({ input: process.stdin, output: process.stderr })
