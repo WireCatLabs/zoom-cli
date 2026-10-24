@@ -164,7 +164,7 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
     expect(full.stdout).toContain("remote-meetings")
     const guide = invoke("guide", "find-quote")
     expect(guide.status).toBe(0)
-    expect(guide.stdout).toContain("zm search meetings")
+    expect(guide.stdout).toContain("zm personal search meetings")
     const pullHelp = invoke("meetings", "sync", "--help")
     expect(pullHelp.status).toBe(0)
     expect(pullHelp.stdout).toContain("--lookback-days")

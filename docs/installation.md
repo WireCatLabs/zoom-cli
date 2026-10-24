@@ -43,7 +43,8 @@ For an agent without terminal access, follow [MCP and skills](mcp.md).
   uses that server's files and login, not your laptop's.
 - **For Zoom account access:** an account allowed to authorize the app and a working system
   password store: Keychain on macOS, Credential Manager on Windows, or a desktop secret store on Linux.
-  An organization may require administrator approval. A headless server without a keyring cannot
+  An organization may require administrator approval. Run `zm doctor --json` to check `authentication.keyring` before login. It tests and removes
+  a temporary keyring entry without reading saved logins. A headless server without a keyring cannot
   save login; importing transcript files does not need one.
 
 ## Install
@@ -72,10 +73,13 @@ an already-running agent too if it cannot see the newly installed command.
 
 ## Choose how to connect
 
+zm has no built-in client ID, and no WireCat app is available to other Zoom accounts.
+Bring your own Zoom General app, or use a team app a colleague has shared with your account.
+
 | Your starting point | What to do |
 |---|---|
 | You already created a Zoom app | [Open its credentials](zoom-app.md#use-an-app-you-already-created), enable Public Client OAuth and copy its **Public Client ID** |
-| Your team supplied an app, including a WireCat app | Get its **Public Client ID** from the owner and confirm your Zoom user may authorize it; [use the shared app](zoom-app.md#use-a-wirecat-or-team-app) |
+| A colleague shared a team app with your Zoom account | Get its **Public Client ID** from the owner and confirm your Zoom user may authorize it; [use the shared app](zoom-app.md#use-a-wirecat-or-team-app) |
 | You need an app | [Create a General, user-managed app](zoom-app.md#create-your-own-app), configure its callback and scopes, then return here |
 | You have transcript files | [Import without a Zoom app](#import-without-a-zoom-app); skip browser login |
 
@@ -161,7 +165,7 @@ zm skill install --for agents
 
 This installs instructions for Codex/Gemini. For Claude Code use `--for claude`; omit `--for` to
 install both. Installing instructions does not authorize Zoom or retrieve meetings. For an agent
-using MCP, follow [MCP and skills](mcp.md) instead; its meeting tools are read-only.
+using MCP, follow [MCP and skills](mcp.md) instead; the profile's permissions limit its reading and writing commands.
 
 ## Check your first result
 

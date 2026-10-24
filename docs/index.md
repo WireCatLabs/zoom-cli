@@ -28,7 +28,7 @@ which Zoom data is available.
 
 The tool reads hosted meetings through Zoom's API or imports files you are allowed to obtain.
 It does not join calls, start recording or generate missing Zoom transcripts. Its MCP connection
-is read-only; terminal agents have the CLI's broader command set.
+offers reads and writes, limited by the selected profile's permissions; see [MCP and skills](mcp.md).
 
 ## Get a useful first answer
 

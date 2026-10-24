@@ -34,8 +34,13 @@ serves:
 | `zm_write` | runs a command that changes something, such as `remote-meetings create`, or `search meetings`, which updates the word index first |
 
 A call runs the command line itself, so it answers and fails exactly as `zm personal <command> --json` does. The
-server speaks for the profile named in its `args`; a caller cannot change it. Login, settings, `watch` and the
-server itself are not offered.
+server speaks for the profile named in its `args`; a caller cannot change it. `watch`, `complete` and the server itself are not offered. Shared commands
+`meetings scheduled`, `meetings projects scan` and `upgrade` remain unavailable over MCP;
+use them in a terminal. Interactive login (`session start`) also stays in the terminal.
+Settings and skill installation require `mcp.authority` at `allow` or `ask`;
+profile permissions can only be changed in a terminal.
+Grant authority with `zm personal config set permissions '{"mcp.authority":"allow"}'` and restart
+the server. This replaces the profile's permission map, so include any existing restrictions.
 
 What the profile's permissions deny is neither offered nor run, and `readonly` withholds the commands that change
 something. A command at level `ask` runs without a question, since no one is at a terminal: the built-in `ask` on
@@ -62,8 +67,8 @@ reads a different profile or database. Keep stdout for protocol messages; omit `
 ### Upgrading from 0.34 and earlier
 
 `zm serve --mcp` and its flags (`--meeting-context`, `--meeting-preparation`, `--semantic` and the others) are gone;
-`zm serve` now says so. Every tool they added is a command the shared server offers: `meetings context`,
-`meetings prepare`, `meetings projects scan`, `meetings scheduled`, `search all`, `search meetings --model`. Change
+`zm serve` now says so. Use `meetings context`, `meetings prepare`, `search all` and `search meetings --model` through the
+shared server. `meetings projects scan` and `meetings scheduled` currently require a terminal. Change
 the entry's `args` to `["personal", "mcp"]`.
 
 ## Try the connection

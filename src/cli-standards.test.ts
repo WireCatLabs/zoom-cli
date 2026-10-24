@@ -57,7 +57,7 @@ describe("portable CLI discovery and diagnostics", () => {
       examples: ["zm config set files.timezone Europe/Madrid --json"],
     })
     expect(commands.find((item) => item.path.join(" ") === "search meetings")?.examples).toContain(
-      'zm search meetings "example plan" --model e5-small --json',
+      'zm personal search meetings "example plan" --model e5-small --json',
     )
     expect(await run(["complete", "--", "search", "m"], deps)).toBe(0)
     expect(stdout[1]).toContain("meetings\t")
@@ -108,7 +108,7 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(text).toMatch(/\nSet up\n {2}zm config show +show local configuration\n/)
     expect(text).toMatch(/ {2}zm config set <key> <value> +set a configuration value \(writes\)\n/)
   })
-  it("reports local health and explicitly unknown authentication without keyring/DB access", async () => {
+  it("reports keyring failure without reading a saved login or opening the database", async () => {
     const { deps, stdout } = await setup()
     setConfig(deps.configPath, "zoom.clientId", "example-client")
     useProfile(deps.configPath, "example")
@@ -121,9 +121,22 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(await run(["--json", "doctor"], deps)).toBe(0)
     expect(readAnswer(stdout[0] ?? "{}")).toMatchObject({
       profiles: ["example"],
-      authentication: { configured: true, state: "not_checked" },
+      authentication: { configured: true, state: "not_checked", keyring: "unavailable" },
       database: "not_checked",
     })
+  })
+  it("tests only a disposable keyring entry and removes it after doctor", async () => {
+    const { deps, stdout } = await setup()
+    const keyring = memoryKeyring({ "example:example-client": "saved-login" })
+    deps.tokens = new TokenManager({ ...deps.tokens.options, keyring })
+    const get = vi.spyOn(keyring, "get")
+    expect(await run(["doctor", "--json"], deps)).toBe(0)
+    expect(readAnswer(stdout[0] ?? "{}")).toMatchObject({
+      authentication: { keyring: "available", state: "not_checked" },
+    })
+    expect([...keyring.entries.values()]).toEqual(["saved-login"])
+    expect(get).toHaveBeenCalledWith(expect.stringMatching(/^zoom-cli-doctor:/), "probe")
+    expect(get).toHaveBeenCalledTimes(1)
   })
   it("answers doctor with an old camelCase config, naming its first key and no value", async () => {
     const { deps, stdout, stderr } = await setup()
@@ -268,3 +281,16 @@ it("quiet keeps the login URL, the one thing an agent can pass on, and the failu
   expect(stderr[0]).toContain("Open this URL to approve Zoom login:")
   expect(JSON.parse(stderr[1] ?? "{}").error.code).toBe("configuration_error")
 })
+
+it.each(["set", "get", "delete"] as const)(
+  "doctor reports unavailable when keyring %s fails and suppresses raw errors",
+  async (operation) => {
+    const { deps, stdout, stderr } = await setup()
+    vi.spyOn(deps.tokens.options.keyring, operation).mockImplementation(() => {
+      throw new Error("invented-private-diagnostic")
+    })
+    expect(await run(["doctor", "--json"], deps)).toBe(0)
+    expect(readAnswer(stdout[0] ?? "{}")).toMatchObject({ authentication: { keyring: "unavailable" } })
+    expect([...stdout, ...stderr].join("")).not.toContain("invented-private-diagnostic")
+  },
+)

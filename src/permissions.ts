@@ -27,7 +27,7 @@ export const permissionKeyOf = (command: Command): string | null => {
 
 /** Every key a permission may name: each command's path and every group above it. */
 export const permissionKeys = (program: Command): Set<string> => {
-  const keys = new Set<string>()
+  const keys = new Set<string>(["mcp.authority"])
   const walk = (command: Command) => {
     const key = permissionKeyOf(command)
     if (key) keys.add(key)

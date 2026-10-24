@@ -87,7 +87,10 @@ export const addStandardCommands = (program: Command, deps: StandardCommandsDeps
       .action(async (options: { check?: boolean }) =>
         deps.output(itemOf(await deps.sessionStatus(options.check === true))),
       ),
-    { effects: REMOTE_READ, examples: ["zm session status --json", "zm session status --check --json"] },
+    {
+      effects: REMOTE_READ,
+      examples: ["zm personal session status --json", "zm personal session status --check --json"],
+    },
   )
 }
 
@@ -101,7 +104,12 @@ export const annotateMeetingCommands = (program: Command): void => {
     if (command.commands.length) continue
     const path = item.path.join(" ")
     if (!metaOf(command).effects) throw new CliError("configuration_error", `command effects are missing: ${path}`)
-    annotate(command, { origin: "handwritten", ...(item.examples ? {} : { examples: [exampleFor(path)] }) })
+    annotate(command, {
+      origin: "handwritten",
+      examples: item.examples?.map((example) =>
+        PROFILE_FREE.has(item.path[0] ?? "") ? example : example.replace(`zm ${path}`, `zm personal ${path}`),
+      ) ?? [exampleFor(path)],
+    })
   }
 }
 /** The top-level commands that act for no account, so their examples carry no profile word. */

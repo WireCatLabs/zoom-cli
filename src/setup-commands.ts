@@ -1,4 +1,5 @@
-import { CliError, createRenderer, isCliError } from "@wirecat/cli-base"
+import { randomUUID } from "node:crypto"
+import { CliError, createRenderer, isCliError, type KeyringStore } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
 import {
   type Body,
@@ -22,6 +23,24 @@ import { getZoomProfile } from "./recordings.js"
 import type { TokenManager } from "./tokens.js"
 import { addUpgradeCommand } from "./upgrade.js"
 import { VERSION } from "./version.js"
+
+const probeKeyring = (keyring: KeyringStore): "available" | "unavailable" => {
+  const service = `zoom-cli-doctor:${randomUUID()}`
+  let available = false
+  try {
+    keyring.set(service, "probe", "doctor-test")
+    available = keyring.get(service, "probe") === "doctor-test"
+  } catch {
+    available = false
+  } finally {
+    try {
+      if (!keyring.delete(service, "probe")) available = false
+    } catch {
+      available = false
+    }
+  }
+  return available ? "available" : "unavailable"
+}
 
 export const addConfigCommands = (
   program: Command,
@@ -86,6 +105,7 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
     fields,
     raw: buffer,
     doctor: () => {
+      const keyring = probeKeyring(deps.tokens.options.keyring)
       let config: ZoomConfig
       try {
         config = getConfig()
@@ -96,7 +116,7 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
           runtime: { node: process.versions.node },
           config: { readable: false, path: deps.configPath, error: error.message },
           profiles: null,
-          authentication: { configured: null, state: "not_checked" },
+          authentication: { configured: null, state: "not_checked", keyring },
           database: "not_checked",
         }
       }
@@ -105,7 +125,7 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
         runtime: { node: process.versions.node },
         config: { readable: true, path: deps.configPath, source: config.source },
         profiles: config.profiles,
-        authentication: { configured: config.clientId !== null, state: "not_checked" },
+        authentication: { configured: config.clientId !== null, state: "not_checked", keyring },
         database: "not_checked",
       }
     },

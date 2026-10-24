@@ -69,7 +69,10 @@ export const addWatchCommand = (program: Command, deps: WatchCommandDeps): void 
   annotate(command, {
     origin: "handwritten",
     effects: FETCH,
-    examples: ["zm watch files ./downloads --pause 10s --jsonl", "zm watch api --lookback-days 2 --jsonl"],
+    examples: [
+      "zm personal watch files ./downloads --pause 10s --jsonl",
+      "zm personal watch api --lookback-days 2 --jsonl",
+    ],
     lifetime: "persistent",
   })
 }

@@ -3,8 +3,9 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { memoryKeyring } from "@wirecat/cli-base"
-import { checkGuide } from "@wirecat/cli-core/cli"
+import { checkStep, loadScenarios, shellProblems } from "@wirecat/cli-core/cli"
 import { describe, expect, it, vi } from "vitest"
+import { liftProfileWord } from "./profile-word.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
 
@@ -90,6 +91,17 @@ describe("ZM_READ_ONLY", () => {
 
 it("keeps every scenario step runnable", async () => {
   const { deps } = await setup({})
-  const packageRoot = fileURLToPath(new URL("..", import.meta.url))
-  expect(await checkGuide(() => createProgram(deps), { packageRoot })).toEqual([])
+  const { scenarios, problems } = await loadScenarios(fileURLToPath(new URL("../scenarios", import.meta.url)))
+  expect(problems).toEqual([])
+  expect(scenarios).toHaveLength(5)
+  for (const scenario of scenarios) {
+    for (const step of scenario.steps) {
+      const program = createProgram(deps)
+      const words = step.run.split(/\s+/)
+      const lifted = liftProfileWord(program, [words.slice(1), { from: "user" }])
+      expect(lifted.profile, step.run).toBe("personal")
+      expect(shellProblems(step.run), step.run).toEqual([])
+      expect(checkStep(program, step.run.replace(/^zm personal /, "zm ")), step.run).toEqual([])
+    }
+  }
 })

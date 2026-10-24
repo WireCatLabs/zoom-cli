@@ -81,7 +81,7 @@ export const addRecordingScheduleCommands = (
           )
         },
       ),
-    "zm recordings schedule create --name daily --output-dir /home/AliceExample/archive --since-time 2026-01-01 --at 03:15 --timezone UTC --json",
+    "zm personal recordings schedule create --name daily --output-dir /home/AliceExample/archive --since-time 2026-01-01 --at 03:15 --timezone UTC --json",
     LOCAL_WRITE,
   )
   label(
@@ -91,7 +91,7 @@ export const addRecordingScheduleCommands = (
       .action(async () => {
         deps.output(wholeList("recordings schedule list", await deps.service().list({ signal: deps.signal() })))
       }),
-    "zm recordings schedule list --offline --json",
+    "zm personal recordings schedule list --offline --json",
     LOCAL_READ,
   )
   label(
@@ -102,7 +102,7 @@ export const addRecordingScheduleCommands = (
       .action(async (id: string) => {
         deps.output(itemOf(await deps.service().show(id, { signal: deps.signal() })))
       }),
-    "zm recordings schedule show example-job --offline --json",
+    "zm personal recordings schedule show example-job --offline --json",
     LOCAL_READ,
   )
   label(
@@ -116,7 +116,7 @@ export const addRecordingScheduleCommands = (
         for await (const receipt of deps.service().run(id, { offline: deps.offline(), signal: deps.signal() }))
           await deps.receipt(itemOf(receipt))
       }),
-    "zm recordings schedule run example-job --jsonl",
+    "zm personal recordings schedule run example-job --jsonl",
     FETCH,
   )
   label(
@@ -131,7 +131,7 @@ export const addRecordingScheduleCommands = (
           await deps.service().disable(id, { apply: options.yes, dryRun: options.dryRun, signal: deps.signal() }),
         )
       }),
-    "zm recordings schedule disable example-job --yes --json",
+    "zm personal recordings schedule disable example-job --yes --json",
     LOCAL_WRITE,
   )
 }

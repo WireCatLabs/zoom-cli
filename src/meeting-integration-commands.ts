@@ -68,7 +68,7 @@ export const addMeetingIntegrationCommands = (
           options,
         ),
     ),
-    "zm meetings update meeting:1/1 --event-id 1 --yes --json",
+    "zm personal meetings update meeting:1/1 --event-id 1 --yes --json",
     true,
   )
   label(
@@ -109,7 +109,7 @@ export const addMeetingIntegrationCommands = (
           options,
         ),
     ),
-    "zm meetings link meeting:1/1 --participant-id 1 --person 1 --yes --json",
+    "zm personal meetings link meeting:1/1 --participant-id 1 --person 1 --yes --json",
     true,
   )
 }

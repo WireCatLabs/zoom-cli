@@ -32,17 +32,19 @@ Replace the placeholder without angle brackets. Sign in as the Zoom user whose m
 review the consent and approve. Wait for `logged_in: true` in the terminal. If browser approval leaves
 it waiting, follow [finish the browser callback](sessions.md#finish-the-browser-callback).
 
-### Use a WireCat or team app
+zm has no built-in client ID. No WireCat app is available to other Zoom accounts: every user must
+bring their own General app until the owner's app passes Zoom Marketplace review. The owner's
+app is in Development and works only for its creator's Zoom account.
 
-If the app owner has made an existing WireCat or team app available to your Zoom user, use the
-**Public Client ID supplied by that owner** with the same commands above. You do not need to create
-another app or obtain its secret. The owner maintains redirect settings and requested permissions;
-you authorize your own account.
+<a id="use-a-wirecat-or-team-app"></a>
 
-An app in development is not automatically available to users in another Zoom account. Check access
-with its owner; a company administrator may also need to approve it. A Marketplace authorization
-link by itself does not configure `zm` or complete its login: start `zm personal session start` so its current callback
-and verification key exist. If you cannot authorize the shared app, create your own with the steps below.
+### Use a team app
+
+If a colleague created an app and shared it with your Zoom account, use their **Public Client ID**
+with the commands above. The colleague maintains redirect settings and requested permissions;
+you authorize your own account. Confirm access with them; an administrator may need to approve it.
+A Marketplace authorization link alone does not configure zm: start `zm personal session start`
+to create its callback and verification key. If you cannot authorize the team app, create your own below.
 
 ## Create your own app
 

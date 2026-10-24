@@ -55,7 +55,7 @@ it("prints a scenario's steps", async () => {
     return true
   })
   expect(await run(["guide", "find-quote"], deps)).toBe(0)
-  expect(written.join("")).toContain("zm meetings passage")
+  expect(written.join("")).toContain("zm personal meetings passage")
 })
 
 it("prints help for every command, lists with a query included", async () => {
@@ -77,4 +77,19 @@ it("lists commands as text by section, and as JSON with --json", async () => {
   stdout.length = 0
   expect(await run(["commands", "--json"], deps)).toBe(0)
   expect(JSON.parse(stdout.join("")).contract).toBe(3)
+})
+
+it("every account example includes a profile before its command", async () => {
+  const { deps } = setup()
+  const { PROFILE_FREE } = await import("./commands.js")
+  for (const command of flatten(describeProgram(createProgram(deps)))) {
+    for (const example of command.examples ?? []) {
+      const words = example.split(/\s+/)
+      const needsProfile = !PROFILE_FREE.has(command.path[0] ?? "")
+      expect(words.slice(0, needsProfile ? 2 : 1), example).toEqual(needsProfile ? ["zm", "personal"] : ["zm"])
+      expect(words.slice(needsProfile ? 2 : 1, (needsProfile ? 2 : 1) + command.path.length), example).toEqual(
+        command.path,
+      )
+    }
+  }
 })

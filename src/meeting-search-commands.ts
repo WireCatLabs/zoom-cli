@@ -188,8 +188,8 @@ export const addMeetingSearchCommands = (
     origin: "handwritten",
     effects: FETCH,
     examples: [
-      'zm search meetings "example plan" --since-time 2026-09-01 --json',
-      'zm search meetings "example plan" --model e5-small --json',
+      'zm personal search meetings "example plan" --since-time 2026-09-01 --json',
+      'zm personal search meetings "example plan" --model e5-small --json',
     ],
   })
   const search =
@@ -212,7 +212,7 @@ export const addMeetingSearchCommands = (
     origin: "handwritten",
     effects: LOCAL_READ,
     output: { entity: "hit" },
-    examples: ['zm search recordings ./zoom-archive "example plan" --limit 100 --offline --json'],
+    examples: ['zm personal search recordings ./zoom-archive "example plan" --limit 100 --offline --json'],
   })
   return execute
 }

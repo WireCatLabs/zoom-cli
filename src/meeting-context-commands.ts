@@ -65,7 +65,7 @@ export const addMeetingContextCommands = (
           ),
         )
       }),
-    "zm meetings evidence meeting:3/15 --json",
+    "zm personal meetings evidence meeting:3/15 --json",
     "meeting_evidence",
   )
   label(
@@ -107,7 +107,7 @@ export const addMeetingContextCommands = (
           )
         },
       ),
-    "zm meetings context person:7 --meetings 10 --json",
+    "zm personal meetings context person:7 --meetings 10 --json",
     "meeting_person_context",
   )
   label(
@@ -123,7 +123,7 @@ export const addMeetingContextCommands = (
         validateTaskProposal(proposal)
         deps.output(itemOf(proposal))
       }),
-    "zm meetings task-proposal meeting:3/15/20/0 --type promise --json",
+    "zm personal meetings task-proposal meeting:3/15/20/0 --type promise --json",
     "meeting_task_proposal",
   )
 }

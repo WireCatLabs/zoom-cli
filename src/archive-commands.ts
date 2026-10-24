@@ -133,7 +133,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         const list = wholeList("recordings list", await deps.recordings().list({ from, to, signal: deps.signal() }))
         deps.output(options.untilTime === undefined ? { ...list, meta: { timezone: zone } } : list)
       }),
-    "zm recordings list --since-time 2026-10-01 --until-time 2026-10-10 --json",
+    "zm personal recordings list --since-time 2026-10-01 --until-time 2026-10-10 --json",
     REMOTE_READ,
   )
   label(
@@ -187,7 +187,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
             await deps.receipt(itemOf(receipt))
         },
       ),
-    "zm recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./archive --jsonl",
+    "zm personal recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./archive --jsonl",
     FETCH,
   )
   label(
@@ -199,7 +199,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         deps.api()
         deps.output(itemOf(await deps.recordings().show(id, { signal: deps.signal() })))
       }),
-    "zm recordings show example-occurrence --json",
+    "zm personal recordings show example-occurrence --json",
     REMOTE_READ,
   )
   label(
@@ -224,7 +224,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         deps.output(itemOf(await deps.recordings().download(id, request)))
       },
     ),
-    "zm recordings download example-occurrence --output-dir ./zoom-archive --json",
+    "zm personal recordings download example-occurrence --output-dir ./zoom-archive --json",
     FETCH,
   )
   const archive = annotate(recordings.command("archive"), { effects: NO_EFFECTS }).description(
@@ -250,7 +250,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
     ).action(async (directory: string, options: { uuid?: string; fileIds?: string; maxBytes?: number }) => {
       await deps.outputItems(deps.transcripts.read(directory, selected(options)))
     }),
-    "zm recordings archive transcript ./zoom-archive --uuid example-occurrence --json",
+    "zm personal recordings archive transcript ./zoom-archive --uuid example-occurrence --json",
     LOCAL_READ,
   )
   label(
@@ -263,7 +263,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
           wholeList("recordings archive inspect", await deps.archive.inspect(directory, { signal: deps.signal() })),
         ),
       ),
-    "zm recordings archive show ./zoom-archive --json",
+    "zm personal recordings archive show ./zoom-archive --json",
     LOCAL_READ,
   )
   label(
@@ -275,7 +275,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
           wholeList("recordings archive verify", await deps.archive.verify(directory, { signal: deps.signal() })),
         ),
       ),
-    "zm recordings archive check ./zoom-archive --json",
+    "zm personal recordings archive check ./zoom-archive --json",
     LOCAL_READ,
   )
   label(
@@ -288,7 +288,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
           wholeList("recordings archive locks", await deps.archive.locks(directory, { signal: deps.signal() })),
         ),
       ),
-    "zm recordings archive locks ./zoom-archive --json",
+    "zm personal recordings archive locks ./zoom-archive --json",
     LOCAL_READ,
   )
   label(
@@ -308,7 +308,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
           ),
         ),
       ),
-    "zm recordings archive recover ./zoom-archive --dry-run --json",
+    "zm personal recordings archive recover ./zoom-archive --dry-run --json",
     LOCAL_WRITE,
   )
 
@@ -323,7 +323,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         deps.api()
         deps.output(wholeList("remote-meetings list", await deps.remoteMeetings().list({ signal: deps.signal() })))
       }),
-    "zm remote-meetings list --json",
+    "zm personal remote-meetings list --json",
     REMOTE_READ,
   )
   label(
@@ -335,7 +335,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         deps.api()
         deps.output(itemOf(await deps.remoteMeetings().show(id, { signal: deps.signal() })))
       }),
-    "zm remote-meetings show 123456789 --json",
+    "zm personal remote-meetings show 123456789 --json",
     REMOTE_READ,
   )
   label(
@@ -347,7 +347,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         deps.api()
         deps.output(itemOf(await deps.remoteMeetings().invitation(id, { signal: deps.signal() })))
       }),
-    "zm remote-meetings invitation 123456789 --json",
+    "zm personal remote-meetings invitation 123456789 --json",
     REMOTE_READ,
   )
   label(
@@ -355,7 +355,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
       async (options: ChangeOptions & MutationOptions & { yes?: boolean }) =>
         deps.output(itemOf(await deps.remoteMeetings().create(change(options), mutation(options, deps)))),
     ),
-    'zm remote-meetings create --title "Example planning" --start-time 2026-10-10T15:30:00Z --dry-run --json',
+    'zm personal remote-meetings create --title "Example planning" --start-time 2026-10-10T15:30:00Z --dry-run --json',
     REMOTE_WRITE,
   )
   label(
@@ -367,7 +367,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
     ).action(async (id: string, options: ChangeOptions & MutationOptions & { yes?: boolean }) =>
       deps.output(itemOf(await deps.remoteMeetings().update(id, change(options), mutation(options, deps)))),
     ),
-    'zm remote-meetings update 123456789 --title "Example planning" --dry-run --json',
+    'zm personal remote-meetings update 123456789 --title "Example planning" --dry-run --json',
     REMOTE_WRITE,
   )
   label(
@@ -381,7 +381,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
       .action(async (id: string, options: MutationOptions & { yes?: boolean }) =>
         deps.output(itemOf(await deps.remoteMeetings().cancel(id, mutation(options, deps)))),
       ),
-    "zm remote-meetings cancel 123456789 --dry-run --json",
+    "zm personal remote-meetings cancel 123456789 --dry-run --json",
     REMOTE_WRITE,
   )
 }

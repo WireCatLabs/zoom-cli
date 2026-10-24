@@ -96,13 +96,36 @@ it("offers three tools and runs a stored read as the command line does", async (
   expect(passage.structuredContent.items[0]?.excerpt).toContain("Ship the example plan")
 })
 
-it("leaves login, settings and the server itself out", async () => {
+it("offers finite commands and reserves authority changes for an explicit grant", async () => {
   const { call } = await setup()
-  const all = (await call("zm_tools_search", {})).structuredContent.items.map(
-    (item: { command: string }) => item.command,
-  )
-  expect(all).toContain("remote-meetings create")
-  for (const hidden of ["session start", "config set", "mcp", "serve", "watch"]) expect(all).not.toContain(hidden)
+  const all = (await call("zm_tools_search", {})).structuredContent.items.map((item) => item.command)
+  for (const offered of [
+    "remote-meetings create",
+    "guide",
+    "session status",
+    "config show",
+    "skill show",
+    "meetings embeddings",
+  ])
+    expect(all).toContain(offered)
+  for (const hidden of ["config set", "skill install", "session start", "mcp", "serve", "watch", "complete"])
+    expect(all).not.toContain(hidden)
+
+  const granted = await setup({ "mcp.authority": "allow" })
+  const withAuthority = (await granted.call("zm_tools_search", {})).structuredContent.items.map((item) => item.command)
+  expect(withAuthority).toContain("config set")
+  expect(withAuthority).toContain("skill install")
+  const changed = await granted.call("zm_write", {
+    command: "config set",
+    arguments: { key: "files.timezone", value: "UTC" },
+  })
+  expect(changed.isError).toBeFalsy()
+  const escalation = await granted.call("zm_write", {
+    command: "config set",
+    arguments: { key: "permissions", value: '{"mcp.authority":"allow"}' },
+  })
+  expect(escalation.isError).toBe(true)
+  expect(escalation.structuredContent.error.code).toBe("permission_error")
 })
 
 it("takes ask as yes, since no one is at a terminal, and withholds what the profile denies", async () => {
@@ -181,4 +204,16 @@ it("serves over a transport until the command is stopped", async () => {
   expect((await client.listTools()).tools.map((tool) => tool.name)).toContain("zm_tools_search")
   controller.abort()
   await expect(serving).resolves.toBeUndefined()
+})
+
+it("refuses an authority command after its grant is revoked", async () => {
+  const permissions = { "mcp.authority": "allow" }
+  const { call } = await setup(permissions)
+  permissions["mcp.authority"] = "deny"
+  const refused = await call("zm_write", {
+    command: "config set",
+    arguments: { key: "files.timezone", value: "UTC" },
+  })
+  expect(refused.isError).toBe(true)
+  expect(refused.structuredContent.error.code).toBe("permission_error")
 })

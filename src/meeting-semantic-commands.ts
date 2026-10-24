@@ -132,6 +132,6 @@ export const addMeetingEmbeddingCommand = (
         if (options.yes) await deps.receipt(itemOf(result))
         else deps.output(itemOf(result))
       }),
-    { origin: "handwritten", effects: FETCH, examples: ["zm meetings embeddings --model e5-small --json"] },
+    { origin: "handwritten", effects: FETCH, examples: ["zm personal meetings embeddings --model e5-small --json"] },
   )
 }
