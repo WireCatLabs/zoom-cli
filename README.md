@@ -111,7 +111,8 @@ More: [MCP and skills][docs/mcp.md] · [connect your AI agent][wirecat/en/docs/a
   transcript revision, and corrected transcripts keep their history.
 - **Made for agents.** JSON output, bounded reads with explicit completeness, a skill and an MCP server.
 - **Safe by default.** Your own Zoom app, tokens only in the keyring, permissions per profile, and every
-  change to Zoom asked first at the terminal.
+  change to Zoom asks first at the terminal. Over MCP there is no terminal, so `ask` runs without a question;
+  use `deny` or `readonly` to stop a change.
 
 More: [security][docs/security.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
 
