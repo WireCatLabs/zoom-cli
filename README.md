@@ -136,6 +136,8 @@ links meetings to events and people, and creates, changes or cancels simple meet
 
 More: [what is planned][gh/zoom-cli/blob/main/docs/roadmap.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
 
+More: [compared with other tools](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/compare.md) · [on wirecat.dev](https://wirecat.dev/en/docs/zm/compare)
+
 ## Commands by task
 
 | Task | Commands |

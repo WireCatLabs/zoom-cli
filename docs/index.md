@@ -41,3 +41,5 @@ one decision and the passage supporting it. Tell me what information is missing.
 
 Expect source references, not an uncited summary. Continue with [search and evidence](search.md),
 or [back up recording files](archive.md#archive-cloud-recordings) if your priority is keeping the media.
+
+How `zm` differs from other tools: [compared with other tools](compare.md).
