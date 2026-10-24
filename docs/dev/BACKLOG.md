@@ -57,3 +57,6 @@ an item here names it when zm only adopts it.
   (`src/mcp.ts:29`: config, session, skill, `meetings embeddings`) and four in cli-core's (`meetings scheduled`,
   `meetings projects scan`, `guide`, `upgrade`). Only `watch`, `mcp` and `complete` stay out (owner, 2026-10-23).
   The MCP page already promises `meetings scheduled` and `projects scan`, which answer "no command".
+- **ZM-27** · P2 · `recordings sync` folds into `recordings download`: both save recordings to disk, and `sync` means
+  bringing the store up to date (owner, 2026-10-24). `download` takes the date range and resumes month by month as
+  `sync` does now; `sync` goes, with no alias. Start: `src/archive-commands.ts`.
