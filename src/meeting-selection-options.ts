@@ -1,6 +1,7 @@
 import { CliError } from "@wirecat/cli-base"
-import { defineQuery } from "@wirecat/cli-base/query"
+import { defineQuery, queryFieldsOf } from "@wirecat/cli-base/query"
 import { dateWindow, queryTerms } from "@wirecat/cli-core/cli"
+import { meetingLink } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
 import { bytes } from "./execution.js"
 
@@ -19,6 +20,9 @@ export const MEETING_LINK_QUERY = defineQuery({
   entity: "meeting_link",
   backend: "native",
   fields: [
+    ...queryFieldsOf(meetingLink, { native: ["url"], examples: { url: 'url:"https://example.com/plan"' } }).map(
+      (field) => (field.native ? { ...field, operators: ["term" as const, "phrase" as const] } : field),
+    ),
     {
       name: "event_id",
       native: true,
@@ -59,7 +63,7 @@ export const selectionOptions = (command: Command, list = false): Command => {
   return command
 }
 
-export const linkSelection = (words: string[], flags: SelectionFlags): SelectionFlags => {
+export const linkSelection = (words: string[], flags: SelectionFlags): SelectionFlags & { url?: string } => {
   const terms = queryTerms(words, MEETING_LINK_QUERY, "mentions list")
   const event = terms.get("event_id")
   if (event !== undefined && (!/^[1-9]\d*$/.test(event) || !Number.isSafeInteger(Number(event))))
@@ -67,6 +71,7 @@ export const linkSelection = (words: string[], flags: SelectionFlags): Selection
   return {
     ...flags,
     ...(event === undefined ? {} : { eventId: Number(event) }),
+    ...(terms.get("url") === undefined ? {} : { url: terms.get("url") }),
     ...(terms.get("project") === undefined ? {} : { project: terms.get("project") }),
     ...(terms.get("topic") === undefined ? {} : { topicName: terms.get("topic") }),
   }

@@ -8,6 +8,8 @@
 
 ### Added
 
+- Meeting mentions accept a schema-derived URL query, selected inside the shared link reader before result limits.
+
 - **Meeting links accept native queries.** `mentions list event_id:1`, `project:RES` and `topic:planning` select the underlying meetings before links are read. Stored events accept native id, origin and time queries.
 
 ### Fixed
