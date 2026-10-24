@@ -263,7 +263,7 @@ it("keeps bounded search cursors and coverage in JSONL and forwards typed date/b
       maxReadBytes: 1024,
     }),
   )
-  expect(await run(["search", "meetings", "example", "--topic", "costs", "--json"], deps)).toBe(0)
+  expect(await run(["search", "meetings", "example", "--topic-name", "costs", "--json"], deps)).toBe(0)
   expect(search).toHaveBeenLastCalledWith("example", expect.objectContaining({ topic: "costs" }))
 })
 
