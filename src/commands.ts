@@ -1,9 +1,27 @@
 import { CliError } from "@wirecat/cli-base"
-import { annotate, describeOptions, describeProgram, flatten, metaOf } from "@wirecat/cli-base/commands"
+import {
+  annotate,
+  customizeSharedCommand,
+  describeOptions,
+  describeProgram,
+  flatten,
+  metaOf,
+} from "@wirecat/cli-base/commands"
 import { formatSuggestions, suggest } from "@wirecat/cli-base/completion"
-import { type Body, commandsCommand, itemOf, LOCAL_READ, NO_EFFECTS, REMOTE_READ } from "@wirecat/cli-core/cli"
+import {
+  type Body,
+  commandsCommand,
+  hasSharedContract,
+  itemOf,
+  LOCAL_READ,
+  NO_EFFECTS,
+  overrideSharedContract,
+  REMOTE_READ,
+  sharedCommandTemplate,
+} from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { wholeList } from "./answer-output.js"
+import { SHELL_OVERRIDES } from "./contract-overrides.js"
 import { ZM } from "./read-only.js"
 
 export interface StandardCommandsDeps {
@@ -12,7 +30,7 @@ export interface StandardCommandsDeps {
   doctor: () => unknown
   sessionStatus: (check: boolean) => Promise<unknown>
 }
-export const addStandardCommands = (program: Command, deps: StandardCommandsDeps): void => {
+const addStandardCommandsDefinition = (program: Command, deps: StandardCommandsDeps): void => {
   program.addCommand(commandsCommand(ZM).copyInheritedSettings(program))
   annotate(
     program
@@ -65,12 +83,20 @@ export const annotateMeetingCommands = (program: Command): void => {
     if (command.commands.length) continue
     const path = item.path.join(" ")
     if (!metaOf(command).effects) throw new CliError("configuration_error", `command effects are missing: ${path}`)
-    annotate(command, {
-      origin: "handwritten",
-      examples: item.examples?.map((example) =>
-        PROFILE_FREE.has(item.path[0] ?? "") ? example : example.replace(`zm ${path}`, `zm personal ${path}`),
-      ) ?? [exampleFor(path)],
-    })
+    const examples = item.examples?.map((example) =>
+      PROFILE_FREE.has(item.path[0] ?? "") ? example : example.replace(`zm ${path}`, `zm personal ${path}`),
+    ) ?? [exampleFor(path)]
+    if (JSON.stringify(examples) === JSON.stringify(item.examples)) continue
+    const change = (one: Command) => {
+      annotate(one, { examples })
+    }
+    if (hasSharedContract(command))
+      overrideSharedContract(
+        command,
+        "Zoom account examples explicitly name the personal profile required for meeting reads.",
+        change,
+      )
+    else change(command)
   }
 }
 /** The top-level commands that act for no account, so their examples carry no profile word. */
@@ -101,4 +127,18 @@ const exampleFor = (path: string): string => {
     "meetings import": "./downloaded-transcripts",
   }
   return `zm ${profile}${path}${argumentsByPath[path] ? ` ${argumentsByPath[path]}` : ""} --json`
+}
+
+export const addStandardCommands = (...args: Parameters<typeof addStandardCommandsDefinition>) => {
+  customizeSharedCommand(
+    sharedCommandTemplate(ZM, "doctor"),
+    "Zoom local diagnostics inspect runtime and public config only; online account checks belong to session status.",
+    () => {
+      addStandardCommandsDefinition(...args)
+      const command = args[0].commands.find((command) => command.name() === "doctor")
+      if (!command) throw new Error("doctor builder did not install its command")
+      return command
+    },
+    SHELL_OVERRIDES.doctor,
+  )
 }

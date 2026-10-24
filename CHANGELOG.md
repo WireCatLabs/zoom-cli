@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Changed — may break callers
+
+- **Shared command contracts and model commands come from Core.** Provider source and transport differences are explicit and discoverable; silent edits fail before execution. Stored meeting topic labels use `--topic-name`; forum `--topic` retains its id meaning.
+
+### Added
+
+- **Meeting links accept native queries.** `mentions list event_id:1`, `project:RES` and `topic:planning` select the underlying meetings before links are read. Stored events accept native id, origin and time queries.
+
 ## 0.42.0 — 24.10.2026
 
 ### Changed — may break callers

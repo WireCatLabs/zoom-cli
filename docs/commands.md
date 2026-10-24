@@ -583,8 +583,12 @@ the owner's stored events
 list stored events
 
 ```sh
-zm events list [options]
+zm events list [query] [options]
 ```
+
+| Argument | | What it is |
+|---|---|---|
+| `query` | optional | event id, origin or time fields that narrow the list. |
 
 | Option | What it does |
 |---|---|
@@ -597,21 +601,21 @@ zm events list [options]
 
 ## `zm commands`
 
-every command by section, one line each; --json: the contract, one path per call
+every command by section; --json prints its contract, one path per call
 
 ### `zm commands info`
 
-one command's argv and result schemas, effects, permissions and retry guidance
+one command contract, or all schemas, error reasons and explicit overrides
 
 ```sh
-zm commands info <path>
+zm commands info [path]
 ```
 
 | Argument | | What it is |
 |---|---|---|
-| `path` | required | one command path, for example: stats messages show. |
+| `path` | optional | one command path; without one, export schemas, error reasons and explicit overrides. |
 
-**Returns:** one command's argv and result schemas, effects, permissions and retry guidance
+**Returns:** one command contract, or all schemas, error reasons and explicit overrides
 
 **Example:** `zm commands info messages list`
 
@@ -701,11 +705,11 @@ zm upgrade [options]
 
 ## `zm models`
 
-speech models that run on this machine, for `meetings transcribe`
+models that run on this machine
 
 ### `zm models list`
 
-the speech models this version knows, and which are downloaded
+speech and embedding models, their download status and the default of each kind
 
 ```sh
 zm models list [query]
@@ -719,25 +723,30 @@ zm models list [query]
 
 **Next usually:** `zm models download <model>`
 
-**Example:** `zm personal models list --json`, `zm personal models list kind:audio downloaded:false`
+**Example:** `zm personal models list`, `zm personal models list kind:audio`
 
 ### `zm models download`
 
-download a speech model, or repair one, checking every file's sha256
+download and verify one speech or embedding model
 
 **Changes local data.**
 
 ```sh
-zm models download <model>
+zm models download <model> [options]
 ```
 
 | Argument | | What it is |
 |---|---|---|
-| `model` | required | a model id from `models list`. |
+| `model` | required | a model id from models list. |
+
+| Option | What it does |
+|---|---|
+| `--offline` | refuse a download that needs the network. |
+| `--accept-terms` | accept the model's licence terms, for a model that has its own. |
 
 **Returns:** model — id, kind, title, languages, size_bytes, downloaded, default, path, and 1 more; every field: zm commands info models download
 
-**Example:** `zm personal models download parakeet-v3 --json`
+**Example:** `zm personal models download parakeet-v3`
 
 ## `zm watch`
 
@@ -1310,9 +1319,9 @@ zm search meetings <query> [options]
 | `--person-id <id>` | meetings with a participant linked to this person. |
 | `--event-id <id>` | only meetings linked to this stored event. |
 | `--series-id <id>` | only meetings in this stored series. |
-| `--project <name>` | meetings confirmed in this project, by name, key or alias. |
+| `--project <project>` | meetings confirmed in this project, by name, key or alias. |
 | `--tag <name>` | meetings with this tag, by name or alias. |
-| `--topic <name>` | meetings with this topic, by name or alias. |
+| `--topic-name <name>` | meetings with this topic, by name or alias. |
 | `--since-time <time>` | meetings starting at or after this ISO 8601 date or time. |
 | `--until-time <time>` | meetings starting at or before this ISO 8601 date or time; a date alone covers that whole local day. |
 | `--limit <n>` | how many hits, 1 through 1000 (default 100). |
@@ -1374,8 +1383,8 @@ zm stats meetings show [options]
 | `--until-time <time>` | meetings starting at or before this date or time; a date alone is that whole day. |
 | `--timezone <zone>` | the IANA zone dates and weeks are read in (default: this computer's). |
 | `--event-id <id>` | only meetings linked to this stored event. |
-| `--project <name>` | meetings confirmed in this project, by name, key or alias. |
-| `--topic <name>` | meetings with this topic, by name or alias. |
+| `--project <project>` | meetings confirmed in this project, by name, key or alias. |
+| `--topic-name <name>` | meetings with this topic label, by name or alias. |
 | `--max-rows <n>` | most transcript lines to read (default and at most 500000). |
 
 **Returns:** meeting stats — time_zone, meetings, lines, words, talk_ms, weeks, top_speakers; every field: zm commands info stats meetings show
@@ -1396,8 +1405,8 @@ zm stats meetings top [options]
 | `--until-time <time>` | meetings starting at or before this date or time; a date alone is that whole day. |
 | `--timezone <zone>` | the IANA zone dates and weeks are read in (default: this computer's). |
 | `--event-id <id>` | only meetings linked to this stored event. |
-| `--project <name>` | meetings confirmed in this project, by name, key or alias. |
-| `--topic <name>` | meetings with this topic, by name or alias. |
+| `--project <project>` | meetings confirmed in this project, by name, key or alias. |
+| `--topic-name <name>` | meetings with this topic label, by name or alias. |
 | `--max-rows <n>` | most transcript lines to read (default and at most 500000). |
 | `--limit <n>` | how many speakers (default 20). |
 
@@ -1419,8 +1428,8 @@ zm review [options]
 | `--until-time <time>` | meetings starting at or before this date or time; a date alone is that whole day. |
 | `--timezone <zone>` | the IANA zone dates and weeks are read in (default: this computer's). |
 | `--event-id <id>` | only meetings linked to this stored event. |
-| `--project <name>` | meetings confirmed in this project, by name, key or alias. |
-| `--topic <name>` | meetings with this topic, by name or alias. |
+| `--project <project>` | meetings confirmed in this project, by name, key or alias. |
+| `--topic-name <name>` | meetings with this topic label, by name or alias. |
 | `--limit <n>` | most meetings, newest first (default 50, at most 200). |
 
 **Returns:** meeting review — ref, id, title, started_at, duration_ms, participants_count, projects, transcript, and 2 more; every field: zm commands info review
@@ -1436,23 +1445,24 @@ what the stored meetings point to: links shared in their chat
 links shared in meeting chat, most shared first, by whom and where
 
 ```sh
-zm mentions list [options]
+zm mentions list [query] [options]
 ```
+
+| Argument | | What it is |
+|---|---|---|
+| `query` | optional | field:value terms that narrow the list — the fields are below. |
 
 | Option | What it does |
 |---|---|
 | `--since-time <time>` | meetings starting at or after this date or time (ISO 8601, or 30d ago). |
 | `--until-time <time>` | meetings starting at or before this date or time; a date alone is that whole day. |
 | `--timezone <zone>` | the IANA zone dates and weeks are read in (default: this computer's). |
-| `--event-id <id>` | only meetings linked to this stored event. |
-| `--project <name>` | meetings confirmed in this project, by name, key or alias. |
-| `--topic <name>` | meetings with this topic, by name or alias. |
 | `--limit <n>` | how many links (default 100). |
 | `--max-messages <n>` | most chat messages to read (default and at most 100000). |
 
 **Returns:** meeting link — url, domain, document_id, count, first_at, last_at, senders, meetings; every field: zm commands info mentions list
 
-**Example:** `zm personal mentions list --since-time 30d --json`
+**Example:** `zm personal mentions list --since-time 30d --json`, `zm personal mentions list project:RES --json`
 
 ## `zm searches`
 
@@ -1477,8 +1487,8 @@ zm searches create <name> <query> [options]
 |---|---|
 | `--replace` | overwrite a saved search of the same name. |
 | `--event-id <id>` | only meetings linked to this stored event. |
-| `--project <name>` | meetings confirmed in this project, by name, key or alias. |
-| `--topic <name>` | meetings with this topic, by name or alias. |
+| `--project <project>` | meetings confirmed in this project, by name, key or alias. |
+| `--topic-name <name>` | meetings with this topic, by name or alias. |
 | `--since-time <time>` | meetings starting at or after this ISO 8601 date or time. |
 | `--until-time <time>` | meetings starting at or before this ISO 8601 date or time; a date alone covers that whole local day. |
 | `--limit <n>` | how many hits, 1 through 1000 (default 100). |

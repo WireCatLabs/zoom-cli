@@ -1,10 +1,16 @@
 import { annotate } from "@wirecat/cli-base/commands"
-import { type Body, LOCAL_READ, listOf, NO_EFFECTS } from "@wirecat/cli-core/cli"
+import { type Body, LOCAL_READ, listOf, NO_EFFECTS, withQuery } from "@wirecat/cli-core/cli"
 import { type MeetingReview, meetingLinkItem, meetingReviewItem } from "@wirecat/cli-core/meetings"
 import type { MeetingLink, MeetingLinksRequest, MeetingReviewRequest } from "@wirecat/cli-core/services"
 import type { Command } from "commander"
 import { bytes } from "./execution.js"
-import { type SelectionFlags, selectionOf, selectionOptions } from "./meeting-selection-options.js"
+import {
+  linkSelection,
+  MEETING_LINK_QUERY,
+  type SelectionFlags,
+  selectionOf,
+  selectionOptions,
+} from "./meeting-selection-options.js"
 
 export type MeetingReviewRead = (request: Omit<MeetingReviewRequest, "accountId">) => Promise<MeetingReview>
 export type MeetingLinksRead = (
@@ -74,16 +80,19 @@ export const addMeetingReviewCommands = (
     annotate(program.command("mentions"), { effects: NO_EFFECTS }).description(
       "what the stored meetings point to: links shared in their chat",
     )
-  annotate(selectionOptions(mentions.command("list")), {
-    effects: LOCAL_READ,
-    output: { entity: "meeting_link" },
-    examples: ["zm personal mentions list --since-time 30d --json"],
-  })
+  withQuery(
+    annotate(selectionOptions(mentions.command("list"), true), {
+      effects: LOCAL_READ,
+      output: { entity: "meeting_link" },
+      examples: ["zm personal mentions list --since-time 30d --json", "zm personal mentions list project:RES --json"],
+    }),
+    MEETING_LINK_QUERY,
+  )
     .description("links shared in meeting chat, most shared first, by whom and where")
     .option("--limit <n>", "how many links (default 100)", bytes)
     .option("--max-messages <n>", "most chat messages to read (default and at most 100000)", bytes)
-    .action(async (flags: SelectionFlags & { limit?: number; maxMessages?: number }) => {
-      const { request, meta } = selectionOf(flags, deps.signal())
+    .action(async (words: string[], flags: SelectionFlags & { limit?: number; maxMessages?: number }) => {
+      const { request, meta } = selectionOf(linkSelection(words, flags), deps.signal())
       const limit = flags.limit ?? 100
       const found = await (await deps.links())({
         ...request,
