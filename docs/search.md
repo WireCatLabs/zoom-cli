@@ -79,7 +79,7 @@ Combine a participant identity or explicitly linked person with a project and da
 ```sh
 zm personal meetings people "Alice Example" --json
 zm personal search meetings "launch" --identity-id 12 --project RES --since-time 2026-09-12 --until-time 2026-10-12 --json
-zm personal search meetings "budget" --person-id 7 --topic costs --since-time 2026-09-12 --json
+zm personal search meetings "budget" --person-id 7 --topic-name costs --since-time 2026-09-12 --json
 zm personal search meetings "launch" --tag planning --limit 20 --json
 ```
 
@@ -91,7 +91,7 @@ spoke an anonymous transcript cue.
 
 `--project` accepts an existing canonical project name, key or explicit alias. Only confirmed
 meeting membership counts; an agent's proposed membership or a matching transcript word does
-not establish membership. `--tag` and `--topic` accept canonical names or explicit aliases of
+not establish membership. `--tag` and `--topic-name` accept canonical names or explicit aliases of
 labels already attached to a meeting; choose one label filter. Missing or ambiguous vocabulary
 names fail instead of silently broadening the search. A date alone covers the whole local day
 of the computer's zone, and a time without an offset is read in that zone; give an offset or `Z`
@@ -139,7 +139,7 @@ record. Skipped sources set `complete` to false and appear in `issues`; search s
 ## Put filters in the query, and save a search
 
 The project, label and date filters can also be written in the query, joined to the words: `date:`, `project:`,
-`tag:` and `topic:` mean `--since-time`/`--until-time`, `--project`, `--tag` and `--topic`.
+`tag:` and `topic:` mean `--since-time`/`--until-time`, `--project`, `--tag` and `--topic-name`.
 
 ```sh
 zm personal search meetings "launch project:RES date>=30d" --json

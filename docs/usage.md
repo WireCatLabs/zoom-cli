@@ -231,7 +231,7 @@ zm personal stats meetings top --project RES --limit 5 --json
 `show` gives the meetings, lines, words and talk time in the selection, by week (weeks start on Monday in
 `--timezone`, the computer's zone by default), with the ten speakers who talked most. `top` lists speakers by talk
 time, with their lines, words, meetings and share of the talk. Both take `--since-time`, `--until-time`,
-`--event-id`, `--project` and `--topic`, read as `search meetings` reads them.
+`--event-id`, `--project` and `--topic-name`, read as `search meetings` reads them.
 
 A speaker is the person a participant is linked to, else the participant, else the name the transcript gives; a line
 with no speaker counts as `unknown`. Talk time is each line's length, so two people talking at once both count. A

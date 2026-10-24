@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs"
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
@@ -60,4 +60,36 @@ it("removes a model file of another version before downloading, and says so", as
   expect(stderr.join("")).toContain("silero_vad.onnx: not the file this version expects")
   expect(existsSync(join(audio, "silero_vad.onnx"))).toBe(false)
   vi.unstubAllGlobals()
+})
+
+it("keeps existing model files untouched offline, even with accepted terms", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "zm-models-offline-"))
+  const audio = join(directory, "models", "audio")
+  await mkdir(audio, { recursive: true })
+  const vad = join(audio, "silero_vad.onnx")
+  await writeFile(vad, "invented existing model bytes")
+  const network = vi.fn(async (): Promise<never> => {
+    throw new Error("unexpected network")
+  })
+  vi.stubGlobal("fetch", network)
+  const stdout: string[] = [],
+    stderr: string[] = []
+  try {
+    const deps: ProgramDeps = {
+      configPath: join(directory, "config.json"),
+      env: { WIRECAT_STATE_DIR: directory },
+      tokens: new TokenManager({ clientId: "", keyring: memoryKeyring(), service: "example", fetch: network }),
+      fetch: network,
+      openBrowser: async () => {},
+      data: (text) => stdout.push(text),
+      diagnostic: (text) => stderr.push(text),
+    }
+    expect(await run(["models", "download", "parakeet-v3", "--offline", "--accept-terms", "--json"], deps)).toBe(5)
+    expect(JSON.parse(stderr.at(-1) ?? "{}").error.code).toBe("permission_error")
+    expect(await readFile(vad, "utf8")).toBe("invented existing model bytes")
+    expect(network).not.toHaveBeenCalled()
+    expect(stdout).toEqual([])
+  } finally {
+    vi.unstubAllGlobals()
+  }
 })
