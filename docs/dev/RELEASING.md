@@ -19,7 +19,7 @@ commit before validation or artifact creation. If main moves between checking an
 the clean checkout and repeat `bin/release`; the refused run publishes nothing. A dry run may omit
 the commit, but an explicitly supplied mismatching commit is refused even for a dry run.
 
-Full validation builds, tests, checks docs and packs once. Linux and Windows installed-package
+Full validation builds, tests, checks docs and packs once. Linux, macOS and Windows installed-package
 checks run against the resulting tarball before publication. A separate job publishes only the tarball
 through npm trusted publishing. A final job tags the version after the registry exposes it, then
 creates the GitHub release: title is the bare version (`0.30.0`), notes are that version's
@@ -48,7 +48,7 @@ Export `NPM_TOKEN` explicitly for publication; the wrapper does not retrieve sav
 All validation runs with token/secret/password/credential environment variables removed and isolated
 npm configuration. The fallback checks coverage, docs, contracts, security scans, production audit,
 CodeQL and packaging, then installs the exact packed tarball and runs the current host's installed-package
-acceptance checks. Normal CI additionally provides the Linux and Windows matrix. Only the final
+acceptance checks. The full workflow additionally provides the Linux, macOS and Windows matrix. Only the final
 `npm publish --ignore-scripts` receives the token. The fallback verifies that npm exposes the validated
 tarball's integrity and downloads those registry bytes again before creating a tag and GitHub release. Any failed check stops publication.
 
