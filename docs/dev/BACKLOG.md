@@ -20,16 +20,16 @@ an item here names it when zm only adopts it.
 
 ## Launch blockers (P1)
 
-- **ZM-1** · P1 · Help examples and the packaged scenarios leave out the profile word, so copying one fails with
+- **ZM-1** · P1 · 🚧 `fix/zm-launch-truth-1024` · Help examples and the packaged scenarios leave out the profile word, so copying one fails with
   `validation_error` (41 examples in `commands --json`, 39 in docs/commands.md, all 5 `scenarios/*.md`).
   Start: `examples:` in `src/*-commands.ts`, `scenarios/`, then `pnpm generate`. Also: the `archive-recordings` scenario step
   `zm recordings schedule run daily` has no profile, and a `docs/search.md` heading reads "Why zm personal does not
   search…" (a find-and-replace slip). [notes](BACKLOG-NOTES.md#zm-1)
-- **ZM-2** · P1 · Docs say the MCP server is read-only; it is not, and should not be: the owner ruled
+- **ZM-2** · P1 · 🚧 `fix/zm-launch-truth-1024` · Docs say the MCP server is read-only; it is not, and should not be: the owner ruled
   (2026-10-23) that MCP allows writing and exposes every command, limited only by the profile's permissions. Fix
   the six claims and name the permission that limits writes. Start: docs/security.md:36,67, README.md:328,
   docs/installation.md:162, docs/index.md:31, docs/search.md:102. `zm --help` still lists `serve --mcp` as "read-only meeting tools". [notes](BACKLOG-NOTES.md#zm-2)
-- **ZM-3** · P1 · 🚩 Every new user must build their own Zoom Marketplace app before the first login; there is no
+- **ZM-3** · P1 · 🚧 `fix/zm-launch-truth-1024` · Every new user must build their own Zoom Marketplace app before the first login; there is no
   shared WireCat app. Decide: publish one through Zoom's review, a beta app, or keep "bring your own" and say so
   plainly. Start: docs/zoom-app.md:36-46. [notes](BACKLOG-NOTES.md#zm-3)
 - **ZM-4** · P1 · Release what is on main: `review`, `mentions list`, chat at sync and the not-ready transcript fix
@@ -44,7 +44,7 @@ an item here names it when zm only adopts it.
   (skills/zoom-cli/SKILL.md:126), "chat … return null" (docs/dev/ARCHITECTURE.md, chat is stored since #216).
 - **ZM-7** · P2 · Adopt the meeting query fields `date:`, `project:`, `tag:`, `topic:` when cli-core #1754 ships.
   Start: cli-core `meetings`, then the zm search docs.
-- **ZM-8** · P2 · `doctor` does not say whether a keyring is available, so a headless user learns it only when
+- **ZM-8** · P2 · 🚧 `fix/zm-launch-truth-1024` · `doctor` does not say whether a keyring is available, so a headless user learns it only when
   login fails to save. Start: `src/setup-commands.ts`. [notes](BACKLOG-NOTES.md#zm-8)
 - **ZM-9** · P2 · Answer entities: 58 of 68 leaf commands declare none (WC-CMD-19); `stats`, `review`,
   `mentions list` need an entity in cli-core first (DEBT-157). Start: `zm commands --json`.
@@ -53,7 +53,7 @@ an item here names it when zm only adopts it.
 - **ZM-11** · P2 · Agent end-to-end check of the meeting workflow on invented data (aliases → cited calls →
   passages → Memo findings → prepare), with the result in cli-testing.
   [plan](https://github.com/WireCatLabs/cli-private/blob/main/plans/2026-10-14-zoom-next-tasks.md)
-- **ZM-24** · P2 · MCP offers every command it can: 14 of 63 are missing, 11 of them offerable — ten in zm's own exclusion list
+- **ZM-24** · P2 · 🚧 `fix/zm-launch-truth-1024` · MCP offers every command it can: 14 of 63 are missing, 11 of them offerable — ten in zm's own exclusion list
   (`src/mcp.ts:29`: config, session, skill, `meetings embeddings`) and four in cli-core's (`meetings scheduled`,
   `meetings projects scan`, `guide`, `upgrade`). Only `watch`, `mcp` and `complete` stay out (owner, 2026-10-23).
   The MCP page already promises `meetings scheduled` and `projects scan`, which answer "no command".
