@@ -84,7 +84,7 @@ export const addMeetingReviewCommands = (
     annotate(selectionOptions(mentions.command("list"), true), {
       effects: LOCAL_READ,
       output: { entity: "meeting_link" },
-      examples: ["zm personal mentions list --since-time 30d --json", "zm personal mentions list project:RES --json"],
+      examples: ["zm personal mentions list started_at>=30d --json", "zm personal mentions list project:RES --json"],
     }),
     MEETING_LINK_QUERY,
   )

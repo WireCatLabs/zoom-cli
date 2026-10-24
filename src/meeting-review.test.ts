@@ -82,12 +82,14 @@ it("says no chat is stored when there are no links to list", async () => {
 
 it("pushes review selectors and native mention queries into the stored read", async () => {
   const { deps, stdout, stderr } = await setup()
-  const window = ["--since-time", "2026-10-01", "--until-time", "2026-10-31", "--timezone", "UTC"]
   for (const command of [
     ["review", "--limit", "5"],
     ["mentions", "list", "--limit", "5", "--max-messages", "100"],
   ]) {
     const mention = command[0] === "mentions"
+    const window = mention
+      ? ["started_at:[2026-10-01 TO 2026-10-31]", "--timezone", "UTC"]
+      : ["--since-time", "2026-10-01", "--until-time", "2026-10-31", "--timezone", "UTC"]
     const result = await run(
       ["work", ...command, ...window, ...(mention ? ["event_id:999"] : ["--event-id", "999"]), "--json"],
       deps,
