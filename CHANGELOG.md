@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **`contacts list` and `contacts show` read your Zoom contacts** live from Zoom: company colleagues and external
+  contacts, with name and email, and phone numbers in `show`. `name:`, `email:` and `type:company|external` narrow
+  the list. Each contact is the shared `contact` type, keyed by Zoom's member id. They need the
+  `team_chat:read:list_contacts` and `team_chat:read:contact` scopes and a new `session start`.
+- The Zoom response checks are generated from Zoom's published Chat API description (`spec/zoom/`, `pnpm zoom:generate`).
+
 ## 0.41.0 — 24.10.2026
 
 ### Changed — may break callers

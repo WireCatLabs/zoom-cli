@@ -17,6 +17,8 @@ import { addArchiveCommands } from "./archive-commands.js"
 import { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
 import { annotateMeetingCommands } from "./commands.js"
 import { filesZone, profileAccountKey, readConfig } from "./config.js"
+import { ZoomContacts } from "./contacts.js"
+import { addContactsCommands } from "./contacts-commands.js"
 import { cancellableStore, checkCancelled, ZoneAssumptions } from "./errors.js"
 import { commandDeadline, duration, type ExecutionState, sharedExecution } from "./execution.js"
 import { fileNamesHelp, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
@@ -362,6 +364,12 @@ export const bindZoomProgram = (
       locks: inspectArchiveLocks,
       recover: recoverArchiveLocks,
     },
+  })
+  addContactsCommands(program, {
+    contacts: () => deps.contacts ?? new ZoomContacts(tokens(), fetchWithSignal(deps.fetch), remoteOptions),
+    api,
+    signal,
+    output,
   })
   addRecordingScheduleCommands(program, {
     ...zoomRecordingSchedule({ deps, getConfig, profile, withSignal: fetchWithSignal, signal, remoteOptions, zones }),

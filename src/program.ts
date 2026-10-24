@@ -8,6 +8,7 @@ import type {
   RecordingsService,
   RemoteMeetingsService,
 } from "./archive-commands.js"
+import type { ContactsService } from "./contacts-commands.js"
 import type { readDownloadedFiles } from "./files.js"
 import type { ZoomMcpOptions } from "./mcp.js"
 import type { RecordingScheduleService } from "./recording-schedule.js"
@@ -28,6 +29,7 @@ export interface ProgramDeps {
   recordingSchedule?: RecordingScheduleService
   recordingScheduleTarget?: { runtime: string; cliPath: string }
   remoteMeetings?: RemoteMeetingsService
+  contacts?: ContactsService
   archive?: ArchiveService
   archiveTranscripts?: ArchiveTranscriptService
   readFiles?: typeof readDownloadedFiles

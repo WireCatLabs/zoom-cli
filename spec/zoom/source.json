@@ -1,0 +1,9 @@
+{
+  "sourceUrl": "https://developers.zoom.us/api/zoap/chat/methods",
+  "revision": "sha256:d65eec3cd98c11b9",
+  "fetchedAt": "2026-10-24",
+  "operations": {
+    "/chat/users/me/contacts": ["get"],
+    "/chat/users/me/contacts/{identifier}": ["get"]
+  }
+}

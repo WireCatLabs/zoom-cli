@@ -1234,6 +1234,46 @@ zm remote-meetings cancel <meeting> [options]
 
 **Example:** `zm personal remote-meetings cancel 123456789 --dry-run --json`
 
+## `zm contacts`
+
+your Zoom contacts, read live: company colleagues and external contacts
+
+### `zm contacts list`
+
+list your company and external Zoom contacts
+
+```sh
+zm contacts list [query]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `query` | optional | field:value terms that narrow the list — the fields are below. |
+
+**Returns:** contact — ref, id, name, username, description, last_messaged_at, alias, display_name, and 4 more; every field: zm commands info contacts list
+
+**Next usually:** `zm meetings context <person>`
+
+**Example:** `zm personal contacts list --json`, `zm personal contacts list type:external name:alice`
+
+### `zm contacts show`
+
+one contact with their phone numbers
+
+```sh
+zm contacts show <contact>
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `contact` | required | their member id from `contacts list`, Zoom user id or email. |
+
+**Returns:** contact — ref, id, name, username, description, last_messaged_at, alias, display_name, and 4 more; every field: zm commands info contacts show
+
+**Next usually:** `zm meetings context <person>`
+
+**Example:** `zm personal contacts show alice@example.com --json`
+
 ## `zm skill`
 
 the instructions an agent is given for this tool
