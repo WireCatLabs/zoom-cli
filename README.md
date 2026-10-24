@@ -83,7 +83,7 @@ project link. The agent can check proposed labels against Memo's existing vocabu
 `meetings task-proposal --type promise` previews a follow-up task tied to that passage.
 
 **Keep the whole history.** *"Back up every recording since January."*
-`recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl` downloads
+`recordings download --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl` downloads
 video, audio, transcripts and chat with SHA-256 manifests; `recordings schedule` runs it daily.
 
 More: [the local archive][docs/archive.md] · [search and evidence][docs/search.md] ·
@@ -150,7 +150,7 @@ More: [compared with other tools](https://github.com/WireCatLabs/zoom-cli/blob/m
 | Several reads at once | `batch <file>` runs bounded `search meetings` and `meetings passage` requests from a JSON file |
 | Search by meaning | `search meetings <query> --model <model>`, `meetings embeddings --model <model>` |
 | Local transcription | `meetings transcribe <meeting> <file> --model <model>` |
-| Cloud recordings | `recordings list`, `recordings show <meeting>`, `recordings download <meeting> --output-dir <dir>`, `recordings sync --since-time <date> --until-time <date> --output-dir <dir> --jsonl`, `recordings schedule create\|list\|show\|run\|disable` |
+| Cloud recordings | `recordings list`, `recordings show <meeting>`, `recordings download <meeting> --output-dir <dir>`, `recordings download --since-time <date> --until-time <date> --output-dir <dir> --jsonl`, `recordings schedule create\|list\|show\|run\|disable` |
 | Local archive | `recordings archive show\|check\|locks\|recover <directory>`, `recordings archive transcript\|import <directory>`, `search recordings <directory> <query>` |
 | Zoom meetings | `remote-meetings list\|show\|invitation`, `remote-meetings create\|update\|cancel` |
 | Agents | `mcp`, `skill show`, `skill install [--for claude\|agents\|all]`, `commands --json`, `complete -- <words...>` |
@@ -216,7 +216,7 @@ More: [the local archive][docs/archive.md] · [Zoom on wirecat.dev][wirecat/en/d
 ## Archive cloud recordings
 
 ```sh
-zm personal recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl
+zm personal recordings download --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl
 zm personal recordings archive check ./zoom-archive --offline --json
 zm personal search recordings ./zoom-archive "example plan" --offline --json
 ```

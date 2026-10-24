@@ -790,33 +790,6 @@ zm recordings list [query] [options]
 
 **Example:** `zm personal recordings list --since-time 2026-10-01 --until-time 2026-10-10 --json`
 
-### `zm recordings sync`
-
-download a date range of recordings into an archive folder, a month at a time
-
-**Changes local data.**
-
-```sh
-zm recordings sync [options]
-```
-
-| Option | What it does |
-|---|---|
-| `--since-time <time>` | first day, YYYY-MM-DD. |
-| `--until-time <time>` | last day, YYYY-MM-DD; at most ten years after the first. |
-| `--output-dir <dir>` | explicit archive directory. |
-| `--max-bytes <bytes>` | maximum bytes per recording file. |
-| `--resume` | resume verified partial downloads and archive progress; requires a local profile. |
-| `--no-resume` | disable persistent resume state for this invocation. |
-| `--checkpoint <file>` | explicit durable checkpoint file; implies resume. |
-| `--recheck-since-time <time>` | look again from this day, YYYY-MM-DD, for recordings that came late. |
-| `--max-pages <pages>` | catalog page limit from 1 through 10000 (default 1000). |
-| `--max-entries <n>` | occurrence limit from 1 through 10000 (default 10000). |
-
-**Returns:** zoom archive receipt — window, meeting, archive, availability, checkpoint_revision; every field: zm commands info recordings sync
-
-**Example:** `zm personal recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./archive --jsonl`
-
 ### `zm recordings show`
 
 show downloadable asset metadata without signed URLs
@@ -835,29 +808,35 @@ zm recordings show <meeting>
 
 ### `zm recordings download`
 
-stream recording assets into a verified local archive
+download one recording or a date range into a verified, resumable archive
 
 **Changes local data.**
 
 ```sh
-zm recordings download <meeting> [options]
+zm recordings download [meeting] [options]
 ```
 
 | Argument | | What it is |
 |---|---|---|
-| `meeting` | required | meeting id or occurrence UUID. |
+| `meeting` | optional | meeting id or occurrence UUID; omit when downloading a date range. |
 
 | Option | What it does |
 |---|---|
 | `--output-dir <dir>` | explicit archive directory. |
-| `--file-ids <ids>` | comma-separated recording file ids. |
+| `--since-time <time>` | first day of a date range, YYYY-MM-DD. |
+| `--until-time <time>` | last day of a date range, YYYY-MM-DD; at most ten years after the first. |
+| `--file-ids <ids>` | comma-separated recording file ids; only with a meeting. |
 | `--max-bytes <bytes>` | per-file download byte limit (default 20 GiB). |
 | `--resume` | resume verified partial downloads and archive progress; requires a local profile. |
 | `--no-resume` | disable persistent resume state for this invocation. |
+| `--checkpoint <file>` | date-range checkpoint file; implies resume. |
+| `--recheck-since-time <time>` | look again from this day for late recordings in a date range. |
+| `--max-pages <pages>` | date-range catalog page limit from 1 through 10000 (default 1000). |
+| `--max-entries <n>` | date-range occurrence limit from 1 through 10000 (default 10000). |
 
-**Returns:** zoom archive — uuid, manifest_path, downloaded, skipped, unavailable; every field: zm commands info recordings download
+**Returns:** zoom archive — ; every field: zm commands info recordings download
 
-**Example:** `zm personal recordings download example-occurrence --output-dir ./zoom-archive --json`
+**Example:** `zm personal recordings download example-occurrence --output-dir ./zoom-archive --json`, `zm personal recordings download --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl`
 
 ### `zm recordings archive`
 

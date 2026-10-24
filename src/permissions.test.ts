@@ -118,3 +118,34 @@ it("refuses permissions that are not one JSON object", async () => {
   for (const value of ["{not json", "[]", "null"])
     expect(() => setConfig(deps.configPath, "permissions", value, () => "work", keys)).toThrow(/a JSON object/)
 })
+
+it("refuses a retired recording permission until the owner explicitly replaces it", async () => {
+  const { deps, error, stdout } = await setup()
+  setConfig(deps.configPath, "permissions", '{"recordings.sync":"deny"}', () => "work", new Set(["recordings.sync"]))
+  const catalog = vi.fn(),
+    download = vi.fn()
+  deps.recordings = { catalog, download, list: vi.fn(), show: vi.fn() }
+  const args = [
+    "recordings",
+    "download",
+    "--since-time",
+    "2026-10-01",
+    "--until-time",
+    "2026-10-11",
+    "--output-dir",
+    "unused",
+    "--json",
+  ]
+  expect(await run(args, deps)).toBe(3)
+  expect(error()).toMatchObject({
+    code: "configuration_error",
+    details: { permission: "recordings.sync" },
+    message: expect.stringContaining("permissions.recordings.download"),
+  })
+  expect(stdout).toEqual([])
+  expect(await run(["config", "show", "--json"], deps)).toBe(0)
+  expect(await run(["config", "set", "permissions", '{"recordings.download":"deny"}', "--json"], deps)).toBe(0)
+  expect(await run(args, deps)).toBe(5)
+  expect(catalog).not.toHaveBeenCalled()
+  expect(download).not.toHaveBeenCalled()
+})

@@ -58,8 +58,8 @@ export interface ArchiveCommandsDeps {
   outputIsTTY?: boolean
   now: () => number
 }
-const label = (command: Command, example: string, effects: Effects) =>
-  annotate(command, { origin: "handwritten", effects, examples: [example] })
+const label = (command: Command, example: string | string[], effects: Effects) =>
+  annotate(command, { origin: "handwritten", effects, examples: Array.isArray(example) ? example : [example] })
 const positive = (text: string): number => {
   const value = bytes(text)
   if (value === 0) throw new CliError("validation_error", "expected a positive number")
@@ -143,60 +143,6 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
     REMOTE_READ,
   )
   label(
-    resumable(
-      runsLong(recordings.command("sync"))
-        .description("download a date range of recordings into an archive folder, a month at a time")
-        .requiredOption("--since-time <time>", "first day, YYYY-MM-DD")
-        .requiredOption("--until-time <time>", "last day, YYYY-MM-DD; at most ten years after the first")
-        .requiredOption("--output-dir <dir>", "explicit archive directory")
-        .option("--max-bytes <bytes>", "maximum bytes per recording file", positive),
-    )
-      .option("--checkpoint <file>", "explicit durable checkpoint file; implies resume")
-      .option("--recheck-since-time <time>", "look again from this day, YYYY-MM-DD, for recordings that came late")
-      .option("--max-pages <pages>", "catalog page limit from 1 through 10000 (default 1000)", discoveryLimit)
-      .option("--max-entries <n>", "occurrence limit from 1 through 10000 (default 10000)", discoveryLimit)
-      .action(
-        async (options: {
-          sinceTime: string
-          untilTime: string
-          outputDir: string
-          maxBytes?: number
-          resume?: boolean
-          checkpoint?: string
-          recheckSinceTime?: string
-          maxPages?: number
-          maxEntries?: number
-        }) => {
-          if (!program.opts().jsonl && !deps.outputIsTTY)
-            throw new CliError("validation_error", "headless recording sync requires --jsonl")
-          if (program.opts().json)
-            throw new CliError("validation_error", "recording sync streams receipts; use --jsonl")
-          const scope = archiveScope(deps, options)
-          recordingWindows(options.sinceTime, options.untilTime)
-          if (options.recheckSinceTime !== undefined)
-            recordingWindows(options.recheckSinceTime, options.recheckSinceTime)
-          validateDownloadOptions({ ...options, destination: options.outputDir, ...scope })
-          deps.api()
-          for await (const receipt of syncRecordingArchive(deps.recordings(), {
-            from: options.sinceTime,
-            to: options.untilTime,
-            destination: options.outputDir,
-            ...scope,
-            maxBytes: options.maxBytes,
-            checkpointPath: options.checkpoint,
-            recheckFrom: options.recheckSinceTime,
-            maxPages: options.maxPages,
-            maxEntries: options.maxEntries,
-            now: deps.now,
-            signal: deps.signal(),
-          }))
-            await deps.receipt(itemOf(receipt))
-        },
-      ),
-    "zm personal recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./archive --jsonl",
-    FETCH,
-  )
-  label(
     recordings
       .command("show")
       .description("show downloadable asset metadata without signed URLs")
@@ -211,26 +157,96 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
   label(
     resumable(
       runsLong(recordings.command("download"))
-        .description("stream recording assets into a verified local archive")
-        .argument("<meeting>", "meeting id or occurrence UUID")
+        .description("download one recording or a date range into a verified, resumable archive")
+        .argument("[meeting]", "meeting id or occurrence UUID; omit when downloading a date range")
         .requiredOption("--output-dir <dir>", "explicit archive directory")
-        .option("--file-ids <ids>", "comma-separated recording file ids")
+        .option("--since-time <time>", "first day of a date range, YYYY-MM-DD")
+        .option("--until-time <time>", "last day of a date range, YYYY-MM-DD; at most ten years after the first")
+        .option("--file-ids <ids>", "comma-separated recording file ids; only with a meeting")
         .option("--max-bytes <bytes>", "per-file download byte limit (default 20 GiB)", positive),
-    ).action(
-      async (id: string, options: { outputDir: string; fileIds?: string; maxBytes?: number; resume?: boolean }) => {
-        const request = {
-          destination: options.outputDir,
-          fileIds: options.fileIds?.split(",").map((one) => one.trim()),
-          maxBytes: options.maxBytes,
-          ...archiveScope(deps, options),
-          signal: deps.signal(),
-        }
-        validateDownloadOptions(request)
-        deps.api()
-        deps.output(itemOf(await deps.recordings().download(id, request)))
-      },
-    ),
-    "zm personal recordings download example-occurrence --output-dir ./zoom-archive --json",
+    )
+      .option("--checkpoint <file>", "date-range checkpoint file; implies resume")
+      .option("--recheck-since-time <time>", "look again from this day for late recordings in a date range")
+      .option(
+        "--max-pages <pages>",
+        "date-range catalog page limit from 1 through 10000 (default 1000)",
+        discoveryLimit,
+      )
+      .option("--max-entries <n>", "date-range occurrence limit from 1 through 10000 (default 10000)", discoveryLimit)
+      .action(
+        async (
+          id: string | undefined,
+          options: {
+            outputDir: string
+            sinceTime?: string
+            untilTime?: string
+            fileIds?: string
+            maxBytes?: number
+            resume?: boolean
+            checkpoint?: string
+            recheckSinceTime?: string
+            maxPages?: number
+            maxEntries?: number
+          },
+        ) => {
+          if (id !== undefined) {
+            if (!id.trim() || id.includes("\0"))
+              throw new CliError("validation_error", "a meeting id or occurrence UUID is required")
+            if (
+              [
+                options.sinceTime,
+                options.untilTime,
+                options.checkpoint,
+                options.recheckSinceTime,
+                options.maxPages,
+                options.maxEntries,
+              ].some((value) => value !== undefined)
+            )
+              throw new CliError("validation_error", "choose one meeting or date-range options, not both")
+            const request = {
+              destination: options.outputDir,
+              fileIds: options.fileIds?.split(",").map((one) => one.trim()),
+              maxBytes: options.maxBytes,
+              ...archiveScope(deps, options),
+              signal: deps.signal(),
+            }
+            validateDownloadOptions(request)
+            deps.api()
+            deps.output(itemOf(await deps.recordings().download(id, request)))
+            return
+          }
+          if (options.sinceTime === undefined || options.untilTime === undefined)
+            throw new CliError("validation_error", "provide a meeting id or both --since-time and --until-time")
+          if (options.fileIds !== undefined)
+            throw new CliError("validation_error", "--file-ids selects assets of one meeting; provide a meeting id")
+          const scope = archiveScope(deps, options)
+          recordingWindows(options.sinceTime, options.untilTime)
+          if (options.recheckSinceTime !== undefined)
+            recordingWindows(options.recheckSinceTime, options.recheckSinceTime)
+          validateDownloadOptions({ destination: options.outputDir, maxBytes: options.maxBytes, ...scope })
+          deps.api()
+          const receipts = syncRecordingArchive(deps.recordings(), {
+            from: options.sinceTime,
+            to: options.untilTime,
+            destination: options.outputDir,
+            ...scope,
+            maxBytes: options.maxBytes,
+            checkpointPath: options.checkpoint,
+            recheckFrom: options.recheckSinceTime,
+            maxPages: options.maxPages,
+            maxEntries: options.maxEntries,
+            now: deps.now,
+            signal: deps.signal(),
+          })
+          if (program.opts().jsonl || (deps.outputIsTTY && !program.opts().json)) {
+            for await (const receipt of receipts) await deps.receipt(itemOf(receipt))
+          } else await deps.outputItems(receipts)
+        },
+      ),
+    [
+      "zm personal recordings download example-occurrence --output-dir ./zoom-archive --json",
+      "zm personal recordings download --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl",
+    ],
     FETCH,
   )
   const archive = annotate(recordings.command("archive"), { effects: NO_EFFECTS }).description(

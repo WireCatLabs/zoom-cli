@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Changed — may break callers
+
+- `recordings download` handles either one meeting or a date range. `recordings sync` is removed with no alias; use `recordings download --since-time … --until-time …`. Existing archives, checkpoints and scheduled jobs remain compatible.
+- Saved `recordings.sync` permissions must be reviewed and renamed to `recordings.download`; stale entries stop permissioned commands instead of losing their restrictions.
+
+### Added
+
+- Date-range downloads support bounded JSON receipt lists, including over MCP. `--jsonl` continues to stream completed receipts so earlier results survive later failures.
+
 ### Fixed
 
 - Permission-denied commands remain searchable over MCP with current availability and a reason. Named-profile CLI help shows availability; calls still refuse before execution.

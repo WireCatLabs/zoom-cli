@@ -78,7 +78,7 @@ describe("command execution controls", () => {
       path: ["recordings", "download"],
       effects: { remote: "read", local: "write" },
     })
-    expect(value(stdout).commands[0].usage).toContain("<meeting>")
+    expect(value(stdout).commands[0].usage).toContain("[meeting]")
     expect(value(stdout).commands[0]).not.toHaveProperty("description")
     expect(await run(["--json=id", "commands", "not-a-resource"], deps)).toBe(2)
     expect(value(stderr)).toHaveProperty("error.code", "validation_error")

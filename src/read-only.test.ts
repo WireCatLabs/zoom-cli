@@ -67,7 +67,7 @@ describe("ZM_READ_ONLY", () => {
   it.each([
     [["meetings", "sync", "--json"]],
     [["recordings", "download", "123456789", "--output-dir", "/tmp/zm-archive", "--json"]],
-    [["recordings", "sync", "--since-time", "2026-01-01", "--output-dir", "/tmp/zm-archive", "--json"]],
+    [["recordings", "download", "--since-time", "2026-01-01", "--output-dir", "/tmp/zm-archive", "--json"]],
     [["watch", "api", "--jsonl"]],
   ])("lets the mirroring sync %j run", async (args) => {
     const { deps, stderr } = await setup({ ZM_READ_ONLY: "1" })

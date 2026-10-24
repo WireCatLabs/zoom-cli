@@ -4,7 +4,7 @@ import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
 import { planRecordingArchiveSchedule } from "@wirecat/cli-core/meetings"
 import { expect, it, vi } from "vitest"
-import { readReceipt } from "../scripts/testing/answers.js"
+import { declaredAnswerIssue, readAnswer, readReceipt } from "../scripts/testing/answers.js"
 import { useProfile } from "../scripts/testing/profile.js"
 import { profileAccountKey, setConfig } from "./config.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
@@ -81,7 +81,7 @@ it("refuses downloads and syncs without a local profile before API, tokens or ar
     ["recordings", "download", meeting.uuid, "--output-dir", join(directory, "untouched"), "--resume", "--json"],
     [
       "recordings",
-      "sync",
+      "download",
       "--since-time",
       "2026-10-01",
       "--until-time",
@@ -93,7 +93,7 @@ it("refuses downloads and syncs without a local profile before API, tokens or ar
     ],
     [
       "recordings",
-      "sync",
+      "download",
       "--since-time",
       "2026-10-01",
       "--until-time",
@@ -154,7 +154,7 @@ it("uses paged account-bound discovery and an explicit durable checkpoint with r
   const checkpoint = join(directory, "checkpoint.json")
   const args = [
     "recordings",
-    "sync",
+    "download",
     "--since-time",
     "2026-10-01",
     "--until-time",
@@ -196,7 +196,7 @@ it("prevalidates bounds, dates, selections and resume conflicts before provider 
   useProfile(deps.configPath, "AliceExample")
   const sync = [
     "recordings",
-    "sync",
+    "download",
     "--since-time",
     "2026-10-01",
     "--until-time",
@@ -218,7 +218,7 @@ it("prevalidates bounds, dates, selections and resume conflicts before provider 
     await run(
       [
         "recordings",
-        "sync",
+        "download",
         "--since-time",
         "2026-02-30",
         "--until-time",
@@ -371,4 +371,117 @@ it("gives scheduled archive runs a download deadline and streams completed recei
   expect(timers.mock.calls.some(([, ms]) => ms === 3600000)).toBe(true)
   timers.mockRestore()
   expect(output.map((text) => readReceipt(text).meeting.uuid)).toEqual([meeting.uuid])
+})
+
+it("rejects ambiguous or incomplete download selections before touching a provider or destination", async () => {
+  const { deps, directory, download, catalog, tokenAccess, output } = await setup()
+  useProfile(deps.configPath, "AliceExample")
+  const destination = join(directory, "untouched-selection")
+  for (const selection of [
+    [],
+    ["--since-time", "2026-10-01"],
+    ["--until-time", "2026-10-11"],
+    [meeting.uuid, "--since-time", "2026-10-01", "--until-time", "2026-10-11"],
+    [meeting.uuid, "--checkpoint", "checkpoint.json"],
+    [meeting.uuid, "--recheck-since-time", "2026-10-01"],
+    [meeting.uuid, "--max-pages", "2"],
+    [meeting.uuid, "--max-entries", "2"],
+    [""],
+    ["--since-time", "2026-10-01", "--until-time", "2026-10-11", "--file-ids", "asset"],
+  ])
+    expect(await run(["recordings", "download", ...selection, "--output-dir", destination, "--json"], deps)).toBe(2)
+  expect(download).not.toHaveBeenCalled()
+  expect(catalog).not.toHaveBeenCalled()
+  expect(tokenAccess).not.toHaveBeenCalled()
+  expect(output).toEqual([])
+  await expect(access(destination)).rejects.toMatchObject({ code: "ENOENT" })
+})
+
+it("answers range downloads as a typed bounded JSON list, supports projection and retains empty results", async () => {
+  const { deps, directory, output, download } = await setup()
+  useProfile(deps.configPath, "AliceExample")
+  const list = vi.fn(async () => ({ items: [{ ...meeting, externalId: meeting.uuid }], nextCursor: null }))
+  deps.recordings = {
+    list: async () => [meeting],
+    show: async () => meeting,
+    download,
+    catalog: () => ({ provider: "zoom", list }),
+  }
+  const args = [
+    "recordings",
+    "download",
+    "--since-time",
+    "2026-10-01",
+    "--until-time",
+    "2026-10-11",
+    "--output-dir",
+    directory,
+    "--no-resume",
+  ]
+  expect(await run([...args, "--json"], deps)).toBe(0)
+  const packet = JSON.parse(output.pop() ?? "{}")
+  expect(readAnswer(JSON.stringify(packet))).toMatchObject({
+    items: [{ meeting: { uuid: meeting.uuid } }],
+    page: { has_more: false },
+  })
+  expect(declaredAnswerIssue(createProgram(deps), "recordings download", packet)).toBeUndefined()
+  expect(await run([...args, "--json=meeting.uuid"], deps)).toBe(0)
+  expect(readAnswer(output.pop() ?? "{}").items).toEqual([{ meeting: { uuid: meeting.uuid } }])
+  list.mockResolvedValueOnce({ items: [], nextCursor: null })
+  expect(await run(args, deps)).toBe(0)
+  expect(readAnswer(output.pop() ?? "{}")).toMatchObject({ items: [], page: { has_more: false } })
+  expect(download).toHaveBeenCalledTimes(2)
+})
+
+it("stops bounded JSON collection before downloading another occurrence", async () => {
+  const { deps, directory, download, output } = await setup()
+  useProfile(deps.configPath, "AliceExample")
+  deps.recordings = {
+    list: async () => [meeting],
+    show: async () => meeting,
+    download,
+    catalog: () => ({
+      provider: "zoom",
+      list: async () => ({
+        items: [
+          { ...meeting, externalId: meeting.uuid },
+          { ...meeting, externalId: "second-occurrence" },
+        ],
+        nextCursor: null,
+      }),
+    }),
+  }
+  expect(
+    await run(
+      [
+        "recordings",
+        "download",
+        "--since-time",
+        "2026-10-01",
+        "--until-time",
+        "2026-10-11",
+        "--output-dir",
+        directory,
+        "--no-resume",
+        "--json",
+        "--max-output-bytes",
+        "100",
+      ],
+      deps,
+    ),
+  ).toBe(13)
+  expect(output).toEqual([])
+  expect(download).toHaveBeenCalledTimes(1)
+})
+
+it("removes the retired sync command rather than retaining an alias", async () => {
+  const { deps, download, catalog } = await setup()
+  expect(
+    createProgram(deps)
+      .commands.find((command) => command.name() === "recordings")
+      ?.commands.map((command) => command.name()),
+  ).not.toContain("sync")
+  expect(await run(["recordings", "sync", "--json"], deps)).toBe(2)
+  expect(download).not.toHaveBeenCalled()
+  expect(catalog).not.toHaveBeenCalled()
 })

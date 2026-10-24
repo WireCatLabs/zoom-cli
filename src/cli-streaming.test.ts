@@ -128,7 +128,7 @@ it("streams bounded archive sync receipts with consumer backpressure", async () 
   const pending = run(
     [
       "recordings",
-      "sync",
+      "download",
       "--since-time",
       "2026-10-01",
       "--until-time",
@@ -150,8 +150,8 @@ it("streams bounded archive sync receipts with consumer backpressure", async () 
   expect(output.map((text) => readReceipt(text).meeting.uuid)).toEqual(downloaded)
 })
 
-it("keeps completed sync receipts when a later occurrence fails and rejects headless aggregate output", async () => {
-  const { deps, output } = await setup()
+it("keeps streamed download receipts after failure and withholds incomplete aggregate output", async () => {
+  const { deps, output, folder } = await setup()
   setConfig(deps.configPath, "zoom.clientId", "example")
   useProfile(deps.configPath, "example-profile")
   deps.recordings = {
@@ -167,13 +167,13 @@ it("keeps completed sync receipts when a later occurrence fails and rejects head
     await run(
       [
         "recordings",
-        "sync",
+        "download",
         "--since-time",
         "2026-10-01",
         "--until-time",
         "2026-10-10",
         "--output-dir",
-        "example",
+        folder,
         "--no-resume",
         "--jsonl",
       ],
@@ -182,12 +182,14 @@ it("keeps completed sync receipts when a later occurrence fails and rejects head
   ).toBe(10)
   expect(output).toHaveLength(1)
   expect(readReceipt(output[0] ?? "{}").archive.manifest_path).toBe("example.json")
+  output.length = 0
   expect(
     await run(
-      ["recordings", "sync", "--since-time", "2026-10-01", "--until-time", "2026-10-10", "--output-dir", "example"],
+      ["recordings", "download", "--since-time", "2026-10-01", "--until-time", "2026-10-10", "--output-dir", folder],
       deps,
     ),
-  ).toBe(2)
+  ).toBe(10)
+  expect(output).toEqual([])
 })
 
 it("rescans watched folders with a fresh closed account connection before each receipt", async () => {
@@ -278,7 +280,7 @@ it("rejects aggregate JSON for continuous streams and sanitizes a synchronous wr
     await run(
       [
         "recordings",
-        "sync",
+        "download",
         "--since-time",
         "2026-10-01",
         "--until-time",
