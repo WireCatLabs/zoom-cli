@@ -1,11 +1,10 @@
 import { CliError } from "@wirecat/cli-base"
-import { itemOf } from "@wirecat/cli-core/cli"
 import type { SearchAllIncludingMeetingsFound, SearchAllIncludingMeetingsRequest } from "@wirecat/cli-core/services"
 import { checkCancelled } from "./errors.js"
 
 export type UnifiedSearchRequest = Pick<
   SearchAllIncludingMeetingsRequest,
-  "text" | "limit" | "only" | "exact" | "maxMeetings" | "meetingCursor" | "signal"
+  "text" | "limit" | "offset" | "only" | "exact" | "maxMeetings" | "meetingCursor" | "signal"
 >
 export type UnifiedSearch = (request: UnifiedSearchRequest) => Promise<SearchAllIncludingMeetingsFound>
 const resources = ["messages", "mail", "notes", "meetings"] as const
@@ -19,10 +18,8 @@ export const validateUnifiedSearch = (input: UnifiedSearchRequest, meetingsOnly 
     !Number.isSafeInteger(limit) ||
     limit < 1 ||
     limit > 1000 ||
-    typeof maxMeetings !== "number" ||
-    !Number.isSafeInteger(maxMeetings) ||
-    maxMeetings < 1 ||
-    maxMeetings > 1000 ||
+    (maxMeetings !== "all" && (!Number.isSafeInteger(maxMeetings) || maxMeetings < 1)) ||
+    (input.offset !== undefined && (!Number.isSafeInteger(input.offset) || input.offset < 0)) ||
     !Array.isArray(only) ||
     !only.length ||
     only.some((resource) => !resources.includes(resource)) ||
@@ -31,7 +28,7 @@ export const validateUnifiedSearch = (input: UnifiedSearchRequest, meetingsOnly 
   )
     throw new CliError(
       "validation_error",
-      "expected nonempty search text, supported resources and bounds from 1 through 1000",
+      "expected nonempty search text, supported resources, a limit from 1 through 1000 and a whole number of meetings, or all",
     )
   if (input.meetingCursor !== undefined) {
     const cursor = input.meetingCursor
@@ -62,6 +59,7 @@ export const validateUnifiedSearch = (input: UnifiedSearchRequest, meetingsOnly 
     limit,
     maxMeetings,
     only: [...new Set(only)],
+    ...(input.offset === undefined ? {} : { offset: input.offset }),
     exact: input.exact,
     meetingCursor: input.meetingCursor,
     signal: input.signal,
@@ -74,18 +72,3 @@ export const runUnifiedSearch = async (search: UnifiedSearch, input: UnifiedSear
   checkCancelled(request.signal)
   return result
 }
-
-export const unifiedSearchAnswer = (result: SearchAllIncludingMeetingsFound) =>
-  itemOf(result, {
-    meta: {
-      complete: result.skipped.length === 0,
-      ...(result.skipped.length
-        ? {
-            issues: result.skipped.map((issue) => ({
-              code: issue.code,
-              source: issue.source ?? issue.resource,
-            })),
-          }
-        : {}),
-    },
-  })

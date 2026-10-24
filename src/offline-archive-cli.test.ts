@@ -4,9 +4,9 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { CliError, memoryKeyring } from "@wirecat/cli-base"
 import { expect, it, vi } from "vitest"
-import { readAnswer, readJsonl, readJsonlPage, readReceipt } from "../scripts/testing/answers.js"
+import { declaredAnswerIssue, readAnswer, readJsonl, readJsonlPage, readReceipt } from "../scripts/testing/answers.js"
 import type { ArchiveTranscript } from "./archive-transcripts.js"
-import { type ProgramDeps, run } from "./program.js"
+import { createProgram, type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
 
 const digest = (value: string) => createHash("sha256").update(value).digest("hex")
@@ -109,6 +109,7 @@ it("projects archive fields, supports finite JSONL and preserves true search pag
   expect(item).not.toHaveProperty("asset")
   output.length = 0
   expect(await run(["search", "recordings", directory, "PLAN", "--limit", "1", "--json"], deps)).toBe(0)
+  expect(declaredAnswerIssue(createProgram(deps), "search recordings", latest(output))).toBeUndefined()
   expect(latest(output)).toMatchObject({ page: { limit: 1, has_more: true } })
   expect(latest(output).items).toEqual([
     {

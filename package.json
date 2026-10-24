@@ -56,9 +56,9 @@
     "package:check": "node scripts/package-check.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/server": "2.1.0",
-    "@wirecat/cli-base": "0.50.1",
-    "@wirecat/cli-core": "0.396.0",
+    "@modelcontextprotocol/server": "2.3.0",
+    "@wirecat/cli-base": "0.50.2",
+    "@wirecat/cli-core": "0.401.0",
     "commander": "15.0.0",
     "valibot": "1.5.0"
   },

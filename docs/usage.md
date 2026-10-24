@@ -351,8 +351,9 @@ answer's `next`, `missing` and execution metadata. Command discovery is the shar
 document with separate `effects.remote` and `effects.local` declarations; help, version and shell
 completion retain their protocols.
 
-A skipped source makes `meta.complete` false and adds a source issue. `search all` accepts partial
-results and exits zero; inspect its skips before treating the result as complete. Other partial
+A skipped source makes `meta.complete` false and adds a source issue; `search all` says why on stderr.
+`search all` accepts partial results and exits zero; inspect `meta.issues` before treating the result as
+complete. Other partial
 answers exit with the first issue's error code after printing the available result. A bounded page
 with more results is ordinary pagination, rather than a source failure.
 Errors go to stderr. Use `--quiet`

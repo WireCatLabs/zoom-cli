@@ -2,9 +2,7 @@ import { mkdtemp } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
-import { snakeKeys } from "@wirecat/cli-core/cli"
 import { expect, it, vi } from "vitest"
-import { readReceipt } from "../scripts/testing/answers.js"
 import { fakeConnection } from "../scripts/testing/connection.js"
 import { useProfile } from "../scripts/testing/profile.js"
 import { type ProgramDeps, run } from "./program.js"
@@ -95,12 +93,18 @@ it("defaults to meetings and validates closed source-only cursors before the ser
   ).toThrow()
 })
 
-it("preserves nullable completeness and explicit cross-resource opt-in in CLI", async () => {
+it("answers a list of hits, says where a bounded meeting scan stopped, and pages as tg does", async () => {
   const { deps, output } = await setup()
   const search = vi.fn(async (_request: UnifiedSearchRequest) => found())
   searchWith(deps, search)
   expect(await run(["search", "all", "example", "--json"], deps)).toBe(0)
-  expect(readReceipt(output.pop() ?? "{}")).toEqual(snakeKeys(found()))
+  const answer = JSON.parse(output.pop() ?? "{}")
+  expect(answer.items).toEqual([])
+  expect(answer.page).toMatchObject({ has_more: false })
+  expect(answer.missing).toEqual([
+    expect.objectContaining({ field: "items", why: "stopped after 100 meetings; more may match" }),
+  ])
+  expect(answer.next?.[0]?.args).toMatchObject({ query: "example", max_meetings: "all" })
   expect(search.mock.calls[0]?.[0]).toMatchObject({ only: ["meetings"] })
   expect(
     await run(
@@ -112,8 +116,10 @@ it("preserves nullable completeness and explicit cross-resource opt-in in CLI", 
         "notes,meetings",
         "--limit",
         "2",
-        "--max-meetings",
+        "--page",
         "3",
+        "--max-meetings",
+        "all",
         "--exact",
         "--json",
       ],
@@ -123,20 +129,13 @@ it("preserves nullable completeness and explicit cross-resource opt-in in CLI", 
   expect(search.mock.calls[1]?.[0]).toMatchObject({
     only: ["notes", "meetings"],
     limit: 2,
-    maxMeetings: 3,
+    offset: 4,
+    maxMeetings: "all",
     exact: true,
   })
-  expect(
-    await run(
-      ["search", "all", "example", "--meeting-cursor", JSON.stringify(snakeKeys(result.meetings.nextCursor)), "--json"],
-      deps,
-    ),
-  ).toBe(0)
-  expect(search.mock.calls[2]?.[0]).toMatchObject({ meetingCursor: result.meetings.nextCursor })
   output.length = 0
   expect(await run(["search", "all", "example", "--jsonl"], deps)).toBe(0)
-  expect(output.join("").trim().split("\n")).toHaveLength(2)
-  expect(readReceipt(output.join(""))).toEqual(snakeKeys(found()))
+  expect(output.join("").trim().split("\n")).toHaveLength(1)
 })
 
 it("resolves read intent only after validating query options and closes before finite output", async () => {
@@ -146,7 +145,7 @@ it("resolves read intent only after validating query options and closes before f
   )
   deps.connectStore = connect
   expect(await run(["search", "all", "example", "--limit", "0", "--json"], deps)).toBe(2)
-  expect(await run(["search", "all", "example", "--meeting-cursor", "not-json", "--json"], deps)).toBe(2)
+  expect(await run(["search", "all", "example", "--max-meetings", "0", "--json"], deps)).toBe(2)
   expect(connect).not.toHaveBeenCalled()
   expect(await run(["search", "all", "example", "--json"], deps)).toBe(2)
   useProfile(deps.configPath, "example")
@@ -170,8 +169,8 @@ it("prevents service work on cancellation and rejects late cancelled results", a
   expect(search).toHaveBeenCalledOnce()
 })
 
-it("reports skipped sources as partial in JSON and JSONL while keeping the search partial exit policy", async () => {
-  const { deps, output } = await setup()
+it("reports skipped sources as partial in JSON and JSONL, with the reason on stderr", async () => {
+  const { deps, output, errors } = await setup()
   searchWith(deps, async () => ({
     ...found(),
     skipped: [{ resource: "meetings", code: "network_error", reason: "example source unavailable" }],
@@ -180,8 +179,8 @@ it("reports skipped sources as partial in JSON and JSONL while keeping the searc
     output.length = 0
     expect(await run(["search", "all", "example", flag], deps)).toBe(0)
     const text = output.join("")
-    expect(readReceipt(text).skipped).toHaveLength(1)
     const meta = flag === "--json" ? JSON.parse(text).meta : JSON.parse(text.trim().split("\n").at(-1) ?? "{}")
     expect(meta).toMatchObject({ complete: false, issues: [{ code: "network_error", source: "meetings" }] })
   }
+  expect(errors.join("")).toContain("meetings not searched: example source unavailable")
 })

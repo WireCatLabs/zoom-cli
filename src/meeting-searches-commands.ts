@@ -86,7 +86,7 @@ export const addMeetingSearchesCommands = (
 
   annotate(searches.command("run"), {
     effects: FETCH,
-    output: { entity: "hit" },
+    output: { entity: "meeting_hit" },
     examples: ["zm personal searches run weekly-plan --json"],
   })
     .description("run a saved search; answers as search meetings does")

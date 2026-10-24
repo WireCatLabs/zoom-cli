@@ -1,8 +1,7 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { type Body, itemOf, LOCAL_READ } from "@wirecat/cli-core/cli"
+import { type Body, itemOf, LOCAL_READ, meetingEvidenceItem, meetingPersonContextItem } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
-import { bodyOf } from "./answer-output.js"
 import { bytes } from "./execution.js"
 import {
   type EvidenceOptions,
@@ -24,8 +23,13 @@ export const addMeetingContextCommands = (
 ) => {
   const meetings = program.commands.find((command) => command.name() === "meetings")
   if (!meetings) throw new CliError("configuration_error", "meeting command group is unavailable")
-  const label = (command: Command, example: string) =>
-    annotate(command, { origin: "handwritten", effects: LOCAL_READ, examples: [example] })
+  const label = (command: Command, example: string, entity?: string) =>
+    annotate(command, {
+      origin: "handwritten",
+      effects: LOCAL_READ,
+      examples: [example],
+      ...(entity ? { output: { entity } } : {}),
+    })
   const limits = (command: Command) =>
     command
       .option("--cues <n>", "how many transcript lines, 1 through 1000", bytes)
@@ -46,20 +50,23 @@ export const addMeetingContextCommands = (
         validateEvidenceOptions(options)
         const context = await deps.context()
         deps.output(
-          bodyOf(
-            await context.evidence(reference, {
-              cues: options.cues,
-              bytes: options.bytes,
-              after: options.after,
-              afterTranscriptId: options.afterTranscriptId,
-              maxReadBytes: options.maxReadBytes,
-              maxTranscriptPages: options.maxTranscriptPages,
-              signal: deps.signal(),
-            }),
+          itemOf(
+            meetingEvidenceItem(
+              await context.evidence(reference, {
+                cues: options.cues,
+                bytes: options.bytes,
+                after: options.after,
+                afterTranscriptId: options.afterTranscriptId,
+                maxReadBytes: options.maxReadBytes,
+                maxTranscriptPages: options.maxTranscriptPages,
+                signal: deps.signal(),
+              }),
+            ),
           ),
         )
       }),
     "zm meetings evidence meeting:3/15 --json",
+    "meeting_evidence",
   )
   label(
     limits(
@@ -85,20 +92,23 @@ export const addMeetingContextCommands = (
           validatePersonContext(person, options)
           const context = await deps.context()
           deps.output(
-            bodyOf(
-              await context.personContext(person, {
-                meetings: options.meetings,
-                cues: options.cues,
-                bytes: options.bytes,
-                scanLimit: options.scanLimit,
-                since: options.since,
-                signal: deps.signal(),
-              }),
+            itemOf(
+              meetingPersonContextItem(
+                await context.personContext(person, {
+                  meetings: options.meetings,
+                  cues: options.cues,
+                  bytes: options.bytes,
+                  scanLimit: options.scanLimit,
+                  since: options.since,
+                  signal: deps.signal(),
+                }),
+              ),
             ),
           )
         },
       ),
     "zm meetings context person:7 --meetings 10 --json",
+    "meeting_person_context",
   )
   label(
     meetings
@@ -114,5 +124,6 @@ export const addMeetingContextCommands = (
         deps.output(itemOf(proposal))
       }),
     "zm meetings task-proposal meeting:3/15/20/0 --type promise --json",
+    "meeting_task_proposal",
   )
 }

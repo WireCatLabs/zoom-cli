@@ -2,7 +2,7 @@ import { mkdtemp } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
-import { snakeKeys } from "@wirecat/cli-core/cli"
+import { eventItem } from "@wirecat/cli-core/meetings"
 import { fakeMeetingSource, memoryMeetingStore, sampleEvent, sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { expect, it } from "vitest"
 import { readJsonl } from "../scripts/testing/answers.js"
@@ -72,9 +72,9 @@ it("keeps CLI paging, calendar filters and participant reads scoped to the selec
   expect(
     (await invoke(["meetings", "people", "Alice", "--jsonl"])).filter((record) => record.type === "item"),
   ).toHaveLength(2)
-  expect((await invoke(["events", "list", "--json"]))[0].items).toEqual([snakeKeys(event)])
+  expect((await invoke(["events", "list", "--json"]))[0].items).toEqual([eventItem(event)])
   expect(await invoke(["events", "list", "--jsonl"])).toMatchObject([
-    { type: "item", data: snakeKeys(event) },
+    { type: "item", data: eventItem(event) },
     { type: "end", complete: true },
   ])
   expect(await store.meeting(first.meeting.id)).toEqual(before)

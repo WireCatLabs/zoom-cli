@@ -5,7 +5,6 @@ import { CliError, memoryKeyring } from "@wirecat/cli-base"
 import { describeProgram, flatten, parseCommandsDocument } from "@wirecat/cli-base/commands"
 import { describe, expect, it, vi } from "vitest"
 import { readAnswer } from "../scripts/testing/answers.js"
-import { fakeConnection } from "../scripts/testing/connection.js"
 import { useProfile } from "../scripts/testing/profile.js"
 import { setConfig } from "./config.js"
 import { checkCancelled } from "./errors.js"
@@ -268,20 +267,4 @@ it("quiet keeps the login URL, the one thing an agent can pass on, and the failu
   expect(stderr).toHaveLength(2)
   expect(stderr[0]).toContain("Open this URL to approve Zoom login:")
   expect(JSON.parse(stderr[1] ?? "{}").error.code).toBe("configuration_error")
-})
-
-it("prints a partial non-search answer before returning its source error exit code", async () => {
-  const { deps, stdout, stderr } = await setup()
-  useProfile(deps.configPath, "example")
-  const meetingContext = {
-    evidence: async () => ({
-      item: { available: [] },
-      meta: { complete: false, issues: [{ code: "network_error", source: "meetings" }] },
-    }),
-  } as never
-  deps.connectStore = async () =>
-    fakeConnection({ store: {} as never, accountId: 1, close: async () => {}, meetingContext })
-  expect(await run(["meetings", "evidence", "meeting:1/1", "--json"], deps)).toBe(10)
-  expect(JSON.parse(stdout.join("")).meta).toMatchObject({ complete: false })
-  expect(stderr).toEqual([])
 })

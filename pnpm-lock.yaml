@@ -13,14 +13,14 @@ importers:
   .:
     dependencies:
       '@modelcontextprotocol/server':
-        specifier: 2.1.0
-        version: 2.1.0
+        specifier: 2.3.0
+        version: 2.3.0
       '@wirecat/cli-base':
-        specifier: 0.50.1
-        version: 0.50.1(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.3)
+        specifier: 0.50.2
+        version: 0.50.2(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.3)
       '@wirecat/cli-core':
-        specifier: 0.396.0
-        version: 0.396.0(@wirecat/cli-base@0.50.1(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.3))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)
+        specifier: 0.401.0
+        version: 0.401.0(@wirecat/cli-base@0.50.2(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.3))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)
       commander:
         specifier: 15.0.0
         version: 15.0.0
@@ -51,7 +51,7 @@ importers:
         version: 5.0.3(vitest@5.0.3)
       '@wirecat/cli-testing':
         specifier: 0.5.2
-        version: 0.5.2(zod@4.6.5)
+        version: 0.5.2(zod@4.6.7)
       cspell:
         specifier: 10.3.6
         version: 10.3.6
@@ -455,10 +455,6 @@ packages:
     resolution: {integrity: sha512-pbHtGj6EeFCHngFE8gtNPaKrsj8Mb1IMw45BLcaPML/m2WTxI7pyYmeNQvaux88Lw8BSO5r7nyRbUyIkICmGrg==}
     engines: {node: '>=20'}
 
-  '@modelcontextprotocol/core@2.1.0':
-    resolution: {integrity: sha512-YdFj5gMRHr0gYNAhTbQDgjLHiEJdIAUYxomhKseUNye7ZGlISQmUoLh2sveFFCiQ7j2YMffT1kgSND0FSfIFjQ==}
-    engines: {node: '>=20'}
-
   '@modelcontextprotocol/core@2.3.0':
     resolution: {integrity: sha512-09BHFaNVBe5pB2AhzCfLj0cqmsKLERvZQ4FblzP90UMGLaXVqdZPByFjURwsUYCmxonUW2yAwgTTvle+8O2/8w==}
     engines: {node: '>=20'}
@@ -473,8 +469,8 @@ packages:
       '@cfworker/json-schema':
         optional: true
 
-  '@modelcontextprotocol/server@2.1.0':
-    resolution: {integrity: sha512-FdvwZU5N03O77Suh35JqjAqq5R1ZTEPFtwu6N4BgBq28qrQtrCnpbLL5U2pwYCuE194jAw0xnlOVmIqhfoYuUQ==}
+  '@modelcontextprotocol/server@2.3.0':
+    resolution: {integrity: sha512-+6b0LdsQLmHsvS7J6sQJ4weTpzUn61fU1JKS+321/+IyDYoHW5CR2Tgqcs6GgAAQvlesCo6yX3xttgmx+XGtJw==}
     engines: {node: '>=20'}
 
   '@napi-rs/keyring-darwin-arm64@2.1.0':
@@ -997,8 +993,8 @@ packages:
   '@wasm-audio-decoders/opus-ml@0.0.3':
     resolution: {integrity: sha512-SEeTmk0eb3q5etJA/NHCRWW6BivTx9tqvNTmG0kg2ynuATEQRUZnwQE6Ibvl1BBvqIGHqI57+qyJMWmJBwb5XQ==}
 
-  '@wirecat/cli-base@0.50.1':
-    resolution: {integrity: sha512-LpmQ8jbZDPuW88piqwTScSnejQ5rnA2SKikA5vL815hGexQYu6r0gyuampJOSKHaP0exdrupbJXakjzK9rRDOA==}
+  '@wirecat/cli-base@0.50.2':
+    resolution: {integrity: sha512-qGWjz+4ldXv9FlJ4l7YqvP7GqF5C2uz3/x5S90PFMN/x8sclcmnK/z0z5/hAeVpYWGrx8uZkYc8l49IHiOAIxg==}
     engines: {node: '>=22'}
     hasBin: true
     peerDependencies:
@@ -1016,13 +1012,13 @@ packages:
   '@wirecat/cli-core-sqlite@1.0.1':
     resolution: {integrity: sha512-dFkTE3+XdvZwrt7bZZEd2fzdqR2vFgnnGPOhmBKGNa7uKQHjOdqJL8Q9O5cajIjy5o8Gl0LVn0OZbYajhLvQ1A==}
 
-  '@wirecat/cli-core@0.396.0':
-    resolution: {integrity: sha512-Nmu/DlxPPjss6IJXokqLQI35d/B8otu4E4osBHgFElV53U2HCRxGECQ6fIibXLnLiiqRaJSCyW+ipifGgElk+Q==}
+  '@wirecat/cli-core@0.401.0':
+    resolution: {integrity: sha512-60O/foS5apDXkvbsJ9ix5YSsSGeBI4AWk8yw+vwVQVi+ZchppfiS6FHIA/WnNlkDQNwTJMxcVKQza4LS719FuA==}
     engines: {node: ^22.16.0 || >=24}
     hasBin: true
     peerDependencies:
       '@napi-rs/canvas': '>=0.1.69 <2'
-      '@wirecat/cli-base': '>=0.50.1 <0.51.0'
+      '@wirecat/cli-base': '>=0.50.2 <0.51.0'
       commander: '>=15'
     peerDependenciesMeta:
       '@napi-rs/canvas':
@@ -2500,9 +2496,6 @@ packages:
     peerDependencies:
       zod: ^3.25.28 || ^4
 
-  zod@4.6.5:
-    resolution: {integrity: sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==}
-
   zod@4.6.7:
     resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
 
@@ -2838,15 +2831,11 @@ snapshots:
       pkce-challenge: 5.0.1
       zod: 4.6.7
 
-  '@modelcontextprotocol/core@2.1.0':
-    dependencies:
-      zod: 4.6.5
-
   '@modelcontextprotocol/core@2.3.0':
     dependencies:
       zod: 4.6.7
 
-  '@modelcontextprotocol/sdk@1.32.1(zod@4.6.5)':
+  '@modelcontextprotocol/sdk@1.32.1(zod@4.6.7)':
     dependencies:
       '@hono/node-server': 2.1.4(hono@4.13.13)
       ajv: 8.20.0
@@ -2863,15 +2852,15 @@ snapshots:
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
-      zod: 4.6.5
-      zod-to-json-schema: 3.25.2(zod@4.6.5)
+      zod: 4.6.7
+      zod-to-json-schema: 3.25.2(zod@4.6.7)
     transitivePeerDependencies:
       - supports-color
 
-  '@modelcontextprotocol/server@2.1.0':
+  '@modelcontextprotocol/server@2.3.0':
     dependencies:
-      '@modelcontextprotocol/core': 2.1.0
-      zod: 4.6.5
+      '@modelcontextprotocol/core': 2.3.0
+      zod: 4.6.7
 
   '@napi-rs/keyring-darwin-arm64@2.1.0':
     optional: true
@@ -3193,7 +3182,7 @@ snapshots:
     dependencies:
       '@wasm-audio-decoders/common': 9.0.7
 
-  '@wirecat/cli-base@0.50.1(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.3)':
+  '@wirecat/cli-base@0.50.2(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.3)':
     dependencies:
       '@valibot/to-json-schema': 1.8.0(valibot@1.5.0(typescript@7.0.2))
       cli-table3: 0.6.5
@@ -3213,15 +3202,15 @@ snapshots:
 
   '@wirecat/cli-core-sqlite@1.0.1': {}
 
-  '@wirecat/cli-core@0.396.0(@wirecat/cli-base@0.50.1(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.3))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)':
+  '@wirecat/cli-core@0.401.0(@wirecat/cli-base@0.50.2(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.3))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)':
     dependencies:
       '@anthropic-ai/sdk': 0.131.0(zod@4.6.7)
       '@bomb.sh/tab': 0.0.22(commander@15.0.0)
       '@huggingface/tokenizers': 0.2.0
-      '@modelcontextprotocol/server': 2.1.0
+      '@modelcontextprotocol/server': 2.3.0
       '@resvg/resvg-js': 2.6.2
       '@valibot/to-json-schema': 1.8.0(valibot@1.5.0(typescript@7.0.2))
-      '@wirecat/cli-base': 0.50.1(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.3)
+      '@wirecat/cli-base': 0.50.2(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.3)
       '@wirecat/cli-core-onnx': 1.0.1
       '@wirecat/cli-core-sqlite': 1.0.1
       '@xmldom/xmldom': 0.9.12
@@ -3258,9 +3247,9 @@ snapshots:
       - typescript
       - zod
 
-  '@wirecat/cli-testing@0.5.2(zod@4.6.5)':
+  '@wirecat/cli-testing@0.5.2(zod@4.6.7)':
     dependencies:
-      '@modelcontextprotocol/sdk': 1.32.1(zod@4.6.5)
+      '@modelcontextprotocol/sdk': 1.32.1(zod@4.6.7)
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - supports-color
@@ -4879,11 +4868,9 @@ snapshots:
       buffer-crc32: 0.2.13
       fd-slicer: 1.1.0
 
-  zod-to-json-schema@3.25.2(zod@4.6.5):
+  zod-to-json-schema@3.25.2(zod@4.6.7):
     dependencies:
-      zod: 4.6.5
-
-  zod@4.6.5: {}
+      zod: 4.6.7
 
   zod@4.6.7: {}
 
