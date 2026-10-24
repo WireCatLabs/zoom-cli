@@ -33,8 +33,10 @@ a transcript to an AI service. This guide explains those boundaries before you c
 
 ## What agents can do
 
-- The MCP server is read-only and exposes no file exports, remote mutations, embedding generation
-  or task creation. Meeting reads use the selected Zoom profile.
+- The MCP server offers reading and writing commands for the selected Zoom profile. Its permissions
+  limit both discovery and execution; `deny` hides a command and `readonly` withholds writes.
+  At `ask`, MCP writes run without a terminal question. Settings and skill installation require
+  `mcp.authority: allow`; profile permissions can only be changed in a terminal. See [MCP and skills](mcp.md).
 - Optional preparation can also read the message accounts, mail accounts and document folders you
   [explicitly select for that profile](configuration.md#select-communications-for-preparation).
   A grant covers the whole account or folder; only requested source IDs are resolved and searched.
@@ -64,4 +66,4 @@ queries only when explicitly selected; local model execution stays on your compu
 and database content remain sensitive meeting data even though their manifests omit tokens.
 
 To withdraw Zoom access, [revoke the app authorization](sessions.md#remove-access). To control what
-an AI app can request, choose the [CLI skill or read-only MCP connection](mcp.md).
+an AI app can request, choose the [CLI skill or MCP connection](mcp.md).

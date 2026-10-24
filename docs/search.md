@@ -60,7 +60,7 @@ zm personal search recordings ./zoom-archive "example plan" --limit 100 --offlin
 Its hits are the ones `search all` answers with: `ref` (`recording:<file id>/<cue position>`), `title`,
 `timestamp`, `excerpt`, `sender_name` and `offset_ms`; `account` is the archive folder.
 
-## Why zm personal does not search on Zoom's side
+## Why zm does not search on Zoom's side
 
 Zoom's API has no way to search transcript text. The [Meetings API reference](https://developers.zoom.us/docs/api/meetings/)
 only hands transcripts out as files: `GET /meetings/{meetingId}/transcript`, and recording files with
@@ -99,9 +99,8 @@ for another zone. Existing continuation and coverage rules still apply.
 
 If a meeting has not been linked to a project or labelled yet, start with word search and inspect
 the evidence before organising it with [Memo's shared records](https://wirecat.dev/en/docs/memo/usage).
-The read-only MCP tool `search_meetings` provides the same filters in the server-selected
-account, using `identity_id`, `person_id`, `event_id`, `series_id`, `project`, `tag`, `topic`,
-`since_time`, `until_time` and `cursor`; its times are epoch milliseconds.
+Over MCP, run `search meetings` through `zm_write`: it updates the word index before searching.
+It uses the same filters and time syntax as the CLI, in the server-selected profile.
 
 `meetings people <query>` finds saved participant observations by name or email within the selected account.
 It uses literal Unicode matching; it does not translate names or infer that two people are the same.

@@ -325,7 +325,7 @@ More: [configuration][docs/configuration.md] · [Zoom on wirecat.dev][wirecat/en
 - Network: Zoom's API, plus an embedding endpoint only when you name one. `--offline` refuses both.
 - Manifests and saved jobs never hold signed URLs, tokens or credentials; diagnostics omit raw
   provider error text.
-- The MCP server is read-only and fixed to the selected profile; changes to Zoom preview until `--yes`.
+- The MCP server offers reads and writes for one fixed profile, limited by its permissions; `ask` writes run without a terminal question.
 - `ZM_READ_ONLY=1` refuses changes to Zoom, the login, settings and anything you added (imports, links,
   transcripts, exports, jobs), with exit 5, before any network call; reads and the syncs that copy Zoom into
   the store or an archive still run. Give it to an agent that should only read.

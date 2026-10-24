@@ -34,6 +34,8 @@ To use your Zoom account, you connect your own Zoom app first; [the app guide](z
 
 ## Later
 
+- Calls you only attend: record audio on this computer, without a bot, then transcribe locally (ZM-25).
+- Notes per meeting: decisions, open questions and action items citing transcript lines (ZM-26).
 - Speaker names in transcripts made on this computer.
 - Meetings someone else hosted, without asking the host for a file.
 - A reviewed preparation brief that combines upcoming series, project suggestions and stored context, with

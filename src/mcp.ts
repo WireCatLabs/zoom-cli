@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/server"
 import { StdioServerTransport } from "@modelcontextprotocol/server/stdio"
-import { mcpErrorResult, visibleControls } from "@wirecat/cli-base"
+import { CliError, errorObjectOf, mcpErrorResult, visibleControls } from "@wirecat/cli-base"
 import type { CommandInfo } from "@wirecat/cli-base/commands"
 import type { ErrorObject } from "@wirecat/cli-base/standards"
 import { type McpCommand, registerCommands, runCommandForAgent, toolsFromCommands } from "@wirecat/cli-core/mcp"
@@ -22,20 +22,11 @@ export interface ZoomMcpOptions {
   transport?: Parameters<McpServer["connect"]>[0]
 }
 
-/**
- * Nothing an agent runs here logs in, changes settings, serves or waits forever, or builds vectors: building sends
- * transcript text to the model the caller names.
- */
-const EXCLUDED = [
-  ["mcp"],
-  ["serve"],
-  ["session"],
-  ["config"],
-  ["skill"],
-  ["complete"],
-  ["watch"],
-  ["meetings", "embeddings"],
-]
+const EXCLUDED = [["mcp"], ["serve"], ["complete"], ["watch"]]
+const authorityAllowed = (levels: Readonly<Record<string, Level>>) =>
+  levels["mcp.authority"] === "allow" || levels["mcp.authority"] === "ask"
+const changesAuthority = (path: readonly string[]) =>
+  ["config set", "skill install", "session start"].includes(path.join(" "))
 /** A remote embedding service is the owner's choice on the command line; over MCP only an installed model answers. */
 const OMITTED = ["base_url", "dims"]
 
@@ -83,6 +74,7 @@ export const createZoomMcpServer = (options: ZoomMcpOptions): McpServer => {
     omit: OMITTED,
     levels: levelsOf(options.permissions()),
     keyOf,
+    authority: changesAuthority,
   })
   const commands: Record<string, McpCommand> = Object.fromEntries(
     tools.map((tool) => [
@@ -93,6 +85,14 @@ export const createZoomMcpServer = (options: ZoomMcpOptions): McpServer => {
         writes: tool.writes,
         input: tool.input,
         run: async (input) => {
+          if (changesAuthority(tool.path) && !authorityAllowed(levelsOf(options.permissions())))
+            return mcpErrorResult(
+              errorObjectOf(new CliError("permission_error", "this command requires mcp.authority: allow")),
+            )
+          if (tool.command === "config set" && input.key === "permissions")
+            return mcpErrorResult(
+              errorObjectOf(new CliError("permission_error", "change profile permissions in a terminal")),
+            )
           const answer = await runCommandForAgent(program, tool.path, input, {
             profile: options.profile,
             levels: () => levelsOf(options.permissions()),

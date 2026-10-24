@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Help examples and packaged scenarios include the profile word.
+- MCP documentation describes writes and profile permissions, and setup explains that every user needs their own Zoom app or an authorized team app.
+
+### Added
+
+- MCP discovery includes configuration reads, session status, skill reads and meeting embeddings. Settings and skill installation require the explicit `mcp.authority` grant; agents cannot change profile permissions.
+- `doctor` reports `authentication.keyring` after testing and removing a temporary entry, without reading saved logins.
+
 ## 0.39.0 — 24.10.2026
 
 ### Added

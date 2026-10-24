@@ -64,8 +64,13 @@ zm personal config set permissions '{"remote-meetings": "allow", "recordings": "
 
 The most specific key wins (`remote-meetings.cancel` over `remote-meetings`). Built in, `remote-meetings` is `ask`;
 a broader key the owner sets never loosens it, a key as deep does. `--yes` only answers `ask`: it never lifts
-`deny` or `readonly`. Settings, login, help and the MCP server are never gated. A key that names no command, or
+`deny` or `readonly`. In a terminal, settings, login, help and the MCP server are never gated. A key that names no command, or
 a level that is not one of the four, is refused when set. `ZM_READ_ONLY` applies on top of every level.
+
+Settings and skill installation over MCP require `mcp.authority` at `allow` or `ask`.
+It is denied by default. Set it from a terminal through the profile's `permissions` map,
+preserving any existing restrictions, then restart the MCP server. An MCP agent cannot change
+profile permissions. See [MCP and skills](mcp.md#the-mcp-server).
 
 ## Environment variables
 

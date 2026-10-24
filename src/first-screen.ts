@@ -34,7 +34,7 @@ export const installFirstScreen = (program: Command): void => {
   const guide = guideCommand(ZM, {
     directory: fileURLToPath(new URL("../scenarios", import.meta.url)),
     worksWith: [MEMO_SCENARIOS.personBrief],
-    profile: false,
+    profile: true,
   })
   // addCommand, unlike command(), leaves out the exit override: `guide --help` called process.exit itself.
   program.addCommand(guide.copyInheritedSettings(program))
@@ -48,7 +48,7 @@ export const installFirstScreen = (program: Command): void => {
       { command: "meetings prepare <series-id>", does: "a briefing with sources before a meeting" },
       { command: "meetings transcribe <meeting> <file>", does: "a recording turned into text on this machine" },
       { command: "recordings schedule create …", does: "a daily, checked archive of cloud recordings" },
-      { command: "serve --mcp", does: "read-only meeting tools for any MCP agent" },
+      { command: "mcp", does: "commands for an MCP agent, limited by the profile’s permissions" },
       {
         command: "ZM_READ_ONLY=1 zm …",
         does: "blocks changes to Zoom, login, settings, files and the store; syncs run",

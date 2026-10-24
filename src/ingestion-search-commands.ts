@@ -59,7 +59,11 @@ export const addIngestionSearchCommands = (program: Command, deps: Deps): void =
           } else await deps.outputItems(receipts)
         },
       ),
-    { origin: "handwritten", effects: LOCAL_WRITE, examples: ["zm recordings archive import ./archive --jsonl"] },
+    {
+      origin: "handwritten",
+      effects: LOCAL_WRITE,
+      examples: ["zm personal recordings archive import ./archive --jsonl"],
+    },
   )
   const search = annotate(program.command("search"), { effects: NO_EFFECTS }).description(
     "opt-in shared store search; meetings by default",
@@ -106,7 +110,7 @@ export const addIngestionSearchCommands = (program: Command, deps: Deps): void =
       effects: LOCAL_READ,
       partial: true,
       output: { entity: "hit" },
-      examples: ['zm search all "example plan" --json'],
+      examples: ['zm personal search all "example plan" --json'],
     },
   )
 }
