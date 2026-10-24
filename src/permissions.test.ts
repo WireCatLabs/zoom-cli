@@ -1,3 +1,4 @@
+import { writeFileSync } from "node:fs"
 import { mkdtemp } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -81,6 +82,17 @@ it("allow applies without --yes, and a flag never lifts readonly or deny", async
   const denied = await setup({ meetings: "deny" })
   expect(await run(["meetings", "list", "--json"], denied.deps)).toBe(5)
   expect(denied.error().message).toContain("meetings is deny for profile work")
+})
+
+it('**the shared setup answer "read only" holds over a profile\'s allow**, and reads still run', async () => {
+  const capped = await setup({ "remote-meetings": "allow" })
+  const shared = await mkdtemp(join(tmpdir(), "zm-test-setup-"))
+  writeFileSync(join(shared, "config.json"), JSON.stringify({ setup: { permissions: "readonly" } }))
+  capped.deps.env = { WIRECAT_CONFIG_DIR: shared }
+  expect(await run(create, capped.deps)).toBe(5)
+  expect(capped.applied).toEqual([])
+  expect(capped.error().message).toContain("setup answer keeps every tool read-only")
+  expect(await run(["meetings", "list", "--json"], capped.deps)).toBe(0)
 })
 
 it("a built-in ask is not loosened by a broader allow, and is by a key as deep", async () => {

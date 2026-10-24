@@ -1,6 +1,7 @@
 import { CliError } from "@wirecat/cli-base"
 import { metaOf } from "@wirecat/cli-base/commands"
-import { LEVELS, type Level, levelFor } from "@wirecat/cli-core/sends"
+import { setupPermissionCeiling } from "@wirecat/cli-core/cli"
+import { CEILING_KEY, LEVELS, type Level, levelFor } from "@wirecat/cli-core/sends"
 import type { Command } from "commander"
 import { PROFILE_FREE } from "./commands.js"
 import type { ZoomConfig } from "./config.js"
@@ -12,7 +13,7 @@ export const DEFAULT_PERMISSIONS: Readonly<Record<string, Level>> = { "remote-me
 /** Looking after the tool — its settings, its login, its help — is never gated (WC-PERM-5). */
 const HOUSEKEEPING = new Set([...PROFILE_FREE, "session", "serve", "mcp"])
 
-const pathOf = (command: Command): string[] => {
+export const pathOf = (command: Command): string[] => {
   const words: string[] = []
   for (let at: Command | null = command; at?.parent; at = at.parent) words.unshift(at.name())
   return words
@@ -62,6 +63,8 @@ export interface PermissionContext {
   config: () => Pick<ZoomConfig, "permissions">
   /** A y/N question at a terminal; absent without one or with --no-input. */
   confirm?: (question: string) => Promise<boolean>
+  /** The shared first-run answer, which no profile goes above. */
+  ceiling?: Level
 }
 
 const refuse = (key: string, level: Level, profile: string, what: string) =>
@@ -82,10 +85,18 @@ export const checkPermission = (command: Command, context: PermissionContext): P
   const named = context.profile()
   const profile = named ?? "<profile>"
   const own = named === undefined ? {} : (context.config().permissions[named] ?? {})
-  const { level, key: by } = levelFor(own, key, DEFAULT_PERMISSIONS)
+  const levels = context.ceiling ? { ...own, [CEILING_KEY]: context.ceiling } : own
+  const { level, key: by } = levelFor(levels, key, DEFAULT_PERMISSIONS)
   const at = by ?? key
   if (level === "deny") throw refuse(at, level, profile, "refused")
   const changes = refusalOf(command)
+  if (level === "readonly" && changes && by === CEILING_KEY)
+    throw new CliError(
+      "permission_error",
+      `refused to ${changes}: the WireCat setup answer keeps every tool read-only — \`tg setup\`, \`max setup\` ` +
+        "or `wa setup` at a terminal changes it",
+      { key, level },
+    )
   if (level === "readonly" && changes) throw refuse(at, level, profile, `refused to ${changes}`)
   const options = command.opts<{ yes?: boolean; dryRun?: boolean }>()
   const confirms = metaOf(command).effects?.remote === "write" && command.options.some(({ long }) => long === "--yes")
@@ -114,5 +125,6 @@ export const guardCommand = (
   confirm?: PermissionContext["confirm"],
 ): Promise<void> | undefined => {
   refuseChangeWhenReadOnly(command, env)
-  return checkPermission(command, { ...context, ...(confirm ? { confirm } : {}) })
+  const ceiling = setupPermissionCeiling(env)
+  return checkPermission(command, { ...context, ...(confirm ? { confirm } : {}), ...(ceiling ? { ceiling } : {}) })
 }

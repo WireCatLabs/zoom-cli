@@ -85,6 +85,8 @@ export interface ProgramDeps {
   readPaste?: (signal: AbortSignal) => Promise<string>
   /** A y/N question, default no; only at a terminal. */
   confirm?: (question: string) => Promise<boolean>
+  /** The WireCat first-run questions, before a command; only the real binary passes it. */
+  atStart?: (command: Command) => Promise<void>
   readBatchInput?: (path: string, signal?: AbortSignal) => Promise<string>
   data: (text: string) => void
   diagnostic: (text: string) => void
@@ -198,6 +200,7 @@ export const createProgram = (deps: ProgramDeps): Command => {
       throw new CliError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
   }
   program.hook("preAction", async (_root, action) => {
+    if (deps.atStart) await deps.atStart(action)
     const asking = guardCommand(action, deps.env ?? process.env, { profile: selection.named, config: getConfig }, ask())
     if (asking) await asking
     const opts = action.optsWithGlobals()

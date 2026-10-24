@@ -19,8 +19,8 @@ importers:
         specifier: 0.50.2
         version: 0.50.2(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.3)
       '@wirecat/cli-core':
-        specifier: 0.401.0
-        version: 0.401.0(@wirecat/cli-base@0.50.2(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.3))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)
+        specifier: 0.404.0
+        version: 0.404.0(@wirecat/cli-base@0.50.2(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.3))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)
       commander:
         specifier: 15.0.0
         version: 15.0.0
@@ -1012,8 +1012,8 @@ packages:
   '@wirecat/cli-core-sqlite@1.0.1':
     resolution: {integrity: sha512-dFkTE3+XdvZwrt7bZZEd2fzdqR2vFgnnGPOhmBKGNa7uKQHjOdqJL8Q9O5cajIjy5o8Gl0LVn0OZbYajhLvQ1A==}
 
-  '@wirecat/cli-core@0.401.0':
-    resolution: {integrity: sha512-60O/foS5apDXkvbsJ9ix5YSsSGeBI4AWk8yw+vwVQVi+ZchppfiS6FHIA/WnNlkDQNwTJMxcVKQza4LS719FuA==}
+  '@wirecat/cli-core@0.404.0':
+    resolution: {integrity: sha512-ThOxfcsHS7PV0akA1kTlymBo7R5zam9njJezsFDd8xot+h0LKzsd+pUtGrYkdqNKqYtvoI6r6/iYdbUnOIxD9g==}
     engines: {node: ^22.16.0 || >=24}
     hasBin: true
     peerDependencies:
@@ -1284,6 +1284,12 @@ packages:
 
   devlop@1.1.0:
     resolution: {integrity: sha512-RWmIqhcFf1lRYBvNmr7qTNuyCt/7/ns2jbpp1+PalgE/rDQcBT0fioSMUpJ93irlUhC5hrg4cYqe6U+0ImW0rA==}
+
+  dictionary-en@4.0.0:
+    resolution: {integrity: sha512-3NHnE1uq33ZE/CIwaZ6gqxa4BnglHnxeAcTM0GJ7cmtRGcvX9InMK/IqLtYcUMFCUpUNgybH+DzkqdgAo3F1zg==}
+
+  dictionary-es@4.0.0:
+    resolution: {integrity: sha512-8J3IYdaHYmkojxqhB+DneQpek6N/s3MwbVk3bPNGQSTBT5kxJtmbuiT0LSDP0Al6K9Vevo1sjspG8AGP9Yvxiw==}
 
   dictionary-ru@3.0.0:
     resolution: {integrity: sha512-tigem0CDnNpxEciW6ktwVH3wWB4FYpuvpwA6IR6UlF7bVu2kez6vOejVNyZgBX1TJIjuYTCTuLxzg/YOls2mRQ==}
@@ -3202,7 +3208,7 @@ snapshots:
 
   '@wirecat/cli-core-sqlite@1.0.1': {}
 
-  '@wirecat/cli-core@0.401.0(@wirecat/cli-base@0.50.2(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.3))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)':
+  '@wirecat/cli-core@0.404.0(@wirecat/cli-base@0.50.2(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.3))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)':
     dependencies:
       '@anthropic-ai/sdk': 0.131.0(zod@4.6.7)
       '@bomb.sh/tab': 0.0.22(commander@15.0.0)
@@ -3217,6 +3223,8 @@ snapshots:
       chardet: 2.2.0
       commander: 15.0.0
       defuddle: 0.19.5
+      dictionary-en: 4.0.0
+      dictionary-es: 4.0.0
       dictionary-ru: 3.0.0
       echarts: 6.1.0
       fflate: 0.8.3
@@ -3528,6 +3536,10 @@ snapshots:
   devlop@1.1.0:
     dependencies:
       dequal: 2.0.3
+
+  dictionary-en@4.0.0: {}
+
+  dictionary-es@4.0.0: {}
 
   dictionary-ru@3.0.0: {}
 
