@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.40.0 — 24.10.2026
 
 ### Changed — may break callers
 
@@ -8,8 +8,6 @@
   the `kind:audio`, `id:` and `downloaded:` query terms, and `models download <model>` (was `models audio
   download`). The old paths are gone, with no alias. A model in the answer is the shared `model` type: `size_bytes`
   (was `sizeBytes`) and `default`, always `false`, since `meetings transcribe` takes `--model`.
-
-## 0.40.0 — 24.10.2026
 
 ### Fixed
 
