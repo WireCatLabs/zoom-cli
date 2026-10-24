@@ -172,7 +172,8 @@ Follow row/text/candidate bounds; unknown coverage remains unknown.
 `zm <profile> mcp` serves these commands as `zm_tools_search`, `zm_read` and `zm_write`, as the profile's
 permissions allow; a call answers as the command does. Over MCP a change at level `ask` runs without a question.
 
-`remote-meetings` uses numeric remote ids. Create/update/cancel ask first: without a terminal `--yes`
+`contacts list` reads company and external Zoom contacts live (`name:`, `email:`, `type:` narrow it); `contacts show` takes
+the `id` it returns, a Zoom user id or an email. `remote-meetings` uses numeric remote ids. Create/update/cancel ask first: without a terminal `--yes`
 applies an authorized change once (else exit 7), and `--dry-run` always previews. Exit 14 means an uncertain dispatched
 write: inspect remote state before retrying. Never automatically replay creation or cancellation.
 Tokens stay in the keyring. Missing scopes require app changes and a new login; cached session status
