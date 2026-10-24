@@ -84,7 +84,7 @@ export const addMeetingReviewCommands = (
     annotate(selectionOptions(mentions.command("list"), true), {
       effects: LOCAL_READ,
       output: { entity: "meeting_link" },
-      examples: ["zm personal mentions list --since-time 30d --json", "zm personal mentions list project:RES --json"],
+      examples: ["zm personal mentions list started_at>=30d --json", "zm personal mentions list project:RES --json"],
     }),
     MEETING_LINK_QUERY,
   )
@@ -92,10 +92,12 @@ export const addMeetingReviewCommands = (
     .option("--limit <n>", "how many links (default 100)", bytes)
     .option("--max-messages <n>", "most chat messages to read (default and at most 100000)", bytes)
     .action(async (words: string[], flags: SelectionFlags & { limit?: number; maxMessages?: number }) => {
-      const { request, meta } = selectionOf(linkSelection(words, flags), deps.signal())
+      const { url, ...selected } = linkSelection(words, flags)
+      const { request, meta } = selectionOf(selected, deps.signal())
       const limit = flags.limit ?? 100
       const found = await (await deps.links())({
         ...request,
+        ...(url === undefined ? {} : { url }),
         ...(flags.maxMessages === undefined ? {} : { maxMessages: flags.maxMessages }),
       })
       deps.output(
