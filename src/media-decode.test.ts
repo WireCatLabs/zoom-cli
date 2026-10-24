@@ -98,3 +98,22 @@ it("finds the format after other chunks, as a WAV from an editor has them", asyn
   await writeFile(path, bytes)
   expect(await wavFor(path, { ffmpeg: "/nonexistent/ffmpeg" })).toMatchObject({ path, decoded: false })
 })
+
+it("releases a successful decoder's temporary output without touching its input, even when ffmpeg is unavailable", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "zm-test-decoder-lifecycle-"))
+  const input = join(directory, "input.m4a")
+  const expected = wav(16000)
+  await writeFile(input, "invented decoder input")
+  await writeFile(join(directory, "fixture.wav"), expected)
+  const decoder = join(directory, "decoder")
+  await writeFile(decoder, '#!/bin/sh\nfor output in "$@"; do :; done\ncp "$(dirname "$0")/fixture.wav" "$output"\n', {
+    mode: 0o755,
+  })
+  const audio = await wavFor(input, { ffmpeg: decoder })
+  expect(audio.decoded).toBe(true)
+  expect(await readFile(audio.path)).toEqual(expected)
+  expect(await readFile(input, "utf8")).toBe("invented decoder input")
+  await audio.release()
+  expect(existsSync(dirname(audio.path))).toBe(false)
+  await audio.release()
+})
