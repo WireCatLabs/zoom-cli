@@ -20,7 +20,7 @@ jobs:
       contents: read
       actions: read
       security-events: write
-    uses: WireCatLabs/cli-base/.github/workflows/release-checks.yml@03341651a008f77abb8172f86d6df652321b4ce5 # v0.31.0
+    uses: WireCatLabs/cli-base/.github/workflows/release-checks.yml@d35f90ac1f4a73ede7b7d5cabc7b2a18208c5979 # v0.49.0
     with:
       dependencies: true
       languages: '["actions","javascript-typescript"]'
