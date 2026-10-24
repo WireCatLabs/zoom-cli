@@ -81,7 +81,7 @@ it("takes every filter on both commands, and says when a project or topic name i
     const answer = JSON.parse(stdout.join(""))
     expect(command === "show" ? answer.item.meetings : answer.items).toEqual(command === "show" ? 0 : [])
     stdout.length = 0
-    for (const name of ["--project", "--topic"])
+    for (const name of ["--project", "--topic-name"])
       expect(await run(["work", "stats", "meetings", command, name, "Absent example", "--json"], deps)).toBe(6)
   }
 })
