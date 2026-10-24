@@ -239,15 +239,15 @@ Earlier acknowledged occurrences can remain committed if a later append fails.
 Create an independent local transcript from an audio file for an existing stored meeting:
 
 ```sh
-zm models audio download parakeet-v3
+zm models download parakeet-v3
 zm personal meetings transcribe 1 ./AliceExample.m4a --model parakeet-v3 --json
 zm personal meetings transcribe 1 ./AliceExample.m4a --model parakeet-v3 --yes --json
 ```
 
 Preview verifies the input and describes the chosen model without loading it. `--yes` recognizes
 with an already installed local model and atomically appends the completed transcript; `--dry-run`
-overrides it. Transcription never downloads a model: `zm models audio list` shows the models this version knows,
-and `zm models audio download <model>` fetches one into the folder every WireCat CLI shares, checking each file's
+overrides it. Transcription never downloads a model: `zm models list kind:audio` shows the models this version knows,
+and `zm models download <model>` fetches one into the folder every WireCat CLI shares, checking each file's
 sha256; run it again to repair a model whose files are of another version. A PCM16 WAV, mono or stereo, at 16 or
 48 kHz is read as it is; anything else — Zoom's MP4 and M4A recordings, other audio and video — is decoded first by
 the `ffmpeg` installed on this computer, into a private temporary folder removed afterwards. The same file always

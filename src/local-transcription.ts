@@ -94,7 +94,7 @@ const engineFailure = async <T>(model: string, work: () => Promise<T>): Promise<
     if (error instanceof Error) throw error
     throw new CliError(
       "configuration_error",
-      `the speech engine could not run ${model}; \`zm models audio download ${model}\` checks its files and repairs them`,
+      `the speech engine could not run ${model}; \`zm models download ${model}\` checks its files and repairs them`,
     )
   }
 }

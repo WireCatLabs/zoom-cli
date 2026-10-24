@@ -676,41 +676,43 @@ zm upgrade [options]
 
 ## `zm models`
 
-models that run on this machine
+speech models that run on this machine, for `meetings transcribe`
 
-### `zm models audio`
-
-speech models for `meetings transcribe`
-
-#### `zm models audio list`
+### `zm models list`
 
 the speech models this version knows, and which are downloaded
 
 ```sh
-zm models audio list
+zm models list [query]
 ```
 
-**Returns:** the speech models this version knows, and which are downloaded
+| Argument | | What it is |
+|---|---|---|
+| `query` | optional | field:value terms that narrow the list — the fields are below. |
 
-**Example:** `zm personal models audio list --json`
+**Returns:** model — id, kind, title, languages, size_bytes, downloaded, default, path, and 1 more
 
-#### `zm models audio download`
+**Next usually:** `zm models download <model>`
+
+**Example:** `zm personal models list --json`, `zm personal models list kind:audio downloaded:false`
+
+### `zm models download`
 
 download a speech model, or repair one, checking every file's sha256
 
 **Changes local data.**
 
 ```sh
-zm models audio download <model>
+zm models download <model>
 ```
 
 | Argument | | What it is |
 |---|---|---|
-| `model` | required | a model id from `models audio list`. |
+| `model` | required | a model id from `models list`. |
 
 **Returns:** download a speech model, or repair one, checking every file's sha256
 
-**Example:** `zm personal models audio download parakeet-v3 --json`
+**Example:** `zm personal models download parakeet-v3 --json`
 
 ## `zm watch`
 

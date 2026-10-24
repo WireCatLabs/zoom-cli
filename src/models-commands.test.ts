@@ -21,10 +21,16 @@ it("lists the speech models in the folder WireCat CLIs share, without a profile"
     data: (text) => stdout.push(text),
     diagnostic: () => {},
   }
-  expect(await run(["models", "audio", "list", "--json"], deps)).toBe(0)
+  expect(await run(["models", "list", "--json"], deps)).toBe(0)
   const items = JSON.parse(stdout.join("")).items as { id: string; downloaded: boolean; path: string }[]
   expect(items.map((item) => item.id)).toContain("parakeet-v3")
   expect(items.every((item) => !item.downloaded && item.path.startsWith(directory))).toBe(true)
+  stdout.length = 0
+  expect(await run(["models", "list", "kind:text", "--json"], deps)).toBe(0)
+  expect(JSON.parse(stdout.join("")).items).toEqual([])
+  stdout.length = 0
+  expect(await run(["models", "list", "id:parakeet-v3", "downloaded:false", "--json"], deps)).toBe(0)
+  expect(JSON.parse(stdout.join("")).items.map((item: { id: string }) => item.id)).toEqual(["parakeet-v3"])
 })
 
 it("removes a model file of another version before downloading, and says so", async () => {
@@ -50,7 +56,7 @@ it("removes a model file of another version before downloading, and says so", as
     data: () => {},
     diagnostic: (text) => stderr.push(text),
   }
-  expect(await run(["models", "audio", "download", "parakeet-v3", "--json"], deps)).not.toBe(0)
+  expect(await run(["models", "download", "parakeet-v3", "--json"], deps)).not.toBe(0)
   expect(stderr.join("")).toContain("silero_vad.onnx: not the file this version expects")
   expect(existsSync(join(audio, "silero_vad.onnx"))).toBe(false)
   vi.unstubAllGlobals()

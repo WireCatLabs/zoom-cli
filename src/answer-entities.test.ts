@@ -32,8 +32,7 @@ const UNDECLARED = new Set([
   "meetings sync",
   "meetings transcribe",
   "meetings update",
-  "models audio download",
-  "models audio list",
+  "models download",
   "recordings archive check",
   "recordings archive import",
   "recordings archive locks",
@@ -158,6 +157,7 @@ it("answers every command that declares an entity with that entity's schema", as
     ["stats meetings show", ["stats", "meetings", "show", "--since-time", "2026-10-01"]],
     ["stats meetings top", ["stats", "meetings", "top", "--since-time", "2026-10-01"]],
     ["mentions list", ["mentions", "list", "--since-time", "2026-10-01"]],
+    ["models list", ["models", "list"]],
   ]
   const program = createProgram(deps)
   const commands = new Map(leaves(program).map((command) => [pathOf(command), command]))
