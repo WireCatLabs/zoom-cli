@@ -38,11 +38,12 @@ server speaks for the profile named in its `args`; a caller cannot change it. `w
 Interactive login (`session start`) stays in the terminal.
 Settings, skill installation, upgrade and archive timer changes require `mcp.authority` at `allow` or `ask`;
 profile permissions can only be changed in a terminal.
-Grant authority with `zm personal config set permissions '{"mcp.authority":"allow"}'` and restart
-the server. This replaces the profile's permission map, so include any existing restrictions.
+Grant authority with `zm personal config set permissions '{"mcp.authority":"allow"}'` and reconnect
+the app if needed. This replaces the profile's permission map, so include any existing restrictions.
 
-What the profile's permissions deny is neither offered nor run, and `readonly` withholds the commands that change
-something. A command at level `ask` runs without a question, since no one is at a terminal: the built-in `ask` on
+Denied commands remain in full listings and searches with `availability.available: false`, a reason and
+the permission key. `readonly` marks writes unavailable. Named-profile CLI help and discovery show the
+same current permission information. Calls recheck permissions before running. A command at level `ask` runs without a question, since no one is at a terminal: the built-in `ask` on
 `remote-meetings` lets an agent create, change and cancel Zoom meetings. To keep an agent from doing that, give the
 profile it serves `{"remote-meetings": "readonly"}`.
 

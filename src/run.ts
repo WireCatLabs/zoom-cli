@@ -1,6 +1,7 @@
 import { type ProgramDefinition, run as sharedRun } from "@wirecat/cli-core/cli"
 import { readConfig } from "./config.js"
 import { ZOOM_FIRST_SCREEN } from "./first-screen.js"
+import { discoveryLevels, permissionKeyForPath } from "./permissions.js"
 import { chooseProfile } from "./profile.js"
 import type { ProgramDeps } from "./program.js"
 import { bindZoomProgram } from "./program-bindings.js"
@@ -17,13 +18,22 @@ export const zoomDefinition = (deps: ProgramDeps, onFailure?: (error: unknown) =
     commands: () => [],
     firstScreen: ZOOM_FIRST_SCREEN,
     configuration: {
+      permissionKey: permissionKeyForPath,
       resolveSettings: (flags, options) => {
         const env = options?.env ?? deps.env ?? process.env
         const word = flags?.profile
         const profile = options?.needsProfile
           ? chooseProfile({ word, env, profiles: () => readConfig(deps.configPath).profiles })
           : (word ?? env.ZM_PROFILE ?? env.ZM_PROFILE_LOCK ?? "")
-        return { profile, keepFailedRuns: false, keepRunsForDays: 1, skillHint: false }
+        return {
+          profile,
+          keepFailedRuns: false,
+          keepRunsForDays: 1,
+          skillHint: false,
+          ...(profile
+            ? { permissions: discoveryLevels(readConfig(deps.configPath).permissions[profile] ?? {}, env) }
+            : {}),
+        }
       },
     },
     configure: (program) => bindZoomProgram(program, deps, lifecycle, runCommand),

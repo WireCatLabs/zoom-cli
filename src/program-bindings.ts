@@ -27,7 +27,7 @@ import { type ContextCapture, captureContextSources } from "./meeting-communicat
 import { addZoomInventoryCommand } from "./meeting-inventory.js"
 import type { ZoomPreparationOptions } from "./meeting-preparation.js"
 import { configuredMeetingSource } from "./meeting-source.js"
-import { guardCommand } from "./permissions.js"
+import { discoveryLevels, guardCommand } from "./permissions.js"
 import { chooseProfile } from "./profile.js"
 import { PROFILE_HELP, recordProfile } from "./profile-word.js"
 import type { ProgramDeps } from "./program.js"
@@ -410,7 +410,8 @@ export const bindZoomProgram = (
   })
   addMcpCommands(program, {
     profile,
-    permissions: (name) => readConfig(deps.configPath).permissions[name] ?? {},
+    permissions: (name) =>
+      discoveryLevels(readConfig(deps.configPath).permissions[name] ?? {}, deps.env ?? process.env),
     run: (argv, environment) => runForAgent(execute, argv, given, environment),
     signal,
     serve: deps.serveMcp,

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Permission-denied commands remain searchable over MCP with current availability and a reason. Named-profile CLI help shows availability; calls still refuse before execution.
+
 ## 0.41.0 — 24.10.2026
 
 ### Changed — may break callers
