@@ -132,9 +132,8 @@ zm personal meetings task-proposal meeting:3/15/20/0 --type promise --json
 Broader search requires explicit `--only messages,mail,notes,meetings`. Message reads use the
 selected local account; mail reads include stored email accounts; notes are global to the shared
 store. Meeting matching uses word prefixes; unsupported meeting syntax or exact queries are reported
-as skipped. A meetings-only continuation uses the returned `item.meetings.next_cursor` as
-`--meeting-cursor '<json>'`, bound to its account and query. JSONL emits the report in one item record, retaining skips, coverage and cursors, followed by an end
-record. Skipped sources set `complete` to false and appear in `issues`; search still exits zero.
+as skipped. Continue the hit list with `--page`. JSONL emits one item per hit and an end record.
+Skipped sources set `meta.complete` to false and appear in `issues`; search still exits zero.
 
 ## Put filters in the query, and save a search
 

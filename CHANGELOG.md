@@ -10,6 +10,10 @@
 
 - **Meeting links accept native queries.** `mentions list event_id:1`, `project:RES` and `topic:planning` select the underlying meetings before links are read. Stored events accept native id, origin and time queries.
 
+### Fixed
+
+- Guides describe current permission discovery, unified-search paging and already-shipped meeting workflows. Retired command names are removed from the read-only examples.
+
 ## 0.42.0 — 24.10.2026
 
 ### Changed — may break callers
