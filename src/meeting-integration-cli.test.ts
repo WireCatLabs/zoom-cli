@@ -34,7 +34,18 @@ const setup = async () => {
     data: (text) => output.push(text),
     diagnostic: (text) => errors.push(text),
   }
-  const writes = vi.fn(async (_meetingId: number, _change: unknown) => ({ changed: true }))
+  const writes = vi.fn(async (meetingId: number, change: import("@wirecat/cli-core/meetings").MeetingContextChange) => {
+    if (change.action === "event.link") return { meetingId, eventId: change.eventId, previousEventId: 2, changed: true }
+    if (change.action === "person.link")
+      return {
+        meetingId,
+        participantId: change.participantId,
+        personUid: change.personUid,
+        previousPersonUid: null as string | null,
+        changed: true,
+      }
+    throw new Error("unexpected fixture change")
+  })
   const context = createMeetingContext({ provider: "zoom", account: "zm-profile:AliceExample" }, 1, {
     actions: ["event.link", "person.link"],
     apply: writes,
@@ -67,7 +78,7 @@ it("previews links and applies owner-selected event and participant links once",
   expect(
     await run(["meetings", "update", "meeting:1/1", "--event-id", "2", "--expected-event-id", "none", "--json"], deps),
   ).toBe(0)
-  expect(latest(output)).toMatchObject({ applied: false, change: { event_id: 2, expected_event_id: null } })
+  expect(latest(output)).toMatchObject({ applied: false, change: { event_id: "2", expected_event_id: null } })
   expect(writes).not.toHaveBeenCalled()
   expect(
     await run(
@@ -120,9 +131,9 @@ it("previews links and applies owner-selected event and participant links once",
   ).toBe(0)
   expect(writes).toHaveBeenCalledTimes(2)
   expect(latest(output)).toMatchObject({
-    account_id: 1,
+    account_id: "1",
     applied: true,
-    change: { participant_id: 3, person_uid: "4", target_account_ids: [1, 2], expected_person_uid: null },
+    change: { participant_id: "3", person_uid: "4", target_account_ids: ["1", "2"], expected_person_uid: null },
   })
 })
 
@@ -148,7 +159,7 @@ it("preserves an acknowledged link receipt when cancellation follows commit", as
   deps.signal = abort.signal
   writes.mockImplementation(async () => {
     abort.abort()
-    return { changed: true }
+    return { meetingId: 1, participantId: 3, personUid: "4", previousPersonUid: "5", changed: true }
   })
   expect(
     await run(
@@ -354,12 +365,7 @@ it("mounts bounded local transcription with explicit model, guarded preview and 
     ),
   )
   parts.meetingTranscription = { transcribe }
-  const deadlines: number[] = []
-  deps.sleep = async (ms, signal) =>
-    new Promise((_resolve, reject) => {
-      deadlines.push(ms)
-      signal?.addEventListener("abort", () => reject(new Error("disposed")), { once: true })
-    })
+  const timers = vi.spyOn(globalThis, "setTimeout")
   const args = [
     "meetings",
     "transcribe",
@@ -395,10 +401,11 @@ it("mounts bounded local transcription with explicit model, guarded preview and 
       maxTextBytes: 1024,
     }),
   )
-  expect(deadlines).toEqual([3600000])
+  expect(timers.mock.calls.some(([, ms]) => ms === 3600000)).toBe(true)
+  timers.mockRestore()
   expect(await run([...args, "--yes"], deps)).toBe(0)
   expect(recognize).toHaveBeenCalledTimes(1)
   expect(append).toHaveBeenCalledTimes(1)
-  expect(latest(output)).toMatchObject({ applied: true, inserted_transcripts: 1, meeting_id: saved.meeting.id })
+  expect(latest(output)).toMatchObject({ applied: true, inserted_transcripts: 1, meeting_id: String(saved.meeting.id) })
   expect(JSON.stringify(latest(output))).not.toContain("Alice Example local recognition")
 })

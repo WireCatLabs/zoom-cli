@@ -9,15 +9,16 @@ import type { Command } from "commander"
 import { expect, it } from "vitest"
 import { declaredAnswerIssue } from "../scripts/testing/answers.js"
 import { useProfile } from "../scripts/testing/profile.js"
+import { ZOOM_ANSWER_ENTITIES } from "./answer-entities.js"
 import { profileAccountKey, setConfig } from "./config.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
 import { createStoreConnector } from "./store-connection.js"
 import { TokenManager } from "./tokens.js"
 
-/** Commands that answer about the CLI rather than the owner's data, or whose type is still to be written (DEBT-157). */
-const UNDECLARED = new Set([
-  "batch",
+/** Housekeeping answers describe the tool; every data command must declare a schema. */
+const HOUSEKEEPING_ANSWERS = new Set([
   "commands",
+  "commands info",
   "complete",
   "config set",
   "config show",
@@ -25,42 +26,12 @@ const UNDECLARED = new Set([
   "guide",
   "help",
   "mcp",
-  "meetings embeddings",
-  "meetings export",
-  "meetings import",
-  "meetings link",
-  "meetings sync",
-  "meetings transcribe",
-  "meetings update",
-  "models download",
-  "recordings archive check",
-  "recordings archive import",
-  "recordings archive locks",
-  "recordings archive recover",
-  "recordings archive show",
-  "recordings archive transcript",
-  "recordings download",
-  "recordings list",
-  "recordings schedule create",
-  "recordings schedule disable",
-  "recordings schedule list",
-  "recordings schedule run",
-  "recordings schedule show",
-  "recordings show",
-  "recordings sync",
-  "remote-meetings cancel",
-  "remote-meetings create",
-  "remote-meetings invitation",
-  "remote-meetings list",
-  "remote-meetings show",
-  "remote-meetings update",
   "serve",
   "session start",
   "session status",
   "skill install",
   "skill show",
   "upgrade",
-  "watch",
 ])
 
 const fixture = async () => {
@@ -157,7 +128,6 @@ it("answers every command that declares an entity with that entity's schema", as
     ["stats meetings show", ["stats", "meetings", "show", "--since-time", "2026-10-01"]],
     ["stats meetings top", ["stats", "meetings", "top", "--since-time", "2026-10-01"]],
     ["mentions list", ["mentions", "list", "--since-time", "2026-10-01"]],
-    ["models list", ["models", "list"]],
   ]
   const program = createProgram(deps)
   const commands = new Map(leaves(program).map((command) => [pathOf(command), command]))
@@ -170,10 +140,21 @@ it("answers every command that declares an entity with that entity's schema", as
   expect(declared.sort()).toEqual(
     [...runs.map(([path]) => path), "meetings projects evidence", "meetings projects scan", "meetings prepare"]
       // checked where their own fixtures are: offline-archive-cli, meeting-project-evidence and the preparation tests
-      .concat(["meetings scheduled", "search recordings"])
+      .concat(
+        [
+          "meetings scheduled",
+          "search recordings",
+          "models list",
+          "models download",
+          "meetings status",
+          "recordings status",
+          "batch",
+        ],
+        Object.keys(ZOOM_ANSWER_ENTITIES),
+      )
       .sort(),
   )
-  expect([...commands.keys()].filter((path) => !declared.includes(path) && !UNDECLARED.has(path))).toEqual([])
+  expect([...commands.keys()].filter((path) => !declared.includes(path) && !HOUSEKEEPING_ANSWERS.has(path))).toEqual([])
 })
 
 it("keeps search meetings fields asked of a saved search", async () => {

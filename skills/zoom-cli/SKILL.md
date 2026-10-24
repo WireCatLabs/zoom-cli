@@ -125,8 +125,8 @@ read limits and per-source continuation. Resume `--context-source ID=CURSOR` onl
 query/window; copy the returned coverage window into explicit time bounds when continuing a request
 that used defaults. Restart without the cursor when `restart_required` says so. Preparation opens an
 existing compatible database read-only and does not fill missing indexes or import missing data.
-MCP `meeting_prepare` accepts the same selection via `communications.sources` and `query`; its
-server captures selection IDs at startup, so restart after changing or revoking configuration.
+Over MCP, call `zm_read` with `command: "meetings prepare"` and the same CLI arguments.
+The server captures source selections at startup; restart after changing or revoking configuration.
 
 ## Archive and ingestion
 

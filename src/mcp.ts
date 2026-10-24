@@ -3,19 +3,25 @@ import { StdioServerTransport } from "@modelcontextprotocol/server/stdio"
 import { CliError, errorObjectOf, mcpErrorResult, visibleControls } from "@wirecat/cli-base"
 import type { CommandInfo } from "@wirecat/cli-base/commands"
 import type { ErrorObject } from "@wirecat/cli-base/standards"
+import type { RunOptions } from "@wirecat/cli-core/cli"
+import { isBody, itemAnswer } from "@wirecat/cli-core/cli"
 import { type McpCommand, registerCommands, runCommandForAgent, toolsFromCommands } from "@wirecat/cli-core/mcp"
 import type { Level } from "@wirecat/cli-core/sends"
-import { DEFAULT_PERMISSIONS } from "./permissions.js"
+import { DEFAULT_PERMISSIONS, permissionKeyForPath } from "./permissions.js"
 import { VERSION } from "./version.js"
 
 /** One run of the CLI for an agent: its exit code and what it printed, the answer on stdout or the error on stderr. */
-export type RunCommand = (argv: string[]) => Promise<{ code: number; stdout: string; stderr: string }>
+export type RunCommand = (
+  argv: string[],
+  environment?: RunOptions,
+) => Promise<{ code: number; stdout: string; stderr: string }>
 
 export interface ZoomMcpOptions {
   profile: string
   commands: readonly CommandInfo[]
   /** The profile's own levels, read on every call. */
   permissions: () => Readonly<Record<string, Level>>
+  authority: (path: readonly string[]) => boolean
   run: RunCommand
   signal?: AbortSignal
   /** Where the protocol runs; stdin and stdout when not given. */
@@ -23,14 +29,10 @@ export interface ZoomMcpOptions {
 }
 
 const EXCLUDED = [["mcp"], ["serve"], ["complete"], ["watch"]]
-const authorityAllowed = (levels: Readonly<Record<string, Level>>) =>
-  levels["mcp.authority"] === "allow" || levels["mcp.authority"] === "ask"
-const changesAuthority = (path: readonly string[]) =>
-  ["config set", "skill install", "session start"].includes(path.join(" "))
 /** A remote embedding service is the owner's choice on the command line; over MCP only an installed model answers. */
 const OMITTED = ["base_url", "dims"]
 
-const keyOf = (path: readonly string[]) => path.join(".")
+const keyOf = permissionKeyForPath
 
 // Retrieved text reaches an agent; hidden control and direction characters are shown, not obeyed.
 const visible = (value: unknown): unknown => {
@@ -63,19 +65,23 @@ export const createZoomMcpServer = (options: ZoomMcpOptions): McpServer => {
     commands: options.commands,
     run: async (argv: string[], environment: Record<string, unknown>) => {
       const agent = environment.agent as { result: (value: unknown) => void; failure: (error: ErrorObject) => void }
-      const ran = await options.run(argv)
-      if (ran.code === 0) agent.result(visible(JSON.parse(ran.stdout || "null")))
-      else agent.failure(JSON.parse(ran.stderr || "{}") as ErrorObject)
+      const ran = await options.run(argv, environment)
+      if (ran.code === 0) {
+        const packet: unknown = JSON.parse(ran.stdout || "null")
+        agent.result(visible(isBody(packet) ? packet : itemAnswer(packet)))
+      } else agent.failure(JSON.parse(ran.stderr || "{}") as ErrorObject)
       return ran.code
     },
   }
-  const tools = toolsFromCommands(options.commands, {
-    exclude: EXCLUDED,
-    omit: OMITTED,
-    levels: levelsOf(options.permissions()),
-    keyOf,
-    authority: changesAuthority,
-  })
+  const offered = () =>
+    toolsFromCommands(options.commands, {
+      exclude: EXCLUDED,
+      omit: OMITTED,
+      levels: levelsOf(options.permissions()),
+      keyOf,
+      authority: options.authority,
+    })
+  const tools = offered()
   const commands: Record<string, McpCommand> = Object.fromEntries(
     tools.map((tool) => [
       tool.command,
@@ -85,10 +91,6 @@ export const createZoomMcpServer = (options: ZoomMcpOptions): McpServer => {
         writes: tool.writes,
         input: tool.input,
         run: async (input) => {
-          if (changesAuthority(tool.path) && !authorityAllowed(levelsOf(options.permissions())))
-            return mcpErrorResult(
-              errorObjectOf(new CliError("permission_error", "this command requires mcp.authority: allow")),
-            )
           if (tool.command === "config set" && input.key === "permissions")
             return mcpErrorResult(
               errorObjectOf(new CliError("permission_error", "change profile permissions in a terminal")),
@@ -97,6 +99,7 @@ export const createZoomMcpServer = (options: ZoomMcpOptions): McpServer => {
             profile: options.profile,
             levels: () => levelsOf(options.permissions()),
             keyOf,
+            authority: options.authority,
           })
           if ("error" in answer) return mcpErrorResult(answer.error)
           const value = (answer.result ?? {}) as Record<string, unknown>

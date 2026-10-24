@@ -12,7 +12,12 @@ rerun_if_changed() {
   export WIRECAT_RELEASE_RERUN=1
   exec ./bin/release "$@"
 }
-[ "$#" -eq 0 ] || { echo "usage: bin/release" >&2; exit 2; }
+mode=ci
+case "$*" in
+  "") ;;
+  --local) mode=local ;;
+  *) echo "usage: bin/release [--local]" >&2; exit 2 ;;
+esac
 git fetch -q origin
 [ "$(git branch --show-current)" = main ] || { echo "run from main" >&2; exit 1; }
 [ -z "$(git status --porcelain --untracked-files=no)" ] || { echo "uncommitted changes" >&2; exit 1; }
@@ -20,6 +25,9 @@ git fetch -q origin
 # Serialize publishing across the owner's CLI packages, as in cli-core.
 . ./config/wirecat/release-lock.sh
 wirecat_release_lock "${WIRECAT_RELEASE_WAIT_SECONDS:-0}"
+if [ "$mode" = local ]; then
+  exec node scripts/release-local.ts
+fi
 version=$(node -p 'require("./package.json").version')
 # A session that merges after the version was dated, but before it was published, adds Unreleased above it.
 # --land folds on a fresh main through its own pull request, and folds again once if main moves under it.

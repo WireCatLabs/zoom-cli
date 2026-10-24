@@ -168,3 +168,12 @@ export function fileRecordingSyncCheckpointStore(path: string): RecordingSyncChe
     },
   }
 }
+
+export const inspectRecordingSyncCheckpoint = async (path: string): Promise<RecordingSyncCheckpoint | null> => {
+  try {
+    return parseRecordingSyncCheckpoint(await boundedJson(path, maxBytes))
+  } catch (error) {
+    if (code(error) === "ENOENT") return null
+    throw error
+  }
+}

@@ -1,5 +1,12 @@
 import { metaOf } from "@wirecat/cli-base/commands"
-import { type AppIdentity, readOnlyLockOf, readOnlyRefusal } from "@wirecat/cli-core/cli"
+import {
+  type AppIdentity,
+  changesAuthorityNow,
+  isLogin,
+  isStoreChange,
+  readOnlyLockOf,
+  readOnlyRefusal,
+} from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { VERSION } from "./version.js"
 
@@ -10,20 +17,6 @@ export const ZM: AppIdentity = {
   description: "Zoom meeting transcripts and summaries",
   version: VERSION,
 }
-
-// Mirrors copy the configured source (Zoom or its downloads folder) into the store or an archive, as tg's sync keeps
-// receiving under its lock. The rest write only the word index or open the store read-only. Any other write, one
-// added later too, is refused.
-const RUNS_UNDER_LOCK = new Set([
-  "meetings sync",
-  "watch",
-  "recordings sync",
-  "recordings download",
-  "recordings schedule run",
-  "search meetings",
-  "batch",
-  "mcp",
-])
 
 const pathOf = (command: Command): string => {
   const words: string[] = []
@@ -42,11 +35,11 @@ const usesEmbeddings = (command: Command, path: string): boolean => {
 export const refusalOf = (command: Command): string | undefined => {
   const effects = metaOf(command).effects
   const path = pathOf(command)
-  if (path === "session start") return "log in or out"
+  if (isLogin(command)) return "log in or out"
   if (effects?.remote === "write") return "change Zoom"
   if (usesEmbeddings(command, path)) return "build meeting vectors or send text to an embedding service"
-  if (!effects || (effects.local === "write" && !RUNS_UNDER_LOCK.has(path)))
-    return "change settings, local files or the stored meetings outside a sync"
+  if (changesAuthorityNow(command)) return "change what a later run may do"
+  if (!effects || isStoreChange(command)) return "change the message store or local files"
   return undefined
 }
 

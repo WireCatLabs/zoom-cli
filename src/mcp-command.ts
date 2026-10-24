@@ -1,6 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate, describeProgram } from "@wirecat/cli-base/commands"
-import { FETCH, NO_EFFECTS } from "@wirecat/cli-core/cli"
+import { changesAuthorityAt, FETCH, NO_EFFECTS, type RunOptions } from "@wirecat/cli-core/cli"
 import type { Level } from "@wirecat/cli-core/sends"
 import type { Command } from "commander"
 import type { RunCommand, ZoomMcpOptions } from "./mcp.js"
@@ -32,6 +32,7 @@ export const addMcpCommands = (program: Command, deps: McpCommandDeps): void => 
       await serve({
         profile,
         commands: describeProgram(program),
+        authority: changesAuthorityAt(program),
         permissions: () => deps.permissions(profile),
         run: deps.run,
         ...(deps.signal() ? { signal: deps.signal() as AbortSignal } : {}),
@@ -55,12 +56,22 @@ export const runForAgent = async (
   run: (argv: string[], deps: ProgramDeps) => Promise<number>,
   argv: string[],
   deps: ProgramDeps,
+  environment?: RunOptions,
 ) => {
   const stdout: string[] = []
   const stderr: string[] = []
   const { serveMcp: _serve, streamData: _stream, ...rest } = deps
   const code = await run(argv, {
     ...rest,
+    ...(environment?.agent
+      ? {
+          agent: {
+            ...environment.agent,
+            result: (value: unknown) => stdout.push(JSON.stringify(value)),
+            failure: (value: unknown) => stderr.push(JSON.stringify(value)),
+          },
+        }
+      : {}),
     data: (text) => stdout.push(text),
     diagnostic: (text) => stderr.push(text),
     outputIsTTY: false,

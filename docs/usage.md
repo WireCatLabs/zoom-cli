@@ -370,8 +370,17 @@ buffer successful output until resource cleanup completes, with a default output
 
 ## Deadlines and cancellation
 
-`--timeout <milliseconds>` sets a positive whole-command deadline. Durations also accept units such
-as `30s`, `5m` and `1h`. Defaults are 30 seconds for reads, five minutes for login and one hour for
-recording downloads, sync and archive verification. Foreground watching and MCP serving have no
+`--timeout <duration>` sets a positive whole-command deadline: a whole number followed by
+`ms`, `s`, `m`, `h` or `d`, such as `30s`, `5m` or `1h`. Bare numbers and fractional durations are refused.
+Defaults are 30 seconds for reads, five minutes for unattended login and one hour for recording
+downloads, sync and archive verification. Interactive terminal login has no default deadline. Foreground watching and MCP serving have no
 default deadline. Cancellation waits for active operations and cleanup; an injected operation that
 ignores its signal can delay shutdown.
+
+## Inspect sync progress
+
+`zm personal meetings status --json` reads the latest ingestion progress without opening the database or contacting Zoom.
+`zm personal recordings status <directory> --json` inspects an archive sync checkpoint without changing it;
+use `--checkpoint <file>` for a checkpoint outside the default location. Both use the shared progress fields.
+A total of `null` means the total is unknown. Partial progress and acknowledged downloads do not establish
+archive completeness; recording sync is complete only when enumeration and all pending assets are finished.

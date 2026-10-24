@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**317 ✅ · 2 ⛔ · 0 ❌** — 72 commands, 247 options.
+**331 ✅ · 1 ⛔ · 0 ❌** — 75 commands, 257 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -133,10 +133,12 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings embeddings` | `--after-transcript-id` | ✅ |  |
 | `meetings embeddings` | `--after-hash` | ✅ |  |
 | `meetings embeddings` | `--yes` | ✅ |  |
+| `meetings status` |  | ✅ |  |
 | `events list` |  | ✅ |  |
 | `events list` | `--json` | ✅ |  |
 | `events list` | `--jsonl` | ✅ |  |
 | `commands` |  | ✅ |  |
+| `commands info` |  | ✅ |  |
 | `complete` |  | ✅ |  |
 | `doctor` |  | ✅ |  |
 | `session status` |  | ✅ |  |
@@ -204,6 +206,8 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `recordings schedule disable` |  | ✅ |  |
 | `recordings schedule disable` | `--yes` | ✅ |  |
 | `recordings schedule disable` | `--dry-run` | ✅ |  |
+| `recordings status` |  | ✅ |  |
+| `recordings status` | `--checkpoint` | ✅ |  |
 | `remote-meetings list` |  | ✅ |  |
 | `remote-meetings show` |  | ✅ |  |
 | `remote-meetings invitation` |  | ✅ |  |
@@ -320,13 +324,22 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `batch` | `--format` | ✅ |  |
 | `guide` |  | ✅ |  |
 | `help` |  | ✅ |  |
-| *global* | `--version` | ⛔ | Installed-package acceptance checks the actual bin version; Commander exits before preAction tracing. |
+| *global* | `--version` | ✅ |  |
+| *global* | `--verbose` | ✅ |  |
 | *global* | `--json` | ✅ |  |
 | *global* | `--jsonl` | ✅ |  |
-| *global* | `--no-input` | ✅ |  |
 | *global* | `--quiet` | ✅ |  |
-| *global* | `--timeout` | ✅ |  |
-| *global* | `--max-output-bytes` | ✅ |  |
-| *global* | `--offline` | ✅ |  |
+| *global* | `--trace` | ✅ |  |
 | *global* | `--debug` | ✅ |  |
+| *global* | `--timeout` | ✅ |  |
+| *global* | `--offline` | ✅ |  |
+| *global* | `--no-input` | ✅ |  |
+| *global* | `--max-input-bytes` | ✅ |  |
+| *global* | `--max-output-bytes` | ✅ |  |
+| *global* | `--brief` | ✅ |  |
+| *global* | `--full` | ✅ |  |
+| *global* | `--dry-run` | ✅ |  |
+| *global* | `--yes` | ✅ |  |
+| *global* | `--record` | ✅ |  |
+| *global* | `--no-record` | ✅ |  |
 | *global* | `--help-all` | ⛔ | first-screen.test.ts and the installed-package acceptance check it; Commander exits before preAction tracing. |

@@ -365,11 +365,31 @@ const combinedPage = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 })
 
+const embeddingReport = (applied = true) => {
+  const common = { accountId: 1, model: { key: "fixture", dims: 2, kind: "local", model: "installed-example" } }
+  return applied
+    ? {
+        ...common,
+        applied: true,
+        saved: 2,
+        skipped: 1,
+        hasMore: false,
+        rebuild: { transcripts: 1, chunks: 2, hasMore: false },
+      }
+    : {
+        ...common,
+        applied: false,
+        status: { chunks: 2, embedded: 0 },
+        scope: "existing-current-chunks",
+        rebuildRequired: "explicit",
+      }
+}
+
 it("requires an explicit semantic model, preserves scan coverage, and previews generation until --yes", async () => {
   const { deps, output } = await setup()
   const report = combinedPage()
   const search = vi.fn(async () => report)
-  const generate = vi.fn(async (options: MeetingEmbeddingOptions) => ({ applied: options.yes === true }))
+  const generate = vi.fn(async (options: MeetingEmbeddingOptions) => embeddingReport(options.yes === true))
   connectWith(deps, { meetingSemantic: { search, generate } })
   expect(await run(["search", "meetings", "example", "--max-chunks", "5", "--json"], deps)).toBe(2)
   expect(
@@ -501,7 +521,7 @@ it("flushes acknowledged embedding writes after cancellation while discarding ca
   const { deps, output } = await setup()
   const controller = new AbortController()
   deps.signal = controller.signal
-  const report = { applied: true, saved: 2, skipped: 1 }
+  const report = embeddingReport()
   connectWith(deps, {
     meetingSemantic: {
       search: vi.fn(),
@@ -525,7 +545,17 @@ it("flushes acknowledged embedding writes after cancellation while discarding ca
   deps.streamData = (text, signal) => writeStream(stream, text, signal)
   expect(await run(["meetings", "embeddings", "--model", "installed-example", "--yes", "--jsonl"], deps)).toBe(130)
   expect(callbackSettled).toBe(true)
-  expect(output.map((text) => readReceipt(text))).toEqual([report])
+  expect(output.map((text) => readReceipt(text))).toEqual([
+    {
+      applied: true,
+      account_id: "1",
+      model: report.model,
+      saved: 2,
+      skipped: 1,
+      has_more: false,
+      rebuild: { transcripts: 1, chunks: 2, has_more: false },
+    },
+  ])
   expect(stream.listenerCount("drain")).toBe(0)
   expect(stream.listenerCount("error")).toBe(0)
 
@@ -554,7 +584,7 @@ it("bounds cancelled embedding receipt backpressure and emits no receipt for rej
       search: vi.fn(),
       generate: async () => {
         controller.abort()
-        return { applied: true, saved: 1 }
+        return embeddingReport()
       },
     },
   })

@@ -30,7 +30,9 @@ export const addLocalTranscriptionCommands = (
       .requiredOption("--model <model>", "installed speech model")
       .option("--models-dir <dir>", "shared installed speech-model directory")
       .option("--max-bytes <bytes>", "largest audio file to read, in bytes (default 1 GiB)", bytes)
-      .option("--max-duration <duration>", "longest audio to transcribe (default 4h)", duration)
+      .option("--max-duration <duration>", "longest audio to transcribe (default 4h)", (text) =>
+        duration(text, "--max-duration"),
+      )
       .option("--max-segments <n>", "most recognized segments (default 10000)", bytes)
       .option("--max-text-bytes <bytes>", "most transcript text, in bytes (default 4 MiB)", bytes)
       .option("--yes", "recognize locally and append to the existing meeting")

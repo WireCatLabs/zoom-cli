@@ -1,14 +1,24 @@
 import { CliError } from "@wirecat/cli-base"
 import { metaOf } from "@wirecat/cli-base/commands"
 import { setupPermissionCeiling } from "@wirecat/cli-core/cli"
-import { CEILING_KEY, LEVELS, type Level, levelFor } from "@wirecat/cli-core/sends"
+import {
+  CEILING_KEY,
+  keyForCommand,
+  LEVELS,
+  type Level,
+  levelFor,
+  DEFAULT_PERMISSIONS as SHARED_DEFAULT_PERMISSIONS,
+} from "@wirecat/cli-core/sends"
 import type { Command } from "commander"
 import { PROFILE_FREE } from "./commands.js"
 import type { ZoomConfig } from "./config.js"
 import { refusalOf, refuseChangeWhenReadOnly } from "./read-only.js"
 
 /** A change to Zoom asks first. A built-in default only tightens what the owner set (WC-PERM-7). */
-export const DEFAULT_PERMISSIONS: Readonly<Record<string, Level>> = { "remote-meetings": "ask" }
+export const DEFAULT_PERMISSIONS: Readonly<Record<string, Level>> = {
+  ...SHARED_DEFAULT_PERMISSIONS,
+  "remote-meetings": "ask",
+}
 
 /** Looking after the tool — its settings, its login, its help — is never gated (WC-PERM-5). */
 const HOUSEKEEPING = new Set([...PROFILE_FREE, "session", "serve", "mcp"])
@@ -20,17 +30,19 @@ export const pathOf = (command: Command): string[] => {
 }
 
 /** The command's path, dotted — `remote-meetings.cancel` — or null for housekeeping. */
-export const permissionKeyOf = (command: Command): string | null => {
-  const path = pathOf(command)
-  return path.length === 0 || HOUSEKEEPING.has(path[0] as string) ? null : path.join(".")
-}
+export const permissionKeyForPath = (path: readonly string[]): string | null =>
+  path.length === 0 || (HOUSEKEEPING.has(path[0] as string) && keyForCommand(path) === null) ? null : path.join(".")
+export const permissionKeyOf = (command: Command): string | null => permissionKeyForPath(pathOf(command))
 
 /** Every key a permission may name: each command's path and every group above it. */
 export const permissionKeys = (program: Command): Set<string> => {
   const keys = new Set<string>(["mcp.authority"])
   const walk = (command: Command) => {
     const key = permissionKeyOf(command)
-    if (key) keys.add(key)
+    if (key) {
+      const parts = key.split(".")
+      for (let size = 1; size <= parts.length; size++) keys.add(parts.slice(0, size).join("."))
+    }
     for (const child of command.commands) walk(child)
   }
   walk(program)

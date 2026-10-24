@@ -21,8 +21,6 @@ moves there when it becomes P2.
 
 ## Standards and tooling
 
-- **ZM-19** · P3 · Sync progress shape (WC-LIFE-14) for `meetings sync`, `recordings sync`.
-- **ZM-20** · P3 · `bin/release --local` (WC-REL-14).
 - **ZM-21** · P3 · Command words outside the shared vocabulary: 26 lint baseline entries (`lint/baseline/`), e.g.
   `remote-meetings`, `recordings archive`, `task-proposal`, `--project`/`--topic` with two meanings.
 - **ZM-22** · P3 · Flags that differ from tg/drive on the same path (`cli-dev audit`): `search all` has no

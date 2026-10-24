@@ -241,7 +241,7 @@ describe("portable CLI discovery and diagnostics", () => {
   it("names the real option for a bad --pause", async () => {
     const { deps, stderr } = await setup()
     expect(await run(["watch", "files", ".", "--pause", "0s", "--jsonl"], deps)).toBe(2)
-    expect(JSON.parse(stderr.at(-1) ?? "{}").error.message).toContain("expected a positive duration")
+    expect(JSON.parse(stderr.at(-1) ?? "{}").error.message).toContain("--pause has to be more than zero")
   })
   it("refuses login in CI or with --no-input, before opening a browser", async () => {
     const { deps, stdout, stderr } = await setup()
@@ -294,3 +294,18 @@ it.each(["set", "get", "delete"] as const)(
     expect([...stdout, ...stderr].join("")).not.toContain("invented-private-diagnostic")
   },
 )
+
+it("declares source-owned lists honestly and refuses unsupported filters before accessing their source", async () => {
+  const { deps, stdout, stderr } = await setup()
+  for (const path of [
+    ["recordings", "list"],
+    ["remote-meetings", "list"],
+    ["recordings", "schedule", "list"],
+  ]) {
+    expect(await run([...path, "id:fixture", "--json"], deps)).toBe(2)
+    const error = JSON.parse(stderr.pop() ?? "{}").error
+    expect(error.code).toBe("validation_error")
+    expect(error.message).toContain("id")
+    expect(stdout).toEqual([])
+  }
+})

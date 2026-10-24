@@ -3,7 +3,7 @@ import { annotate } from "@wirecat/cli-base/commands"
 import { FETCH, LOCAL_READ, LOCAL_WRITE, REMOTE_WRITE } from "@wirecat/cli-core/cli"
 import { Command } from "commander"
 import { expect, it } from "vitest"
-import { hostFailureContext } from "./answer-policy.js"
+import { hostFailureContext, reportFailure } from "./answer-policy.js"
 import { readMetadata, toolAnswer } from "./answers.js"
 
 it("uses shared retry policy for reads, fetches, local writes and uncertain remote writes", () => {
@@ -48,4 +48,24 @@ it("preserves source issues and partial completeness while assigning host metada
     complete: false,
     issues: [{ code: "network_error", source: "meetings" }],
   })
+})
+
+it("reports bootstrap failures as complete machine errors and keeps JSON flags after -- literal", () => {
+  const output: string[] = []
+  const deps = { diagnostic: (text: string) => output.push(text), outputIsTTY: true }
+  expect(reportFailure(new CliError("configuration_error", "fixture setup failed"), ["--json", "--debug"], deps)).toBe(
+    3,
+  )
+  const diagnostic = (output.pop() ?? "{}")
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line))
+  expect(diagnostic).toHaveLength(2)
+  expect(diagnostic[0]).toMatchObject({
+    error: { code: "configuration_error", message: "fixture setup failed" },
+  })
+  expect(reportFailure(new CliError("validation_error", "fixture usage failed"), ["--", "--json"], deps)).toBe(2)
+  expect(output.pop()).toContain("fixture usage failed")
+  expect(reportFailure(new CliError("permission_error", "fixture permission failed"), ["--jsonl"], deps)).toBe(5)
+  expect(JSON.parse(output.pop() ?? "{}")).toMatchObject({ error: { code: "permission_error" } })
 })

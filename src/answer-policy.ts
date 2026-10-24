@@ -29,17 +29,3 @@ export const reportFailure = (
   deps.diagnostic(`${renderError(object, { cli: "zm", interactive, ...(record ? { record } : {}) })}\n`)
   return exitCodeOfError(object)
 }
-
-export const commandSelection = (program: Command, args: readonly string[]) => {
-  const words: string[] = []
-  let current = program
-  for (const word of args) {
-    if (word === "--") break
-    if (word.startsWith("-")) continue
-    const next = current.commands.find((command) => command.name() === word || command.aliases().includes(word))
-    if (!next) break
-    words.push(word)
-    current = next
-  }
-  return { path: words.length ? words.join(" ") : "zm", action: current }
-}

@@ -35,7 +35,7 @@ a transcript to an AI service. This guide explains those boundaries before you c
 
 - The MCP server offers reading and writing commands for the selected Zoom profile. Its permissions
   limit both discovery and execution; `deny` hides a command and `readonly` withholds writes.
-  At `ask`, MCP writes run without a terminal question. Settings and skill installation require
+  At `ask`, MCP writes run without a terminal question. Settings, skill installation, upgrade and archive timer changes require
   `mcp.authority: allow`; profile permissions can only be changed in a terminal. See [MCP and skills](mcp.md).
 - Optional preparation can also read the message accounts, mail accounts and document folders you
   [explicitly select for that profile](configuration.md#select-communications-for-preparation).
