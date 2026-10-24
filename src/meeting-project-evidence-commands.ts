@@ -1,5 +1,5 @@
 import { annotate } from "@wirecat/cli-base/commands"
-import { NO_EFFECTS } from "@wirecat/cli-core/cli"
+import { NO_EFFECTS, overrideSharedContract } from "@wirecat/cli-core/cli"
 import type { MeetingProjectDiscoveryReader } from "@wirecat/cli-core/meetings"
 import { addMeetingProjectEvidenceCommand } from "@wirecat/cli-core/meetings/cli"
 import type { Command } from "commander"
@@ -21,7 +21,14 @@ export const addProjectEvidenceCommand = (
       request.signal?.throwIfAborted()
       return deps.read(project, request)
     },
-  }).summary("find project-name and alias evidence in the existing local meeting index")
-  if (command.parent) annotate(command.parent, { effects: NO_EFFECTS })
+  })
+  if (command.parent)
+    overrideSharedContract(
+      command.parent,
+      "Zoom declares its command groups effect-free because they only hold subcommands.",
+      (one) => {
+        annotate(one, { effects: NO_EFFECTS })
+      },
+    )
   return command
 }

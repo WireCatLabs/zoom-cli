@@ -1,10 +1,20 @@
 import { CliError } from "@wirecat/cli-base"
-import { annotate } from "@wirecat/cli-base/commands"
-import { allAnswer, type Body, itemOf, LOCAL_READ, LOCAL_WRITE, NO_EFFECTS } from "@wirecat/cli-core/cli"
+import { annotate, customizeSharedCommand } from "@wirecat/cli-base/commands"
+import {
+  allAnswer,
+  type Body,
+  itemOf,
+  LOCAL_READ,
+  LOCAL_WRITE,
+  NO_EFFECTS,
+  sharedCommandTemplate,
+} from "@wirecat/cli-core/cli"
 import type { ResourceWithMeetings } from "@wirecat/cli-core/services"
 import type { Command } from "commander"
 import type { ArchiveImportPlan, applyArchiveImport, preflightArchiveImport } from "./archive-import.js"
+import { SHELL_OVERRIDES } from "./contract-overrides.js"
 import { bytes } from "./execution.js"
+import { ZM } from "./read-only.js"
 import { type UnifiedSearch, validateUnifiedSearch } from "./unified-search.js"
 
 interface Deps {
@@ -23,7 +33,7 @@ const meetingsOf = (value: string): number | "all" => {
     throw new CliError("validation_error", "--max-meetings takes a whole number from 1, or all")
   return Number(value)
 }
-export const addIngestionSearchCommands = (program: Command, deps: Deps): void => {
+const addIngestionSearchCommandsDefinition = (program: Command, deps: Deps): void => {
   const archive = program.commands
     .find((command) => command.name() === "recordings")
     ?.commands.find((command) => command.name() === "archive")
@@ -114,3 +124,16 @@ export const addIngestionSearchCommands = (program: Command, deps: Deps): void =
     },
   )
 }
+
+export const addIngestionSearchCommands = (...args: Parameters<typeof addIngestionSearchCommandsDefinition>) =>
+  customizeSharedCommand(
+    sharedCommandTemplate(ZM, "search"),
+    "Zoom searches explicit local meeting and archive sources, with opt-in unified store reads rather than a live messenger backend.",
+    () => {
+      addIngestionSearchCommandsDefinition(...args)
+      const command = args[0].commands.find((command) => command.name() === "search")
+      if (!command) throw new Error("search builder did not install its command")
+      return command
+    },
+    SHELL_OVERRIDES.search,
+  )

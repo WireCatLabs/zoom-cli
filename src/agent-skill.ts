@@ -1,10 +1,12 @@
-import { annotate } from "@wirecat/cli-base/commands"
+import { annotate, customizeSharedCommand } from "@wirecat/cli-base/commands"
 import { type SkillEnvironment, skillCommand } from "@wirecat/cli-base/skill"
-import { grantsAuthority, LOCAL_READ, LOCAL_WRITE, NO_EFFECTS } from "@wirecat/cli-core/cli"
+import { grantsAuthority, LOCAL_WRITE, NO_EFFECTS, skillCommand as sharedSkillCommand } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
+import { SHELL_OVERRIDES } from "./contract-overrides.js"
+import { ZM } from "./read-only.js"
 import { VERSION } from "./version.js"
 
-export const addZoomSkillCommands = (
+const addZoomSkillCommandsDefinition = (
   program: Command,
   environment: SkillEnvironment,
   skill = new URL("../skills/zoom-cli/SKILL.md", import.meta.url),
@@ -14,7 +16,7 @@ export const addZoomSkillCommands = (
     const install = child.name() === "install"
     if (install) grantsAuthority(child)
     annotate(child, {
-      effects: install ? LOCAL_WRITE : LOCAL_READ,
+      effects: install ? LOCAL_WRITE : NO_EFFECTS,
       examples: [install ? "zm skill install --for agents --json" : "zm skill show --json"],
     })
   }
@@ -25,4 +27,18 @@ export const addZoomSkillCommands = (
   }
   inheritFailureHandling(command)
   program.addCommand(annotate(command, { effects: NO_EFFECTS }))
+}
+
+export const addZoomSkillCommands = (...args: Parameters<typeof addZoomSkillCommandsDefinition>) => {
+  customizeSharedCommand(
+    sharedSkillCommand(ZM, new URL("../skills/zoom-cli/SKILL.md", import.meta.url)),
+    "Zoom installs its own meeting instructions through its source renderer and treats the packaged primary skill as effect-free.",
+    () => {
+      addZoomSkillCommandsDefinition(...args)
+      const command = args[0].commands.find((command) => command.name() === "skill")
+      if (!command) throw new Error("skill builder did not install its command")
+      return command
+    },
+    SHELL_OVERRIDES.skill,
+  )
 }
