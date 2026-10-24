@@ -68,6 +68,27 @@ else: reviewers reject scopes an app does not use.
 | `team_chat:read:list_contacts` | Lists the user's company and external contacts with `zm contacts list`. |
 | `team_chat:read:contact` | Shows one contact and their phone numbers with `zm contacts show`. |
 
+Remove every other scope with the bin icon next to it, on both tabs. Scopes zm does not call, which Zoom's
+templates or earlier tests often add:
+
+| Group | Remove |
+|---|---|
+| Agentic Search | `agentic_search:read:knowledge_graph`, `agentic_search:read:ask`, `agentic_search:read:search` |
+| Meetings | `meeting:read:meeting_audio`, `meeting:read:meeting_transcript` (both real-time streams), `meeting:read:participant`, `meeting:read:participant_feedback`, `meeting:read:participant_sharing` |
+| Webinars | `webinar:read:participant_data_connection`, `webinar:read:list_past_instances`, `webinar:read:list_past_participants`, `webinar:read:participant`, `webinar:read:participant_feedback`, `webinar:read:participant_sharing` |
+| Recording | `cloud_recording:read:recording_analytics_details`, `cloud_recording:read:content`, `cloud_recording:read:registrant_status`, `cloud_recording:read:recording` |
+
+A scope whose bin icon is grey is held by a feature that is turned on, probably real-time media streams under
+**Features**. Turn that feature off first, then remove the scope.
+
+The **Scope description** box under the list asks how the data is used and whether it is stored. Paste:
+
+> zm reads this data only when the user runs a command. Meeting records, transcripts, summaries, participants,
+> recordings' details and chat are stored on the user's own computer in a local SQLite database file, unencrypted
+> by zm and protected by the operating system's file permissions; recordings the user downloads are files in a
+> folder they choose. Contacts are not stored. OAuth tokens are kept in the operating system's credential store. No
+> data is sent to a WireCat server.
+
 If the two `team_chat` scopes are missing from the picker, search for "team chat" or "contact". Zoom may list them
 only when the app's Team Chat feature is on; this is not confirmed.
 
