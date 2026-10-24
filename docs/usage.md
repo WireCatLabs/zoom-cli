@@ -335,8 +335,8 @@ Use `--json` for one complete answer. A single result has `item`; a list has `it
 `meta.duration_ms` and `meta.complete`,
 with optional `next` steps and `missing` information. Result keys use snake_case.
 
-Detailed reports, including participant discovery, evidence, semantic search and unified search,
-keep their coverage and report-specific continuation inside `item`. Stored meeting word search
+Detailed reports, including participant discovery, evidence and semantic search, keep their coverage
+and report-specific continuation inside `item`. Unified `search all` returns hit lists and uses `--page`. Stored meeting word search
 returns standard hit items with `ref`, `meeting`, `excerpt` and `offset_ms`. When stored, `source`
 adds the meeting title, `started_at`, evidence `ref` and document `url`. A null URL means no source
 permalink is stored; a meeting join link is not an evidence link. Meeting details use

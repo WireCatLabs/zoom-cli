@@ -19,18 +19,12 @@ saved context; it does not accept these findings or generate a summary.
 
 To use your Zoom account, you connect your own Zoom app first; [the app guide](zoom-app.md) shows how.
 
-## In progress
+## Also available
 
-- A digest of recent meetings (`review`) and the links shared in meeting chat (`mentions list`). They are built
-  and come with the next release.
-- Saved meeting searches you can run again by name.
-
-## Next
-
-- Help examples you can copy as they are, with the profile word in them.
-- Every command available to an agent through MCP, with the profile's permissions deciding what it may change.
-- More search fields for meetings: date, project, tag and topic inside the query.
-- `doctor` tells you whether this computer can save a Zoom login.
+- `review` makes a digest of recent meetings, and `mentions list` finds links shared in meeting chat.
+- Saved searches can be run again by name; meeting query fields include date, project, tag and topic.
+- Profile-aware examples can be copied as shown. `doctor` checks whether this computer can save a Zoom login.
+- MCP keeps supported commands discoverable; profile permissions decide which reads and writes may run.
 
 ## Later
 

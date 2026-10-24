@@ -34,9 +34,10 @@ a transcript to an AI service. This guide explains those boundaries before you c
 ## What agents can do
 
 - The MCP server offers reading and writing commands for the selected Zoom profile. Its permissions
-  limit both discovery and execution; `deny` hides a command and `readonly` withholds writes.
+  limit execution. Denied commands remain discoverable with current availability and a reason;
+  `readonly` marks writes unavailable.
   At `ask`, MCP writes run without a terminal question. Settings, skill installation, upgrade and archive timer changes require
-  `mcp.authority: allow`; profile permissions can only be changed in a terminal. See [MCP and skills](mcp.md).
+  `mcp.authority: allow` or `ask`; profile permissions can only be changed in a terminal. See [MCP and skills](mcp.md).
 - Optional preparation can also read the message accounts, mail accounts and document folders you
   [explicitly select for that profile](configuration.md#select-communications-for-preparation).
   A grant covers the whole account or folder; only requested source IDs are resolved and searched.
@@ -53,9 +54,8 @@ a transcript to an AI service. This guide explains those boundaries before you c
   Refused with exit 5 before it connects to anything, previews included: remote meeting changes, login,
   configuration, skill install, import, export, links, transcription, archive jobs and lock recovery, building
   vectors (`meetings embeddings`, search by meaning with `--model`) and an MCP server whose semantic queries go to a
-  remote `--base-url`. Still running: reads, word search (which keeps its index current), `batch`, `mcp`,
-  and the syncs that copy Zoom into the store or an archive — `meetings sync`, `watch`, `recordings sync`,
-  `recordings download` and `recordings schedule run`; a sync or `watch` from a files source reads the configured
+  remote `--base-url`. Still running: reads, word search (which keeps its index current), `mcp`,
+  and the syncs that copy Zoom into the store or an archive — `meetings sync`, `watch`, `recordings download` and `recordings schedule run`; a sync or `watch` from a files source reads the configured
   folder, while `meetings import <folder>` names a one-off folder and is refused. Any other command that writes,
   including one added in a later version, is refused. Set it for an agent that should only read; `0` or an empty
   value turns it off.
