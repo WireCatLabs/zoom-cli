@@ -59,6 +59,7 @@ export const unavailableStore: MeetingStore = {
   participants: storeUnavailable,
   search: storeUnavailable,
   events: storeUnavailable,
+  queryEvents: storeUnavailable,
   eventCandidates: storeUnavailable,
   createEvent: storeUnavailable,
   createEventSeries: storeUnavailable,
