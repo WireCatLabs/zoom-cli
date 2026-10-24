@@ -5,6 +5,7 @@ import { Client } from "@modelcontextprotocol/client"
 import { InMemoryTransport } from "@modelcontextprotocol/server"
 import { memoryKeyring } from "@wirecat/cli-base"
 import { type CommandInfo, describeProgram } from "@wirecat/cli-base/commands"
+import { changesAuthorityAt } from "@wirecat/cli-core/cli"
 import { afterEach, expect, it, vi } from "vitest"
 import { useProfile } from "../scripts/testing/profile.js"
 import type { RemoteMeetingsService } from "./archive-commands.js"
@@ -72,8 +73,9 @@ const setup = async (permissions?: Record<string, string>, line = "Ship the exam
   const server = createZoomMcpServer({
     profile: "work",
     commands: describeProgram(createProgram(deps)),
+    authority: changesAuthorityAt(createProgram(deps)),
     permissions: () => (permissions ?? {}) as Record<string, never>,
-    run: (argv) => runForAgent(run, argv, deps),
+    run: (argv, environment) => runForAgent(run, argv, deps, environment),
   })
   const [serverSide, clientSide] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: "example", version: "1" })
@@ -170,7 +172,25 @@ it("shows hidden control and direction characters in an answer instead of passin
 
 it("serves the named profile's commands from the command line", async () => {
   const { deps } = await setup()
-  const serveMcp = vi.fn(async (_options: ZoomMcpOptions) => {})
+  const serveMcp = vi.fn(async (options: ZoomMcpOptions) => {
+    const server = createZoomMcpServer(options)
+    const [serverSide, clientSide] = InMemoryTransport.createLinkedPair()
+    const client = new Client({ name: "example", version: "1" })
+    await server.connect(serverSide)
+    await client.connect(clientSide)
+    try {
+      const listed = await client.callTool({ name: "zm_read", arguments: { command: "meetings list", arguments: {} } })
+      expect(listed.isError).toBeFalsy()
+      expect(listed.structuredContent).toMatchObject({ items: [{ title: "example planning" }] })
+      setConfig(deps.configPath, "permissions", '{"meetings":"deny"}', () => "work", new Set(["meetings"]))
+      const refused = await client.callTool({ name: "zm_read", arguments: { command: "meetings list", arguments: {} } })
+      expect(refused.isError).toBe(true)
+      expect(options.permissions()).toEqual({ meetings: "deny" })
+    } finally {
+      await client.close()
+      await server.close()
+    }
+  })
   expect(await run(["work", "mcp"], { ...deps, serveMcp })).toBe(0)
   const [options] = serveMcp.mock.calls[0] ?? []
   expect(options?.profile).toBe("work")
@@ -194,6 +214,7 @@ it("serves over a transport until the command is stopped", async () => {
   const serving = serveZoomMcp({
     profile: "work",
     commands: [],
+    authority: () => false,
     permissions: () => ({}),
     run: async () => ({ code: 0, stdout: "{}", stderr: "" }),
     signal: controller.signal,
@@ -216,4 +237,19 @@ it("refuses an authority command after its grant is revoked", async () => {
   })
   expect(refused.isError).toBe(true)
   expect(refused.structuredContent.error.code).toBe("permission_error")
+})
+
+it("runs native shared discovery and guides with Core's agent environment and keeps their structured answers", async () => {
+  const { call } = await setup()
+  const guide = await call("zm_read", { command: "guide", arguments: { name: "find-quote" } })
+  expect(guide.isError).toBeFalsy()
+  expect(guide.structuredContent).toMatchObject({ item: { name: "find-quote" } })
+  const contract = await call("zm_read", { command: "commands info", arguments: { path: ["meetings", "export"] } })
+  expect(contract.isError).toBeFalsy()
+  expect(contract.structuredContent).toMatchObject({
+    item: {
+      outputSchemaCoverage: "declared-entity",
+      jsonlSchema: { anyOf: expect.any(Array) },
+    },
+  })
 })

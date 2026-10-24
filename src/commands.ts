@@ -1,58 +1,19 @@
-import { CliError, projectFields } from "@wirecat/cli-base"
-import {
-  annotate,
-  type CommandInfo,
-  commandsDocument,
-  describeOptions,
-  describeProgram,
-  flatten,
-  metaOf,
-} from "@wirecat/cli-base/commands"
+import { CliError } from "@wirecat/cli-base"
+import { annotate, describeOptions, describeProgram, flatten, metaOf } from "@wirecat/cli-base/commands"
 import { formatSuggestions, suggest } from "@wirecat/cli-base/completion"
-import { type Body, commandsText, itemOf, LOCAL_READ, NO_EFFECTS, REMOTE_READ } from "@wirecat/cli-core/cli"
+import { type Body, commandsCommand, itemOf, LOCAL_READ, NO_EFFECTS, REMOTE_READ } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { wholeList } from "./answer-output.js"
-import { VERSION } from "./version.js"
-
-const CONTRACT = 3
+import { ZM } from "./read-only.js"
 
 export interface StandardCommandsDeps {
   output: (body: Body) => void
-  discovery: (value: unknown) => void
-  fields: () => readonly string[] | undefined
   raw: (text: string) => void
   doctor: () => unknown
   sessionStatus: (check: boolean) => Promise<unknown>
 }
 export const addStandardCommands = (program: Command, deps: StandardCommandsDeps): void => {
-  annotate(
-    program
-      .command("commands")
-      .description("discover commands, flags and examples, optionally scoped to a command path")
-      .argument("[path...]", "resource or command path")
-      .action((path: string[]) => {
-        const all = describeProgram(program)
-        const scoped = path.length ? scopeOf(all, path) : undefined
-        const commands = scoped ? [scoped.command] : all
-        if (!program.opts().json && !program.opts().jsonl) {
-          deps.raw(commandsText(program, commands, scoped?.command.path))
-          return
-        }
-        const fields = deps.fields()
-        const { exit_codes, ...document } = commandsDocument(program, {
-          cli: "zm",
-          version: VERSION,
-          contract: CONTRACT,
-        })
-        deps.discovery({
-          ...document,
-          ...(scoped ? { scope: scoped.command.path, inherited_options: scoped.inheritedOptions } : {}),
-          commands: fields ? projectDiscovery(commands, fields) : commands,
-          exit_codes,
-        })
-      }),
-    { effects: NO_EFFECTS, examples: ["zm commands --json"] },
-  )
+  program.addCommand(commandsCommand(ZM).copyInheritedSettings(program))
   annotate(
     program
       .command("complete")
@@ -129,6 +90,7 @@ const exampleFor = (path: string): string => {
   if (path === "mcp") return "zm personal mcp"
   if (path === "session start") return "zm personal session start"
   const argumentsByPath: Record<string, string> = {
+    "commands info": "meetings list",
     "config set": "files.timezone Europe/Madrid",
     "meetings show": "1",
     "meetings transcript": "1",
@@ -140,26 +102,3 @@ const exampleFor = (path: string): string => {
   }
   return `zm ${profile}${path}${argumentsByPath[path] ? ` ${argumentsByPath[path]}` : ""} --json`
 }
-
-const scopeOf = (all: readonly CommandInfo[], path: readonly string[]) => {
-  const inheritedOptions: { path: readonly string[]; options: CommandInfo["options"] }[] = []
-  let available = all
-  let command: CommandInfo | undefined
-  for (const word of path) {
-    if (command?.options.length) inheritedOptions.push({ path: command.path, options: command.options })
-    command = available.find((item) => item.name === word)
-    if (!command) throw new CliError("validation_error", "unknown command path; use zm commands --json")
-    available = command.commands
-  }
-  return { command: command as CommandInfo, inheritedOptions }
-}
-
-const projectDiscovery = (commands: readonly CommandInfo[], fields: readonly string[]): unknown[] =>
-  commands.map((command) => ({
-    ...(projectFields(command, fields) as Record<string, unknown>),
-    path: command.path,
-    name: command.name,
-    origin: command.origin,
-    effects: command.effects,
-    commands: projectDiscovery(command.commands, fields),
-  }))

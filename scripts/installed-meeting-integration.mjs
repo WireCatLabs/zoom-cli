@@ -169,7 +169,7 @@ export const installedMeetingIntegration = async ({
     String(target.eventId),
     "--yes",
   )
-  assert.equal(unlinked.result.previous_event_id, target.eventId)
+  assert.equal(unlinked.result.previous_event_id, String(target.eventId))
   assert.equal(native("audit", target).eventId, null)
   assert.equal(json(...eventArgs, "--yes").result.changed, true)
   const personArgs = [

@@ -8,12 +8,17 @@ import {
   itemOf,
   LOCAL_READ,
   LOCAL_WRITE,
+  listQuery,
   NO_EFFECTS,
   REMOTE_READ,
   REMOTE_WRITE,
+  typedQuery,
+  unfilteredQuery,
+  withQuery,
 } from "@wirecat/cli-core/cli"
 import { recordingWindows } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
+import { ZOOM_ANSWER_ENTITIES } from "./answer-entities.js"
 import { wholeList } from "./answer-output.js"
 import type { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
 import { bytes, runsLong } from "./execution.js"
@@ -115,14 +120,15 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
   const recordings = annotate(program.command("recordings"), { effects: NO_EFFECTS }).description(
     "cloud recording assets and verified local archives",
   )
+  const recordingsQuery = unfilteredQuery("zoom_recording", ZOOM_ANSWER_ENTITIES["recordings list"].schema)
   label(
-    recordings
-      .command("list")
+    withQuery(recordings.command("list"), recordingsQuery)
       .description("list cloud recording occurrences (last 30 days by default)")
       .option("--since-time <time>", "first day, YYYY-MM-DD")
       .option("--until-time <time>", "last day, YYYY-MM-DD (default today in --timezone)")
       .option("--timezone <zone>", "IANA timezone of today (default the computer's)")
-      .action(async (options: { sinceTime?: string; untilTime?: string; timezone?: string }) => {
+      .action(async (words: string[], options: { sinceTime?: string; untilTime?: string; timezone?: string }) => {
+        listQuery(typedQuery(words), recordingsQuery, "recordings list")
         deps.api()
         const zone = localZone(options.timezone)
         const to = options.untilTime ?? localDay(deps.now(), zone)
@@ -315,11 +321,12 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
   const remote = annotate(program.command("remote-meetings"), { effects: NO_EFFECTS }).description(
     "upcoming Zoom meetings; stored meeting reads remain under meetings",
   )
+  const remoteQuery = unfilteredQuery("zoom_remote_meeting", ZOOM_ANSWER_ENTITIES["remote-meetings list"].schema)
   label(
-    remote
-      .command("list")
+    withQuery(remote.command("list"), remoteQuery)
       .description("list upcoming meetings")
-      .action(async () => {
+      .action(async (words: string[]) => {
+        listQuery(typedQuery(words), remoteQuery, "remote-meetings list")
         deps.api()
         deps.output(wholeList("remote-meetings list", await deps.remoteMeetings().list({ signal: deps.signal() })))
       }),

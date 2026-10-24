@@ -1,18 +1,19 @@
 import { randomUUID } from "node:crypto"
-import { CliError, createRenderer, isCliError, type KeyringStore } from "@wirecat/cli-base"
+import { CliError, isCliError, type KeyringStore } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
 import {
   type Body,
   commandWords,
+  grantsAuthority,
   itemOf,
   LOCAL_READ,
   LOCAL_WRITE,
+  logsInOrOut,
   NO_EFFECTS,
   REMOTE_WRITE,
   refuseCommandName,
 } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
-import type { AnswerFormat } from "./answer-output.js"
 import { addStandardCommands } from "./commands.js"
 import { addProfile, setConfig, type ZoomConfig } from "./config.js"
 import { login } from "./login.js"
@@ -57,7 +58,7 @@ export const addConfigCommands = (
     .action(() => {
       output(itemOf(getConfig()))
     })
-  annotate(cfg.command("set"), { effects: LOCAL_WRITE })
+  grantsAuthority(annotate(cfg.command("set"), { effects: LOCAL_WRITE }))
     .description("set a configuration value")
     .argument("<key>", "setting name, such as zoom.client_id")
     .argument("<value>", "new value")
@@ -82,8 +83,6 @@ export interface SessionCommandDeps {
   getConfig: () => ZoomConfig
   output: (body: Body) => void
   buffer: (text: string) => void
-  formatOf: () => AnswerFormat
-  fields: () => string[] | undefined
   api: () => void
   profile: () => string
   tokens: () => TokenManager
@@ -93,16 +92,9 @@ export interface SessionCommandDeps {
 
 /** The shared discovery, doctor and session status commands, plus Zoom's browser login. */
 export const addSessionCommands = (program: Command, context: SessionCommandDeps): void => {
-  const { deps, getConfig, output, buffer, formatOf, fields, api, profile, tokens, fetch, signal } = context
+  const { deps, getConfig, output, buffer, api, profile, tokens, fetch, signal } = context
   addStandardCommands(program, {
     output,
-    discovery: (value) =>
-      createRenderer({
-        format: formatOf(),
-        color: false,
-        streams: { data: (text) => buffer(`${text}\n`), diagnostic: deps.diagnostic },
-      }).result(value),
-    fields,
     raw: buffer,
     doctor: () => {
       const keyring = probeKeyring(deps.tokens.options.keyring)
@@ -191,5 +183,5 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
       addProfile(deps.configPath, selected)
       output(itemOf({ ...done, profile: selected }))
     })
-  annotate(start, { effects: REMOTE_WRITE, lifetime: "interactive" })
+  logsInOrOut(annotate(start, { effects: REMOTE_WRITE, lifetime: "interactive" }))
 }

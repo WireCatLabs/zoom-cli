@@ -34,10 +34,9 @@ serves:
 | `zm_write` | runs a command that changes something, such as `remote-meetings create`, or `search meetings`, which updates the word index first |
 
 A call runs the command line itself, so it answers and fails exactly as `zm personal <command> --json` does. The
-server speaks for the profile named in its `args`; a caller cannot change it. `watch`, `complete` and the server itself are not offered. Shared commands
-`meetings scheduled`, `meetings projects scan` and `upgrade` remain unavailable over MCP;
-use them in a terminal. Interactive login (`session start`) also stays in the terminal.
-Settings and skill installation require `mcp.authority` at `allow` or `ask`;
+server speaks for the profile named in its `args`; a caller cannot change it. `watch`, `complete` and the server itself are not offered. Shared inventory (`meetings scheduled`), project scanning and upgrade are available under the profile permissions.
+Interactive login (`session start`) stays in the terminal.
+Settings, skill installation, upgrade and archive timer changes require `mcp.authority` at `allow` or `ask`;
 profile permissions can only be changed in a terminal.
 Grant authority with `zm personal config set permissions '{"mcp.authority":"allow"}'` and restart
 the server. This replaces the profile's permission map, so include any existing restrictions.
@@ -68,7 +67,7 @@ reads a different profile or database. Keep stdout for protocol messages; omit `
 
 `zm serve --mcp` and its flags (`--meeting-context`, `--meeting-preparation`, `--semantic` and the others) are gone;
 `zm serve` now says so. Use `meetings context`, `meetings prepare`, `search all` and `search meetings --model` through the
-shared server. `meetings projects scan` and `meetings scheduled` currently require a terminal. Change
+shared server. Change
 the entry's `args` to `["personal", "mcp"]`.
 
 ## Try the connection

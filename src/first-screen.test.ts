@@ -48,8 +48,8 @@ it("prints the options for every command", async () => {
 })
 
 it("prints a scenario's steps", async () => {
-  const { deps } = setup()
-  const written: string[] = []
+  const { deps, stdout: written } = setup()
+
   vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
     written.push(String(chunk))
     return true

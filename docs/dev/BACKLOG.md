@@ -22,22 +22,13 @@ an item here names it when zm only adopts it.
 
 - **ZM-5** · P2 · 🚧 `feat/saved-meeting-searches` · Saved searches: `zm <profile> searches create/run/list/show/delete`,
   waits for the cli-core release that has #1749. Start: `/home/leemour/Projects/AI/zoom-cli-wt-improve`.
-- **ZM-6** · P2 · Stale MCP tool names and dev notes: `search_meetings` (docs/search.md:102), `meeting_prepare`
-  (skills/zoom-cli/SKILL.md:126), "chat … return null" (docs/dev/ARCHITECTURE.md, chat is stored since #216).
 - **ZM-7** · P2 · Adopt the meeting query fields `date:`, `project:`, `tag:`, `topic:` when cli-core #1754 ships.
   Start: cli-core `meetings`, then the zm search docs.
-- **ZM-9** · P2 · 🚧 `refactor/zm-core-alignment-1024` · Answer entities: 58 of 68 leaf commands declare none (WC-CMD-19); `stats`, `review`,
-  `mentions list` need an entity in cli-core first (DEBT-157). Start: `zm commands --json`.
 - **ZM-10** · P2 · Dependency raises: cli-base 0.49.0 → 0.50.1; open dependabot PRs #210 (MCP server 2.1 → 2.3),
   #93, #95, #96 (actions, since 14.10). Start: package.json.
 - **ZM-11** · P2 · Agent end-to-end check of the meeting workflow on invented data (aliases → cited calls →
   passages → Memo findings → prepare), with the result in cli-testing.
   [plan](https://github.com/WireCatLabs/cli-private/blob/main/plans/2026-10-14-zoom-next-tasks.md)
-- **ZM-24** · P2 · 🚧 `refactor/zm-core-alignment-1024` · 🟡 Zoom exclusions removed; three shared commands still need cli-core release/adoption:
-  `meetings scheduled`, `meetings projects scan`, `upgrade`.
-  [cli-core #1877](https://github.com/WireCatLabs/cli-core/issues/1877).
 - **ZM-27** · P2 · `recordings sync` folds into `recordings download`: both save recordings to disk, and `sync` means
   bringing the store up to date (owner, 2026-10-24). `download` takes the date range and resumes month by month as
   `sync` does now; `sync` goes, with no alias. Start: `src/archive-commands.ts`.
-
-- **ZM-28** · P2 · 🚧 `refactor/zm-core-alignment-1024` · Adopt shared command execution and authority metadata; remove duplicate CLI infrastructure.

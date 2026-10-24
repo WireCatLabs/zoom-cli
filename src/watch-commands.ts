@@ -51,7 +51,12 @@ export const addWatchCommand = (program: Command, deps: WatchCommandDeps): void 
     .argument("[folder]", "with files: folder of downloaded transcripts; otherwise files.folder")
     .option("--since-time <time>", "on the first run, fetch meetings from this ISO 8601 time", since)
     .option("--lookback-days <days>", "API cursor overlap for late transcripts (0 through 31)", days)
-    .option("--pause <duration>", "delay after each completed receipt (1s through 24h)", duration, 10000)
+    .option(
+      "--pause <duration>",
+      "delay after each completed receipt (1s through 24h)",
+      (text) => duration(text, "--pause"),
+      10000,
+    )
     .action(async (target: WatchTarget | undefined, folder: string | undefined, options: WatchFlags) => {
       if (!program.opts().jsonl && !deps.outputIsTTY)
         throw new CliError("validation_error", "headless watch requires --jsonl")

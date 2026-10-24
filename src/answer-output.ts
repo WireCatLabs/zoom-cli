@@ -3,6 +3,7 @@ import { metaOf } from "@wirecat/cli-base/commands"
 import type { Meta } from "@wirecat/cli-base/standards"
 import { type Body, itemOf, listOf, metaNow, renderAnswer, snakeKeys } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
+import { normalizeZoomAnswer } from "./answer-entities.js"
 
 export type AnswerFormat = "json" | "jsonl" | "pretty"
 
@@ -44,7 +45,7 @@ export const renderBody = (
     diagnostic: (text: string) => void
   },
 ): { text: string; exitCode: number } => {
-  const data = snakeKeys(body) as Body
+  const data = normalizeZoomAnswer(snakeKeys(body) as Body, metaOf(command).output?.entity)
   const fields = options.fields
   const projected = fields ? (projectFields(data, fields) as Body) : data
   const meta = metaNow({ ...projected.meta, run_id: options.meta.run_id, duration_ms: options.meta.duration_ms })
@@ -70,5 +71,3 @@ export const renderBody = (
 /** Every row the command read, in one page. */
 export const wholeList = <T>(command: string, items: T[]) =>
   listOf(command, { items, limit: Math.max(1, items.length), has_more: false })
-
-export const usageMessage = (error: Error) => error.message.replace(/^error: |\s*\n\s*/g, " ").trim()

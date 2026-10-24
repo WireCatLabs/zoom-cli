@@ -403,7 +403,7 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
     })
     const deadline = setTimeout(() => child.kill("SIGTERM"), 10000)
     try {
-      expect(await exited, errors).toBe(130)
+      expect(await exited, errors).toBe(0)
       const receipts = output
         .trim()
         .split("\n")
@@ -411,7 +411,7 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
       expect(receipts).toHaveLength(2)
       expect(receipts[1]).toMatchObject({ type: "end", complete: true })
       expect(receipts[0].data.meetings).toBe(1)
-      expect(JSON.parse(diagnostics(errors)).error.code).toBe("cancelled")
+      expect(diagnostics(errors)).toBe("")
       const reopened = invoke("personal", "--json", "search", "meetings", "Watched")
       expect(reopened.status, reopened.stderr).toBe(0)
       expect(JSON.parse(reopened.stdout).items).toHaveLength(1)

@@ -13,7 +13,7 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [api.ts](../../src/api.ts) | pagination, occurrence UUIDs, participant sessions and downloads |
 | [files.ts](../../src/files.ts) | file contents, legacy names and source metadata |
 | [config.ts](../../src/config.ts) | public client and file-source settings |
-| [program.ts](../../src/program.ts) | the command tree, output, per-run state and the injected store dependency |
+| [program.ts](../../src/program.ts), [run.ts](../../src/run.ts), [program-bindings.ts](../../src/program-bindings.ts) | Core program/runner adapters and Zoom provider/store bindings |
 | [setup-commands.ts](../../src/setup-commands.ts) | `config`, doctor, session status and browser login |
 | [store-commands.ts](../../src/store-commands.ts) | Zoom's commands over the shared store, each opening it only when its action runs |
 | [meeting-source.ts](../../src/meeting-source.ts) | the API or folder source the config names, built on first use |
@@ -61,8 +61,8 @@ with the local port and includes random bytes. Invalid-state requests do not end
 Callback errors, timeout and successful exchange all close it. Tokens are never logged or written
 to the config. Zoom errors retain numeric codes and HTTP status, not provider message values.
 
-API summaries accept both the unified Markdown field and the captured legacy sections. Chat and
-file pointers return null until a supported Zoom endpoint is connected. Missing participant or
+API summaries accept both the unified Markdown field and the captured legacy sections. Imported and downloaded meeting chat is stored through the shared meeting store. File pointers remain
+unavailable until a supported Zoom endpoint is connected. Missing participant or
 transcript scope is a clear error naming the required scope.
 
 The executable connects the published cli-core SQLite adapter through its public meeting and
@@ -92,7 +92,7 @@ Installed-package acceptance tests exercise these boundaries through the actual 
 
 Command discovery uses cli-base's live Commander registry and completion helpers. Output uses the
 shared renderer and exit-code mapping. Discovery/completion avoid config and credentials; local
-doctor reads public config without opening the store or keyring. Session status inspects cached
+doctor reads public config and probes a temporary keyring entry without opening the store or reading saved logins. Session status inspects cached
 OAuth state; an explicitly requested remote check uses the user profile endpoint or an injected adapter.
 The executable supplies terminal/CI context so unattended login fails before browser launch.
 
@@ -156,7 +156,7 @@ finite output and uses the shared CLI/MCP adapters; it does not reconstruct tran
 Finite command output uses shared projection, rendering, buffering and caller-owned deadlines.
 Streaming commands bound each receipt and await write completion/drain. Folder watching closes the
 cycle's connection before its receipt; a completed late receipt has a separate one-second deadline.
-MCP tool schemas and reads come from `@wirecat/cli-core/meetings/mcp`. Initialization/discovery are connection-free;
+MCP uses Core’s three-tool catalogue and runs the same command tree through Core’s agent environment. Initialization/discovery are connection-free;
 each call injects the selected account and closes its read connection before replying. SDK request
 cancellation prevents new reads while allowing an active read to settle before close.
 
@@ -212,9 +212,10 @@ Queries embed only the input, then rank a bounded scan of existing vectors. Cand
 does not establish index or archive completeness. Model selection is explicit; local loading never
 downloads a model, and remote inference is incompatible with offline execution.
 
-Optional MCP tools share these public adapters. The model options are frozen when the server is built;
-the executable captures its local profile on the first read. Discovery still avoids config, database,
-keyring and model access. Tool arguments cannot override model, account or broader resource scope.
+MCP calls use the same explicit model arguments as the command line. The server fixes its profile
+and source grants at startup; each invocation checks current authority before execution. Tool arguments
+cannot select another profile or broaden source grants. Catalogue construction avoids database, keyring
+and model access.
 
 Contract 3 uses Core’s public envelope, metadata, JSONL, runnable-step and effect-policy helpers.
 The host preserves source completeness/issues while assigning execution identity and duration.
@@ -285,8 +286,7 @@ already uses Core atomic writes; archive writer/partial/publication leases remai
 
 Project-candidate scanning delegates account authorization, bounded evidence hydration, name/key/alias
 matching and answer contracts to Core. Zoom binds only the selected existing account and vocabulary,
-opens the native store read-only with preparation intent, and closes before CLI/MCP output. The MCP
-tool is an explicit global-project-vocabulary grant; existing server defaults remain unchanged.
+opens the native store read-only with preparation intent, and closes before CLI/MCP output. The command is available through the shared MCP catalogue under the profile permissions.
 
 `createZoomSeriesInventoryReader` implements the optional shared one-page inventory port over
 `GET /users/me/meetings?type=scheduled`. It uses the captured credential resolver, list-meetings
@@ -297,4 +297,4 @@ The shared SDK binds continuations and reports unknown calendar completeness. Zo
 [meeting API](https://developers.zoom.us/docs/api/meetings/#list-meetings) returns unexpired scheduled
 meetings for the authenticated host; it is not every invitation or an instant-meeting archive.
 Provider page tokens expire; restart the finite-window listing if Zoom refuses an old cursor.
-This library export does not add a default MCP tool or a remote inventory command.
+The `meetings scheduled` command and shared MCP catalogue use this bounded inventory port.

@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+### Changed — may break callers
+
+- Durations use the shared CLI syntax: a whole number followed by `ms`, `s`, `m`, `h` or `d`. Bare milliseconds and fractional durations are refused.
+- Typed data answers use string IDs and ISO timestamps consistently, including archive and meeting-change receipts.
+- Commands run through Core’s lifecycle, deadlines, cancellation, discovery and read-only metadata. SDK callers must use `parseAsync`; synchronous parsing is refused before command work.
+
+### Added
+
+- `meetings status` and `recordings status <directory>` report persisted sync progress without network or database access.
+- MCP exposes scheduled inventory, project scans and upgrade under profile permissions; upgrade and timer changes require authority.
+- `bin/release --local` validates and publishes one checked tarball with an explicitly exported npm token.
+
+### Fixed
+
+- Model downloads use Core’s checksum verification and repair.
+- MCP authority checks use the shared command annotations and catalogue permission rules, including when a grant is revoked.
+
 ## 0.40.0 — 24.10.2026
 
 ### Changed — may break callers

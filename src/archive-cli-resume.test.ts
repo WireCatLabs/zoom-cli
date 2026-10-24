@@ -359,16 +359,16 @@ it("gives scheduled archive runs a download deadline and streams completed recei
     show: fail,
     disable: fail,
     run: async function* () {
-      yield { window: { from: "2026-10-01", to: "2026-10-11" }, meeting, archive: report }
+      yield {
+        window: { from: "2026-10-01", to: "2026-10-11" },
+        meeting: { id: meeting.id, uuid: meeting.uuid, title: meeting.title },
+        archive: report,
+      }
     },
   }
-  const deadlines: number[] = []
-  deps.sleep = async (duration, signal) =>
-    new Promise((_resolve, reject) => {
-      deadlines.push(duration)
-      signal?.addEventListener("abort", () => reject(new Error("disposed")), { once: true })
-    })
+  const timers = vi.spyOn(globalThis, "setTimeout")
   expect(await run(["recordings", "schedule", "run", "a".repeat(64), "--jsonl"], deps)).toBe(0)
-  expect(deadlines).toEqual([3600000])
+  expect(timers.mock.calls.some(([, ms]) => ms === 3600000)).toBe(true)
+  timers.mockRestore()
   expect(output.map((text) => readReceipt(text).meeting.uuid)).toEqual([meeting.uuid])
 })

@@ -86,8 +86,11 @@ describe("command execution controls", () => {
   })
   it("reports a usage mistake under skill as a JSON error with exit 2", async () => {
     const { deps, stdout, stderr } = await setup()
-    expect(await run(["--json", "skill", "install", "--yes"], deps)).toBe(2)
-    expect(value(stderr).error).toMatchObject({ code: "validation_error", message: "unknown option '--yes'" })
+    expect(await run(["--json", "skill", "install", "--unknown-skill-option"], deps)).toBe(2)
+    expect(value(stderr).error).toMatchObject({
+      code: "validation_error",
+      message: "unknown option '--unknown-skill-option'",
+    })
     expect(stdout).toEqual([])
   })
   it("bounds UTF-8 result output with no partial stdout and allows an explicit unlimited bound", async () => {
@@ -203,22 +206,20 @@ describe("command execution controls", () => {
   })
   it("uses command-aware deadlines and resets prior parse flags", async () => {
     const { deps, stdout } = await setup()
-    const durations: number[] = []
-    deps.sleep = async (ms, signal) =>
-      new Promise<void>((_resolve, reject) => {
-        durations.push(ms)
-        signal?.addEventListener("abort", () => reject(new Error("disposed")), { once: true })
-      })
+    const timers = vi.spyOn(globalThis, "setTimeout")
     const program = createProgram(deps)
     await program.parseAsync(["--json=version", "--timeout", "2s", "doctor"], { from: "user" })
     await program.parseAsync(["--json", "doctor"], { from: "user" })
-    expect(durations).toEqual([2000, 30000])
+    expect(timers.mock.calls.some(([, ms]) => ms === 2000)).toBe(true)
+    expect(timers.mock.calls.some(([, ms]) => ms === 30000)).toBe(true)
+    timers.mockClear()
     expect(Object.keys(value(stdout))).toContain("authentication")
     setConfig(deps.configPath, "zoom.clientId", "example-client")
     useProfile(deps.configPath, "example-profile")
     deps.recordings = { list: async () => [], show: async () => meeting, download: async () => archive, catalog }
     expect(await run(["recordings", "download", "example", "--output-dir", "invented"], deps)).toBe(0)
-    expect(durations.at(-1)).toBe(3600000)
+    expect(timers.mock.calls.some(([, ms]) => ms === 3600000)).toBe(true)
+    timers.mockClear()
     deps.openBrowser = async (url) => {
       const state = new URL(url).searchParams.get("state") ?? ""
       await fetch(
@@ -226,7 +227,8 @@ describe("command execution controls", () => {
       )
     }
     expect(await run(["session", "start"], deps)).toBe(0)
-    expect(durations.at(-1)).toBe(300000)
+    expect(timers.mock.calls.some(([, ms]) => ms === 300000)).toBe(true)
+    timers.mockRestore()
   })
 })
 
@@ -483,7 +485,17 @@ describe("archive and explicit remote command wiring", () => {
       },
       show: async () => {
         calls.push("show")
-        return { ...meeting, type: 2, durationMinutes: 30, timezone: "UTC", agenda: null, joinUrl: null }
+        return {
+          id: meeting.id,
+          uuid: meeting.uuid,
+          title: meeting.title,
+          startedAt: meeting.startedAt,
+          type: 2,
+          durationMinutes: 30,
+          timezone: "UTC",
+          agenda: null,
+          joinUrl: null,
+        }
       },
       invitation: async () => {
         calls.push("invitation")
@@ -665,4 +677,107 @@ it("keeps token grants bound to the client sent and separates refresh singleflig
   tokens.save(expired, "example-second-client")
   await Promise.all([first.tokens(), second.tokens()])
   expect(requests).toEqual(["example-first-client", "example-first-client", "example-second-client"])
+})
+
+it("accepts shared diagnostic, verbosity, input and recording controls without corrupting JSON", async () => {
+  const { deps, stdout } = await setup()
+  for (const flags of [
+    ["--verbose", "--trace", "--max-input-bytes", "1024", "--brief", "--no-record"],
+    ["--full", "--record"],
+  ]) {
+    stdout.length = 0
+    expect(await run(["doctor", "--json", ...flags], deps)).toBe(0)
+    expect(readAnswer(stdout.join(""))).toHaveProperty("version")
+    expect(stdout).toHaveLength(1)
+  }
+})
+
+it("reuses an SDK program sequentially and refuses concurrent parses without disturbing the active invocation", async () => {
+  const { deps, stdout } = await setup()
+  const program = createProgram(deps)
+  let entered = () => {}
+  const started = new Promise<void>((resolve) => {
+    entered = resolve
+  })
+  let proceed = () => {}
+  const paused = new Promise<void>((resolve) => {
+    proceed = resolve
+  })
+  deps.atStart = async () => {
+    entered()
+    await paused
+  }
+  const running = program.parseAsync(["doctor", "--json"], { from: "user" })
+  await started
+  await expect(program.parseAsync(["doctor"], { from: "user" })).rejects.toThrow("concurrent")
+  proceed()
+  await running
+  await program.parseAsync(["node", "zm", "doctor", "--json"])
+  expect(stdout).toHaveLength(2)
+  await expect(program.parseAsync(["__missing__"], { from: "user" })).rejects.toThrow()
+  await program.parseAsync(["doctor", "--json"], { from: "user" })
+  expect(stdout).toHaveLength(3)
+})
+
+it("closes a connection that arrives after cancellation and never exposes its data", async () => {
+  const { deps, stdout } = await setup()
+  useProfile(deps.configPath, "example")
+  const controller = new AbortController()
+  deps.signal = controller.signal
+  const close = vi.fn(async () => {})
+  const store = memoryMeetingStore()
+  const read = vi.spyOn(store, "meetings")
+  deps.connectStore = async () => {
+    controller.abort()
+    return fakeConnection({ store, accountId: 1, close })
+  }
+  expect(await run(["meetings", "list", "--json"], deps)).toBe(130)
+  expect(close).toHaveBeenCalledTimes(1)
+  expect(read).not.toHaveBeenCalled()
+  expect(stdout).toEqual([])
+})
+
+it("refuses malformed provider answers and preserves uncertainty for acknowledged changes", async () => {
+  const { deps, stdout, stderr } = await setup()
+  setConfig(deps.configPath, "zoom.clientId", "example-client")
+  useProfile(deps.configPath, "example")
+  deps.remoteMeetings = {
+    show: async () => ({ private: "fixture hidden provider data" }),
+    create: async () => ({ applied: true, private: "fixture hidden provider data" }),
+  } as unknown as NonNullable<ProgramDeps["remoteMeetings"]>
+  expect(await run(["remote-meetings", "show", "123456789", "--json"], deps)).toBe(13)
+  expect(value(stderr).error.code).toBe("invalid_response")
+  expect(await run(["remote-meetings", "create", "--title", "Example", "--type", "1", "--yes", "--json"], deps)).toBe(
+    14,
+  )
+  expect(value(stderr).error.code).toBe("outcome_unknown")
+  expect(stdout).toEqual([])
+  expect(stderr.join("")).not.toContain("fixture hidden provider data")
+})
+
+it("withholds a buffered answer when closing its store fails", async () => {
+  const { deps, stdout, stderr } = await setup()
+  useProfile(deps.configPath, "example")
+  const close = vi.fn(async () => {
+    throw new Error("fixture private close reason")
+  })
+  deps.connectStore = async () => fakeConnection({ store: memoryMeetingStore(), accountId: 1, close })
+  expect(await run(["meetings", "list", "--json"], deps)).toBe(3)
+  expect(value(stderr).error).toMatchObject({
+    code: "configuration_error",
+    message: "could not close the shared meeting store",
+  })
+  expect(stdout).toEqual([])
+  expect(close).toHaveBeenCalledTimes(1)
+  expect(stderr.join("")).not.toContain("fixture private close reason")
+})
+
+it("refuses synchronous SDK parsing before settings can change outside the shared runner", async () => {
+  const { deps, stdout } = await setup()
+  const program = createProgram(deps)
+  expect(() => program.parse(["config", "set", "files.timezone", "UTC"], { from: "user" })).toThrow("use parseAsync")
+  await expect(access(deps.configPath)).rejects.toThrow()
+  expect(stdout).toEqual([])
+  await program.parseAsync(["doctor", "--json"], { from: "user" })
+  expect(stdout).toHaveLength(1)
 })

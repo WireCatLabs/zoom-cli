@@ -1,8 +1,21 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
 import type { Effects } from "@wirecat/cli-base/standards"
-import { type Body, FETCH, itemOf, LOCAL_READ, LOCAL_WRITE, NO_EFFECTS } from "@wirecat/cli-core/cli"
+import {
+  type Body,
+  FETCH,
+  grantsAuthority,
+  itemOf,
+  LOCAL_READ,
+  LOCAL_WRITE,
+  listQuery,
+  NO_EFFECTS,
+  typedQuery,
+  unfilteredQuery,
+  withQuery,
+} from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
+import { ZOOM_ANSWER_ENTITIES } from "./answer-entities.js"
 import { wholeList } from "./answer-output.js"
 import { bytes, runsLong } from "./execution.js"
 import type {
@@ -35,8 +48,7 @@ export const addRecordingScheduleCommands = (
   const label = (command: Command, example: string, effects: Effects) =>
     annotate(command, { origin: "handwritten", effects, examples: [example] })
   label(
-    schedule
-      .command("create")
+    grantsAuthority(schedule.command("create"))
       .description("preview a daily archive job; --yes installs its timer")
       .requiredOption("--name <name>", "local job name")
       .requiredOption("--output-dir <dir>", "absolute archive directory")
@@ -84,11 +96,12 @@ export const addRecordingScheduleCommands = (
     "zm personal recordings schedule create --name daily --output-dir /home/AliceExample/archive --since-time 2026-01-01 --at 03:15 --timezone UTC --json",
     LOCAL_WRITE,
   )
+  const jobsQuery = unfilteredQuery("zoom_archive_job", ZOOM_ANSWER_ENTITIES["recordings schedule list"].schema)
   label(
-    schedule
-      .command("list")
+    withQuery(schedule.command("list"), jobsQuery)
       .description("list saved local jobs; live timer state is not checked")
-      .action(async () => {
+      .action(async (words: string[]) => {
+        listQuery(typedQuery(words), jobsQuery, "recordings schedule list")
         deps.output(wholeList("recordings schedule list", await deps.service().list({ signal: deps.signal() })))
       }),
     "zm personal recordings schedule list --offline --json",
@@ -120,8 +133,7 @@ export const addRecordingScheduleCommands = (
     FETCH,
   )
   label(
-    schedule
-      .command("disable")
+    grantsAuthority(schedule.command("disable"))
       .description("preview disabling a saved timer; --yes disables it without deleting files")
       .argument("<job>", "saved job id")
       .option("--yes", "disable and stop the timer")

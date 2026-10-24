@@ -3,9 +3,8 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { memoryKeyring } from "@wirecat/cli-base"
-import { checkStep, loadScenarios, shellProblems } from "@wirecat/cli-core/cli"
+import { checkStep, commandWords, liftProfile, loadScenarios, shellProblems } from "@wirecat/cli-core/cli"
 import { describe, expect, it, vi } from "vitest"
-import { liftProfileWord } from "./profile-word.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
 
@@ -59,7 +58,8 @@ describe("ZM_READ_ONLY", () => {
     const { deps, network, stderr } = await setup({ ZM_READ_ONLY: "1" })
     expect(await run([...args, "--json"], deps)).toBe(5)
     expect(stderr.join("")).toContain("this process is read-only (ZM_READ_ONLY)")
-    expect(stderr.join("")).toContain(what)
+    if (what === "outside a sync") expect(stderr.join("")).toMatch(/message store|what a later run may do/)
+    else expect(stderr.join("")).toContain(what)
     expect(network).not.toHaveBeenCalled()
     expect(deps.connectStore).not.toHaveBeenCalled()
   })
@@ -98,7 +98,7 @@ it("keeps every scenario step runnable", async () => {
     for (const step of scenario.steps) {
       const program = createProgram(deps)
       const words = step.run.split(/\s+/)
-      const lifted = liftProfileWord(program, [words.slice(1), { from: "user" }])
+      const lifted = liftProfile(words.slice(1), commandWords(program))
       expect(lifted.profile, step.run).toBe("personal")
       expect(shellProblems(step.run), step.run).toEqual([])
       expect(checkStep(program, step.run.replace(/^zm personal /, "zm ")), step.run).toEqual([])
