@@ -1,6 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { type Body, FETCH, LOCAL_READ, listOf, NO_EFFECTS } from "@wirecat/cli-core/cli"
+import { type Body, FETCH, LOCAL_READ, listOf, NO_EFFECTS, overrideSharedContract } from "@wirecat/cli-core/cli"
 import { meetingHitsList } from "@wirecat/cli-core/meetings"
 import {
   createMeetingSearchCommand,
@@ -38,7 +38,7 @@ const FLAG = {
   seriesId: "--series-id",
   project: "--project",
   tag: "--tag",
-  topic: "--topic",
+  topicName: "--topic-name",
   sinceTime: "--since-time",
   untilTime: "--until-time",
   cursor: "--cursor",
@@ -110,17 +110,23 @@ const combinedList = (found: CombinedPage, limit: number, args: Record<string, u
 
 /** zm's options beside the shared ones: by meaning, and the bounds of a search by meaning. */
 const withMeaningOptions = (command: Command): Command =>
-  command
-    .description("find words in stored meetings, or by meaning with --model")
-    .option(
-      "--model <model>",
-      "rank words and meaning together with this embedding model, building missing vectors first",
-    )
-    .option("--base-url <url>", "remote embedding service for --model; OpenAI reads OPENAI_API_KEY")
-    .option("--dims <n>", "vector size the remote service returns, in dimensions", bytes)
-    .option("--max-chunks <n>", "by meaning: most stored passages to compare (default 10000)", bytes)
-    .option("--max-rows <n>", "by meaning: most transcript lines to read, 1 through 100000", bytes)
-    .option("--max-text-bytes <bytes>", "by meaning: most transcript text to read (default 4 MiB)", bytes)
+  overrideSharedContract(
+    command,
+    "Zoom explicitly extends meeting search with semantic ranking and bounded embedding-provider controls.",
+    (one) => {
+      one
+        .description("find words in stored meetings, or by meaning with --model")
+        .option(
+          "--model <model>",
+          "rank words and meaning together with this embedding model, building missing vectors first",
+        )
+        .option("--base-url <url>", "remote embedding service for --model; OpenAI reads OPENAI_API_KEY")
+        .option("--dims <n>", "vector size the remote service returns, in dimensions", bytes)
+        .option("--max-chunks <n>", "by meaning: most stored passages to compare (default 10000)", bytes)
+        .option("--max-rows <n>", "by meaning: most transcript lines to read, 1 through 100000", bytes)
+        .option("--max-text-bytes <bytes>", "by meaning: most transcript text to read (default 4 MiB)", bytes)
+    },
+  )
 
 /** A fresh `search meetings` to read saved options with: the same flags, parsers and checks as the real one. */
 export const meetingSearchDefinition = (): { program: Command; command: Command } => {
@@ -184,14 +190,20 @@ export const addMeetingSearchCommands = (
       deps.output(await execute(query, options))
     },
   )
-  annotate(command, {
-    origin: "handwritten",
-    effects: FETCH,
-    examples: [
-      'zm personal search meetings "example plan" --since-time 2026-09-01 --json',
-      'zm personal search meetings "example plan" --model e5-small --json',
-    ],
-  })
+  overrideSharedContract(
+    command,
+    "Zoom meeting search may build missing embeddings, so its effects and examples include that explicit mode.",
+    (one) => {
+      annotate(one, {
+        origin: "handwritten",
+        effects: FETCH,
+        examples: [
+          'zm personal search meetings "example plan" --since-time 2026-09-01 --json',
+          'zm personal search meetings "example plan" --model e5-small --json',
+        ],
+      })
+    },
+  )
   const search =
     program.commands.find((child) => child.name() === "search") ??
     annotate(program.command("search"), { effects: NO_EFFECTS })

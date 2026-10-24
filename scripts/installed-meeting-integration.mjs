@@ -316,10 +316,13 @@ export const installedMeetingIntegration = async ({
     ["not_run", "not_run", "not_run", "not_run"],
   )
   assert.equal(refused.meta.complete, false)
-  const topicHits = json("search", "meetings", "needle", "--topic", "costs", "--project", "RES")
+  const topicHits = json("search", "meetings", "needle", "--topic-name", "costs", "--project", "RES")
   assert.equal(topicHits.items.length, 9)
-  assert.deepEqual(topicHits.items, json("search", "meetings", "needle", "--topic", "budget", "--project", "RES").items)
-  invoke(["--json", "search", "meetings", "needle", "--topic", "missing-invented-topic", "--project", "RES"], 6)
+  assert.deepEqual(
+    topicHits.items,
+    json("search", "meetings", "needle", "--topic-name", "budget", "--project", "RES").items,
+  )
+  invoke(["--json", "search", "meetings", "needle", "--topic-name", "missing-invented-topic", "--project", "RES"], 6)
   const projectPacket = (...args) => JSON.parse(invoke(["--json", ...args]).stdout)
   const projectHits = []
   let projectCursor
