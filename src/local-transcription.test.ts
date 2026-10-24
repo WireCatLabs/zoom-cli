@@ -363,7 +363,7 @@ it("says how to repair the models when the speech engine throws a bare number, a
   vi.mocked(opening.speech.open).mockImplementationOnce(() => Promise.reject(413528352))
   await expect(collect(opening.source.segments(media, context))).rejects.toMatchObject({
     code: "configuration_error",
-    message: expect.stringContaining("zm models audio download tiny-example"),
+    message: expect.stringContaining("zm models download tiny-example"),
   })
   const hearing = await fixture()
   const planned = await hearing.source.describe(context)

@@ -145,8 +145,8 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `session start` | `--browser` | ✅ |  |
 | `upgrade` |  | ✅ |  |
 | `upgrade` | `--check` | ✅ |  |
-| `models audio list` |  | ✅ |  |
-| `models audio download` |  | ✅ |  |
+| `models list` |  | ✅ |  |
+| `models download` |  | ✅ |  |
 | `watch` |  | ✅ |  |
 | `watch` | `--since-time` | ✅ |  |
 | `watch` | `--lookback-days` | ✅ |  |
