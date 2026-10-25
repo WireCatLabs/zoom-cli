@@ -1,23 +1,9 @@
 import { metaOf } from "@wirecat/cli-base/commands"
-import {
-  type AppIdentity,
-  changesAuthorityNow,
-  isLogin,
-  isStoreChange,
-  readOnlyLockOf,
-  readOnlyRefusal,
-} from "@wirecat/cli-core/cli"
+import { changesAuthorityNow, isLogin, isStoreChange, readOnlyLockOf, readOnlyRefusal } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
-import { VERSION } from "./version.js"
+import { ZM } from "./identity.js"
 
-export const ZM: AppIdentity = {
-  command: "zm",
-  appName: "zoom-cli",
-  envPrefix: "ZM",
-  description: "Zoom meeting transcripts and summaries",
-  version: VERSION,
-  messenger: false,
-}
+export { ZM }
 
 const pathOf = (command: Command): string => {
   const words: string[] = []

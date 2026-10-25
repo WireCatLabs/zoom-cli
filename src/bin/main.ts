@@ -3,23 +3,46 @@ import { join } from "node:path"
 import { createInterface } from "node:readline/promises"
 import { addAbortSignal } from "node:stream"
 import { fileURLToPath } from "node:url"
-import { CliError, isCliError, readBatchInput, systemKeyring } from "@wirecat/cli-base"
-import { runsDirFor, startCli } from "@wirecat/cli-core/cli"
-import { reportFailure } from "../answer-policy.js"
-import { readConfig } from "../config.js"
-import { loginService, zmPaths } from "../folders.js"
-import { writeExportFile } from "../output-file.js"
-import { run } from "../program.js"
-import { ZM } from "../read-only.js"
-import { lazyRunLog } from "../run-log.js"
-import { createStoreConnector } from "../store-connection.js"
-import { writeStream } from "../streaming.js"
-import { TOKEN_LOG_ALLOW, TokenManager } from "../tokens.js"
+import {
+  CliError,
+  errorObjectOf,
+  exitCodeOfError,
+  isCliError,
+  readBatchInput,
+  renderError,
+  systemKeyring,
+} from "@wirecat/cli-base"
+import { startCli } from "@wirecat/cli-core/cli/start"
+import { ZM } from "../identity.js"
 import { VERSION } from "../version.js"
 
+let answerPolicy: typeof import("../answer-policy.js") | undefined
 await startCli({
   app: ZM,
   run: async (entry) => {
+    // These load cli-core's command tree, which a bare --version never needs.
+    answerPolicy = await import("../answer-policy.js")
+    const [
+      { runsDirFor },
+      { readConfig },
+      { loginService, zmPaths },
+      { writeExportFile },
+      { run },
+      { lazyRunLog },
+      { createStoreConnector },
+      { writeStream },
+      { TOKEN_LOG_ALLOW, TokenManager },
+    ] = await Promise.all([
+      import("@wirecat/cli-core/cli"),
+      import("../config.js"),
+      import("../folders.js"),
+      import("../output-file.js"),
+      import("../program.js"),
+      import("../run-log.js"),
+      import("../store-connection.js"),
+      import("../streaming.js"),
+      import("../tokens.js"),
+    ])
     const paths = zmPaths()
     const configPath = join(paths.config, "config.json")
     const tokenRun = lazyRunLog({
@@ -90,6 +113,12 @@ await startCli({
       await tokenRun.finish(failed ? "failed" : "success").catch(() => {})
     }
   },
-  fail: (error, entry) =>
-    reportFailure(error, entry.args, { diagnostic: (text) => process.stderr.write(text), outputIsTTY: entry.tty }),
+  fail: (error, entry) => {
+    const diagnostic = (text: string) => process.stderr.write(text)
+    if (answerPolicy) return answerPolicy.reportFailure(error, entry.args, { diagnostic, outputIsTTY: entry.tty })
+    // Only when answer-policy.js itself could not load.
+    const object = errorObjectOf(error)
+    diagnostic(`${renderError(object, { cli: ZM.command, interactive: entry.tty })}\n`)
+    return exitCodeOfError(object)
+  },
 })

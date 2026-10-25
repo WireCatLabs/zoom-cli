@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **A bare `zm --version` answers before the program loads**: about 50 module files in place of 1,150 (cli-core's `cli/start`). `--version` with anything else on the line goes through the program as before.
+
 ## 0.47.0 — 25.10.2026
 
 ### Added
