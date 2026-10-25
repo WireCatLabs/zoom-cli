@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Added
+
+- `zm runs list [query]`, `zm runs show <run-id>` and `zm runs path <run-id>` read the run log, with no profile. A failed
+  command is kept as a run, `--record` keeps a successful one too, and `--no-record` keeps nothing; the new `record` and
+  `keep_runs_for_days` settings change the default and how long runs stay. Each Zoom request is logged with its method,
+  masked path, status and duration only, and an answer's `meta.run_id` is now the id `runs show` takes.
+
 ### Changed — may break callers
 
 - A Zoom change that asks first (`ask` permission) no longer asks when the output goes to a pipe or a file: it refuses with `confirmation_required` and says to add `--yes`, as it already did without a terminal. At a terminal it still asks.

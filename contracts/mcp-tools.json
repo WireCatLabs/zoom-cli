@@ -18,7 +18,7 @@
           "type": "object"
         },
         "command": {
-          "description": "a command zm_tools_search returned: \"config\"",
+          "description": "a command zm_tools_search returned: \"runs\"",
           "minLength": 1,
           "type": "string"
         }
@@ -492,7 +492,7 @@
           "type": "object"
         },
         "command": {
-          "description": "a command zm_tools_search returned: \"config\"",
+          "description": "a command zm_tools_search returned: \"runs\"",
           "minLength": 1,
           "type": "string"
         }

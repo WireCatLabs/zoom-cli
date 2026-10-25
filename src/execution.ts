@@ -35,12 +35,17 @@ export interface ExecutionState {
   meta: () => Meta
 }
 
-export const sharedExecution = (action: Command, environment: BaseEnvironment, now?: () => number): ExecutionState => {
+export const sharedExecution = (
+  action: Command,
+  environment: BaseEnvironment,
+  now?: () => number,
+  runId?: string,
+): ExecutionState => {
   const max = action.optsWithGlobals().maxOutputBytes
   return {
     action,
     signal: environment.signal as AbortSignal,
-    meta: readMetadata(now),
+    meta: readMetadata(now, runId),
     output: createOutputBuffer({ maxOutputBytes: max === undefined ? undefined : Number(max) }),
   }
 }

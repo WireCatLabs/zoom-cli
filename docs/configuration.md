@@ -15,13 +15,16 @@ Set a value with `zm config set <key> <value>` and see them all with `zm config 
 | `files.folder` | Transcript folder for file-source pull/watch; unset by default |
 | `context.sources` | JSON array of explicitly selected message, mail or document accounts for this profile; empty by default ([setup below](#select-communications-for-preparation)) |
 | `files.timezone` | the IANA zone of downloaded transcript filenames, for example `Europe/Madrid`; unset: this computer's zone |
+| `record` | `true` keeps every run in the [run log](#run-log), `false` keeps none, not even a failure; unset: only failed runs |
+| `keep_runs_for_days` | how many days a kept run stays before it is removed; 30 by default |
 
 Check `zm config show` after editing. The profile is not a setting: it is the first word of each
 command ([profiles](sessions.md#select-a-local-profile)). Changing the client ID selects a different keyring entry, so authorize that app before
 using its API. `ZOOM_CLIENT_ID` is not a runtime setting for the installed `zm` command; use
 `zm config set zoom.client_id` rather than an environment variable copied from a development probe.
 
-The file stores these settings as `client_id`, `files_folder`, `files_timezone` and `source`, and the
+The file stores these settings as `client_id`, `files_folder`, `files_timezone`, `source`, `record` and
+`keep_runs_for_days`, and the
 profiles on this computer under `profiles`. An `account_profile` left by 0.34 or earlier only says
 which profile takes over the login saved then.
 JSON files must use these snake_case keys. Legacy camelCase files are refused and are not rewritten.
@@ -71,6 +74,14 @@ Settings, skill installation, upgrade and archive timer changes over MCP require
 It is denied by default. Set it from a terminal through the profile's `permissions` map,
 preserving any existing restrictions, then restart the MCP server. An MCP agent cannot change
 profile permissions. See [MCP and skills](mcp.md#the-mcp-server).
+
+## Run log
+
+`zm` keeps a failed command as a run: the command's words, the profile, how it ended, and one event per Zoom request
+with its method, path (every id masked as `:id`), status and duration. It never keeps arguments, meeting content,
+names, emails or tokens. `--record` keeps a successful run too, `--no-record` keeps nothing for this command, and the
+`record` setting changes the default. `zm runs list`, `zm runs show <run-id>` and `zm runs path <run-id>` read the
+log without a profile; an answer's `meta.run_id` is the id `runs show` takes.
 
 ## Environment variables
 
