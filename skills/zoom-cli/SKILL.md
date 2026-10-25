@@ -1,6 +1,14 @@
 ---
 name: zoom-cli
 description: Archive Zoom cloud recordings, read stored meeting transcripts and summaries, or manage a Zoom meeting through zm. Use for Zoom CLI workflows, not joining calls or operating the desktop video client.
+metadata:
+  openclaw:
+    requires:
+      bins: [zm]
+    install:
+      - kind: node
+        package: "@wirecat/zoom-cli"
+        bins: [zm]
 ---
 
 # Zoom CLI

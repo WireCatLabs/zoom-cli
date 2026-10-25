@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- **The `zoom-cli` skill tells OpenClaw and ClawHub that it needs `zm`, and how to install it** (`metadata.openclaw`: `requires.bins` and the npm package `@wirecat/zoom-cli`). With `zm` missing from PATH, OpenClaw marks the skill not ready and offers to install the package. Claude Code and Codex ignore the block.
+
 ### Fixed
 
 - **A run with no profile no longer records `"profile": ""`.** A usage error before any command (`zm models`) and the Zoom token log now leave `profile` out of `runs list` and `runs show`, as cli-core's runs do.
