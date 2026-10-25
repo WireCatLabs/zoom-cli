@@ -595,7 +595,7 @@ zm events list [query] [options]
 | `--json` | one JSON value. |
 | `--jsonl` | one JSON object per item. |
 
-**Returns:** event — id, event_series_id, title, description, location, starts_at, ends_at, timezone, and 4 more; every field: zm commands info events list
+**Returns:** event — id, event_series_id, title, description, location, starts_at, ends_at, timezone, and 7 more; every field: zm commands info events list
 
 **Example:** `zm personal events list --json`
 

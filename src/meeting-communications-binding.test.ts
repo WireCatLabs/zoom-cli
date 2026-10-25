@@ -79,3 +79,32 @@ it("resolves only requested definitions and shares pinned identities between nar
   expect(() => captured.select(["work"]).select(["unavailable"])).toThrow(/unauthorized/)
   await expect(captured.select(["unavailable"]).resolve(lookup)).rejects.toMatchObject({ code: "configuration_error" })
 })
+
+it.each([
+  ["folder", "local"],
+  ["folder", "obsidian"],
+  ["local", "local"],
+  ["obsidian", "obsidian"],
+])("resolves a notes:<id> source configured as %s to the folder's stored %s provider", async (configured, stored) => {
+  const lookup = metadata()
+  vi.mocked(lookup.accountById).mockResolvedValue({ provider: stored, account: "invented-folder-key" })
+  vi.mocked(lookup.storedAccount).mockImplementation(async (key) => ({ ...key, id: 5 }))
+  const capture = captureContextSources(
+    [{ ...definition, kind: "document", provider: configured, account: "notes:5" }],
+    "ResearchExample",
+  )
+  expect(await capture.resolve(lookup)).toMatchObject([
+    { source: { kind: "document", accountId: 5, provider: stored, account: "invented-folder-key" } },
+  ])
+  expect(lookup.storedAccount).toHaveBeenCalledWith({ provider: stored, account: "invented-folder-key" })
+})
+
+it("refuses a notes:<id> source whose account is not a notes folder", async () => {
+  const lookup = metadata()
+  vi.mocked(lookup.accountById).mockResolvedValue({ provider: "google-drive", account: "invented-principal" })
+  const capture = captureContextSources(
+    [{ ...definition, kind: "document", provider: "local", account: "notes:5" }],
+    "ResearchExample",
+  )
+  await expect(capture.resolve(lookup)).rejects.toMatchObject({ code: "configuration_error" })
+})

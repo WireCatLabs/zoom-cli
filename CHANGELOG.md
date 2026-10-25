@@ -4,6 +4,8 @@
 
 ### Changed — may break callers
 
+- **The shared store moves to version 33 (cli-core 0.420.0).** Once this version opens the store, a CLI on an older cli-core refuses it and asks to be upgraded, so upgrade every WireCat CLI that shares the store together.
+- A document source in `context.sources` names its notes folder with provider `local` or `obsidian`, as the store says from version 32 on; one saved with provider `folder` still resolves. Before, a folder the store had renamed made preparation refuse the source.
 - `mentions list` takes the meeting window as the query field `started_at`, such as `started_at>=30d` or `started_at:[2026-10-01 TO 2026-10-31]`. Its `--since-time` and `--until-time` options are removed, with no alias; `review` and the stats commands keep them.
 
 ### Added
