@@ -18,7 +18,7 @@ Works with:
   tg                                    Telegram in the same local store: search, review and tasks offline
   max                                   MAX in the same local store: search, review and tasks offline
   wa                                    WhatsApp in the same local store: search, review and tasks offline
-  drive                                 Google Drive and Docs as local text, searchable with your messages
+  drive                                 Google Drive and Docs as local text, searchable with your other WireCat data
   memo context <person>                 one person across messengers, mail, notes and meetings
 
 Start here:   zm personal session start  (any profile name works)

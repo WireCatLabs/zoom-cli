@@ -8,6 +8,7 @@ import { isBody, itemAnswer } from "@wirecat/cli-core/cli"
 import { type McpCommand, registerCommands, runCommandForAgent, toolsFromCommands } from "@wirecat/cli-core/mcp"
 import type { Level } from "@wirecat/cli-core/sends"
 import { DEFAULT_PERMISSIONS, permissionKeyForPath } from "./permissions.js"
+import { ZM } from "./read-only.js"
 import { VERSION } from "./version.js"
 
 /** One run of the CLI for an agent: its exit code and what it printed, the answer on stdout or the error on stderr. */
@@ -114,7 +115,7 @@ export const createZoomMcpServer = (options: ZoomMcpOptions): McpServer => {
       },
     ]),
   )
-  registerCommands(server, "zm", commands)
+  registerCommands(server, "zm", commands, undefined, undefined, ZM.messenger)
   return server
 }
 

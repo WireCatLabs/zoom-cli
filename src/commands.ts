@@ -16,6 +16,7 @@ import {
   LOCAL_READ,
   NO_EFFECTS,
   overrideSharedContract,
+  profileFree,
   REMOTE_READ,
   runsCommand,
   sharedCommandTemplate,
@@ -113,6 +114,11 @@ export const PROFILE_FREE = new Set([
   "models",
   "runs",
 ])
+
+/** Help then shows these without a profile: `zm doctor`, not `zm personal doctor`. */
+export const markProfileFree = (program: Command): void => {
+  for (const command of program.commands) if (PROFILE_FREE.has(command.name())) profileFree(command)
+}
 
 /** cli-core's `runs`, read without a profile: one log per computer, whatever profile a run was for. */
 export const zoomRunsCommand = (): Command => {

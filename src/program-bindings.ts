@@ -15,7 +15,7 @@ import { declareZoomAnswers } from "./answer-entities.js"
 import { type AnswerFormat, bodyOf, renderBody, wholeList } from "./answer-output.js"
 import { addArchiveCommands } from "./archive-commands.js"
 import { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
-import { annotateMeetingCommands } from "./commands.js"
+import { annotateMeetingCommands, markProfileFree } from "./commands.js"
 import { filesZone, profileAccountKey, readConfig } from "./config.js"
 import { cancellableStore, checkCancelled, ZoneAssumptions } from "./errors.js"
 import { commandDeadline, duration, type ExecutionState, sharedExecution } from "./execution.js"
@@ -451,6 +451,7 @@ export const bindZoomProgram = (
   addProgressCommands(program, { profile, env: deps.env ?? process.env, now: deps.now, output })
   declareZoomAnswers(program)
   annotateMeetingCommands(program)
+  markProfileFree(program)
   installFirstScreen(program)
   program.hook("postAction", async () => {
     if (connecting) {

@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **A run says what was typed and, when it failed, what went wrong** (cli-core 0.425.0). `zm runs list` and `zm runs show` gain `cli_command` (`zm config show`), `argv` with every value that may be content or a secret written `[redacted]`, `agent` when a coding agent ran it, and `error`: its class, code, masked message and a short stack.
+
+### Changed — may break callers
+
+- **A `--dry-run` preview says `effects.service_contacted: false` and no longer has `effects.messenger_contacted`**, and its `permission.key` is zm's own key for the command, as help's availability already was: a preview of `watch` names `watch`, not `messages` (cli-core 0.426.0).
+
+### Fixed
+
+- **Help shows `config`, `doctor`, `models` and `runs` without a profile**, since they read none: `Usage: zm doctor [options]` and `zm doctor --json`, not `zm <profile> doctor` and `zm personal doctor --json`. A profile word before them still works.
+- The MCP read and write tools say "names, titles, what people wrote" in place of "names, titles, messages", and their example command is `runs list`, which runs as it is, in place of the group `runs`. `zm --help` says drive is "searchable with your other WireCat data".
+- MCP no longer offers a command group that only prints its help, such as `config` or `meetings`; their commands are still offered one by one.
+
 ## 0.45.0 — 25.10.2026
 
 ### Added
