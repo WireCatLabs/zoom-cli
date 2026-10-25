@@ -71,7 +71,7 @@ export const checkPreparationCommunications = async ({ load, path, now, key, con
   const configured = [
     { id: "messages", kind: "message", provider: "example-messenger", account: "ExampleWork" },
     { id: "mail", kind: "mail", provider: "email", account: "example-work" },
-    { id: "files", kind: "document", provider: "folder", account: `notes:${folderId}` },
+    { id: "files", kind: "document", provider: "local", account: `notes:${folderId}` },
   ].map((source) => ({ ...source, profile: "AliceExample" }))
   const capture = captureContextSources(configured, "AliceExample")
   let closes = 0

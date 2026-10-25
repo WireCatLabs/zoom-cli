@@ -57,7 +57,7 @@ export const communicationsFixture = async () => {
     const sources = [
       { id: "work-messages", kind: "message", provider: "example-messenger", account: "AliceExample" },
       { id: "work-mail", kind: "mail", provider: "email", account: "example-mail" },
-      { id: "project-files", kind: "document", provider: "folder", account: `notes:${folder.id}` },
+      { id: "project-files", kind: "document", provider: "local", account: `notes:${folder.id}` },
     ]
     setConfig(f.deps.configPath, "context.sources", JSON.stringify(sources), () => "AliceExample")
     return { ...f, sources, document }

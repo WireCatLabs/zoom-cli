@@ -5,6 +5,8 @@
 ### Changed — may break callers
 
 - `mentions list` takes the meeting window as the query field `started_at`, such as `started_at>=30d` or `started_at:[2026-10-01 TO 2026-10-31]`. Its `--since-time` and `--until-time` options are removed, with no alias; `review` and the stats commands keep them.
+- **zm runs on cli-core 0.420 and moves the shared store to version 33.** A CLI on an older cli-core refuses the upgraded store and says to upgrade it. `events list` gains `status`, `all_day` and `source_deleted_at`, and an event's `origin` may be `calendar`.
+- A document context source names a notes folder by its new provider, `local` or `obsidian`; `folder` in a saved `context.sources` still resolves.
 
 ### Added
 

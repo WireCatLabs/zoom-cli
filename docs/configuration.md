@@ -99,14 +99,15 @@ copy those identities from the producing tool's account settings or canonical re
 use a display name in place of an account identity.
 
 ```sh
-zm research config set context.sources '[{"id":"project-notes","kind":"document","provider":"folder","account":"notes:5"}]'
+zm research config set context.sources '[{"id":"project-notes","kind":"document","provider":"local","account":"notes:5"}]'
 zm config show
 ```
 
 This example uses an invented folder ID. Run `memo folders list` and substitute the ID of the
 folder you choose. `notes:5` resolves that existing folder's stored identity; it does not create
-or import a folder. A document source selects one folder, a message source one messaging account,
-and a mail source one mail account. These grants cover the selected account or folder; there is
+or import a folder. A folder's provider is `local` for a plain folder and `obsidian` for a vault;
+`folder`, from older configurations, still resolves. A document source selects one folder, a
+message source one messaging account, and a mail source one mail account. These grants cover the selected account or folder; there is
 currently no chat, sender or path restriction within it. Do not grant a whole account if that scope
 is broader than you intend.
 
