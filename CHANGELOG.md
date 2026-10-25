@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **A run with no profile no longer records `"profile": ""`.** A usage error before any command (`zm models`) and the Zoom token log now leave `profile` out of `runs list` and `runs show`, as cli-core's runs do.
+
 ## 0.48.0 — 25.10.2026
 
 ### Fixed

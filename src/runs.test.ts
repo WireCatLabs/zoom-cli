@@ -8,6 +8,7 @@ import { TEST_PROFILE, useProfile } from "../scripts/testing/profile.js"
 import { readConfig, setConfig } from "./config.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
 import { operationOf } from "./request-events.js"
+import { lazyRunLog } from "./run-log.js"
 import { TokenManager } from "./tokens.js"
 
 const setup = async () => {
@@ -60,10 +61,20 @@ const setup = async () => {
 it("keeps a failed command's run and lists it without a profile", async () => {
   const { deps, kept, listed } = await setup()
   expect(await run(["meetings", "list", "--json"], deps)).not.toBe(0)
-  expect(await kept()).toMatchObject([{ command: "meetings list", status: "failed" }])
+  const [failed] = await kept()
+  expect(failed).toMatchObject({ command: "meetings list", status: "failed" })
+  expect(failed).not.toHaveProperty("profile")
   const answer = await listed()
   expect(answer.items).toMatchObject([{ command: "meetings list", status: "failed" }])
   expect(await kept()).toHaveLength(1)
+})
+
+it("keeps a usage error before any command without a profile", async () => {
+  const { deps, kept } = await setup()
+  expect(await run(["models", "--json"], deps)).not.toBe(0)
+  const [failed] = await kept()
+  expect(failed).toMatchObject({ command: "models", status: "failed" })
+  expect(failed).not.toHaveProperty("profile")
 })
 
 it("keeps the failure of a config that will not load", async () => {
@@ -179,4 +190,16 @@ it("sets record and keep_runs_for_days in the config and keeps them across other
   expect(readConfig(deps.configPath)).toMatchObject({ record: true, keepRunsForDays: 14, source: "files" })
   expect(() => setConfig(deps.configPath, "keep_runs_for_days", "0")).toThrow(/whole number/)
   expect(() => setConfig(deps.configPath, "record", "yes")).toThrow(/true or false/)
+})
+
+it("opens the token run log without a profile", async () => {
+  const runsDir = await mkdtemp(join(tmpdir(), "zm-test-token-runs-"))
+  const tokenRun = lazyRunLog({ runsDir, command: "oauth token", version: "0.0.0", allow: [] })
+  tokenRun.log.info({ event: "token.refresh" })
+  await tokenRun.finish("success")
+  const [day] = await readdir(runsDir)
+  const [entry] = await readdir(join(runsDir, day ?? ""))
+  const recorded = JSON.parse(await readFile(join(runsDir, day ?? "", entry ?? "", "run.json"), "utf8"))
+  expect(recorded).toMatchObject({ command: "oauth token", status: "success" })
+  expect(recorded).not.toHaveProperty("profile")
 })
