@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Changed — may break callers
+
+- `mentions list` takes the meeting window as the query field `started_at`, such as `started_at>=30d` or `started_at:[2026-10-01 TO 2026-10-31]`. Its `--since-time` and `--until-time` options are removed, with no alias; `review` and the stats commands keep them.
+
+### Added
+
+- Meeting mentions accept a schema-derived URL query, selected inside the shared link reader before result limits.
+
 ## 0.43.0 — 24.10.2026
 
 ### Changed — may break callers
@@ -7,8 +17,6 @@
 - **Shared command contracts and model commands come from Core.** Provider source and transport differences are explicit and discoverable; silent edits fail before execution. Stored meeting topic labels use `--topic-name`; forum `--topic` retains its id meaning.
 
 ### Added
-
-- Meeting mentions accept a schema-derived URL query, selected inside the shared link reader before result limits.
 
 - **Meeting links accept native queries.** `mentions list event_id:1`, `project:RES` and `topic:planning` select the underlying meetings before links are read. Stored events accept native id, origin and time queries.
 

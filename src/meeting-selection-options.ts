@@ -1,6 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
-import { dateRange, defineQuery, type Predicate, queryError, queryFieldsOf } from "@wirecat/cli-base/query"
-import { dateWindow, LIST_QUERY_GUIDE, listQuery, nativeTerms, typedQuery } from "@wirecat/cli-core/cli"
+import { dateRange, defineQuery, type Predicate, queryFieldsOf } from "@wirecat/cli-base/query"
+import { dateWindow, listQuery, nativeTerms, typedQuery } from "@wirecat/cli-core/cli"
 import { meetingLink } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
 import { bytes } from "./execution.js"
@@ -107,15 +107,7 @@ export const linkSelection = (
   const command = "mentions list"
   const nodes = nativeTerms(listQuery(typedQuery(words), MEETING_LINK_QUERY, command), command)
   const terms = new Map<string, string>()
-  for (const [field, node] of nodes) {
-    if (field === "started_at") continue
-    if (node.operator !== "term" && node.operator !== "phrase")
-      queryError("query.unsupported-placement", node.span, `${field} takes one whole value here`, {
-        command,
-        guide: LIST_QUERY_GUIDE,
-      })
-    terms.set(field, node.value)
-  }
+  for (const [field, node] of nodes) if (field !== "started_at") terms.set(field, node.value)
   const event = terms.get("event_id")
   if (event !== undefined && (!/^[1-9]\d*$/.test(event) || !Number.isSafeInteger(Number(event))))
     throw new CliError("validation_error", "event_id must be a positive safe integer")

@@ -45,7 +45,7 @@ it("no longer takes --since-time", async () => {
   await expect(f.program.parseAsync(["mentions", "list", "--since-time", "30d"], { from: "user" })).rejects.toThrow()
   expect(f.links).not.toHaveBeenCalled()
 })
-it.each(["count>1", "domain:example.com", "url:a OR url:b", "started_at>=1d AND started_at<=0d"])(
+it.each(["count>1", "domain:example.com", "url:a OR url:b", "started_at>=1d AND started_at<=0d", "event_id:0"])(
   "refuses unsupported %s before obtaining a reader",
   async (query) => {
     const f = setup()
