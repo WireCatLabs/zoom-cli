@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `zm store info --json` describes the shared store: where it is, its schema against the one zm reads (`schema.reason`, and `schema.upgrade` — what zm's next run moves it to), and which tools used it. It opens the store read-only and needs no profile, so WireCat Desktop can tell whether zm can read the store.
+
 ## 0.46.0 — 25.10.2026
 
 ### Added
