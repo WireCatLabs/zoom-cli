@@ -22,15 +22,16 @@ const HOUSEKEEPING_ANSWERS = new Set([
   "complete",
   "config set",
   "config show",
+  "config unset",
   "doctor",
   "guide",
   "help",
   "mcp",
-  "serve",
   "session start",
   "session status",
   "skill install",
   "skill show",
+  "skill status",
   "upgrade",
 ])
 
@@ -139,7 +140,8 @@ it("answers every command that declares an entity with that entity's schema", as
   const declared = [...commands.keys()].filter((path) => metaOf(commands.get(path) as Command).output)
   expect(declared.sort()).toEqual(
     [...runs.map(([path]) => path), "meetings projects evidence", "meetings projects scan", "meetings prepare"]
-      // checked where their own fixtures are: offline-archive-cli, meeting-project-evidence and the preparation tests
+      // checked where their own fixtures are: offline-archive-cli, meeting-project-evidence, run-recording and the
+      // preparation tests
       .concat(
         [
           "meetings scheduled",
@@ -149,6 +151,9 @@ it("answers every command that declares an entity with that entity's schema", as
           "meetings status",
           "recordings status",
           "batch",
+          "runs list",
+          "runs show",
+          "runs path",
         ],
         Object.keys(ZOOM_ANSWER_ENTITIES),
       )

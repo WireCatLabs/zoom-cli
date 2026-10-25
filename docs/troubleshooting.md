@@ -69,9 +69,10 @@ remote verification and meeting changes have [separate permissions](zoom-app.md#
 
 ## Configuration
 
-Use `zm config show` to confirm the public client, source and profile. A malformed configuration
-still allows `--help` and `--version`; `zm config show` reports its file and first bad key, and
-`zm doctor` reports it under `config.error`. Changing the profile
+Use `zm config show` to confirm the public client, source and profile. A configuration with problems
+still allows `--help`, `--version`, `zm config` and `zm doctor`; other commands stop on the first problem and say how
+to remove it. `zm doctor --json` lists every problem under `config.issues`, each with its `fix` when a command can
+remove it, and `zm config show` prints them after the settings that still load. Changing the profile
 label does not change the logged-in Zoom user. If the terminal and MCP app see different data,
 check their `ZM_CONFIG_DIR` and `MESSAGING_STORE` values.
 

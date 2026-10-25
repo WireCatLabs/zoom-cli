@@ -192,7 +192,7 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
   })
 
   it("persists only public config and prints JSON without diagnostics", () => {
-    const saved = invoke("--json", "config", "set", "zoom.clientId", "invented-public-client")
+    const saved = invoke("--json", "config", "set", "zoom.client_id", "invented-public-client")
     expect(saved.status).toBe(0)
     expect(saved.stderr).toBe("")
     expect(readAnswer(saved.stdout).client_id).toBe("invented-public-client")
@@ -200,7 +200,7 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
     expect(readAnswer(read.stdout)).toEqual(readAnswer(saved.stdout))
     expect(read.stderr).toBe("")
     const disk = JSON.parse(readFileSync(join(config, "config.json"), "utf8"))
-    expect(Object.keys(disk).sort()).toEqual(["client_id", "files_folder", "files_timezone", "profiles", "source"])
+    expect(Object.keys(disk)).toEqual(["client_id"])
   })
 
   it("discovers the installed MCP tools for a named profile without config or database and exits on EOF", async () => {
@@ -239,20 +239,13 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
     }
   }, 15000)
 
-  it("refuses the old profile setting and rejects an invalid profile word", () => {
-    const setting = invoke("--json", "config", "set", "account.profile", "personal")
-    expect(setting.status).toBe(2)
-    expect(setting.stdout).toBe("")
-    expect(JSON.parse(setting.stderr).error).toMatchObject({
-      code: "validation_error",
-      message: expect.stringContaining("zm personal"),
-    })
+  it("rejects an invalid profile word", () => {
     const invalid = invoke("bad profile", "meetings", "list")
     expect(invalid.status).toBe(2)
     expect(invalid.stdout).toBe("")
     expect(JSON.parse(invalid.stderr).error.code).toBe("validation_error")
     const saved = invoke("--json", "config", "show")
-    expect(readAnswer(saved.stdout)).toMatchObject({ legacy_profile: null, profiles: [] })
+    expect(readAnswer(saved.stdout)).toMatchObject({ profiles: [] })
   })
 
   it("refuses noninteractive login before external access", () => {
@@ -432,8 +425,11 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
       expect(result.stderr).toBe("")
     }
     const show = invoke("config", "show")
-    expect(show.status).toBe(3)
-    expect(show.stdout).toBe("")
-    expect(JSON.parse(show.stderr).error.code).toBe("configuration_error")
+    expect(show.status).toBe(0)
+    expect(show.stderr).toContain("the file is not valid JSON at line 1, column 2, so it is left out")
+    const list = invoke("personal", "meetings", "list")
+    expect(list.status).toBe(3)
+    expect(list.stdout).toBe("")
+    expect(JSON.parse(list.stderr).error.code).toBe("configuration_error")
   })
 })

@@ -143,7 +143,7 @@ More: [compared with other tools](https://github.com/WireCatLabs/zoom-cli/blob/m
 
 | Task | Commands |
 |---|---|
-| Set up and log in | `config show`, `config set <key> <value>`, `session start [--browser <program>]`, `session status [--check]`, `doctor` |
+| Set up and log in | `config show`, `config set <key> <value>`, `config unset <key>`, `session start [--browser <program>]`, `session status [--check]`, `doctor` |
 | Bring meetings in | `meetings sync [--since-time <time>] [--lookback-days <days>]`, `meetings import <folder>`, `watch [api\|files] [folder] --jsonl` |
 | Read stored meetings | `meetings list`, `meetings show <meeting>`, `meetings transcript <meeting>`, `meetings summary <meeting>`, `meetings export <meeting> --format markdown\|vtt`, `events list` |
 | Search | `search meetings <query>`, `meetings people <query>`, `search all <query>` |
@@ -154,6 +154,7 @@ More: [compared with other tools](https://github.com/WireCatLabs/zoom-cli/blob/m
 | Cloud recordings | `recordings list`, `recordings show <meeting>`, `recordings download <meeting> --output-dir <dir>`, `recordings download --since-time <date> --until-time <date> --output-dir <dir> --jsonl`, `recordings schedule create\|list\|show\|run\|disable` |
 | Local archive | `recordings archive show\|check\|locks\|recover <directory>`, `recordings archive transcript\|import <directory>`, `search recordings <directory> <query>` |
 | Zoom meetings | `remote-meetings list\|show\|invitation`, `remote-meetings create\|update\|cancel` |
+| What zm did | `runs list [query]`, `runs show <run-id> [--problems]`, `runs path <run-id>`; `--record` keeps a successful run too |
 | Agents | `mcp`, `skill show`, `skill install [--for claude\|agents\|all]`, `commands --json`, `complete -- <words...>` |
 
 Zoom meeting changes, links, transcription, schedules, explicit `meetings embeddings` generation and
@@ -284,7 +285,7 @@ More: [MCP and skills][docs/mcp.md] · [MCP and skills on wirecat.dev][wirecat/e
 ## Manage Zoom meetings
 
 ```sh
-zm personal remote-meetings create --title "Example planning" --start-time 2026-10-20T10:00:00Z --duration-minutes 30 --json
+zm personal remote-meetings create --title "Example planning" --start-time 2026-10-20T10:00:00Z --duration-minutes 30 --dry-run --json
 zm personal remote-meetings cancel 123456789 --dry-run --json
 ```
 

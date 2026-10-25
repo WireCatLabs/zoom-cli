@@ -125,7 +125,7 @@ export const preparationFixture = async (
     fetch: network,
     now: () => now,
   })
-  tokens.forProfile("AliceExample", null).save({
+  tokens.forProfile("AliceExample").save({
     accessToken: "invented-access",
     refreshToken: "invented-refresh",
     expiresAt: now + 3600000,
@@ -159,7 +159,7 @@ export const preparationFixture = async (
     diagnostic: (text) => errors.push(text),
   }
   useProfile(deps.configPath, "AliceExample")
-  setConfig(deps.configPath, "zoom.clientId", "invented-client")
+  setConfig(deps.configPath, "zoom.client_id", "invented-client")
   return {
     path,
     key,

@@ -29,8 +29,3 @@ an item here names it when zm only adopts it.
 - **ZM-11** · P2 · Agent end-to-end check of the meeting workflow on invented data (aliases → cited calls →
   passages → Memo findings → prepare), with the result in cli-testing.
   [plan](https://github.com/WireCatLabs/cli-private/blob/main/plans/2026-10-14-zoom-next-tasks.md)
-- **ZM-29** · P2 · Switch `src/bin/main.ts` to cli-core's `startCli` ([cli-core
-  #1924](https://github.com/WireCatLabs/cli-core/pull/1924)): signals, the closed pipe (`entry.outputClosed()` for
-  `diagnostic`), `atStart`, `confirm` (`entry.ask`) and `openBrowser` come from it. `readBatchInput`, the keyring
-  `TokenManager`, the token run log and `readPaste` stay here, built inside `run` with `entry.signal`. Start:
-  `src/bin/main.ts`.

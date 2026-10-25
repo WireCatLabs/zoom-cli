@@ -305,9 +305,8 @@ later day does not shift your selection. Changed vocabulary or selection can inv
 The optional selection query accepts exact `meeting_id`, `identity_id`, `person_id`, `tag_id`,
 `event_id` and `series_id` values, each once and joined by AND, plus `started_at` dates/ranges.
 Date ranges include whole UTC calendar days; quoted ISO timestamps give exact bounds. OR,
-negation and confirmed project-membership filters are refused. The MCP tool
-`meeting_project_evidence` takes `project`, optional `query`, `limit`, `cursor` and
-`max_read_bytes`; its account is fixed by the server.
+negation and confirmed project-membership filters are refused. Over MCP, `zm_read` runs it as
+`{ "command": "meetings projects evidence", "arguments": { … } }` with the same arguments; the server fixes the profile.
 
 For every relevant retained cue, open `zm personal meetings passage <ref> --format markdown` and check the
 surrounding words. `association: "unconfirmed-word-evidence"` means candidate evidence: a key

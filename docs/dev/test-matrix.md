@@ -7,12 +7,19 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**323 ✅ · 1 ⛔ · 0 ❌** — 74 commands, 250 options.
+**331 ✅ · 1 ⛔ · 0 ❌** — 78 commands, 254 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
+| `runs list` |  | ✅ |  |
+| `runs list` | `--limit` | ✅ |  |
+| `runs list` | `--page` | ✅ |  |
+| `runs show` |  | ✅ |  |
+| `runs show` | `--problems` | ✅ |  |
+| `runs path` |  | ✅ |  |
 | `config show` |  | ✅ |  |
 | `config set` |  | ✅ |  |
+| `config unset` |  | ✅ |  |
 | `meetings list` |  | ✅ |  |
 | `meetings list` | `--json` | ✅ |  |
 | `meetings list` | `--jsonl` | ✅ |  |
@@ -231,10 +238,11 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `remote-meetings cancel` | `--yes` | ✅ |  |
 | `remote-meetings cancel` | `--dry-run` | ✅ |  |
 | `skill show` |  | ✅ |  |
+| `skill show` | `--for` | ✅ |  |
 | `skill install` |  | ✅ |  |
 | `skill install` | `--for` | ✅ |  |
+| `skill status` |  | ✅ |  |
 | `mcp` |  | ✅ |  |
-| `serve` |  | ✅ |  |
 | `search all` |  | ✅ |  |
 | `search all` | `--only` | ✅ |  |
 | `search all` | `--limit` | ✅ |  |

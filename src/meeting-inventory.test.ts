@@ -28,7 +28,7 @@ const fixture = () => {
     fetch: fetcher,
     now: () => now,
   })
-  const alice = tokens.forProfile("AliceExample", null)
+  const alice = tokens.forProfile("AliceExample")
   alice.save({
     accessToken: "invented-access",
     refreshToken: "invented-refresh",

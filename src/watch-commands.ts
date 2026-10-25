@@ -76,7 +76,7 @@ export const addWatchCommand = (program: Command, deps: WatchCommandDeps): void 
     effects: FETCH,
     examples: [
       "zm personal watch files ./downloads --pause 10s --jsonl",
-      "zm personal watch api --lookback-days 2 --jsonl",
+      "zm personal watch api --lookback-days 2 --dry-run --jsonl",
     ],
     lifetime: "persistent",
   })

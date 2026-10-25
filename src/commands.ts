@@ -16,7 +16,9 @@ import {
   LOCAL_READ,
   NO_EFFECTS,
   overrideSharedContract,
+  profileFree,
   REMOTE_READ,
+  runsCommand,
   sharedCommandTemplate,
 } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
@@ -68,7 +70,7 @@ const addStandardCommandsDefinition = (program: Command, deps: StandardCommandsD
       ),
     {
       effects: REMOTE_READ,
-      examples: ["zm personal session status --json", "zm personal session status --check --json"],
+      examples: ["zm personal session status --json", "zm personal session status --check --dry-run --json"],
     },
   )
 }
@@ -110,7 +112,26 @@ export const PROFILE_FREE = new Set([
   "skill",
   "upgrade",
   "models",
+  "runs",
 ])
+
+/** Help then shows these without a profile: `zm doctor`, not `zm personal doctor`. */
+export const markProfileFree = (program: Command): void => {
+  for (const command of program.commands) if (PROFILE_FREE.has(command.name())) profileFree(command)
+}
+
+/** cli-core's `runs`, read without a profile: one log per computer, whatever profile a run was for. */
+export const zoomRunsCommand = (): Command => {
+  const runs = runsCommand(ZM)
+  overrideSharedContract(
+    runs,
+    "Zoom declares effects on every command group, the shared run log's included.",
+    (group) => {
+      annotate(group, { effects: NO_EFFECTS })
+    },
+  )
+  return runs
+}
 const exampleFor = (path: string): string => {
   const profile = PROFILE_FREE.has(path.split(" ")[0] ?? "") ? "" : "personal "
   if (path === "mcp") return "zm personal mcp"
@@ -118,6 +139,7 @@ const exampleFor = (path: string): string => {
   const argumentsByPath: Record<string, string> = {
     "commands info": "meetings list",
     "config set": "files.timezone Europe/Madrid",
+    "meetings sync": "--dry-run",
     "meetings show": "1",
     "meetings transcript": "1",
     "meetings summary": "1",
