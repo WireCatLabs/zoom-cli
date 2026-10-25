@@ -1,8 +1,8 @@
 {
   "source": "https://github.com/WireCatLabs/community",
-  "revision": "b22b7ede5931a4058fc763e0a7d6bfe0fbdb87c8",
+  "revision": "0a64514e0d6d8dd7327448e748be0191ec441680",
   "files": {
-    "biome.base.json": "63760337a2e68522ad75e0ba163635785a01ec34dbd3cf338a09a4145932cf2a",
+    "biome.base.json": "f65d5754b03a4b7a3de08706e80b7b7a3f44df3218d7a573271195c2a3b3bfa0",
     "cspell.json": "8241122ed4d461976a838099b265ef8f2689a066608257b6fdc250d9b49b58aa",
     "lefthook.yml": "2f65a2e3103006d43f6d6f0a07ab333c132286157763222a59a5a22676acd391",
     "markdownlint.json": "5ed7d6980054c539f3f3c0e47a090f1a725b15be2c486a769a836bc6cd48ad2d",
@@ -10,28 +10,22 @@
     "no-exec-interpolation.grit": "b9461f887afd0f7d555814bc45c5cd47537808edc10a17b06049f3ca0fff5957",
     "no-new-function.grit": "f6423e186cca90b1ab87d40185c6d920e99d83366af6dc11455963a0797fb627",
     "no-shell-true.grit": "d3943cfa1d7ebbf7be0fa22c2aaf2b7d7aa9ff462f2eb14a7798632764e3875c",
+    "no-sqlite-driver.grit": "19e1f510a88ddd9df44d6db43c1c9b603c3e5bbec03a3f65305b72eac7f09389",
     "no-unbounded-spread.grit": "f4178e5b74212fef58fec8916b6783d9f4f192ac618aa4ced041c4167bfbf81b",
     "release-lock-info.mjs": "4abab1f01ceee7d4c709222e923c9a6fc634bcf7b8b64d745a9ac495993310e0",
     "release-lock.sh": "bef364092c4ab595f3b9b4130e23570c8306223228cdfa3e9384230f3b7f4a49",
     "rumdl.toml": "048b929176f13234324f5825d1e811397f1491b9cb6684a1953e268e2c2ed863",
-    "check.mjs": "34b266411eaab7707030915f645308e86784b1574b21fa44ca974861a90c9ce1",
-    "no-sqlite-driver.grit": "19e1f510a88ddd9df44d6db43c1c9b603c3e5bbec03a3f65305b72eac7f09389"
+    "check.mjs": "34b266411eaab7707030915f645308e86784b1574b21fa44ca974861a90c9ce1"
   },
   "packageManager": "pnpm@11.28.8",
   "node": ">=22",
   "devDependencies": {
-    "@biomejs/biome": "2.6.2",
+    "@biomejs/biome": "2.6.3",
     "@cspell/dict-en-gb": "5.0.38",
     "@cspell/dict-es-es": "3.0.9",
     "@cspell/dict-ru_ru": "2.3.4",
     "cspell": "10.4.0",
     "lefthook": "2.2.2",
     "markdownlint-cli2": "0.24.0"
-  },
-  "fileRevisions": {
-    "release-lock.sh": "49e630a99d758e3e113749bef2049b258c7262e3",
-    "release-lock-info.mjs": "49e630a99d758e3e113749bef2049b258c7262e3",
-    "biome.base.json": "06c612c609d870f0ba00010612e0413f65340408",
-    "no-sqlite-driver.grit": "06c612c609d870f0ba00010612e0413f65340408"
   }
 }
