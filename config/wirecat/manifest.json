@@ -2,7 +2,7 @@
   "source": "https://github.com/WireCatLabs/community",
   "revision": "b22b7ede5931a4058fc763e0a7d6bfe0fbdb87c8",
   "files": {
-    "biome.base.json": "5d265b71896cdb0454260fa8d897bd517f61de512f16831e5d5273f29775f9f3",
+    "biome.base.json": "63760337a2e68522ad75e0ba163635785a01ec34dbd3cf338a09a4145932cf2a",
     "cspell.json": "8241122ed4d461976a838099b265ef8f2689a066608257b6fdc250d9b49b58aa",
     "lefthook.yml": "2f65a2e3103006d43f6d6f0a07ab333c132286157763222a59a5a22676acd391",
     "markdownlint.json": "5ed7d6980054c539f3f3c0e47a090f1a725b15be2c486a769a836bc6cd48ad2d",
@@ -14,7 +14,8 @@
     "release-lock-info.mjs": "4abab1f01ceee7d4c709222e923c9a6fc634bcf7b8b64d745a9ac495993310e0",
     "release-lock.sh": "bef364092c4ab595f3b9b4130e23570c8306223228cdfa3e9384230f3b7f4a49",
     "rumdl.toml": "048b929176f13234324f5825d1e811397f1491b9cb6684a1953e268e2c2ed863",
-    "check.mjs": "34b266411eaab7707030915f645308e86784b1574b21fa44ca974861a90c9ce1"
+    "check.mjs": "34b266411eaab7707030915f645308e86784b1574b21fa44ca974861a90c9ce1",
+    "no-sqlite-driver.grit": "19e1f510a88ddd9df44d6db43c1c9b603c3e5bbec03a3f65305b72eac7f09389"
   },
   "packageManager": "pnpm@11.20.0",
   "node": ">=22",
@@ -29,6 +30,8 @@
   },
   "fileRevisions": {
     "release-lock.sh": "49e630a99d758e3e113749bef2049b258c7262e3",
-    "release-lock-info.mjs": "49e630a99d758e3e113749bef2049b258c7262e3"
+    "release-lock-info.mjs": "49e630a99d758e3e113749bef2049b258c7262e3",
+    "biome.base.json": "06c612c609d870f0ba00010612e0413f65340408",
+    "no-sqlite-driver.grit": "06c612c609d870f0ba00010612e0413f65340408"
   }
 }

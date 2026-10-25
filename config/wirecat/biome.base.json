@@ -121,6 +121,23 @@
       ]
     },
     {
+      "path": "./config/wirecat/no-sqlite-driver.grit",
+      "includes": [
+        "**",
+        "!**/*.test.*",
+        "!**/*.spec.*",
+        "!**/test/**",
+        "!**/tests/**",
+        "!**/__tests__/**",
+        "!**/fixtures/**",
+        "!**/testing/**",
+        "!**/scripts/**",
+        "!**/bench/**",
+        "!**/performance/**",
+        "!**/contracts/**"
+      ]
+    },
+    {
       "path": "./config/wirecat/no-unbounded-spread.grit",
       "includes": [
         "**",
