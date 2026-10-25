@@ -255,7 +255,7 @@ It takes the same filters as `stats meetings`.
 ## Find links shared in meeting chat
 
 ```sh
-zm personal mentions list --since-time 30d --json
+zm personal mentions list started_at>=30d --json
 ```
 
 `meetings sync` stores the chat Zoom saves with a cloud recording, when the login has

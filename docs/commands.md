@@ -1454,15 +1454,13 @@ zm mentions list [query] [options]
 
 | Option | What it does |
 |---|---|
-| `--since-time <time>` | meetings starting at or after this date or time (ISO 8601, or 30d ago). |
-| `--until-time <time>` | meetings starting at or before this date or time; a date alone is that whole day. |
 | `--timezone <zone>` | the IANA zone dates and weeks are read in (default: this computer's). |
 | `--limit <n>` | how many links (default 100). |
 | `--max-messages <n>` | most chat messages to read (default and at most 100000). |
 
 **Returns:** meeting link — url, domain, document_id, count, first_at, last_at, senders, meetings; every field: zm commands info mentions list
 
-**Example:** `zm personal mentions list --since-time 30d --json`, `zm personal mentions list project:RES --json`
+**Example:** `zm personal mentions list started_at>=30d --json`, `zm personal mentions list project:RES --json`
 
 ## `zm searches`
 

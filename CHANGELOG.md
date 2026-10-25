@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Changed — may break callers
+
+- `mentions list` takes the meeting window as the query field `started_at`, such as `started_at>=30d` or `started_at:[2026-10-01 TO 2026-10-31]`. Its `--since-time` and `--until-time` options are removed, with no alias; `review` and the stats commands keep them.
+
+### Added
+
+- Meeting mentions accept a schema-derived URL query, selected inside the shared link reader before result limits.
+
 ## 0.43.0 — 24.10.2026
 
 ### Changed — may break callers
