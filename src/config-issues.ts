@@ -101,10 +101,6 @@ const onePass = (raw: unknown, schema: v.GenericSchema, file: string): LocatedIs
     if (isPermissionKey(issue, at)) return locate("unknown_permission", at, file, (key) => `${key} names no command`)
     if (issue.expected === "never")
       return locate("unknown_setting", at, file, (key) => `setting ${key} is not a setting of zm`)
-    if (at.length === 0) {
-      const { fix: _, ...whole } = locate("invalid_value", at, file, () => "the file has to be an object, in braces")
-      return whole
-    }
     return locate("invalid_value", at, file, (key) => `setting ${key} ${ruleOf(issue)}`)
   })
 }
@@ -118,7 +114,6 @@ export const schemaIssues = (raw: unknown, schema: v.GenericSchema, file: string
     )
     if (fresh.length === 0) return [...found.values()]
     for (const issue of fresh) found.set(issue.at.join("\u0000"), issue)
-    if (fresh.some((issue) => issue.at.length === 0)) return [...found.values()]
   }
 }
 
@@ -143,7 +138,6 @@ export const permissionIssues = (raw: unknown, known: ReadonlySet<string>, file:
 
 /** The file without the parts the issues name: what still loads, and what `config unset` would leave. */
 export const withoutIssues = (raw: unknown, issues: readonly LocatedIssue[]): unknown => {
-  if (issues.some((issue) => issue.at.length === 0)) return {}
   const copy = structuredClone(raw)
   for (const { at } of issues) removeAt(copy, at)
   return copy

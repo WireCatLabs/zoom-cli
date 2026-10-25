@@ -1,8 +1,9 @@
-import { mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, expect, it } from "vitest"
-import { filesZone, readConfig, setConfig, unsetConfig } from "./config.js"
+import { filesZone, inspectConfig, readConfig, setConfig, unsetConfig } from "./config.js"
+import { publicIssue } from "./config-issues.js"
 
 const configPath = () => join(mkdtempSync(join(tmpdir(), "zm-config-")), "config.json")
 const saved = (path: string) => JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>
@@ -87,5 +88,56 @@ describe("config names", () => {
     expect(() => readConfig(path)).toThrow(`${path}: the file is not valid JSON at line 1, column 3`)
     expect(() => setConfig(path, "source", "api")).toThrow("not valid JSON")
     expect(readFileSync(path, "utf8")).toBe("{ example")
+  })
+
+  it("says what each value has to be, and gives a fix only where a shell keeps it whole", () => {
+    const path = configPath()
+    writeFileSync(
+      path,
+      JSON.stringify({
+        source: "browser",
+        files_folder: 5,
+        keep_runs_for_days: 0,
+        context_sources: "example",
+        profiles: { "bad name": {}, broken: 5, work: { permissions: { "Bad Key": "deny" } } },
+      }),
+    )
+    expect(inspectConfig(path).issues.map(publicIssue)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: "source", what: 'setting source has to be one of ("api" | "files")' }),
+        expect.objectContaining({ key: "files.folder", what: "setting files.folder has to be of type string" }),
+        expect.objectContaining({ key: "keep_runs_for_days", what: "setting keep_runs_for_days has to be >=1" }),
+        expect.objectContaining({ key: "context.sources", fix: "zm config unset context.sources" }),
+        { kind: "invalid_value", file: path, key: "profiles.bad name", what: expect.stringContaining("profile name") },
+        expect.objectContaining({ key: "profiles.broken", fix: "zm config unset profiles.broken" }),
+        expect.objectContaining({ kind: "unknown_permission", profile: "work", key: "permissions.Bad Key" }),
+      ]),
+    )
+    expect(() => setConfig(path, "context.sources", "[]", () => "work")).toThrow("setting context.sources")
+    expect(() => setConfig(path, "permissions", "{}")).toThrow("name a profile")
+    expect(() => unsetConfig(path, "permissions.meetings", undefined)).toThrow("name a profile")
+  })
+
+  it("refuses a file that is not an object, by the whole file, with no fix", () => {
+    const path = configPath()
+    writeFileSync(path, "[]")
+    expect(inspectConfig(path).issues.map(publicIssue)).toEqual([
+      { kind: "invalid_value", file: path, what: "the file has to be an object, in braces" },
+    ])
+    expect(() => unsetConfig(path, "source", undefined)).toThrow("the file has to be an object")
+  })
+
+  it("unsets one profile's context sources and leaves the others", () => {
+    const path = configPath()
+    const source = { id: "work-messages", kind: "message", provider: "example-messenger", account: "AliceExample" }
+    setConfig(path, "context.sources", JSON.stringify([source]), () => "work")
+    setConfig(path, "context.sources", JSON.stringify([source]), () => "home")
+    expect(unsetConfig(path, "context.sources", "work").contextSources).toEqual([{ ...source, profile: "home" }])
+  })
+
+  it("names a config path it cannot read", () => {
+    const path = configPath()
+    mkdirSync(path)
+    expect(() => readConfig(path)).toThrow(`${path} could not be read`)
   })
 })

@@ -116,6 +116,15 @@ export const inspectConfig = (path: string, permissionKeys?: ReadonlySet<string>
   }
   const read = parseConfigText(text, path)
   if ("issue" in read) return { found: true, issues: [read.issue], raw: null, config: configOf({}) }
+  if (!isNode(read.raw)) {
+    const issue: LocatedIssue = {
+      kind: "invalid_value",
+      file: path,
+      what: "the file has to be an object, in braces",
+      at: [],
+    }
+    return { found: true, issues: [issue], raw: null, config: configOf({}) }
+  }
   const found = schemaIssues(read.raw, ConfigFile, path)
   const known = new Set(found.map((issue) => issue.at.join(".")))
   const issues = [
@@ -127,7 +136,7 @@ export const inspectConfig = (path: string, permissionKeys?: ReadonlySet<string>
   return {
     found: true,
     issues,
-    raw: isNode(read.raw) ? read.raw : null,
+    raw: read.raw,
     config: configOf(v.parse(ConfigFile, withoutIssues(read.raw, issues))),
   }
 }
