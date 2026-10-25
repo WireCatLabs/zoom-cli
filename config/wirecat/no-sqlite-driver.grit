@@ -1,0 +1,15 @@
+language js
+
+or {
+  `import $_ from $source`,
+  `import $source`,
+  `export { $_ } from $source`,
+  `export * from $source`,
+  `export * as $_ from $source`,
+  `export type { $_ } from $source`,
+  `import($source)`,
+  `require($source)`
+} where {
+  $source <: r"^[\"'`](?:node:sqlite|bun:sqlite|better-sqlite3|drizzle-orm)(?:/.*)?[\"'`]$",
+  register_diagnostic(span=$source, message="The shared store belongs to cli-core (WC-STORE-5): a CLI opens no SQLite driver and writes no SQL against it. Ask cli-core for a store method.", severity="error")
+}
