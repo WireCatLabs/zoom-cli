@@ -127,6 +127,7 @@ with `zm personal session status --json`.
 | `meeting:write:meeting` | Create a remote meeting |
 | `meeting:update:meeting` | Update a remote meeting |
 | `meeting:delete:meeting` | Cancel a remote meeting |
+| `agentic_search:read:search` | Search chat, docs and meetings live with `zm personal zoom search` |
 
 Archiving does not require meeting write permissions. Changes preview by default; `--yes` applies
 one request. See [recording archives](archive.md#archive-cloud-recordings) or

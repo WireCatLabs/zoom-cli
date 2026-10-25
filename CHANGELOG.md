@@ -9,6 +9,7 @@
 ### Added
 
 - Meeting mentions accept a schema-derived URL query, selected inside the shared link reader before result limits.
+- `zoom search` searches your Zoom workspace live through Zoom's own search: chat messages, chats, Canvas docs, meetings and the rest of what your account holds, chosen with `--only`. It needs the `agentic_search:read:search` scope; Zoom's `ask` answers are not offered.
 
 ## 0.43.0 — 24.10.2026
 

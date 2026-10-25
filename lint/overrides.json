@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "rule": "unknown-resource",
+    "target": "zoom",
+    "reason": "zoom search reads Zoom's own live search across several resource kinds; no one vocabulary resource names that mix, and the shared search group is local-only.",
+    "owner": "@leemour",
+    "review_after": "2027-01-25"
+  }
+]

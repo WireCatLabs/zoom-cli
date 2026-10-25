@@ -1222,6 +1222,32 @@ zm remote-meetings cancel <meeting> [options]
 
 **Example:** `zm personal remote-meetings cancel 123456789 --dry-run --json`
 
+## `zm zoom`
+
+Zoom's own live search: chat, docs and meetings zm does not archive
+
+### `zm zoom search`
+
+search your Zoom workspace live; without words, list recent records
+
+```sh
+zm zoom search [query] [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `query` | optional | words Zoom matches in the content; it does not widen word forms. |
+
+| Option | What it does |
+|---|---|
+| `--only <resources>` | comma list of meetings, calendar, chat, channels, docs, notes, calls, sms, voicemail (default Zoom's own choice). |
+| `--limit <n>` | Zoom results per resource, 1 through 100 (default 10); one chat result holds its matching messages. |
+| `--cursor <cursor>` | continue from the previous page's page.next_cursor, with the same query and --only. |
+
+**Returns:** zoom search hit — source, id, title, time, text, url, people, container_id, and 1 more; every field: zm commands info zoom search
+
+**Example:** `zm personal zoom search "budget" --only chat,docs --json`, `zm personal zoom search --only meetings --limit 50`
+
 ## `zm skill`
 
 the instructions an agent is given for this tool

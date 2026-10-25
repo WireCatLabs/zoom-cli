@@ -14,6 +14,7 @@ import type { RecordingScheduleService } from "./recording-schedule.js"
 import { runCommand, zoomDefinition } from "./run.js"
 import type { StoreConnection, StoreConnectRequest } from "./store-connection.js"
 import type { TokenManager } from "./tokens.js"
+import type { ZoomSearchService } from "./zoom-search-commands.js"
 
 export interface ProgramDeps {
   agent?: BaseEnvironment["agent"]
@@ -28,6 +29,7 @@ export interface ProgramDeps {
   recordingSchedule?: RecordingScheduleService
   recordingScheduleTarget?: { runtime: string; cliPath: string }
   remoteMeetings?: RemoteMeetingsService
+  zoomSearch?: ZoomSearchService
   archive?: ArchiveService
   archiveTranscripts?: ArchiveTranscriptService
   readFiles?: typeof readDownloadedFiles

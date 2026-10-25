@@ -58,6 +58,8 @@ import { meetingProgress } from "./sync-progress.js"
 import type { TokenManager } from "./tokens.js"
 import { addWatchCommand } from "./watch-commands.js"
 import { createWatchService } from "./watch-service.js"
+import { ZoomSearch } from "./zoom-search.js"
+import { addZoomSearchCommands } from "./zoom-search-commands.js"
 
 export const bindZoomProgram = (
   program: Command,
@@ -362,6 +364,12 @@ export const bindZoomProgram = (
       locks: inspectArchiveLocks,
       recover: recoverArchiveLocks,
     },
+  })
+  addZoomSearchCommands(program, {
+    search: () => deps.zoomSearch ?? new ZoomSearch(tokens(), fetchWithSignal(deps.fetch)),
+    api,
+    signal,
+    output,
   })
   addRecordingScheduleCommands(program, {
     ...zoomRecordingSchedule({ deps, getConfig, profile, withSignal: fetchWithSignal, signal, remoteOptions, zones }),
