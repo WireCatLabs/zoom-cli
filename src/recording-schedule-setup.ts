@@ -62,7 +62,6 @@ export const zoomRecordingSchedule = ({
               new TokenManager({
                 clientId: job.capture.clientId,
                 account: `${job.capture.clientId}:${job.capture.profile}`,
-                ...(selected.legacyProfile === job.capture.profile ? { legacyAccount: job.capture.clientId } : {}),
                 keyring: deps.tokens.options.keyring,
                 service: `zoom-cli:${job.capture.configDir}`,
                 fetch: withSignal(deps.tokens.options.fetch),

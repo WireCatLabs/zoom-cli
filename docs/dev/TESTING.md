@@ -52,10 +52,9 @@ package integrity recorded in the lockfile.
 same fresh synthetic state. Baseline packages have a separate frozen lockfile under
 `contracts/previous/`; they install only in full validation and do not add old CLI bins to the
 normal developer executable path. The previous 0.2.1 binary creates the profile and imports the
-transcript. The candidate must refuse its camelCase config without changing bytes or permissions.
-A fixture-only adapter then models the documented owner key renaming, preserving every value and
-the file mode. It runs only inside the contract runner's temporary root; it is not a product
-migration. Candidate commands then verify retained meeting IDs, transcript, repeat-import
+transcript. The candidate must refuse its camelCase config without changing it, then
+remove each key with the `config unset` that `doctor` gives and set `files.timezone` again. Candidate commands then
+verify retained meeting IDs, transcript, repeat-import
 deduplication, search and exact export with overwrite refusal.
 `pnpm security:no-leak` scans the reviewed contract fixtures and testing guide;
 process diagnostics and recorded run logs are checked within the contract runner as well.

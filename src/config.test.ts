@@ -2,44 +2,40 @@ import { mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, expect, it } from "vitest"
-import { filesZone, readConfig, setConfig } from "./config.js"
+import { filesZone, readConfig, setConfig, unsetConfig } from "./config.js"
 
 const configPath = () => join(mkdtempSync(join(tmpdir(), "zm-config-")), "config.json")
 const saved = (path: string) => JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>
-const oldFile = {
-  clientId: "example-client",
-  source: "files",
-  filesFolder: "example-folder",
-  filesTimezone: "Europe/Madrid",
-  accountProfile: "example",
-}
-
 describe("config names", () => {
-  it("reads a canonical snake_case file without rewriting it or changing its mode", () => {
+  it("reads a snake_case file without rewriting it or changing its mode", () => {
     const path = configPath()
     const file = {
       client_id: "example-client",
       source: "files",
       files_folder: "example-folder",
       files_timezone: "Europe/Madrid",
-      account_profile: "example",
+      profiles: { example: {} },
     }
     writeFileSync(path, JSON.stringify(file), { mode: 0o600 })
     const before = readFileSync(path, "utf8")
-    const { accountProfile: _legacy, ...rest } = oldFile
-    expect(readConfig(path)).toEqual({ ...rest, profiles: ["example"], legacyProfile: "example", permissions: {} })
+    expect(readConfig(path)).toEqual({
+      clientId: "example-client",
+      source: "files",
+      filesFolder: "example-folder",
+      filesTimezone: "Europe/Madrid",
+      profiles: ["example"],
+      permissions: {},
+    })
     expect(readFileSync(path, "utf8")).toBe(before)
     expect(statSync(path).mode & 0o777).toBe(0o600)
   })
 
-  it("sets zoom.client_id and the old zoom.clientId, saving snake_case", () => {
+  it("sets zoom.client_id, saving snake_case", () => {
     const path = configPath()
     expect(setConfig(path, "zoom.client_id", "example-one").clientId).toBe("example-one")
-    expect(saved(path)).toMatchObject({ client_id: "example-one" })
-    setConfig(path, "zoom.clientId", "example-two")
     setConfig(path, "files.timezone", "Europe/Madrid")
-    expect(saved(path)).toMatchObject({ client_id: "example-two", files_timezone: "Europe/Madrid" })
-    expect(saved(path)).not.toHaveProperty("clientId")
+    expect(saved(path)).toEqual({ client_id: "example-one", files_timezone: "Europe/Madrid" })
+    expect(() => setConfig(path, "zoom.clientId", "example-two")).toThrow("unknown config key")
   })
 
   it("reads file names in this computer's zone until files.timezone is set, and keeps it unset when saving", () => {
@@ -47,46 +43,50 @@ describe("config names", () => {
     expect(readConfig(path).filesTimezone).toBeNull()
     expect(filesZone(readConfig(path))).toBe(Intl.DateTimeFormat().resolvedOptions().timeZone)
     setConfig(path, "zoom.client_id", "example-one")
-    expect(saved(path).files_timezone).toBeNull()
+    expect(saved(path)).not.toHaveProperty("files_timezone")
     setConfig(path, "files.timezone", "Asia/Tokyo")
     expect(filesZone(readConfig(path))).toBe("Asia/Tokyo")
   })
 
-  it("refuses a legacy camelCase file without rewriting it", () => {
+  it("refuses a camelCase key by its first problem, without rewriting the file or quoting a value", () => {
     const path = configPath()
-    writeFileSync(path, JSON.stringify(oldFile), { mode: 0o600 })
-    const before = readFileSync(path, "utf8")
+    const before = JSON.stringify({ clientId: "example-client", source: "files", filesFolder: "example-folder" })
+    writeFileSync(path, before, { mode: 0o600 })
     expect(() => readConfig(path)).toThrow(
-      `${path}: clientId is an unknown setting; rename it to client_id (and 2 more problems)`,
+      `${path}: setting clientId is not a setting of zm — remove it with \`zm config unset clientId\`` +
+        " (and 1 more problem — `zm doctor` lists them all)",
     )
-    expect(() => readConfig(path)).not.toThrow(/example-client|Europe/)
+    expect(() => readConfig(path)).not.toThrow(/example-client|example-folder/)
     expect(readFileSync(path, "utf8")).toBe(before)
     expect(statSync(path).mode & 0o777).toBe(0o600)
   })
 
-  it.each(["example-client", "example-other"])("refuses mixed spellings with client_id=%s", (client_id) => {
+  it("sets and unsets on a file with problems, keeping what it does not touch", () => {
     const path = configPath()
-    const before = JSON.stringify({ ...oldFile, client_id })
-    writeFileSync(path, before)
-    expect(() => readConfig(path)).toThrow(
-      `${path}: clientId is an unknown setting; rename it to client_id (and 1 more problem)`,
-    )
-    expect(readFileSync(path, "utf8")).toBe(before)
+    writeFileSync(path, JSON.stringify({ clientId: "example-client", source: "files" }))
+    expect(setConfig(path, "files.folder", "example-folder")).toMatchObject({ source: "files" })
+    expect(saved(path)).toEqual({ clientId: "example-client", source: "files", files_folder: "example-folder" })
+    unsetConfig(path, "clientId", undefined)
+    unsetConfig(path, "files.folder", undefined)
+    expect(saved(path)).toEqual({ source: "files" })
+    expect(() => unsetConfig(path, "example_key", undefined)).toThrow("unknown config key")
   })
 
-  it("refuses invalid canonical configuration values", () => {
+  it("refuses invalid configuration values by the rule, not the value", () => {
     const path = configPath()
-    writeFileSync(
-      path,
-      JSON.stringify({ client_id: "has spaces", source: "api", files_folder: null, files_timezone: "UTC" }),
+    writeFileSync(path, JSON.stringify({ client_id: "has spaces", source: "api" }))
+    expect(() => readConfig(path)).toThrow(
+      `${path}: setting zoom.client_id has to be a Zoom client ID, without spaces — remove it with ` +
+        "`zm config unset zoom.client_id`",
     )
-    expect(() => readConfig(path)).toThrow(`${path}: client_id has an invalid value`)
     expect(() => readConfig(path)).not.toThrow(/has spaces/)
   })
 
-  it("names a broken JSON file by its path alone", () => {
+  it("names where broken JSON stops parsing, and refuses to write over it", () => {
     const path = configPath()
     writeFileSync(path, "{ example")
-    expect(() => readConfig(path)).toThrow(`${path} is not valid JSON`)
+    expect(() => readConfig(path)).toThrow(`${path}: the file is not valid JSON at line 1, column 3`)
+    expect(() => setConfig(path, "source", "api")).toThrow("not valid JSON")
+    expect(readFileSync(path, "utf8")).toBe("{ example")
   })
 })

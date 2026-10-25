@@ -6,7 +6,8 @@ system keyring. This reference gives the accepted keys and their defaults.
 
 ## Settings
 
-Set a value with `zm config set <key> <value>` and see them all with `zm config show`.
+Set a value with `zm config set <key> <value>`, remove it with `zm config unset <key>`, and see them all with
+`zm config show`.
 
 | Key | Meaning |
 |---|---|
@@ -23,17 +24,26 @@ command ([profiles](sessions.md#select-a-local-profile)). Changing the client ID
 using its API. `ZOOM_CLIENT_ID` is not a runtime setting for the installed `zm` command; use
 `zm config set zoom.client_id` rather than an environment variable copied from a development probe.
 
-The file stores these settings as `client_id`, `files_folder`, `files_timezone`, `source`, `record` and
-`keep_runs_for_days`, and the
-profiles on this computer under `profiles`. An `account_profile` left by 0.34 or earlier only says
-which profile takes over the login saved then.
-JSON files must use these snake_case keys. Legacy camelCase files are refused and are not rewritten.
-Before upgrading an older file, rename `clientId` to `client_id`, `filesFolder` to `files_folder`,
-and `filesTimezone` to `files_timezone`. Preserve their values.
-The command setting selector `zoom.clientId` remains an alias for
-`zoom.client_id`; it is not a supported JSON file key.
+The file stores these settings as `client_id`, `files_folder`, `files_timezone`, `source`, `context_sources`,
+`record` and `keep_runs_for_days`, and the profiles on this computer under `profiles`. Any other key is a problem in
+the file.
 
-A malformed config still allows `--help` and `--version`; config commands report the error.
+## Problems in the file
+
+A file with problems still allows `--help`, `--version`, `zm config` and `zm doctor`. Every other command stops on
+the first problem, names how to remove it, and says how many more there are. `zm doctor --json` lists them all
+under `config.issues`:
+
+```json
+{ "kind": "unknown_setting", "file": "/home/you/.config/zm/config.json", "key": "example_setting",
+  "what": "setting example_setting is not a setting of zm", "fix": "zm config unset example_setting" }
+```
+
+`kind` is `invalid_json`, `unknown_setting`, `unknown_permission` or `invalid_value`. `what` says what a value has
+to be and never shows the saved value. `fix` runs exactly as written; it is left out for invalid JSON, where `line`
+and `column` say where reading stopped. A problem in one profile's permissions also gives that `profile`.
+`zm config show` prints each problem after the settings that still load, and `zm config set` and
+`zm config unset` change the file without touching the rest of it.
 
 ## Find the configuration file
 
@@ -68,7 +78,8 @@ zm personal config set permissions '{"remote-meetings": "allow", "recordings": "
 The most specific key wins (`remote-meetings.cancel` over `remote-meetings`). Built in, `remote-meetings` is `ask`;
 a broader key the owner sets never loosens it, a key as deep does. `--yes` only answers `ask`: it never lifts
 `deny` or `readonly`. In a terminal, settings, login, help and the MCP server are never gated. A key that names no command, or
-a level that is not one of the four, is refused when set. `ZM_READ_ONLY` applies on top of every level.
+a level that is not one of the four, is refused when set; one already saved stops every command until
+`zm <profile> config unset permissions.<key>` removes it. `ZM_READ_ONLY` applies on top of every level.
 
 Settings, skill installation, upgrade and archive timer changes over MCP require `mcp.authority` at `allow` or `ask`.
 It is denied by default. Set it from a terminal through the profile's `permissions` map,

@@ -64,13 +64,6 @@ server does not start, use the full path from `command -v zm` on Linux/macOS or 
 command. If you set `ZM_CONFIG_DIR` or `MESSAGING_STORE`, pass the same values in the entry's `env`, or the server
 reads a different profile or database. Keep stdout for protocol messages; omit `--json` and `--jsonl`.
 
-### Upgrading from 0.34 and earlier
-
-`zm serve --mcp` and its flags (`--meeting-context`, `--meeting-preparation`, `--semantic` and the others) are gone;
-`zm serve` now says so. Use `meetings context`, `meetings prepare`, `search all` and `search meetings --model` through the
-shared server. Change
-the entry's `args` to `["personal", "mcp"]`.
-
 ## Try the connection
 
 After installing the skill, start a new agent session if it has not discovered the instructions.

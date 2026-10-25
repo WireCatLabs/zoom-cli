@@ -34,7 +34,7 @@ const setup = async (permissions?: Record<string, string>) => {
       },
     } as unknown as RemoteMeetingsService,
   }
-  setConfig(deps.configPath, "zoom.clientId", "example-client")
+  setConfig(deps.configPath, "zoom.client_id", "example-client")
   useProfile(deps.configPath, "work")
   if (permissions) setConfig(deps.configPath, "permissions", JSON.stringify(permissions), () => "work", keys)
   const error = () => JSON.parse(stderr.at(-1) ?? "{}").error
@@ -119,9 +119,9 @@ it("refuses permissions that are not one JSON object", async () => {
     expect(() => setConfig(deps.configPath, "permissions", value, () => "work", keys)).toThrow(/a JSON object/)
 })
 
-it("refuses a retired recording permission until the owner explicitly replaces it", async () => {
+it("refuses a saved permission key that names no command until it is removed", async () => {
   const { deps, error, stdout } = await setup()
-  setConfig(deps.configPath, "permissions", '{"recordings.sync":"deny"}', () => "work", new Set(["recordings.sync"]))
+  setConfig(deps.configPath, "permissions", '{"example.nothing":"deny"}', () => "work", new Set(["example.nothing"]))
   const catalog = vi.fn(),
     download = vi.fn()
   deps.recordings = { catalog, download, list: vi.fn(), show: vi.fn() }
@@ -139,11 +139,13 @@ it("refuses a retired recording permission until the owner explicitly replaces i
   expect(await run(args, deps)).toBe(3)
   expect(error()).toMatchObject({
     code: "configuration_error",
-    details: { permission: "recordings.sync" },
-    message: expect.stringContaining("permissions.recordings.download"),
+    message:
+      `${deps.configPath}: permissions.example.nothing names no command — remove it with ` +
+      "`zm work config unset permissions.example.nothing`",
   })
   expect(stdout).toEqual([])
   expect(await run(["config", "show", "--json"], deps)).toBe(0)
+  expect(await run(["config", "unset", "permissions.example.nothing", "--json"], deps)).toBe(0)
   expect(await run(["config", "set", "permissions", '{"recordings.download":"deny"}', "--json"], deps)).toBe(0)
   expect(await run(args, deps)).toBe(5)
   expect(catalog).not.toHaveBeenCalled()

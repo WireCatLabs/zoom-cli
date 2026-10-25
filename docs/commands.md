@@ -125,6 +125,24 @@ zm config set <key> <value>
 
 **Example:** `zm personal config set files.timezone Europe/Madrid --json`
 
+### `zm config unset`
+
+remove a setting, or a part of the file doctor reports a problem in
+
+**Changes local data.**
+
+```sh
+zm config unset <key>
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `key` | required | setting name, such as files.folder, or the key a doctor fix names. |
+
+**Returns:** remove a setting, or a part of the file doctor reports a problem in
+
+**Example:** `zm personal config unset files.folder`
+
 ## `zm meetings`
 
 stored meetings and their records

@@ -12,8 +12,6 @@ export interface TokenOptions {
   clientId: string
   /** The keyring account the login lives under; the client id when unset. */
   account?: string
-  /** Where a login saved before profiles were words lives, read once and moved to `account`. */
-  legacyAccount?: string
   keyring: KeyringStore
   service: string
   fetch: typeof fetch
@@ -32,7 +30,7 @@ export class TokenManager {
   private refreshState = new Map<string, Promise<Tokens>>()
   constructor(readonly options: TokenOptions) {}
   /** The login of one profile: `<client id>:<profile>` in the keyring. */
-  forProfile(profile: string, legacyProfile: string | null): TokenManager {
+  forProfile(profile: string): TokenManager {
     const parent = this.options
     const scoped = new TokenManager({
       get clientId() {
@@ -40,9 +38,6 @@ export class TokenManager {
       },
       get account() {
         return `${parent.clientId}:${profile}`
-      },
-      get legacyAccount() {
-        return profile === legacyProfile ? parent.clientId : undefined
       },
       keyring: parent.keyring,
       service: parent.service,
@@ -57,18 +52,14 @@ export class TokenManager {
   withSignal(signal?: AbortSignal, fetcher: typeof fetch = this.options.fetch): TokenManager {
     const parent = this.options
     // The account is built from the client id, so both are fixed together on first use.
-    let login: Pick<TokenOptions, "clientId" | "account" | "legacyAccount"> | undefined
-    const pinned = () =>
-      (login ??= { clientId: parent.clientId, account: parent.account, legacyAccount: parent.legacyAccount })
+    let login: Pick<TokenOptions, "clientId" | "account"> | undefined
+    const pinned = () => (login ??= { clientId: parent.clientId, account: parent.account })
     const scoped = new TokenManager({
       get clientId() {
         return pinned().clientId
       },
       get account() {
         return pinned().account
-      },
-      get legacyAccount() {
-        return pinned().legacyAccount
       },
       keyring: parent.keyring,
       service: parent.service,
@@ -91,13 +82,7 @@ export class TokenManager {
     }
   }
   load(account = this.accountOf()): Tokens | null {
-    let saved = this.read(account)
-    const legacy = account === this.options.account ? this.options.legacyAccount : undefined
-    let moved = false
-    if (!saved && legacy) {
-      saved = this.read(legacy)
-      moved = saved !== null
-    }
+    const saved = this.read(account)
     if (!saved) return null
     try {
       const value = object(JSON.parse(saved))
@@ -112,14 +97,12 @@ export class TokenManager {
         !value.scopes.every((s) => typeof s === "string")
       )
         throw new Error("invalid token entry")
-      const tokens = {
+      return {
         accessToken: value.accessToken,
         refreshToken: value.refreshToken,
         expiresAt: value.expiresAt,
         scopes: value.scopes,
       }
-      if (moved) this.save(tokens, account)
-      return tokens
     } catch (error) {
       if (isCliError(error) && error.code === "configuration_error") throw error
       throw new CliError("authentication_error", "saved login is invalid; run zm <profile> session start again")

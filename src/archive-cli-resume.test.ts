@@ -50,7 +50,7 @@ const setup = async () => {
     recordings: { list, show: async () => meeting, download, catalog },
     now: () => Date.parse("2026-10-11T00:00:00Z"),
   }
-  setConfig(deps.configPath, "zoom.clientId", "example-client")
+  setConfig(deps.configPath, "zoom.client_id", "example-client")
   const tokenAccess = vi.spyOn(deps.tokens, "forProfile")
   return { deps, directory, download, list, catalog, tokenAccess, output, errors }
 }
@@ -277,7 +277,7 @@ it("refuses saved backup jobs after profile or client changes before keyring or 
     ["AliceExample", "other-example-client"],
   ] as const) {
     useProfile(deps.configPath, profile)
-    setConfig(deps.configPath, "zoom.clientId", clientId)
+    setConfig(deps.configPath, "zoom.client_id", clientId)
     expect(await run(["recordings", "schedule", "run", schedule.id, "--jsonl"], deps)).toBe(3)
     expect(JSON.parse(errors.at(-1) ?? "{}").error.message).toMatch(/saved profile.*client/)
   }
@@ -286,7 +286,7 @@ it("refuses saved backup jobs after profile or client changes before keyring or 
   expect(output).toEqual([])
   await expect(access(schedule.destination)).rejects.toMatchObject({ code: "ENOENT" })
   useProfile(deps.configPath, "AliceExample")
-  setConfig(deps.configPath, "zoom.clientId", "example-client")
+  setConfig(deps.configPath, "zoom.client_id", "example-client")
   deps.tokens.options.keyring.set(
     `zoom-cli:${directory}`,
     "example-client:AliceExample",
@@ -472,16 +472,4 @@ it("stops bounded JSON collection before downloading another occurrence", async 
   ).toBe(13)
   expect(output).toEqual([])
   expect(download).toHaveBeenCalledTimes(1)
-})
-
-it("removes the retired sync command rather than retaining an alias", async () => {
-  const { deps, download, catalog } = await setup()
-  expect(
-    createProgram(deps)
-      .commands.find((command) => command.name() === "recordings")
-      ?.commands.map((command) => command.name()),
-  ).not.toContain("sync")
-  expect(await run(["recordings", "sync", "--json"], deps)).toBe(2)
-  expect(download).not.toHaveBeenCalled()
-  expect(catalog).not.toHaveBeenCalled()
 })
