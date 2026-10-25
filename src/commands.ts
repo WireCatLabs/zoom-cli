@@ -20,6 +20,7 @@ import {
   REMOTE_READ,
   runsCommand,
   sharedCommandTemplate,
+  sharedStoreCommand,
 } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { wholeList } from "./answer-output.js"
@@ -34,6 +35,7 @@ export interface StandardCommandsDeps {
 }
 const addStandardCommandsDefinition = (program: Command, deps: StandardCommandsDeps): void => {
   program.addCommand(commandsCommand(ZM).copyInheritedSettings(program))
+  program.addCommand(sharedStoreCommand().copyInheritedSettings(program))
   annotate(
     program
       .command("complete")

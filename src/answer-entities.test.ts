@@ -129,6 +129,7 @@ it("answers every command that declares an entity with that entity's schema", as
     ["stats meetings show", ["stats", "meetings", "show", "--since-time", "2026-10-01"]],
     ["stats meetings top", ["stats", "meetings", "top", "--since-time", "2026-10-01"]],
     ["mentions list", ["mentions", "list", "started_at>=2026-10-01"]],
+    ["store info", ["store", "info"]],
   ]
   const program = createProgram(deps)
   const commands = new Map(leaves(program).map((command) => [pathOf(command), command]))

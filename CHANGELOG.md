@@ -45,6 +45,10 @@
 
 - A Zoom change that asks first (`ask` permission) no longer asks when the output goes to a pipe or a file: it refuses with `confirmation_required` and says to add `--yes`, as it already did without a terminal. At a terminal it still asks.
 
+### Added
+
+- `zm store info --json` describes the shared store: where it is, its schema against the one zm reads (`schema.reason`, and `schema.upgrade` — what zm's next run moves it to), and which tools used it. It opens the store read-only and needs no profile, so WireCat Desktop can tell whether zm can read the store.
+
 ### Fixed
 
 - Help, `commands`, MCP tool descriptions and the agent skill describe zm, not a messenger (cli-core 0.422.0, `messenger: false`): `--brief` and `--full` speak of found items, `--trace` and `--record` of content, `commands info` shows `zm commands info commands`, and the MCP tools no longer suggest "unread" or "send message". Examples that would reach Zoom or change something now carry `--dry-run` or leave out `--yes`, so each runs offline as written.
