@@ -1,12 +1,11 @@
 import { CliError } from "@wirecat/cli-base"
+import { isFolderProvider } from "@wirecat/cli-core"
 import type { MeetingOwner } from "@wirecat/cli-core/meetings"
 import type { ContextSource } from "@wirecat/cli-core/services"
 import * as v from "valibot"
 import { type ConfiguredContextSource, contextSourcesSchema } from "./context-sources.js"
 
 type Selection = { id: string; source: ContextSource }
-// cli-core keeps its own list internal; `folder` is what a notes folder was before store version 32.
-const FOLDER_PROVIDERS: readonly string[] = ["local", "obsidian", "folder"]
 export type ContextMetadata = {
   storedAccount(key: MeetingOwner): Promise<MeetingOwner & { id: number }>
   accountById(id: number): Promise<MeetingOwner | null>
@@ -26,12 +25,12 @@ const resolveContextSource = async (
     let folderId: number | undefined
     let key = { provider: definition.provider, account: definition.account }
     const folder = definition.account.match(/^notes:([1-9]\d*)$/)
-    if (definition.kind === "document" && FOLDER_PROVIDERS.includes(definition.provider) && folder) {
+    if (definition.kind === "document" && isFolderProvider(definition.provider) && folder) {
       const id = Number(folder[1])
       if (!Number.isSafeInteger(id)) throw new Error("invalid folder")
       folderId = id
       const found = await metadata.accountById(id)
-      if (!found || !FOLDER_PROVIDERS.includes(found.provider)) throw new Error("missing folder")
+      if (!found || !isFolderProvider(found.provider)) throw new Error("missing folder")
       key = found
     }
     const account = await metadata.storedAccount(key)
