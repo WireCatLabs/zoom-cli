@@ -1,4 +1,4 @@
-import { type ProgramDefinition, runSettings, run as sharedRun } from "@wirecat/cli-core/cli"
+import { NONE_NAMED, type ProgramDefinition, runSettings, run as sharedRun } from "@wirecat/cli-core/cli"
 import { zoomRunsCommand } from "./commands.js"
 import { readConfig } from "./config.js"
 import { ZOOM_FIRST_SCREEN } from "./first-screen.js"
@@ -38,6 +38,7 @@ export const zoomDefinition = (deps: ProgramDeps, onFailure?: (error: unknown) =
         const { keepFailedRuns, keepRunsForDays } = runSettings(flags?.record, configured(deps.configPath))
         return {
           profile,
+          ...(profile ? {} : { sources: { profile: NONE_NAMED } }),
           keepFailedRuns,
           keepRunsForDays,
           skillHint: false,
