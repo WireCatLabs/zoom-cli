@@ -12,7 +12,7 @@
     "no-shell-true.grit": "d3943cfa1d7ebbf7be0fa22c2aaf2b7d7aa9ff462f2eb14a7798632764e3875c",
     "no-unbounded-spread.grit": "f4178e5b74212fef58fec8916b6783d9f4f192ac618aa4ced041c4167bfbf81b",
     "release-lock-info.mjs": "4abab1f01ceee7d4c709222e923c9a6fc634bcf7b8b64d745a9ac495993310e0",
-    "release-lock.sh": "f3309e569daea423c35f2a7b51cd55aec24c28160428b67ee2ece05e67fab877",
+    "release-lock.sh": "bef364092c4ab595f3b9b4130e23570c8306223228cdfa3e9384230f3b7f4a49",
     "rumdl.toml": "048b929176f13234324f5825d1e811397f1491b9cb6684a1953e268e2c2ed863",
     "check.mjs": "34b266411eaab7707030915f645308e86784b1574b21fa44ca974861a90c9ce1"
   },
@@ -26,5 +26,9 @@
     "cspell": "10.3.6",
     "lefthook": "2.1.16",
     "markdownlint-cli2": "0.23.3"
+  },
+  "fileRevisions": {
+    "release-lock.sh": "49e630a99d758e3e113749bef2049b258c7262e3",
+    "release-lock-info.mjs": "49e630a99d758e3e113749bef2049b258c7262e3"
   }
 }

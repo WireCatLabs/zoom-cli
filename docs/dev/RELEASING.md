@@ -4,8 +4,8 @@ Release from a clean main equal to origin/main after the implementation and rele
 PRs have passed CI. Date the top changelog section with the package version and release day. The
 release-preparation PR raises `version` in `package.json` and runs `pnpm version:sync`, which writes it into
 `src/version.ts`; `pnpm version:check` in full validation fails when the two disagree.
-`bin/release` takes the machine-wide release lock and normally dispatches the GitHub workflow. By default it refuses an occupied lock immediately. To wait in
-the shared queue, set a nonnegative timeout in seconds:
+`bin/release` takes the zoom-cli release lock (one per package, shared by every checkout) and normally dispatches the GitHub workflow. By default it refuses an occupied lock immediately. To wait in
+the queue, set a nonnegative timeout in seconds:
 
 ```sh
 WIRECAT_RELEASE_WAIT_SECONDS=900 bin/release
