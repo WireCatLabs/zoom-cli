@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Changed — may break callers
+
+- A Zoom change that asks first (`ask` permission) no longer asks when the output goes to a pipe or a file: it refuses with `confirmation_required` and says to add `--yes`, as it already did without a terminal. At a terminal it still asks.
+
+### Fixed
+
+- `zm <profile> session start` opens the browser on macOS and Windows; it always tried `xdg-open` before. `--browser` still picks the program.
+
 ## 0.44.0 — 25.10.2026
 
 ### Changed — may break callers
