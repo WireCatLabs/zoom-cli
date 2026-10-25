@@ -22,7 +22,7 @@ git fetch -q origin
 [ "$(git branch --show-current)" = main ] || { echo "run from main" >&2; exit 1; }
 [ -z "$(git status --porcelain --untracked-files=no)" ] || { echo "uncommitted changes" >&2; exit 1; }
 [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || { echo "update main to origin/main first" >&2; exit 1; }
-# Serialize publishing across the owner's CLI packages, as in cli-core.
+# One release of this package at a time on this machine, as in cli-core.
 . ./config/wirecat/release-lock.sh
 wirecat_release_lock "${WIRECAT_RELEASE_WAIT_SECONDS:-0}"
 if [ "$mode" = local ]; then
