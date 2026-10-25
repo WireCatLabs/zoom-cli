@@ -796,7 +796,7 @@ zm upgrade [options]
 
 **Returns:** upgrade zm with the package manager that installed it; --check only looks
 
-**Example:** `zm upgrade --check`, `zm upgrade`
+**Example:** `zm upgrade --check`
 
 ## `zm models`
 
