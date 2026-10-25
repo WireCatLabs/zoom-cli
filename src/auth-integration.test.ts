@@ -227,7 +227,7 @@ describe("CLI configuration isolation", () => {
     expect(stdout.join("")).toContain("Zoom meeting")
     expect(stderr).toEqual([])
     expect(await run(["config", "show"], deps)).toBe(0)
-    expect(stderr.join("")).toContain("the file is not valid JSON, so it is left out")
+    expect(stderr.join("")).toContain("the file is not valid JSON at line 1, column 1, so it is left out")
     expect(await run(["example", "meetings", "list"], deps)).toBe(3)
   })
   it("rejects whitespace client ids, conflicts and disabled input before side effects", async () => {

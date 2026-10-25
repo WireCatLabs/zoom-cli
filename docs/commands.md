@@ -1307,11 +1307,15 @@ the instructions an agent is given for this tool
 
 ### `zm skill show`
 
-print SKILL.md — `zm skill install` puts it where Claude Code, Codex and Gemini CLI look for it
+print SKILL.md — `zm skill install` puts it where Claude Code, Codex and Gemini CLI look for it; --for prints the copy already there
 
 ```sh
-zm skill show
+zm skill show [options]
 ```
+
+| Option | What it does |
+|---|---|
+| `--for <agents>` | print the copy installed for these agents instead of this version's. One of: `claude`, `agents`. |
 
 **Returns:** print the tool's instructions for AI agents
 
@@ -1334,6 +1338,18 @@ zm skill install [options]
 **Returns:** install the tool's instructions for AI agents
 
 **Example:** `zm skill install --for agents --json`
+
+### `zm skill status`
+
+for each place `zm skill install` writes to: the path, the version installed there, and whether it is current, stale, missing or unversioned
+
+```sh
+zm skill status
+```
+
+**Returns:** whether the installed instructions for AI agents match this version
+
+**Example:** `zm skill status`, `zm skill status --json`
 
 ## `zm mcp`
 

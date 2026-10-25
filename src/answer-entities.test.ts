@@ -31,6 +31,7 @@ const HOUSEKEEPING_ANSWERS = new Set([
   "session status",
   "skill install",
   "skill show",
+  "skill status",
   "upgrade",
 ])
 

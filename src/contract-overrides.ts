@@ -21,20 +21,6 @@ export const SHELL_OVERRIDES: Readonly<{
     },
     {
       command: ["skill", "show"],
-      field: "effects",
-      before: {
-        remote: "none",
-        local: "read",
-      },
-      after: {
-        remote: "none",
-        local: "none",
-      },
-      reason:
-        "Zoom installs its own meeting instructions through its source renderer and treats the packaged primary skill as effect-free.",
-    },
-    {
-      command: ["skill", "show"],
       field: "examples",
       before: ["zm skill show", "zm skill show follow-ups"],
       after: ["zm skill show --json"],

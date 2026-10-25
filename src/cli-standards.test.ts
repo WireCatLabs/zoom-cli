@@ -1,6 +1,8 @@
-import { mkdtemp, readFile, writeFile } from "node:fs/promises"
+import { execFileSync } from "node:child_process"
+import { statSync } from "node:fs"
+import { chmod, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 import { CliError, memoryKeyring } from "@wirecat/cli-base"
 import { describeProgram, flatten, parseCommandsDocument } from "@wirecat/cli-base/commands"
 import { describe, expect, it, vi } from "vitest"
@@ -222,6 +224,51 @@ describe("portable CLI discovery and diagnostics", () => {
             what: "the file is not valid JSON at line 3, column 3",
           },
         ],
+      },
+      profiles: [],
+    })
+  })
+  it.skipIf(process.platform === "win32")(
+    "reports a config file and folder others can read, with the chmod that fixes each",
+    async () => {
+      const { deps, stdout, stderr } = await setup()
+      const folder = dirname(deps.configPath)
+      await writeFile(deps.configPath, JSON.stringify({ source: "api" }))
+      await chmod(deps.configPath, 0o644)
+      await chmod(folder, 0o775)
+      expect(await run(["--json", "doctor"], deps)).toBe(0)
+      expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({
+        config: { issues: [] },
+        files: {
+          checked: true,
+          ok: false,
+          problems: [
+            { path: deps.configPath, mode: "0644", want: "0600" },
+            { path: folder, mode: "0775", want: "0700" },
+          ],
+        },
+      })
+      const fixes = stderr.map((line) => line.trimEnd()).filter((line) => line.startsWith("to make it private: "))
+      expect(fixes).toEqual([
+        `to make it private: chmod 600 '${deps.configPath}'`,
+        `to make it private: chmod 700 '${folder}'`,
+      ])
+      for (const fix of fixes) execFileSync("sh", ["-c", fix.slice("to make it private: ".length)])
+      expect(await run(["--json", "doctor"], deps)).toBe(0)
+      expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({ files: { checked: true, ok: true, problems: [] } })
+      await chmod(deps.configPath, 0o644)
+      expect(await run(["config", "set", "source", "files"], deps)).toBe(0)
+      expect(statSync(deps.configPath).mode & 0o777).toBe(0o600)
+    },
+  )
+  it("answers when the config path is a folder, naming it as the problem", async () => {
+    const { deps, stdout } = await setup()
+    await mkdir(deps.configPath)
+    expect(await run(["--json", "doctor"], deps)).toBe(0)
+    expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({
+      config: {
+        found: true,
+        issues: [{ kind: "invalid_value", file: deps.configPath, what: "the path is a folder, not a file" }],
       },
       profiles: [],
     })

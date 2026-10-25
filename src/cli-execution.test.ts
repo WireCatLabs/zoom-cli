@@ -12,6 +12,7 @@ import { profileAccountKey, readConfig, setConfig } from "./config.js"
 import { writeExportFile } from "./output-file.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
+import { VERSION } from "./version.js"
 
 const response = (value: unknown) => new Response(JSON.stringify(value))
 const setup = async () => {
@@ -603,6 +604,12 @@ it("shows and installs the packaged skill through the CLI using an isolated home
   const target = join(directory, ".agents", "skills", "zoom-cli", "SKILL.md")
   expect(value(stdout).written).toEqual([target])
   expect(await readFile(target, "utf8")).toContain("version:")
+  expect(await run(["skill", "show", "--for", "agents", "--json"], deps)).toBe(0)
+  expect(value(stdout)).toMatchObject({ target: "agents", path: target, installed: VERSION })
+  expect(await run(["skill", "status", "--json"], deps)).toBe(0)
+  expect(value(stdout).targets).toEqual(
+    expect.arrayContaining([expect.objectContaining({ path: target, state: "current" })]),
+  )
   expect(stderr).toEqual([])
 })
 

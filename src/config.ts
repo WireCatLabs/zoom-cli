@@ -1,17 +1,16 @@
-import { existsSync, readFileSync } from "node:fs"
+import { existsSync, readFileSync, statSync } from "node:fs"
 import { CliError, saveConfigFile } from "@wirecat/cli-base"
+import { issueMessage } from "@wirecat/cli-core/cli"
 import { LEVELS, type Level } from "@wirecat/cli-core/sends"
 import * as v from "valibot"
 import {
+  configIssues,
+  fileIssue,
   isNode,
-  issueMessage,
   type LocatedIssue,
-  parseConfigText,
-  permissionIssues,
   publicIssue,
   removeAt,
   SETTING_NAMES,
-  schemaIssues,
   withoutIssues,
 } from "./config-issues.js"
 import { type ConfiguredContextSource, contextSourcesSchema, replaceContextSources } from "./context-sources.js"
@@ -77,6 +76,8 @@ const ConfigFile = v.strictObject({
   keep_runs_for_days: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
 })
 
+const DOCTOR = "zm doctor"
+
 export interface ConfigInspection {
   found: boolean
   /** Every problem in the file; the config below is what loads without them. */
@@ -111,40 +112,25 @@ export const inspectConfig = (path: string, permissionKeys?: ReadonlySet<string>
   try {
     text = readFileSync(path, "utf8")
   } catch {
-    if (existsSync(path)) throw new CliError("configuration_error", `${path} could not be read`)
-    return { found: false, issues: [], raw: {}, config: configOf({}) }
+    if (!existsSync(path)) return { found: false, issues: [], raw: {}, config: configOf({}) }
+    const what = statSync(path, { throwIfNoEntry: false })?.isDirectory()
+      ? "the path is a folder, not a file"
+      : "the file could not be read"
+    return { found: true, issues: [fileIssue(path, what)], raw: null, config: configOf({}) }
   }
-  const read = parseConfigText(text, path)
-  if ("issue" in read) return { found: true, issues: [read.issue], raw: null, config: configOf({}) }
-  if (!isNode(read.raw)) {
-    const issue: LocatedIssue = {
-      kind: "invalid_value",
-      file: path,
-      what: "the file has to be an object, in braces",
-      at: [],
-    }
-    return { found: true, issues: [issue], raw: null, config: configOf({}) }
-  }
-  const found = schemaIssues(read.raw, ConfigFile, path)
-  const known = new Set(found.map((issue) => issue.at.join(".")))
-  const issues = [
-    ...found,
-    ...(permissionKeys ? permissionIssues(read.raw, permissionKeys, path) : []).filter(
-      (issue) => !known.has(issue.at.join(".")),
-    ),
-  ]
+  const { issues, raw } = configIssues(text, path, ConfigFile, permissionKeys)
   return {
     found: true,
     issues,
-    raw: read.raw,
-    config: configOf(v.parse(ConfigFile, withoutIssues(read.raw, issues))),
+    raw,
+    config: configOf(raw ? v.parse(ConfigFile, withoutIssues(raw, issues)) : {}),
   }
 }
 
 /** The settings every command but `config` and `doctor` runs on; a file with any problem is refused. */
 export const readConfig = (path: string, permissionKeys?: ReadonlySet<string>): ZoomConfig => {
   const { issues, config } = inspectConfig(path, permissionKeys)
-  if (issues.length > 0) throw new CliError("configuration_error", issueMessage(issues.map(publicIssue)))
+  if (issues.length > 0) throw new CliError("configuration_error", issueMessage(issues.map(publicIssue), DOCTOR))
   return config
 }
 
@@ -155,7 +141,8 @@ const changeFile = (
   change: (raw: Record<string, unknown>, inspection: ConfigInspection) => void,
 ): ZoomConfig => {
   const inspection = inspectConfig(path, permissionKeys)
-  if (!inspection.raw) throw new CliError("configuration_error", issueMessage(inspection.issues.map(publicIssue)))
+  if (!inspection.raw)
+    throw new CliError("configuration_error", issueMessage(inspection.issues.map(publicIssue), DOCTOR))
   const raw = structuredClone(inspection.raw)
   change(raw, inspection)
   saveConfigFile(path, raw)
@@ -192,7 +179,7 @@ export const setConfig = (
       }
       case "context.sources": {
         const broken = issues.find((issue) => issue.at[0] === "context_sources")
-        if (broken) throw new CliError("configuration_error", issueMessage([publicIssue(broken)]))
+        if (broken) throw new CliError("configuration_error", issueMessage([publicIssue(broken)], DOCTOR))
         raw.context_sources = replaceContextSources(value, profile?.() ?? null, config.contextSources)
         return
       }

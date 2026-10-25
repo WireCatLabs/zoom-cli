@@ -41,7 +41,9 @@ under `config.issues`:
 
 `kind` is `invalid_json`, `unknown_setting`, `unknown_permission` or `invalid_value`. `what` says what a value has
 to be and never shows the saved value. `fix` runs exactly as written; it is left out for invalid JSON, where `line`
-and `column` say where reading stopped. A problem in one profile's permissions also gives that `profile`.
+and `column` say where reading stopped. A problem in one profile's permissions also gives that `profile`. A
+broken part of a setting, such as one entry of `context_sources`, is reported as the whole setting, and its fix
+removes it. A config path that is a folder or cannot be read is one problem with the whole file, with no fix.
 `zm config show` prints each problem after the settings that still load, and `zm config set` and
 `zm config unset` change the file without touching the rest of it.
 
@@ -59,6 +61,10 @@ actual path without checking the saved OAuth session.
 
 Older macOS layouts are no longer moved automatically; doctor shows the path actually in use. Keep
 public app settings separate from keyring tokens and the shared meeting database.
+
+`zm config set` saves the file so only you can read it (`0600`). `zm doctor --json` lists the file and its folder
+under `files.problems` when other users can read them, with the mode found and the one wanted, and prints the
+`chmod` that fixes each on stderr. It changes nothing itself. Windows is not checked.
 
 ## Permissions
 
