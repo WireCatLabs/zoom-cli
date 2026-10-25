@@ -155,3 +155,12 @@ consumer tests check observable compatibility and host metadata validation.
 The installed upcoming proof also exercises scheduled inventory through the installed CLI and MCP.
 Its injected provider transport retains old recurring hints, discards join URLs, rejects caller
 account overrides before HTTP, refuses offline reads and proves that no store connection opens.
+
+## A version pull request skips the full validation
+
+A pull request that changes only `CHANGELOG.md` and the version in `package.json` and `src/version.ts`, against a
+`main` whose pull request passed every required check on the same tree (bin/release's version pull requests), runs
+`pnpm version:check` and `pnpm docs:check` instead, and reports the `validation / …` checks as
+passed, saying why ([`scripts/ci-unchanged.sh`](../../scripts/ci-unchanged.sh),
+[`scripts/ci-fingerprint.sh`](../../scripts/ci-fingerprint.sh)). The push to `main` that follows runs the full
+validation.

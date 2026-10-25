@@ -2,6 +2,8 @@ name: Pull request validation
 
 # The full validation main.yml runs, before merge, so a pull request that breaks a contract or the command lint
 # fails here and not on main (WC-CI-5).
+# A pull request that changes only CHANGELOG.md and the version against a main whose checks are proven green
+# (bin/release's version pull requests) runs the version and docs checks instead (scripts/ci-unchanged.sh).
 on:
   pull_request:
 
@@ -12,6 +14,70 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  VALIDATION_CHECKS: |
+    validation / ci / check
+    validation / ci / bun
+    validation / ci / secrets
+
 jobs:
+  version-only:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: read
+    outputs:
+      reuse: ${{ steps.decide.outputs.reuse }}
+      base: ${{ steps.decide.outputs.base }}
+      fingerprint: ${{ steps.decide.outputs.fingerprint }}
+      pr: ${{ steps.decide.outputs.pr }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CAN_REPORT: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && github.event.pull_request.user.login != 'dependabot[bot]' }}
+          # main's ruleset requires only standards; the validation checks are what proves main green.
+          EXTRA_CONTEXTS: ${{ env.VALIDATION_CHECKS }}
+        run: bash scripts/ci-unchanged.sh
+
+  # Also when the decision itself failed: no answer means the full validation.
   validation:
+    needs: version-only
+    if: ${{ !cancelled() && needs.version-only.outputs.reuse != 'true' }}
     uses: ./.github/workflows/ci.yml
+
+  changelog-only:
+    needs: version-only
+    if: needs.version-only.outputs.reuse == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The fingerprint sets both versions to 0.0.0 on its own, so only this proves they still agree.
+      - run: pnpm version:check
+      - run: pnpm docs:check
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          TITLE: Not run — only CHANGELOG.md and the version changed
+          SUMMARY: >-
+            Apart from CHANGELOG.md and the version in package.json and src/version.ts, this pull request's tree is
+            ${{ needs.version-only.outputs.fingerprint }}, the same as main at ${{ needs.version-only.outputs.base }},
+            whose pull request #${{ needs.version-only.outputs.pr }} passed every required check on that tree.
+            version:check and docs:check ran here; main.yml runs the full validation again after the merge.
+        run: bash scripts/ci-pass-checks.sh <<<"$VALIDATION_CHECKS"
