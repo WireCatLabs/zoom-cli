@@ -53,11 +53,11 @@ run login again and check `zm personal session status --json`.
 
 ### Commands stop with "Zoom token request failed"
 
-Each token request records its outcome in `~/.local/share/zm/runs/<date>/<run>/events.jsonl` (the
+Each token request records its outcome in `~/.local/share/zoom-cli/runs/<date>/<run>/events.jsonl` (the
 `runs` folder under `ZM_STATE_DIR` when it is set). A record holds the HTTP status, whether Zoom sent
 a new refresh token, whether the keyring save worked, a timeout or cancellation, and the process id.
 It never holds a token. Two records with different process ids close together suggest two commands
-refreshing at once. Read them with `cat ~/.local/share/zm/runs/*/*/events.jsonl`, then run
+refreshing at once. Read them with `cat ~/.local/share/zoom-cli/runs/*/*/events.jsonl`, then run
 `zm personal session start` again. Runs older than 30 days are removed.
 
 ### A required scope is missing

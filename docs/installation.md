@@ -194,7 +194,8 @@ Once that works, [search a topic and read its surrounding evidence](search.md).
 | What | Linux and macOS | Windows |
 |---|---|---|
 | settings (`config.json`) | `~/.config/zm/` | `%APPDATA%\zm\Config\` |
-| state (recorded runs in `runs/`) | `~/.local/share/zm/` | `%LOCALAPPDATA%\zm\Data\` |
+| state | `~/.local/share/zm/` | `%LOCALAPPDATA%\zm\Data\` |
+| recorded runs (`runs/`) | `~/.local/share/zoom-cli/` | `%LOCALAPPDATA%\zoom-cli\Data\` |
 | cache | `~/.cache/zm/` | `%LOCALAPPDATA%\zm\Cache\` |
 | the local store | `~/.local/share/WireCat/wirecat.db` | `%LOCALAPPDATA%\WireCat\Data\wirecat.db` |
 
@@ -220,8 +221,9 @@ npm uninstall -g @wirecat/zoom-cli
 
 Uninstalling removes only the package. To remove everything else, delete:
 
-- the settings, state and cache directories: `~/.config/zm`, `~/.local/share/zm` and `~/.cache/zm` on Linux and
-  macOS; `%APPDATA%\zm` and `%LOCALAPPDATA%\zm` on Windows;
+- the settings, state, recorded runs and cache directories: `~/.config/zm`, `~/.local/share/zm`,
+  `~/.local/share/zoom-cli` and `~/.cache/zm` on Linux and macOS; `%APPDATA%\zm`, `%LOCALAPPDATA%\zm` and
+  `%LOCALAPPDATA%\zoom-cli` on Windows;
 - the agent skill folders, if you installed the skill: `~/.claude/skills/zoom-cli` and
   `~/.agents/skills/zoom-cli` (`%USERPROFILE%\.claude\skills\zoom-cli` and
   `%USERPROFILE%\.agents\skills\zoom-cli` on Windows);

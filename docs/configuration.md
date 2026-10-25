@@ -63,7 +63,7 @@ Older macOS layouts are no longer moved automatically; doctor shows the path act
 public app settings separate from keyring tokens and the shared meeting database.
 
 `zm config set` saves the file so only you can read it (`0600`). `zm doctor --json` lists the file and its folder
-under `files.problems` when other users can read them, with the mode found and the one wanted, and prints the
+under `files.problems` when other users can read them, each as `path`, `mode` (found) and `want`, and prints the
 `chmod` that fixes each on stderr. It changes nothing itself. Windows is not checked.
 
 ## Permissions
