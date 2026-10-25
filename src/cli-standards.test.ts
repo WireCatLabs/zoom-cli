@@ -143,9 +143,9 @@ describe("portable CLI discovery and diagnostics", () => {
     await writeFile(
       deps.configPath,
       JSON.stringify({
-        clientId: "example-secret-client",
+        example_id: "example-secret-client",
         source: "api",
-        account_profile: "example",
+        example_setting: "example",
         files_timezone: "Example/Nowhere",
         profiles: { work: { permissions: { "example.nothing": "deny" } } },
       }),
@@ -166,16 +166,16 @@ describe("portable CLI discovery and diagnostics", () => {
         {
           kind: "unknown_setting",
           file: deps.configPath,
-          key: "clientId",
-          what: "setting clientId is not a setting of zm",
-          fix: "zm config unset clientId",
+          key: "example_id",
+          what: "setting example_id is not a setting of zm",
+          fix: "zm config unset example_id",
         },
         {
           kind: "unknown_setting",
           file: deps.configPath,
-          key: "account_profile",
-          what: "setting account_profile is not a setting of zm",
-          fix: "zm config unset account_profile",
+          key: "example_setting",
+          what: "setting example_setting is not a setting of zm",
+          fix: "zm config unset example_setting",
         },
         {
           kind: "unknown_permission",
@@ -198,7 +198,7 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(await run(["--json", "config", "show"], deps)).toBe(0)
     expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({ source: "api", profiles: ["work"] })
     expect(stderr.join("")).toContain(
-      "setting account_profile is not a setting of zm, so it is left out — `zm config unset account_profile` removes it",
+      "setting example_setting is not a setting of zm, so it is left out — `zm config unset example_setting` removes it",
     )
     for (const { fix } of config.issues) expect(await run((fix ?? "").split(" ").slice(1), deps)).toBe(0)
     expect(await run(["--json", "doctor"], deps)).toBe(0)

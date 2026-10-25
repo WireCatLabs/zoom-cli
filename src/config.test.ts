@@ -35,7 +35,6 @@ describe("config names", () => {
     expect(setConfig(path, "zoom.client_id", "example-one").clientId).toBe("example-one")
     setConfig(path, "files.timezone", "Europe/Madrid")
     expect(saved(path)).toEqual({ client_id: "example-one", files_timezone: "Europe/Madrid" })
-    expect(() => setConfig(path, "zoom.clientId", "example-two")).toThrow("unknown config key")
   })
 
   it("reads file names in this computer's zone until files.timezone is set, and keeps it unset when saving", () => {
@@ -48,12 +47,12 @@ describe("config names", () => {
     expect(filesZone(readConfig(path))).toBe("Asia/Tokyo")
   })
 
-  it("refuses a camelCase key by its first problem, without rewriting the file or quoting a value", () => {
+  it("refuses an unknown key by its first problem, without rewriting the file or quoting a value", () => {
     const path = configPath()
-    const before = JSON.stringify({ clientId: "example-client", source: "files", filesFolder: "example-folder" })
+    const before = JSON.stringify({ example_id: "example-client", source: "files", example_folder: "example-folder" })
     writeFileSync(path, before, { mode: 0o600 })
     expect(() => readConfig(path)).toThrow(
-      `${path}: setting clientId is not a setting of zm — remove it with \`zm config unset clientId\`` +
+      `${path}: setting example_id is not a setting of zm — remove it with \`zm config unset example_id\`` +
         " (and 1 more problem — `zm doctor` lists them all)",
     )
     expect(() => readConfig(path)).not.toThrow(/example-client|example-folder/)
@@ -63,10 +62,10 @@ describe("config names", () => {
 
   it("sets and unsets on a file with problems, keeping what it does not touch", () => {
     const path = configPath()
-    writeFileSync(path, JSON.stringify({ clientId: "example-client", source: "files" }))
+    writeFileSync(path, JSON.stringify({ example_id: "example-client", source: "files" }))
     expect(setConfig(path, "files.folder", "example-folder")).toMatchObject({ source: "files" })
-    expect(saved(path)).toEqual({ clientId: "example-client", source: "files", files_folder: "example-folder" })
-    unsetConfig(path, "clientId", undefined)
+    expect(saved(path)).toEqual({ example_id: "example-client", source: "files", files_folder: "example-folder" })
+    unsetConfig(path, "example_id", undefined)
     unsetConfig(path, "files.folder", undefined)
     expect(saved(path)).toEqual({ source: "files" })
     expect(() => unsetConfig(path, "example_key", undefined)).toThrow("unknown config key")

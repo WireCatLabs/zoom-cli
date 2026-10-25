@@ -52,7 +52,7 @@ package integrity recorded in the lockfile.
 same fresh synthetic state. Baseline packages have a separate frozen lockfile under
 `contracts/previous/`; they install only in full validation and do not add old CLI bins to the
 normal developer executable path. The previous 0.2.1 binary creates the profile and imports the
-transcript. The candidate must refuse its camelCase config without changing it, then
+transcript. The candidate must refuse the config file 0.2.1 wrote without changing it, then
 remove each key with the `config unset` that `doctor` gives and set `files.timezone` again. Candidate commands then
 verify retained meeting IDs, transcript, repeat-import
 deduplication, search and exact export with overwrite refusal.
