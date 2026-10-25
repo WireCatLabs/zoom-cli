@@ -698,6 +698,22 @@ zm commands info [path]
 
 **Example:** `zm commands info commands`
 
+## `zm store`
+
+the shared local store every WireCat tool reads
+
+### `zm store info`
+
+the store file: where it is, its size, its schema against the one this tool speaks, which tools used it and how many rows it holds, by provider, chat kind, account, year (UTC) and attachment kind, over every account; changes nothing
+
+```sh
+zm store info
+```
+
+**Returns:** store info — path, exists, schema, opens, error, bytes, journal_mode, pages, and 12 more; every field: zm commands info store info
+
+**Example:** `zm personal store info --json`
+
 ## `zm complete`
 
 answer shell completion requests
