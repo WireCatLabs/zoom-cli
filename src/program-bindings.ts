@@ -7,7 +7,7 @@ import {
   isCliError,
   projectFields,
 } from "@wirecat/cli-base"
-import { type Body, environmentOf, snakeKeys } from "@wirecat/cli-core/cli"
+import { type Body, commandRuns, environmentOf, snakeKeys } from "@wirecat/cli-core/cli"
 import type { MeetingStore } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
 import { addZoomSkillCommands } from "./agent-skill.js"
@@ -32,6 +32,7 @@ import { chooseProfile } from "./profile.js"
 import { PROFILE_HELP, recordProfile } from "./profile-word.js"
 import type { ProgramDeps } from "./program.js"
 import { addProgressCommands } from "./progress-commands.js"
+import { ZM } from "./read-only.js"
 import { addRecordingScheduleCommands } from "./recording-schedule-commands.js"
 import { zoomRecordingSchedule } from "./recording-schedule-setup.js"
 import {
@@ -43,8 +44,8 @@ import {
 } from "./recordings.js"
 import type { RemoteOptions } from "./remote-http.js"
 import { ZoomRemoteMeetings } from "./remote-meetings.js"
+import { observedFetch } from "./request-events.js"
 import type { ZoomLifecycle } from "./run.js"
-import { commandRuns, runSettings } from "./run-recording.js"
 import { addConfigCommands, addSessionCommands } from "./setup-commands.js"
 import { addStoreCommands } from "./store-commands.js"
 import {
@@ -106,7 +107,12 @@ export const bindZoomProgram = (
       profiles: () => getConfig().profiles,
     }))
   const currentExecution = () => execution
-  const runs = commandRuns(() => formatOf())
+  const runs = commandRuns({
+    app: ZM,
+    settings: getConfig,
+    profile: named,
+    format: () => (formatOf() === "pretty" ? "pretty" : "json"),
+  })
   lifecycle.fail = (error) => runs.fail(error)
   const signal = () => currentExecution()?.signal ?? environmentOf(program).signal ?? deps.signal
   const fetchWithSignal =
@@ -116,7 +122,7 @@ export const bindZoomProgram = (
       if (program.opts().offline)
         throw new CliError("configuration_error", "the command requires network access; remove --offline")
       const operation = signal()
-      return runs.observe(fetcher)(input, {
+      return observedFetch(fetcher, runs.events)(input, {
         ...init,
         signal: operation && init?.signal ? AbortSignal.any([operation, init.signal]) : (operation ?? init?.signal),
       })
@@ -211,15 +217,7 @@ export const bindZoomProgram = (
   })
   lifecycle.prepare = async () => {
     const action = activeAction
-    let configured: ReturnType<typeof readConfig> | undefined
-    let selected = ""
-    try {
-      configured = getConfig()
-      selected = named() ?? ""
-    } catch {
-      // A config or profile that will not load fails the command below; its run is still kept.
-    }
-    runs.start(action, environmentOf(program), runSettings(program.opts().record, configured), selected)
+    runs.start(action)
     const flags = action.optsWithGlobals()
     for (const option of action.options) {
       const key = option.attributeName()

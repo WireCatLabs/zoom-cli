@@ -7,7 +7,7 @@ import { declaredAnswerIssue } from "../scripts/testing/answers.js"
 import { TEST_PROFILE, useProfile } from "../scripts/testing/profile.js"
 import { readConfig, setConfig } from "./config.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
-import { operationOf, runSettings } from "./run-recording.js"
+import { operationOf } from "./request-events.js"
 import { TokenManager } from "./tokens.js"
 
 const setup = async () => {
@@ -169,14 +169,6 @@ it("masks every path segment that is not a fixed word, and drops the host and qu
   expect(operationOf("PATCH", "https://api.zoom.us/v2/meetings/85746065432")).toBe("PATCH /v2/meetings/:id")
   expect(operationOf("POST", "https://zoom.us/oauth/token")).toBe("POST /oauth/token")
   expect(operationOf("GET", "not a url")).toBe("GET :url")
-})
-
-it("takes the flag over the config, and keeps failures unless one of them says no", () => {
-  expect(runSettings(undefined)).toEqual({ record: false, keepFailedRuns: true, keepRunsForDays: 30 })
-  expect(runSettings(undefined, { record: false })).toMatchObject({ keepFailedRuns: false })
-  expect(runSettings(true, { record: false })).toMatchObject({ record: true, keepFailedRuns: true })
-  expect(runSettings(false, { record: true })).toMatchObject({ record: false, keepFailedRuns: false })
-  expect(runSettings(undefined, { keepRunsForDays: 7 })).toMatchObject({ keepRunsForDays: 7 })
 })
 
 it("sets record and keep_runs_for_days in the config and keeps them across other settings", async () => {
