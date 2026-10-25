@@ -15,18 +15,18 @@ These options apply to every command.
 | `--json` | machine-readable output: one JSON value on stdout; --json=id,text keeps only those fields. |
 | `--jsonl` | machine-readable output: one JSON object per line, for streaming and jq. |
 | `--quiet` | diagnostics off; a failure is still said. |
-| `--trace` | the connection's own log lines on stderr — never message content. |
+| `--trace` | the connection's own log lines on stderr — never content. |
 | `--debug` | on a failure, its whole record — cause and stack — in place of the short line. |
 | `--timeout <duration>` | give up on the whole command after this — 30s, 2m, 500ms. |
 | `--offline` | answer from what was recorded and never connect; fails if nothing was. |
 | `--no-input` | never prompt or open interactive login; piped input remains available. |
 | `--max-input-bytes <bytes>` | maximum buffered input bytes (default: 16777216). |
 | `--max-output-bytes <bytes>` | maximum machine output bytes (default: 4194304; 0 disables). |
-| `--brief` | found messages as reference, title, time, sender and excerpt only. |
-| `--full` | found messages with their whole text and every provider field. |
+| `--brief` | found items as reference, title, time, author and excerpt only. |
+| `--full` | found items with their whole text and every provider field. |
 | `--dry-run` | preview parsed arguments and permissions before running the action. |
 | `--yes` | go ahead without the question an ask level puts before a write. |
-| `--record` | keep this run — ids and timings, never message content. |
+| `--record` | keep this run — ids and timings, never content. |
 | `--no-record` | do not keep it, whatever the configuration says. |
 
 ## `zm config`
@@ -231,7 +231,7 @@ zm meetings sync [options]
 
 **Returns:** meeting ingestion — meetings, participants, transcript_rows, summaries, warnings, timezone; every field: zm commands info meetings sync
 
-**Example:** `zm personal meetings sync --json`
+**Example:** `zm personal meetings sync --dry-run --json`
 
 ### `zm meetings import`
 
@@ -383,7 +383,7 @@ zm meetings update <reference> [options]
 
 **Returns:** meeting association — scope, account_id, meeting_id, change, applied, result; every field: zm commands info meetings update
 
-**Example:** `zm personal meetings update meeting:1/1 --event-id 1 --yes --json`
+**Example:** `zm personal meetings update meeting:1/1 --event-id 1 --json`
 
 ### `zm meetings link`
 
@@ -410,7 +410,7 @@ zm meetings link <reference> [options]
 
 **Returns:** meeting association — scope, account_id, meeting_id, change, applied, result; every field: zm commands info meetings link
 
-**Example:** `zm personal meetings link meeting:1/1 --participant-id 1 --person 1 --yes --json`
+**Example:** `zm personal meetings link meeting:1/1 --participant-id 1 --person 1 --json`
 
 ### `zm meetings transcribe`
 
@@ -617,7 +617,7 @@ zm commands info [path]
 
 **Returns:** one command contract, or all schemas, error reasons and explicit overrides
 
-**Example:** `zm commands info messages list`
+**Example:** `zm commands info commands`
 
 ## `zm complete`
 
@@ -665,7 +665,7 @@ zm session status [options]
 
 **Returns:** show cached login state; remote verification is explicit
 
-**Example:** `zm personal session status --json`, `zm personal session status --check --json`
+**Example:** `zm personal session status --json`, `zm personal session status --check --dry-run --json`
 
 ### `zm session start`
 
@@ -771,7 +771,7 @@ zm watch [target] [folder] [options]
 
 **Returns:** meeting ingestion — meetings, participants, transcript_rows, summaries, warnings, timezone; every field: zm commands info watch
 
-**Example:** `zm personal watch files ./downloads --pause 10s --jsonl`, `zm personal watch api --lookback-days 2 --jsonl`
+**Example:** `zm personal watch files ./downloads --pause 10s --jsonl`, `zm personal watch api --lookback-days 2 --dry-run --jsonl`
 
 ## `zm recordings`
 
@@ -797,7 +797,7 @@ zm recordings list [query] [options]
 
 **Returns:** zoom recording — id, uuid, title, started_at, assets; every field: zm commands info recordings list
 
-**Example:** `zm personal recordings list --since-time 2026-10-01 --until-time 2026-10-10 --json`
+**Example:** `zm personal recordings list --since-time 2026-10-01 --until-time 2026-10-10 --dry-run --json`
 
 ### `zm recordings show`
 
@@ -813,7 +813,7 @@ zm recordings show <meeting>
 
 **Returns:** zoom recording — id, uuid, title, started_at, assets; every field: zm commands info recordings show
 
-**Example:** `zm personal recordings show example-occurrence --json`
+**Example:** `zm personal recordings show example-occurrence --dry-run --json`
 
 ### `zm recordings download`
 
@@ -845,7 +845,7 @@ zm recordings download [meeting] [options]
 
 **Returns:** zoom archive — uuid, manifest_path, downloaded, skipped, unavailable, window, meeting, archive, and 2 more; every field: zm commands info recordings download
 
-**Example:** `zm personal recordings download example-occurrence --output-dir ./zoom-archive --json`, `zm personal recordings download --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl`
+**Example:** `zm personal recordings download example-occurrence --output-dir ./zoom-archive --dry-run --json`, `zm personal recordings download --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --dry-run --jsonl`
 
 ### `zm recordings archive`
 
@@ -1047,7 +1047,7 @@ zm recordings schedule run <job>
 
 **Returns:** zoom archive receipt — window, meeting, archive, availability, checkpoint_revision; every field: zm commands info recordings schedule run
 
-**Example:** `zm personal recordings schedule run example-job --jsonl`
+**Example:** `zm personal recordings schedule run example-job --dry-run --jsonl`
 
 #### `zm recordings schedule disable`
 
@@ -1070,7 +1070,7 @@ zm recordings schedule disable <job> [options]
 
 **Returns:** zoom archive schedule change — applied, backend, job, timer_state, units; every field: zm commands info recordings schedule disable
 
-**Example:** `zm personal recordings schedule disable example-job --yes --json`
+**Example:** `zm personal recordings schedule disable example-job --json`
 
 ### `zm recordings status`
 
@@ -1110,7 +1110,7 @@ zm remote-meetings list [query]
 
 **Returns:** zoom remote meeting — id, uuid, title, type, started_at, duration_minutes, timezone, agenda, and 1 more; every field: zm commands info remote-meetings list
 
-**Example:** `zm personal remote-meetings list --json`
+**Example:** `zm personal remote-meetings list --dry-run --json`
 
 ### `zm remote-meetings show`
 
@@ -1126,7 +1126,7 @@ zm remote-meetings show <meeting>
 
 **Returns:** zoom remote meeting — id, uuid, title, type, started_at, duration_minutes, timezone, agenda, and 1 more; every field: zm commands info remote-meetings show
 
-**Example:** `zm personal remote-meetings show 123456789 --json`
+**Example:** `zm personal remote-meetings show 123456789 --dry-run --json`
 
 ### `zm remote-meetings invitation`
 
@@ -1142,7 +1142,7 @@ zm remote-meetings invitation <meeting>
 
 **Returns:** zoom remote invitation — id, invitation; every field: zm commands info remote-meetings invitation
 
-**Example:** `zm personal remote-meetings invitation 123456789 --json`
+**Example:** `zm personal remote-meetings invitation 123456789 --dry-run --json`
 
 ### `zm remote-meetings create`
 
@@ -1570,7 +1570,7 @@ zm searches delete <name>
 
 **Returns:** saved search — id, name, command, params, language, version, fields_version, created_at, and 2 more; every field: zm commands info searches delete
 
-**Example:** `zm personal searches delete weekly-plan`
+**Example:** `zm personal searches delete weekly-plan --dry-run`
 
 ## `zm batch`
 

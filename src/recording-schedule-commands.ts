@@ -129,7 +129,7 @@ export const addRecordingScheduleCommands = (
         for await (const receipt of deps.service().run(id, { offline: deps.offline(), signal: deps.signal() }))
           await deps.receipt(itemOf(receipt))
       }),
-    "zm personal recordings schedule run example-job --jsonl",
+    "zm personal recordings schedule run example-job --dry-run --jsonl",
     FETCH,
   )
   label(
@@ -143,7 +143,7 @@ export const addRecordingScheduleCommands = (
           await deps.service().disable(id, { apply: options.yes, dryRun: options.dryRun, signal: deps.signal() }),
         )
       }),
-    "zm personal recordings schedule disable example-job --yes --json",
+    "zm personal recordings schedule disable example-job --json",
     LOCAL_WRITE,
   )
 }

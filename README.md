@@ -284,7 +284,7 @@ More: [MCP and skills][docs/mcp.md] · [MCP and skills on wirecat.dev][wirecat/e
 ## Manage Zoom meetings
 
 ```sh
-zm personal remote-meetings create --title "Example planning" --start-time 2026-10-20T10:00:00Z --duration-minutes 30 --json
+zm personal remote-meetings create --title "Example planning" --start-time 2026-10-20T10:00:00Z --duration-minutes 30 --dry-run --json
 zm personal remote-meetings cancel 123456789 --dry-run --json
 ```
 
