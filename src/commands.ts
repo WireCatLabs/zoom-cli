@@ -68,7 +68,7 @@ const addStandardCommandsDefinition = (program: Command, deps: StandardCommandsD
       ),
     {
       effects: REMOTE_READ,
-      examples: ["zm personal session status --json", "zm personal session status --check --json"],
+      examples: ["zm personal session status --json", "zm personal session status --check --dry-run --json"],
     },
   )
 }
@@ -118,6 +118,7 @@ const exampleFor = (path: string): string => {
   const argumentsByPath: Record<string, string> = {
     "commands info": "meetings list",
     "config set": "files.timezone Europe/Madrid",
+    "meetings sync": "--dry-run",
     "meetings show": "1",
     "meetings transcript": "1",
     "meetings summary": "1",

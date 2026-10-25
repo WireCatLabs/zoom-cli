@@ -128,7 +128,7 @@ export const addMeetingSearchesCommands = (
   annotate(searches.command("delete"), {
     effects: LOCAL_WRITE,
     output: { entity: "saved_search" },
-    examples: ["zm personal searches delete weekly-plan"],
+    examples: ["zm personal searches delete weekly-plan --dry-run"],
   })
     .description("delete a saved search")
     .argument("<name>", "a saved search's name")
