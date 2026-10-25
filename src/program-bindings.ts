@@ -44,6 +44,7 @@ import {
 import type { RemoteOptions } from "./remote-http.js"
 import { ZoomRemoteMeetings } from "./remote-meetings.js"
 import type { ZoomLifecycle } from "./run.js"
+import { commandRuns, runSettings } from "./run-recording.js"
 import { addConfigCommands, addSessionCommands } from "./setup-commands.js"
 import { addStoreCommands } from "./store-commands.js"
 import {
@@ -105,6 +106,8 @@ export const bindZoomProgram = (
       profiles: () => getConfig().profiles,
     }))
   const currentExecution = () => execution
+  const runs = commandRuns(() => formatOf())
+  lifecycle.fail = (error) => runs.fail(error)
   const signal = () => currentExecution()?.signal ?? environmentOf(program).signal ?? deps.signal
   const fetchWithSignal =
     (fetcher: typeof fetch): typeof fetch =>
@@ -113,7 +116,7 @@ export const bindZoomProgram = (
       if (program.opts().offline)
         throw new CliError("configuration_error", "the command requires network access; remove --offline")
       const operation = signal()
-      return fetcher(input, {
+      return runs.observe(fetcher)(input, {
         ...init,
         signal: operation && init?.signal ? AbortSignal.any([operation, init.signal]) : (operation ?? init?.signal),
       })
@@ -208,6 +211,15 @@ export const bindZoomProgram = (
   })
   lifecycle.prepare = async () => {
     const action = activeAction
+    let configured: ReturnType<typeof readConfig> | undefined
+    let selected = ""
+    try {
+      configured = getConfig()
+      selected = named() ?? ""
+    } catch {
+      // A config or profile that will not load fails the command below; its run is still kept.
+    }
+    runs.start(action, environmentOf(program), runSettings(program.opts().record, configured), selected)
     const flags = action.optsWithGlobals()
     for (const option of action.options) {
       const key = option.attributeName()
@@ -219,7 +231,7 @@ export const bindZoomProgram = (
     if (asking) await asking
     const opts = action.optsWithGlobals()
     if (opts.json && opts.jsonl) throw new CliError("validation_error", "choose --json or --jsonl")
-    execution = sharedExecution(action, environmentOf(program), deps.now)
+    execution = sharedExecution(action, environmentOf(program), deps.now, runs.runId())
     checkCancelled(signal())
     if (
       (action.parent?.name() === "meetings" && ["sync", "import"].includes(action.name())) ||
@@ -450,5 +462,6 @@ export const bindZoomProgram = (
     checkCancelled(signal())
     execution?.output.flush(given.data)
     execution = undefined
+    await runs.succeed()
   })
 }

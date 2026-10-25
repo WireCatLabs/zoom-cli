@@ -29,6 +29,67 @@ These options apply to every command.
 | `--record` | keep this run — ids and timings, never content. |
 | `--no-record` | do not keep it, whatever the configuration says. |
 
+## `zm runs`
+
+recorded runs — what this tool did, and when
+
+### `zm runs list`
+
+recorded runs, newest first
+
+```sh
+zm runs list [query] [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `query` | optional | field:value terms that narrow the list — the fields are below. |
+
+| Option | What it does |
+|---|---|
+| `--limit <n>` | how many to show. Default: `20`. |
+| `--page <n>` | which page, starting at 1. Default: `1`. |
+
+**Returns:** run — run_id, command, profile, started_at, status, cli_version, completed_at, requests, and 15 more; every field: zm commands info runs list
+
+**Example:** `zm personal runs list --limit 10`
+
+### `zm runs show`
+
+one run: what it was, how it ended, and every event it logged
+
+```sh
+zm runs show <run-id> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `run-id` | required | an id from `zm runs list`. |
+
+| Option | What it does |
+|---|---|
+| `--problems` | only failed responses, warnings and crashes. |
+
+**Returns:** run details — run_id, command, profile, started_at, status, cli_version, directory, event_count, and 14 more; every field: zm commands info runs show
+
+**Example:** `zm personal runs show run-101`
+
+### `zm runs path`
+
+the directory holding one run
+
+```sh
+zm runs path <run-id>
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `run-id` | required | an id from `zm runs list`. |
+
+**Returns:** run location — path; every field: zm commands info runs path
+
+**Example:** `zm personal runs path run-101`
+
 ## `zm config`
 
 local Zoom configuration

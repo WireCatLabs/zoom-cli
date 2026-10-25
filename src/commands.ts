@@ -17,6 +17,7 @@ import {
   NO_EFFECTS,
   overrideSharedContract,
   REMOTE_READ,
+  runsCommand,
   sharedCommandTemplate,
 } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
@@ -110,7 +111,21 @@ export const PROFILE_FREE = new Set([
   "skill",
   "upgrade",
   "models",
+  "runs",
 ])
+
+/** cli-core's `runs`, read without a profile: one log per computer, whatever profile a run was for. */
+export const zoomRunsCommand = (): Command => {
+  const runs = runsCommand(ZM)
+  overrideSharedContract(
+    runs,
+    "Zoom declares effects on every command group, the shared run log's included.",
+    (group) => {
+      annotate(group, { effects: NO_EFFECTS })
+    },
+  )
+  return runs
+}
 const exampleFor = (path: string): string => {
   const profile = PROFILE_FREE.has(path.split(" ")[0] ?? "") ? "" : "personal "
   if (path === "mcp") return "zm personal mcp"

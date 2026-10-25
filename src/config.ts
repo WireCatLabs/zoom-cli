@@ -22,6 +22,9 @@ export interface ZoomConfig {
   /** The profile that owns a login saved before profiles were words; only that one may take it over. */
   legacyProfile: string | null
   contextSources?: ConfiguredContextSource[]
+  /** Keep every run, not only the failed ones. */
+  record?: boolean
+  keepRunsForDays?: number
 }
 
 const ProfileEntry = v.strictObject({
@@ -55,6 +58,8 @@ const ConfigFile = v.strictObject({
   account_profile: v.optional(v.nullable(v.pipe(v.string(), v.regex(profilePattern)))),
   profiles: v.optional(v.record(v.pipe(v.string(), v.regex(profilePattern)), ProfileEntry)),
   context_sources: v.optional(contextSourcesSchema),
+  record: v.optional(v.boolean()),
+  keep_runs_for_days: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
 })
 
 // The loader's issue text quotes the offending value ("received …"), which can be the client id.
@@ -91,6 +96,8 @@ export const readConfig = (path: string): ZoomConfig => {
         ),
       ),
       ...(file.context_sources === undefined ? {} : { contextSources: file.context_sources }),
+      ...(file.record === undefined ? {} : { record: file.record }),
+      ...(file.keep_runs_for_days === undefined ? {} : { keepRunsForDays: file.keep_runs_for_days }),
     }
   } catch (error) {
     if (isCliError(error)) throw new CliError("configuration_error", keyOnly(error.message))
@@ -109,6 +116,8 @@ const saveConfig = (path: string, config: ZoomConfig): void =>
       config.profiles.map((name) => [name, config.permissions[name] ? { permissions: config.permissions[name] } : {}]),
     ),
     ...(config.contextSources === undefined ? {} : { context_sources: config.contextSources }),
+    ...(config.record === undefined ? {} : { record: config.record }),
+    ...(config.keepRunsForDays === undefined ? {} : { keep_runs_for_days: config.keepRunsForDays }),
   })
 
 /**
@@ -161,6 +170,15 @@ export const setConfig = (
         throw new CliError("validation_error", "expected an IANA time zone")
       }
       config.filesTimezone = value
+      break
+    case "record":
+      if (value !== "true" && value !== "false") throw new CliError("validation_error", "record must be true or false")
+      config.record = value === "true"
+      break
+    case "keep_runs_for_days":
+      if (!/^[1-9]\d{0,4}$/.test(value))
+        throw new CliError("validation_error", "keep_runs_for_days must be a whole number of days, 1 or more")
+      config.keepRunsForDays = Number(value)
       break
     default:
       throw new CliError("validation_error", "unknown config key")

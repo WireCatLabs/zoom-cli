@@ -4,7 +4,7 @@ import { createInterface } from "node:readline/promises"
 import { addAbortSignal } from "node:stream"
 import { fileURLToPath } from "node:url"
 import { CliError, isCliError, readBatchInput, systemKeyring } from "@wirecat/cli-base"
-import { startCli } from "@wirecat/cli-core/cli"
+import { runsDirFor, startCli } from "@wirecat/cli-core/cli"
 import { reportFailure } from "../answer-policy.js"
 import { readConfig } from "../config.js"
 import { loginService, zmPaths } from "../folders.js"
@@ -23,7 +23,7 @@ await startCli({
     const paths = zmPaths()
     const configPath = join(paths.config, "config.json")
     const tokenRun = lazyRunLog({
-      runsDir: join(paths.state, "runs"),
+      runsDir: runsDirFor(ZM, entry.env),
       command: "oauth token",
       version: VERSION,
       allow: TOKEN_LOG_ALLOW,
