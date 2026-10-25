@@ -98,7 +98,7 @@ it("bounds each receipt and propagates stdout failure without enqueueing another
 
 it("streams bounded archive sync receipts with consumer backpressure", async () => {
   const { deps, output } = await setup()
-  setConfig(deps.configPath, "zoom.clientId", "example")
+  setConfig(deps.configPath, "zoom.client_id", "example")
   useProfile(deps.configPath, "example-profile")
   let release: (() => void) | undefined
   let writing: (() => void) | undefined
@@ -152,7 +152,7 @@ it("streams bounded archive sync receipts with consumer backpressure", async () 
 
 it("keeps streamed download receipts after failure and withholds incomplete aggregate output", async () => {
   const { deps, output, folder } = await setup()
-  setConfig(deps.configPath, "zoom.clientId", "example")
+  setConfig(deps.configPath, "zoom.client_id", "example")
   useProfile(deps.configPath, "example-profile")
   deps.recordings = {
     list: async () => [],

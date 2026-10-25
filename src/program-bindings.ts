@@ -27,7 +27,7 @@ import { type ContextCapture, captureContextSources } from "./meeting-communicat
 import { addZoomInventoryCommand } from "./meeting-inventory.js"
 import type { ZoomPreparationOptions } from "./meeting-preparation.js"
 import { configuredMeetingSource } from "./meeting-source.js"
-import { discoveryLevels, guardCommand } from "./permissions.js"
+import { discoveryLevels, guardCommand, permissionKeys } from "./permissions.js"
 import { chooseProfile } from "./profile.js"
 import { PROFILE_HELP, recordProfile } from "./profile-word.js"
 import type { ProgramDeps } from "./program.js"
@@ -86,7 +86,7 @@ export const bindZoomProgram = (
     }
   }
   let config: ReturnType<typeof readConfig> | undefined
-  const getConfig = () => (config ??= readConfig(deps.configPath))
+  const getConfig = () => (config ??= readConfig(deps.configPath, permissionKeys(program)))
   let connecting: Promise<StoreConnection> | undefined
   let execution: ExecutionState | undefined
   let fields: string[] | undefined
@@ -123,7 +123,7 @@ export const bindZoomProgram = (
     }
   const tokens = () =>
     (activeTokens ??= deps.tokens
-      .forProfile(profile(), getConfig().legacyProfile)
+      .forProfile(profile())
       .withSignal(signal(), fetchWithSignal(deps.tokens.options.fetch)))
   const buffer = (text: string) => {
     if (!execution) throw new CliError("configuration_error", "command execution is not initialized")
@@ -268,7 +268,7 @@ export const bindZoomProgram = (
     }
     output(wholeList("list", items))
   }
-  addConfigCommands(program, { configPath: deps.configPath, getConfig, output, profile })
+  addConfigCommands(program, { configPath: deps.configPath, output, warn: deps.diagnostic, named })
   const fetchApi = () => fetchWithSignal(deps.fetch)
   const configured = configuredMeetingSource({ deps, getConfig, tokens, fetch: fetchApi, zones })
   const source = configured.source
@@ -423,7 +423,10 @@ export const bindZoomProgram = (
   addMcpCommands(program, {
     profile,
     permissions: (name) =>
-      discoveryLevels(readConfig(deps.configPath).permissions[name] ?? {}, deps.env ?? process.env),
+      discoveryLevels(
+        readConfig(deps.configPath, permissionKeys(program)).permissions[name] ?? {},
+        deps.env ?? process.env,
+      ),
     run: (argv, environment) => runForAgent(execute, argv, given, environment),
     signal,
     serve: deps.serveMcp,

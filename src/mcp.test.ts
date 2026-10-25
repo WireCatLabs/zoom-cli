@@ -52,7 +52,7 @@ const setup = async (permissions?: Record<string, string>, line = "Ship the exam
     diagnostic: () => {},
     remoteMeetings: { create: created } as unknown as RemoteMeetingsService,
   }
-  setConfig(deps.configPath, "zoom.clientId", "example-client")
+  setConfig(deps.configPath, "zoom.client_id", "example-client")
   useProfile(deps.configPath, "work", env)
   delete env.ZM_PROFILE
   const transcripts = join(directory, "transcripts")
@@ -218,15 +218,6 @@ it("serves the named profile's commands from the command line", async () => {
   expect(paths(options?.commands ?? [])).toContain("meetings list")
 })
 
-it("points the old serve command at the profile's mcp command", async () => {
-  const { deps } = await setup()
-  const errors: string[] = []
-  const serveMcp = vi.fn(async (_options: ZoomMcpOptions) => {})
-  expect(await run(["work", "serve", "--mcp"], { ...deps, serveMcp, diagnostic: (text) => errors.push(text) })).toBe(2)
-  expect(errors.join("")).toContain("zm <profile> mcp")
-  expect(serveMcp).not.toHaveBeenCalled()
-})
-
 it("serves over a transport until the command is stopped", async () => {
   const [serverSide, clientSide] = InMemoryTransport.createLinkedPair()
   const controller = new AbortController()
@@ -304,33 +295,4 @@ it("runs date-range downloads through the same typed command over MCP", async ()
   })
   expect(answer.isError).toBeFalsy()
   expect(answer.structuredContent).toMatchObject({ items: [{ meeting: { uuid: "example-occurrence" } }] })
-  const retired = await call("zm_write", { command: "recordings sync", arguments: {} })
-  expect(retired.isError).toBe(true)
-  expect(retired.structuredContent.error.code).toBe("validation_error")
-})
-
-it("refuses MCP startup with a retired recording permission", async () => {
-  await expect(setup({ "recordings.sync": "deny" })).rejects.toMatchObject({
-    code: "configuration_error",
-    details: { replacement: "recordings.download" },
-  })
-})
-
-it("fails closed if a retired recording permission appears after MCP startup", async () => {
-  const permissions: Record<string, string> = {}
-  const { call, deps } = await setup(permissions)
-  const fetch = vi.fn(async (): Promise<never> => {
-    throw new Error("unexpected network")
-  })
-  deps.fetch = fetch
-  permissions["recordings.sync"] = "deny"
-  const refused = await call("zm_write", {
-    command: "recordings download",
-    arguments: { meeting: "example", output_dir: "unused" },
-  })
-  expect(refused.isError).toBe(true)
-  expect(refused.structuredContent).toMatchObject({
-    error: { code: "configuration_error", message: expect.stringContaining("permissions.recordings.download") },
-  })
-  expect(fetch).not.toHaveBeenCalled()
 })

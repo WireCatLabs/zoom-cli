@@ -69,8 +69,8 @@ it("keeps a failed command's run and lists it without a profile", async () => {
 it("keeps the failure of a config that will not load", async () => {
   const { deps, kept } = await setup()
   await writeFile(deps.configPath, "invalid")
-  expect(await run(["config", "show", "--json"], deps)).not.toBe(0)
-  expect(await kept()).toMatchObject([{ command: "config show", status: "failed" }])
+  expect(await run(["example", "meetings", "list", "--json"], deps)).not.toBe(0)
+  expect(await kept()).toMatchObject([{ command: "meetings list", status: "failed" }])
 })
 
 it("keeps a successful run only with --record or record in the config", async () => {
@@ -96,7 +96,7 @@ it("logs each Zoom request's masked operation, status and duration, and the answ
   const { deps, stdout, requests, kept, listed } = await setup()
   setConfig(deps.configPath, "zoom.client_id", "example-client")
   useProfile(deps.configPath, TEST_PROFILE, deps.env)
-  deps.tokens.forProfile(TEST_PROFILE, null).save({
+  deps.tokens.forProfile(TEST_PROFILE).save({
     accessToken: "example-access",
     refreshToken: "example-refresh",
     expiresAt: Number.MAX_SAFE_INTEGER,
@@ -137,7 +137,7 @@ it("keeps a request that never got an answer as an error response in the failed 
   const { deps, kept } = await setup()
   setConfig(deps.configPath, "zoom.client_id", "example-client")
   useProfile(deps.configPath, TEST_PROFILE, deps.env)
-  deps.tokens.forProfile(TEST_PROFILE, null).save({
+  deps.tokens.forProfile(TEST_PROFILE).save({
     accessToken: "example-access",
     refreshToken: "example-refresh",
     expiresAt: Number.MAX_SAFE_INTEGER,

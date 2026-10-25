@@ -215,7 +215,7 @@ it.each(["create", "disable"] as const)(
       runtime: fixture.job.capture.runtime,
       cliPath: fixture.job.capture.cliPath,
     }
-    setConfig(fixture.deps.configPath, "zoom.clientId", "example-client")
+    setConfig(fixture.deps.configPath, "zoom.client_id", "example-client")
     useProfile(fixture.deps.configPath, "AliceExample")
     const committed = {
       applied: true,

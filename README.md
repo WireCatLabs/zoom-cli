@@ -143,7 +143,7 @@ More: [compared with other tools](https://github.com/WireCatLabs/zoom-cli/blob/m
 
 | Task | Commands |
 |---|---|
-| Set up and log in | `config show`, `config set <key> <value>`, `session start [--browser <program>]`, `session status [--check]`, `doctor` |
+| Set up and log in | `config show`, `config set <key> <value>`, `config unset <key>`, `session start [--browser <program>]`, `session status [--check]`, `doctor` |
 | Bring meetings in | `meetings sync [--since-time <time>] [--lookback-days <days>]`, `meetings import <folder>`, `watch [api\|files] [folder] --jsonl` |
 | Read stored meetings | `meetings list`, `meetings show <meeting>`, `meetings transcript <meeting>`, `meetings summary <meeting>`, `meetings export <meeting> --format markdown\|vtt`, `events list` |
 | Search | `search meetings <query>`, `meetings people <query>`, `search all <query>` |

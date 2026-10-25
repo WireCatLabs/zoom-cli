@@ -103,15 +103,15 @@ describe("command execution controls", () => {
   })
   it("rejects invalid and zero timeout controls before config writes or remote dispatch", async () => {
     const { deps, stdout } = await setup()
-    for (const text of ["0", "0ms", "-1", "bad", "2d", "2147483648", "0.1ms"])
-      expect(await run(["--timeout", text, "config", "set", "account.profile", "example"], deps)).toBe(2)
+    for (const text of ["0", "0ms", "-1", "bad", "2147483648", "0.1ms"])
+      expect(await run(["--timeout", text, "config", "set", "files.timezone", "UTC"], deps)).toBe(2)
     await expect(access(deps.configPath)).rejects.toThrow()
     expect(await run(["--max-output-bytes", "-1", "doctor"], deps)).toBe(2)
     expect(stdout).toEqual([])
   })
   it("rejects offline API work before opening a store or loading credentials", async () => {
     const { deps, stdout } = await setup()
-    setConfig(deps.configPath, "zoom.clientId", "example-client")
+    setConfig(deps.configPath, "zoom.client_id", "example-client")
     useProfile(deps.configPath, "example")
     vi.spyOn(deps.tokens.options.keyring, "get").mockImplementation(() => {
       throw new Error("unexpected keyring")
@@ -172,7 +172,7 @@ describe("command execution controls", () => {
   })
   it("propagates a command deadline through provider fetch and never guesses a write outcome", async () => {
     const { deps, stdout, stderr } = await setup()
-    setConfig(deps.configPath, "zoom.clientId", "example-client")
+    setConfig(deps.configPath, "zoom.client_id", "example-client")
     let expire: () => void = () => {}
     deps.sleep = async (_ms, signal) =>
       new Promise<void>((resolve, reject) => {
@@ -180,7 +180,7 @@ describe("command execution controls", () => {
         signal?.addEventListener("abort", () => reject(new Error("timer disposed")), { once: true })
       })
     let calls = 0
-    deps.tokens.forProfile("example", null).save({
+    deps.tokens.forProfile("example").save({
       accessToken: "example",
       refreshToken: "example",
       expiresAt: 3600000,
@@ -214,7 +214,7 @@ describe("command execution controls", () => {
     expect(timers.mock.calls.some(([, ms]) => ms === 30000)).toBe(true)
     timers.mockClear()
     expect(Object.keys(value(stdout))).toContain("authentication")
-    setConfig(deps.configPath, "zoom.clientId", "example-client")
+    setConfig(deps.configPath, "zoom.client_id", "example-client")
     useProfile(deps.configPath, "example-profile")
     deps.recordings = { list: async () => [], show: async () => meeting, download: async () => archive, catalog }
     expect(await run(["recordings", "download", "example", "--output-dir", "invented"], deps)).toBe(0)
@@ -235,7 +235,7 @@ describe("command execution controls", () => {
 describe("login without a terminal", () => {
   it("answers JSON and prints the URL an agent passes on, even with --quiet", async () => {
     const { deps, stdout, stderr } = await setup()
-    setConfig(deps.configPath, "zoom.clientId", "example-client")
+    setConfig(deps.configPath, "zoom.client_id", "example-client")
     deps.outputIsTTY = false
     deps.openBrowser = async (url) => {
       const state = new URL(url).searchParams.get("state") ?? ""
@@ -256,7 +256,7 @@ describe("archive and explicit remote command wiring", () => {
     ["America/Los_Angeles", "2026-10-22T03:00:00Z", "2026-09-21", "2026-10-21"],
   ])("ends the default recordings list on today in %s, and names that zone", async (zone, now, from, to) => {
     const { deps, stdout } = await setup()
-    setConfig(deps.configPath, "zoom.clientId", "example-client")
+    setConfig(deps.configPath, "zoom.client_id", "example-client")
     const list = vi.fn(async () => [])
     deps.recordings = { list, show: vi.fn(), download: vi.fn(), catalog }
     deps.now = () => Date.parse(now)
@@ -269,7 +269,7 @@ describe("archive and explicit remote command wiring", () => {
     process.env.TZ = "Asia/Vladivostok"
     try {
       const { deps } = await setup()
-      setConfig(deps.configPath, "zoom.clientId", "example-client")
+      setConfig(deps.configPath, "zoom.client_id", "example-client")
       const list = vi.fn(async () => [])
       deps.recordings = { list, show: vi.fn(), download: vi.fn(), catalog }
       deps.now = () => Date.parse("2026-10-21T23:30:00Z")
@@ -282,7 +282,7 @@ describe("archive and explicit remote command wiring", () => {
   })
   it("says text times are UTC, and only when text shows one", async () => {
     const { deps, stdout } = await setup()
-    setConfig(deps.configPath, "zoom.clientId", "example-client")
+    setConfig(deps.configPath, "zoom.client_id", "example-client")
     const list = vi.fn(async () => [meeting])
     deps.recordings = { list, show: vi.fn(), download: vi.fn(), catalog }
     deps.outputIsTTY = true
@@ -300,7 +300,7 @@ describe("archive and explicit remote command wiring", () => {
   })
   it("refuses an unknown --timezone before listing", async () => {
     const { deps, stderr } = await setup()
-    setConfig(deps.configPath, "zoom.clientId", "example-client")
+    setConfig(deps.configPath, "zoom.client_id", "example-client")
     const list = vi.fn(async () => [])
     deps.recordings = { list, show: vi.fn(), download: vi.fn(), catalog }
     expect(await run(["--json", "recordings", "list", "--timezone", "Mars/Example"], deps)).toBe(2)
@@ -309,7 +309,7 @@ describe("archive and explicit remote command wiring", () => {
   })
   it("lists/shows/downloads recording metadata with explicit options and no database", async () => {
     const { deps, stdout } = await setup()
-    setConfig(deps.configPath, "zoom.clientId", "example-client")
+    setConfig(deps.configPath, "zoom.client_id", "example-client")
     useProfile(deps.configPath, "example-profile")
     const list = vi.fn(async () => [meeting])
     const show = vi.fn(async () => meeting)
@@ -476,7 +476,7 @@ describe("archive and explicit remote command wiring", () => {
   })
   it("dispatches explicit mutations once and keeps remote reads separate from stored reads", async () => {
     const { deps, stdout } = await setup()
-    setConfig(deps.configPath, "zoom.clientId", "example-client")
+    setConfig(deps.configPath, "zoom.client_id", "example-client")
     const calls: string[] = []
     deps.remoteMeetings = {
       list: async () => {
@@ -739,7 +739,7 @@ it("closes a connection that arrives after cancellation and never exposes its da
 
 it("refuses malformed provider answers and preserves uncertainty for acknowledged changes", async () => {
   const { deps, stdout, stderr } = await setup()
-  setConfig(deps.configPath, "zoom.clientId", "example-client")
+  setConfig(deps.configPath, "zoom.client_id", "example-client")
   useProfile(deps.configPath, "example")
   deps.remoteMeetings = {
     show: async () => ({ private: "fixture hidden provider data" }),

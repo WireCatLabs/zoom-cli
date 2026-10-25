@@ -147,14 +147,6 @@ describe("authentication termination", () => {
 })
 
 describe("token validation and refresh recovery", () => {
-  it("lets only the legacy profile take over a login saved under the plain client id, and copies it", () => {
-    const tokens = manager()
-    const saved = { accessToken: "example-old", refreshToken: "example-old-refresh", expiresAt: 60000, scopes: [] }
-    tokens.save(saved)
-    expect(tokens.forProfile("other-example", "legacy-example").load()).toBeNull()
-    expect(tokens.forProfile("legacy-example", "legacy-example").load()).toEqual(saved)
-    expect(tokens.options.keyring.get("example", "example-client:legacy-example")).toBe(JSON.stringify(saved))
-  })
   it("sanitizes invalid JSON and transport failures without retrying token exchange", async () => {
     let calls = 0
     const tokens = manager(async () => {
@@ -234,20 +226,22 @@ describe("CLI configuration isolation", () => {
     expect(await run(["--version"], deps)).toBe(0)
     expect(stdout.join("")).toContain("Zoom meeting")
     expect(stderr).toEqual([])
-    expect(await run(["config", "show"], deps)).toBe(3)
+    expect(await run(["config", "show"], deps)).toBe(0)
+    expect(stderr.join("")).toContain("the file is not valid JSON, so it is left out")
+    expect(await run(["example", "meetings", "list"], deps)).toBe(3)
   })
   it("rejects whitespace client ids, conflicts and disabled input before side effects", async () => {
     const { deps, stdout, stderr } = await setup()
-    expect(await run(["config", "set", "zoom.clientId", "example client"], deps)).toBe(2)
+    expect(await run(["config", "set", "zoom.client_id", "example client"], deps)).toBe(2)
     expect(stdout).toEqual([])
     expect(stderr).toHaveLength(1)
-    setConfig(deps.configPath, "zoom.clientId", "example-client")
+    setConfig(deps.configPath, "zoom.client_id", "example-client")
     expect(await run(["--json", "--jsonl", "config", "show"], deps)).toBe(2)
     expect(await run(["--no-input", "example", "session", "start"], deps)).toBe(3)
   })
   it("reports browser and token exchange failures with their structured exit codes", async () => {
     const { deps, stderr } = await setup()
-    setConfig(deps.configPath, "zoom.clientId", "example-client")
+    setConfig(deps.configPath, "zoom.client_id", "example-client")
     expect(await run(["example", "session", "start"], deps)).toBe(3)
     expect(JSON.parse(stderr.at(-1) ?? "{}").error.code).toBe("configuration_error")
     deps.openBrowser = async (url) => {
@@ -277,7 +271,7 @@ it("constructs the API source lazily and respects an injected source", async () 
   const { deps } = await setup()
   deps.store = memoryMeetingStore()
   deps.accountId = 1
-  deps.tokens.forProfile("example", null).save({
+  deps.tokens.forProfile("example").save({
     accessToken: "example-access",
     refreshToken: "example-refresh",
     expiresAt: 3600000,
@@ -297,7 +291,7 @@ it("reads zone-less Zoom times in the computer's zone, marks them and warns once
     const { deps, stderr } = await setup()
     deps.store = memoryMeetingStore()
     deps.accountId = 1
-    deps.tokens.forProfile("example", null).save({
+    deps.tokens.forProfile("example").save({
       accessToken: "example-access",
       refreshToken: "example-refresh",
       expiresAt: 3600000,
@@ -394,7 +388,7 @@ it("never connects for help, version, config, parser failures or login", async (
     [["--version"], 0],
     [["config", "show"], 0],
     [["config", "set", "files.timezone", "UTC"], 0],
-    [["config", "set", "account.profile", "example"], 2],
+    [["config", "set", "example.key", "example"], 2],
     [["example", "unknown-command"], 2],
     [["example", "--no-input", "session", "start"], 3],
   ] as const)
@@ -455,7 +449,7 @@ it("uses the same selected local account for file import and API pull", async ()
   ]
   expect(await run(["meetings", "import", "example-folder"], deps)).toBe(0)
   expect((await store.meetings())[0]?.accountId).toBe(2)
-  deps.tokens.forProfile("example", null).save({
+  deps.tokens.forProfile("example").save({
     accessToken: "example",
     refreshToken: "example",
     expiresAt: 3600000,
@@ -537,9 +531,9 @@ it("reads canonical configuration without an optional profile and validates opti
     deps.configPath,
     JSON.stringify({ client_id: "example-client", source: "api", files_folder: null, files_timezone: "UTC" }),
   )
-  expect(readConfig(deps.configPath)).toMatchObject({ profiles: [], legacyProfile: null })
+  expect(readConfig(deps.configPath)).toMatchObject({ profiles: [] })
   useProfile(deps.configPath, "Example-work_1.2")
-  expect(readConfig(deps.configPath)).toMatchObject({ profiles: ["Example-work_1.2"], legacyProfile: null })
+  expect(readConfig(deps.configPath)).toMatchObject({ profiles: ["Example-work_1.2"] })
   expect(profileAccountKey("Example-work_1.2")).toBe("zm-profile:Example-work_1.2")
   expect(() =>
     chooseProfile({ word: "other-example", env: { ZM_PROFILE_LOCK: "locked-example" }, profiles: () => [] }),
@@ -547,7 +541,6 @@ it("reads canonical configuration without an optional profile and validates opti
   expect(chooseProfile({ env: { ZM_PROFILE_LOCK: "locked-example" }, profiles: () => [] })).toBe("locked-example")
   for (const value of ["has space", "../example", "-example", "a".repeat(65)]) {
     expect(() => chooseProfile({ env: { ZM_PROFILE: value }, profiles: () => [] })).toThrow(CliError)
-    expect(() => setConfig(deps.configPath, "account.profile", value)).toThrow(/first word/)
   }
   await writeFile(
     deps.configPath,
@@ -555,11 +548,12 @@ it("reads canonical configuration without an optional profile and validates opti
       client_id: "example-client",
       source: "api",
       files_folder: null,
-      files_timezone: "UTC",
-      account_profile: [],
+      files_timezone: "Example/Nowhere",
     }),
   )
-  expect(() => readConfig(deps.configPath)).toThrow(/account_profile has the wrong type$/)
+  expect(() => readConfig(deps.configPath)).toThrow(
+    `${deps.configPath}: setting files.timezone has to be an IANA time zone, such as Europe/Madrid — remove it with \`zm config unset files.timezone\``,
+  )
 })
 
 it("refreshes profile and source configuration between sequential direct parses", async () => {
@@ -580,7 +574,7 @@ it("refreshes profile and source configuration between sequential direct parses"
     apiCalls++
     return reply({ meetings: [] })
   }
-  deps.tokens.forProfile("second-example", null).save({
+  deps.tokens.forProfile("second-example").save({
     accessToken: "example",
     refreshToken: "example",
     expiresAt: 3600000,

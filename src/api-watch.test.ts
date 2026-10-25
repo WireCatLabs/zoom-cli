@@ -61,7 +61,7 @@ it("validates watch options and offline policy before any account, keyring or ne
     ["api", "example"],
   ])
     expect(await run(["watch", ...args, "--jsonl"], deps)).toBe(2)
-  setConfig(deps.configPath, "zoom.clientId", "example-client")
+  setConfig(deps.configPath, "zoom.client_id", "example-client")
   useProfile(deps.configPath, "example-profile")
   expect(await run(["watch", "api", "--offline", "--jsonl"], deps)).toBe(3)
   expect(await run(["watch", "files", "--jsonl"], deps)).toBe(3)
@@ -106,7 +106,7 @@ it("resolves a configured files folder and keeps its profile/timezone bound desp
 
 it("uses shared cursor lookback to discover a late API transcript with fresh sources and pinned OAuth identity", async () => {
   const { deps, controller, output } = await setup()
-  setConfig(deps.configPath, "zoom.clientId", "example-first-client")
+  setConfig(deps.configPath, "zoom.client_id", "example-first-client")
   useProfile(deps.configPath, "example-first")
   deps.tokens = new TokenManager({
     ...deps.tokens.options,
@@ -114,7 +114,7 @@ it("uses shared cursor lookback to discover a late API transcript with fresh sou
       return readConfig(deps.configPath).clientId ?? ""
     },
   })
-  deps.tokens.forProfile("example-first", null).save({
+  deps.tokens.forProfile("example-first").save({
     accessToken: "example-first-token",
     refreshToken: "example-refresh",
     expiresAt: Date.UTC(2040, 0, 1),
@@ -186,7 +186,7 @@ it("uses shared cursor lookback to discover a late API transcript with fresh sou
     else {
       now = Date.parse("2026-10-11T12:00:00Z")
       useProfile(deps.configPath, "example-second")
-      setConfig(deps.configPath, "zoom.clientId", "example-second-client")
+      setConfig(deps.configPath, "zoom.client_id", "example-second-client")
       setConfig(deps.configPath, "source", "files")
     }
   }
@@ -256,7 +256,7 @@ it("closes an interrupted API cycle without advancing its cursor or issuing late
 
 it("rejects mismatched OAuth configuration before opening a store and preserves uncertain grants", async () => {
   const { deps, controller } = await setup()
-  setConfig(deps.configPath, "zoom.clientId", "different-example-client")
+  setConfig(deps.configPath, "zoom.client_id", "different-example-client")
   useProfile(deps.configPath, "example-profile")
   const connect = vi.fn(async () =>
     fakeConnection({ store: memoryMeetingStore(), accountId: 1, close: async () => {} }),

@@ -8,9 +8,15 @@
   command is kept as a run, `--record` keeps a successful one too, and `--no-record` keeps nothing; the new `record` and
   `keep_runs_for_days` settings change the default and how long runs stay. Each Zoom request is logged with its method,
   masked path, status and duration only, and an answer's `meta.run_id` is now the id `runs show` takes.
+- **`zm config unset <key>`** removes a setting, or any part of the file that `doctor` reports a problem in, by the key its `fix` names. `zm config show`, `set` and `unset` run on a file with problems: `show` prints each problem after the settings that still load, and `set` and `unset` leave the rest of the file as written.
 
 ### Changed — may break callers
 
+- **`zm doctor --json` lists every problem in the config file as `config.issues`, in place of `config.error`** (cli-core 0.423.0). Each issue is `{ kind, file, profile?, key?, line?, column?, what, fix? }`, with `kind` one of `invalid_json`, `unknown_setting`, `unknown_permission` or `invalid_value`. `what` says what a value has to be and never shows the saved value; `fix` is a `zm config unset` command that runs exactly as written, left out for invalid JSON, where `line` and `column` say where reading stopped. Doctor exits 0 with no top-level `error` on a file with problems, and still fills `profiles` and `authentication` from what loads. `config.readable` and `config.source` are gone; `config.found` says whether the file exists.
+- **Old setting names are no longer read.** `account_profile`, the camelCase keys (`clientId`, `filesFolder`, `filesTimezone`, `accountProfile`) and the `zoom.clientId` selector are unknown like any other key, with no hint about what they became. A login saved by 0.34 or earlier under the Public Client ID alone is no longer moved to a profile: run `zm <profile> session start` again.
+- **A saved permission key that names no command stops every command except `config` and `doctor`**, with the `config unset` that removes it. This includes `recordings.sync`.
+- Every command except `config` and `doctor` refuses a file with problems by its first problem, how to remove it and how many more `doctor` lists. `client_id`, `source` and `files_folder` may be left out of the file; `zm config set` writes only the setting it changes.
+- The hidden `zm serve` command is gone; `zm <profile> mcp` is the MCP server.
 - A Zoom change that asks first (`ask` permission) no longer asks when the output goes to a pipe or a file: it refuses with `confirmation_required` and says to add `--yes`, as it already did without a terminal. At a terminal it still asks.
 
 ### Fixed
