@@ -1,4 +1,4 @@
-import { type ProgramDefinition, run as sharedRun } from "@wirecat/cli-core/cli"
+import { type ProgramDefinition, runSettings, run as sharedRun } from "@wirecat/cli-core/cli"
 import { zoomRunsCommand } from "./commands.js"
 import { readConfig } from "./config.js"
 import { ZOOM_FIRST_SCREEN } from "./first-screen.js"
@@ -7,7 +7,6 @@ import { chooseProfile } from "./profile.js"
 import type { ProgramDeps } from "./program.js"
 import { bindZoomProgram } from "./program-bindings.js"
 import { ZM } from "./read-only.js"
-import { runSettings } from "./run-recording.js"
 
 export interface ZoomLifecycle {
   prepare?: () => Promise<void>
