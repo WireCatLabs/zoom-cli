@@ -50,9 +50,9 @@ zm runs list [query] [options]
 | `--limit <n>` | how many to show. Default: `20`. |
 | `--page <n>` | which page, starting at 1. Default: `1`. |
 
-**Returns:** run — run_id, command, profile, started_at, status, cli_version, completed_at, requests, and 15 more; every field: zm commands info runs list
+**Returns:** run — run_id, command, started_at, status, cli_version, profile, completed_at, requests, and 20 more; every field: zm commands info runs list
 
-**Example:** `zm personal runs list --limit 10`
+**Example:** `zm runs list --limit 10`
 
 ### `zm runs show`
 
@@ -70,9 +70,9 @@ zm runs show <run-id> [options]
 |---|---|
 | `--problems` | only failed responses, warnings and crashes. |
 
-**Returns:** run details — run_id, command, profile, started_at, status, cli_version, directory, event_count, and 14 more; every field: zm commands info runs show
+**Returns:** run details — run_id, command, started_at, status, cli_version, directory, event_count, events, and 19 more; every field: zm commands info runs show
 
-**Example:** `zm personal runs show run-101`
+**Example:** `zm runs show run-101`
 
 ### `zm runs path`
 
@@ -88,7 +88,7 @@ zm runs path <run-id>
 
 **Returns:** run location — path; every field: zm commands info runs path
 
-**Example:** `zm personal runs path run-101`
+**Example:** `zm runs path run-101`
 
 ## `zm config`
 
@@ -104,7 +104,7 @@ zm config show
 
 **Returns:** show local configuration
 
-**Example:** `zm personal config show --json`
+**Example:** `zm config show --json`
 
 ### `zm config set`
 
@@ -123,7 +123,7 @@ zm config set <key> <value>
 
 **Returns:** set a configuration value
 
-**Example:** `zm personal config set files.timezone Europe/Madrid --json`
+**Example:** `zm config set files.timezone Europe/Madrid --json`
 
 ### `zm config unset`
 
@@ -141,7 +141,7 @@ zm config unset <key>
 
 **Returns:** remove a setting, or a part of the file doctor reports a problem in
 
-**Example:** `zm personal config unset files.folder`
+**Example:** `zm config unset files.folder`
 
 ## `zm meetings`
 
@@ -354,7 +354,7 @@ zm meetings scheduled [options]
 
 **Returns:** meeting series inventory — schema_version, kind, scope, after, until, items, page, fingerprint, and 2 more; every field: zm commands info meetings scheduled
 
-**Example:** `zm personal meetings scheduled --json`
+**Example:** `zm personal meetings scheduled --dry-run --json`
 
 ### `zm meetings projects`
 
@@ -437,7 +437,7 @@ zm meetings prepare <series-id> [options]
 
 **Returns:** meeting preparation — schema_version, kind, account_id, upcoming, series, history_window, meetings, related, and 6 more; every field: zm commands info meetings prepare
 
-**Example:** `zm personal meetings prepare 123 --json`
+**Example:** `zm personal meetings prepare 123 --dry-run --json`
 
 ### `zm meetings update`
 
@@ -724,7 +724,7 @@ zm doctor
 
 **Returns:** check local runtime and public config without a login or database
 
-**Example:** `zm personal doctor --json`
+**Example:** `zm doctor --json`
 
 ## `zm session`
 
@@ -802,7 +802,7 @@ zm models list [query]
 
 **Next usually:** `zm models download <model>`
 
-**Example:** `zm personal models list`, `zm personal models list kind:audio`
+**Example:** `zm models list`, `zm models list kind:audio`
 
 ### `zm models download`
 
@@ -825,7 +825,7 @@ zm models download <model> [options]
 
 **Returns:** model — id, kind, title, languages, size_bytes, downloaded, default, path, and 1 more; every field: zm commands info models download
 
-**Example:** `zm personal models download parakeet-v3`
+**Example:** `zm models download parakeet-v3`
 
 ## `zm watch`
 
@@ -1688,7 +1688,7 @@ zm guide [name]
 
 **Returns:** scenarios: the commands for a common task, in order, and why each
 
-**Example:** `zm guide`, `zm guide <name> --json`
+**Example:** `zm guide`, `zm guide archive-recordings --json`
 
 ## Exit codes
 
