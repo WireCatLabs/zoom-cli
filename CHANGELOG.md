@@ -5,13 +5,21 @@
 ### Added
 
 - **A run says what was typed and, when it failed, what went wrong** (cli-core 0.425.0). `zm runs list` and `zm runs show` gain `cli_command` (`zm config show`), `argv` with every value that may be content or a secret written `[redacted]`, `agent` when a coding agent ran it, and `error`: its class, code, masked message and a short stack.
+- **`zm skill status`** says, for Claude Code and for Codex and Gemini CLI, whether the installed SKILL.md matches this version, and **`zm skill show --for claude|agents`** prints the copy installed there (cli-base 0.56.0).
 
 ### Changed — may break callers
 
 - **A `--dry-run` preview says `effects.service_contacted: false` and no longer has `effects.messenger_contacted`**, and its `permission.key` is zm's own key for the command, as help's availability already was: a preview of `watch` names `watch`, not `messages` (cli-core 0.426.0).
+- **`zm config set` saves `config.json` owner-only (`0600`)** instead of `0644` (cli-base 0.57.0). Anything that reads the file as another user can no longer read it after the next save.
+- **A broken part of a setting is reported as the whole setting.** A bad entry in `context_sources` is one `invalid_value` issue on `context.sources` with the fix `zm config unset context.sources`, and the rest of the file still loads. An `invalid_json` issue always has its `line` and `column` (cli-core 0.425.0).
+
+### Security
+
+- **`zm doctor` reports a `config.json` or config folder other users can read.** `files` in its answer lists each as `{ path, mode, want }` (`0600` for the file, `0700` for the folder), and stderr prints `to make it private: chmod 600 '<path>'` for each; nothing is changed on disk. Windows is not checked.
 
 ### Fixed
 
+- **`zm doctor` answers when the config path is a folder or cannot be read**, with one `invalid_value` issue for the whole file and no fix, instead of failing. Other commands refuse such a file with the same words.
 - **Help shows `config`, `doctor`, `models` and `runs` without a profile**, since they read none: `Usage: zm doctor [options]` and `zm doctor --json`, not `zm <profile> doctor` and `zm personal doctor --json`. A profile word before them still works.
 - The MCP read and write tools say "names, titles, what people wrote" in place of "names, titles, messages", and their example command is `runs list`, which runs as it is, in place of the group `runs`. `zm --help` says drive is "searchable with your other WireCat data".
 - MCP no longer offers a command group that only prints its help, such as `config` or `meetings`; their commands are still offered one by one.

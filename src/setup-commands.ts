@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto"
+import { dirname } from "node:path"
 import { CliError, type KeyringStore } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
 import {
@@ -10,6 +11,7 @@ import {
   LOCAL_WRITE,
   logsInOrOut,
   NO_EFFECTS,
+  privateFiles,
   REMOTE_WRITE,
   refuseCommandName,
 } from "@wirecat/cli-core/cli"
@@ -115,6 +117,8 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
     doctor: () => {
       const keyring = probeKeyring(deps.tokens.options.keyring)
       const { found, issues, config } = inspectConfig(deps.configPath, permissionKeys(program))
+      const files = privateFiles({ files: [deps.configPath], dirs: [dirname(deps.configPath)] })
+      if (files.checked) for (const { fix } of files.problems) deps.diagnostic(`to make it private: ${fix}`)
       return {
         version: VERSION,
         runtime: { node: process.versions.node },
@@ -122,6 +126,9 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
         profiles: config.profiles,
         authentication: { configured: config.clientId !== null, state: "not_checked", keyring },
         database: "not_checked",
+        files: files.checked
+          ? { ...files, problems: files.problems.map(({ path, mode, want }) => ({ path, mode, want })) }
+          : files,
       }
     },
     sessionStatus: async (check) => {

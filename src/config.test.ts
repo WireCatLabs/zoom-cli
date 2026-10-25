@@ -118,6 +118,60 @@ describe("config names", () => {
     expect(() => unsetConfig(path, "permissions.meetings", undefined)).toThrow("name a profile")
   })
 
+  it("reports a broken part of a setting as the whole setting, still listing every other problem", () => {
+    const path = configPath()
+    writeFileSync(
+      path,
+      JSON.stringify({
+        source: "files",
+        context_sources: [{ id: "example", kind: "nothing", provider: "example-messenger" }],
+        profiles: { work: { permissions: { "example.nothing": "deny" } } },
+      }),
+    )
+    const { issues, config } = inspectConfig(path, new Set(["meetings.list"]))
+    expect(issues.map(publicIssue)).toEqual([
+      {
+        kind: "invalid_value",
+        file: path,
+        key: "context.sources",
+        what: 'setting context.sources.0.kind has to be one of ("message" | "mail" | "document")',
+        fix: "zm config unset context.sources",
+      },
+      {
+        kind: "unknown_permission",
+        file: path,
+        profile: "work",
+        key: "permissions.example.nothing",
+        what: "permissions.example.nothing names no command",
+        fix: "zm work config unset permissions.example.nothing",
+      },
+    ])
+    expect(config).toMatchObject({ source: "files", profiles: ["work"] })
+    unsetConfig(path, "context.sources", undefined)
+    expect(saved(path)).not.toHaveProperty("context_sources")
+  })
+
+  it("removes an unknown key with a dot in it, not the setting before the dot", () => {
+    const path = configPath()
+    writeFileSync(path, JSON.stringify({ source: "files", "source.example": true }))
+    expect(inspectConfig(path).issues.map(publicIssue)).toEqual([
+      expect.objectContaining({ key: "source.example", fix: "zm config unset source.example" }),
+    ])
+    unsetConfig(path, "source.example", undefined)
+    expect(saved(path)).toEqual({ source: "files" })
+  })
+
+  it.skipIf(process.platform === "win32" || process.getuid?.() === 0)(
+    "reports a config file it cannot read as a problem with the whole file",
+    () => {
+      const path = configPath()
+      writeFileSync(path, "{}", { mode: 0o000 })
+      expect(inspectConfig(path).issues.map(publicIssue)).toEqual([
+        { kind: "invalid_value", file: path, what: "the file could not be read" },
+      ])
+    },
+  )
+
   it("refuses a file that is not an object, by the whole file, with no fix", () => {
     const path = configPath()
     writeFileSync(path, "[]")
@@ -135,9 +189,14 @@ describe("config names", () => {
     expect(unsetConfig(path, "context.sources", "work").contextSources).toEqual([{ ...source, profile: "home" }])
   })
 
-  it("names a config path it cannot read", () => {
+  it("reports a config path that is a folder as a problem with the whole file, with no fix", () => {
     const path = configPath()
     mkdirSync(path)
-    expect(() => readConfig(path)).toThrow(`${path} could not be read`)
+    expect(inspectConfig(path)).toMatchObject({ found: true, raw: null })
+    expect(inspectConfig(path).issues.map(publicIssue)).toEqual([
+      { kind: "invalid_value", file: path, what: "the path is a folder, not a file" },
+    ])
+    expect(() => readConfig(path)).toThrow(`${path}: the path is a folder, not a file`)
+    expect(() => setConfig(path, "source", "api")).toThrow("not a file")
   })
 })

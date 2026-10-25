@@ -13,12 +13,9 @@ const addZoomSkillCommandsDefinition = (
 ): void => {
   const command = skillCommand({ command: "zm", appName: "zoom-cli", version: VERSION }, skill, environment)
   for (const child of command.commands) {
-    const install = child.name() === "install"
-    if (install) grantsAuthority(child)
-    annotate(child, {
-      effects: install ? LOCAL_WRITE : NO_EFFECTS,
-      examples: [install ? "zm skill install --for agents --json" : "zm skill show --json"],
-    })
+    if (child.name() === "install")
+      annotate(grantsAuthority(child), { effects: LOCAL_WRITE, examples: ["zm skill install --for agents --json"] })
+    if (child.name() === "show") annotate(child, { examples: ["zm skill show --json"] })
   }
   // addCommand, unlike command(), does not pass these down, and commander's defaults print plain text and exit 1.
   const inheritFailureHandling = (target: Command) => {
