@@ -17,16 +17,16 @@
     "check.mjs": "34b266411eaab7707030915f645308e86784b1574b21fa44ca974861a90c9ce1",
     "no-sqlite-driver.grit": "19e1f510a88ddd9df44d6db43c1c9b603c3e5bbec03a3f65305b72eac7f09389"
   },
-  "packageManager": "pnpm@11.20.0",
+  "packageManager": "pnpm@11.28.8",
   "node": ">=22",
   "devDependencies": {
-    "@biomejs/biome": "2.5.15",
-    "@cspell/dict-en-gb": "5.0.34",
+    "@biomejs/biome": "2.6.2",
+    "@cspell/dict-en-gb": "5.0.38",
     "@cspell/dict-es-es": "3.0.9",
-    "@cspell/dict-ru_ru": "2.3.3",
-    "cspell": "10.3.6",
-    "lefthook": "2.1.16",
-    "markdownlint-cli2": "0.23.3"
+    "@cspell/dict-ru_ru": "2.3.4",
+    "cspell": "10.4.0",
+    "lefthook": "2.2.2",
+    "markdownlint-cli2": "0.24.0"
   },
   "fileRevisions": {
     "release-lock.sh": "49e630a99d758e3e113749bef2049b258c7262e3",

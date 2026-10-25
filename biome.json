@@ -6,13 +6,17 @@
       "**",
       "!**/dist",
       "!**/node_modules",
-      "!pnpm-lock.yaml",
+      "!**/pnpm-lock.yaml",
       "!docs/zoom-app.json",
       "!package-lock.json",
       "!.worktrees",
       "!config/wirecat",
       "!lint/baseline"
     ]
+  },
+  "markdown": {
+    "formatter": { "enabled": false },
+    "linter": { "enabled": false }
   },
   "linter": {
     "rules": {
