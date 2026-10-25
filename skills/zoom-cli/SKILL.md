@@ -113,7 +113,7 @@ stderr) even when the command exits successfully.
 Only use communications IDs explicitly configured for the selected profile through
 `zm config set context.sources`. A grant covers one whole message/mail account or document folder;
 do not broaden scope for an agent. `zm config show` reveals the configured selections. A document
-folder can use provider `folder` and account `notes:<folder-id>` from `memo folders list`.
+folder uses provider `local` (a plain folder) or `obsidian` (a vault) and account `notes:<folder-id>` from `memo folders list`.
 
 `meetings prepare <series-id> --context-source <id> --context-query '<words>'` adds cited literal
 matches. Repeat the source flag as needed. Default communications history is fourteen days before
