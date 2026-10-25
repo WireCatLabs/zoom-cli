@@ -183,7 +183,7 @@ zm meetings export <meeting> [options]
 | `--json` | one JSON value. |
 | `--jsonl` | one JSON object per item. |
 
-**Returns:** meeting export — ; every field: zm commands info meetings export
+**Returns:** meeting export — meeting_id, format, filename, content, output; every field: zm commands info meetings export
 
 **Example:** `zm personal meetings export 1 --format markdown --json`
 
@@ -438,7 +438,7 @@ zm meetings transcribe <meeting> <file> [options]
 | `--yes` | recognize locally and append to the existing meeting. |
 | `--dry-run` | preview even when --yes is present. |
 
-**Returns:** meeting transcription — ; every field: zm commands info meetings transcribe
+**Returns:** meeting transcription — applied, account_id, external_id, segments, media, meeting_id, created, inserted_transcripts, and 7 more; every field: zm commands info meetings transcribe
 
 **Example:** `zm personal meetings transcribe meeting:3/12 ./AliceExample.m4a --model parakeet-v3 --json`
 
@@ -558,7 +558,7 @@ zm meetings embeddings [options]
 | `--after-hash <hash>` | continue embedding after this passage. |
 | `--yes` | split transcripts and build their vectors; otherwise only preview. |
 
-**Returns:** meeting embedding — ; every field: zm commands info meetings embeddings
+**Returns:** meeting embedding — account_id, model, status, applied, scope, rebuild_required, saved, skipped, and 3 more; every field: zm commands info meetings embeddings
 
 **Example:** `zm personal meetings embeddings --model e5-small --json`
 
@@ -843,7 +843,7 @@ zm recordings download [meeting] [options]
 | `--max-pages <pages>` | date-range catalog page limit from 1 through 10000 (default 1000). |
 | `--max-entries <n>` | date-range occurrence limit from 1 through 10000 (default 10000). |
 
-**Returns:** zoom archive — ; every field: zm commands info recordings download
+**Returns:** zoom archive — uuid, manifest_path, downloaded, skipped, unavailable, window, meeting, archive, and 2 more; every field: zm commands info recordings download
 
 **Example:** `zm personal recordings download example-occurrence --output-dir ./zoom-archive --json`, `zm personal recordings download --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl`
 
@@ -1591,7 +1591,7 @@ zm batch <file> [options]
 | `--max-read-bytes <bytes>` | aggregate stored-text read ceilings, including one 4 MiB index pass; at most 67108864. |
 | `--format <format>` | text, markdown or json. One of: `text`, `markdown`, `json`. Default: `text`. |
 
-**Returns:** meeting batch result — ; every field: zm commands info batch
+**Returns:** meeting batch result — id, command, status, answer, complete, error; every field: zm commands info batch
 
 **Example:** `zm personal batch requests.json --json`
 
