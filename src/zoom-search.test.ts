@@ -171,3 +171,61 @@ it("answers zoom search as declared hits, checks its options and pages with the 
   expect(asked).toHaveLength(2)
   expect(asked[1]).toMatchObject({ query: undefined, cursor: "page-2", limit: 10 })
 })
+
+const answering = (toolCall: (id: number) => Response | Promise<Response>) =>
+  new ZoomSearch(login(), async (_input, init) => {
+    const body = JSON.parse(String(init?.body))
+    if (body.method === "initialize") return stream({ jsonrpc: "2.0", id: body.id, result: {} })
+    if (body.method === "notifications/initialized") return new Response(null, { status: 202 })
+    return toolCall(body.id)
+  })
+
+it("turns an unreachable server, a lapsed login, a failed request and an unreadable answer into clear errors", async () => {
+  const unreachable = answering(() => {
+    throw new TypeError("fetch failed")
+  })
+  await expect(unreachable.search({ query: "x" })).rejects.toMatchObject({ code: "network_error" })
+  await expect(answering(() => new Response("", { status: 401 })).search({ query: "x" })).rejects.toMatchObject({
+    code: "authentication_error",
+  })
+  await expect(answering(() => new Response("busy", { status: 503 })).search({})).rejects.toThrow(/HTTP 503/)
+  const rpcError = (id: number) => Response.json({ jsonrpc: "2.0", id, error: { message: "search is down" } })
+  await expect(answering(rpcError).search({})).rejects.toThrow(/search failed: search is down/)
+  await expect(answering(() => new Response("")).search({})).rejects.toMatchObject({ code: "invalid_response" })
+  const notJson = (id: number) =>
+    stream({ jsonrpc: "2.0", id, result: { content: [{ type: "text", text: "<html>" }] } })
+  await expect(answering(notJson).search({})).rejects.toThrow(/invalid search answer/)
+  await expect(answering((id) => searchResult(id, { items: [] })).search({})).rejects.toThrow(/invalid search answer/)
+  await expect(answering((id) => searchResult(id, { data: ["row"] })).search({})).rejects.toThrow(
+    /invalid search result/,
+  )
+})
+
+it("reads a hit from Zoom's structured answer when a row has none of the usual id, time or text keys", async () => {
+  const doc = {
+    datasource: "zoom_canvas",
+    doc_ref_id: "doc-9",
+    last_edit_time: "2026-10-04T12:00:00Z",
+    chunks: ["first part", { text: "second part" }, 3],
+    owner: { name: "nested values are left out of details" },
+  }
+  const structured = (id: number) =>
+    stream({ jsonrpc: "2.0", id, result: { content: [], structuredContent: { data: [doc], has_more: false } } })
+  const page = await answering(structured).search({ query: "part" })
+  expect(page).toEqual({
+    has_more: false,
+    items: [
+      {
+        source: "docs",
+        id: "doc-9",
+        title: null,
+        time: "2026-10-04T12:00:00Z",
+        text: "first part\nsecond part",
+        url: null,
+        people: [],
+        container_id: null,
+        details: { doc_ref_id: "doc-9", last_edit_time: "2026-10-04T12:00:00Z" },
+      },
+    ],
+  })
+})
