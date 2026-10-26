@@ -108,7 +108,7 @@ const program = () => {
     diagnostic: () => {},
     contacts,
   }
-  setConfig(deps.configPath, "zoom.clientId", "example-client")
+  setConfig(deps.configPath, "zoom.client_id", "example-client")
   useProfile(deps.configPath, "work")
   const answer = async (argv: string[]) => {
     stdout.length = 0
