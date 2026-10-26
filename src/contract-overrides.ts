@@ -197,7 +197,7 @@ export const SHELL_OVERRIDES: Readonly<{
     {
       command: ["mcp"],
       field: "children",
-      before: ["config", "add", "check"],
+      before: ["server", "config", "add", "check"],
       after: [],
       reason:
         "Zoom serves meeting and archive commands over stdio under its selected profile; HTTP-specific options are unsupported.",

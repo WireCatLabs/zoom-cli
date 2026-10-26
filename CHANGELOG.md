@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **Search by meaning runs 2–3× faster on Linux and Apple-silicon Macs after the next `zm models download` (cli-core
+  0.448.0).** The download installs a native ONNX Runtime, and the models run on it; without it they run as before.
+
 ## 0.51.0 — 26.10.2026
 
 ### Added
