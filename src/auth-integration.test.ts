@@ -268,7 +268,7 @@ describe("CLI configuration isolation", () => {
       const state = new URL(events()[0].url).searchParams.get("state")
       stdin.write(`code=example-code&state=${state}\n`)
     })()
-    expect(await run(["--json", "example", "session", "start", "--answer-stdin"], deps)).toBe(0)
+    expect(await run(["example", "session", "start", "--json", "--answer-stdin"], deps)).toBe(0)
     await answered
     expect(events().map(({ event, field, secret }) => [event, field, secret])).toEqual([
       ["open_url", undefined, undefined],
@@ -286,7 +286,7 @@ describe("CLI configuration isolation", () => {
     deps.openBrowser = async (url) => {
       await fetch(callback(url, { code: "example-code" }))
     }
-    expect(await run(["--json", "example", "session", "start", "--answer-stdin"], deps)).toBe(0)
+    expect(await run(["example", "session", "start", "--json", "--answer-stdin"], deps)).toBe(0)
     expect(stderr.join("")).toContain('"event":"needs"')
   })
   it("delegates all configured file-source parts without changing the source port", async () => {
