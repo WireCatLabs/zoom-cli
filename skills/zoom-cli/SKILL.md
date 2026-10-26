@@ -177,8 +177,9 @@ OPENAI_API_KEY, and `--offline` refuses remote inference. Never include credenti
 passages, and store filters do not apply. Its cursor continues candidate scanning, not global ranking.
 Follow row/text/candidate bounds; unknown coverage remains unknown.
 
-`zm <profile> mcp` serves these commands as `zm_tools_search`, `zm_read` and `zm_write`, as the profile's
-permissions allow; a call answers as the command does. Over MCP a change at level `ask` runs without a question.
+`zm <profile> mcp` is for clients that cannot run commands (chat apps, remote agents); prefer the commands
+above when you can run them. It serves them as `zm_tools_search`, `zm_read` and `zm_write`, with the same
+permissions as the command line; a call answers as the command does. Over MCP a change at level `ask` runs without a question.
 
 `remote-meetings` uses numeric remote ids. Create/update/cancel ask first: without a terminal `--yes`
 applies an authorized change once (else exit 7), and `--dry-run` always previews. Exit 14 means an uncertain dispatched
