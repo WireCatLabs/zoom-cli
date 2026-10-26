@@ -141,7 +141,7 @@ it("answers every command that declares an entity with that entity's schema", as
   const declared = [...commands.keys()].filter((path) => metaOf(commands.get(path) as Command).output)
   expect(declared.sort()).toEqual(
     [...runs.map(([path]) => path), "meetings projects evidence", "meetings projects scan", "meetings prepare"]
-      // checked where their own fixtures are: offline-archive-cli, meeting-project-evidence, runs and the
+      // checked where their own fixtures are: offline-archive-cli, meeting-project-evidence, contacts, runs and the
       // preparation tests
       .concat(
         [
@@ -152,6 +152,8 @@ it("answers every command that declares an entity with that entity's schema", as
           "meetings status",
           "recordings status",
           "batch",
+          "contacts list",
+          "contacts show",
           "runs list",
           "runs show",
           "runs path",
