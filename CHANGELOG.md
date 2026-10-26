@@ -7,6 +7,10 @@
 - **cli-core 0.435.0 moves the shared store to version 34**, which keeps an index for search by meaning (sqlite-vec, shipped in `@wirecat/cli-core-sqlite` 1.1.0). Once zm, or any WireCat CLI on cli-core 0.434.0 or later, has opened the store, zm 0.48 and older refuse it and ask to be upgraded, so upgrade every WireCat CLI together.
 - **`zm upgrade`'s help shows only `zm upgrade --check` as its example.** Copied and run, the bare `zm upgrade` example upgraded zm.
 
+### Added
+
+- **The `zoom-cli` skill tells OpenClaw and ClawHub that it needs `zm`, and how to install it** (`metadata.openclaw`: `requires.bins` and the npm package `@wirecat/zoom-cli`). With `zm` missing from PATH, OpenClaw marks the skill not ready and offers to install the package. Claude Code and Codex ignore the block.
+
 ### Fixed
 
 - **A run with no profile no longer records `"profile": ""`.** A usage error before any command (`zm models`) and the Zoom token log now leave `profile` out of `runs list` and `runs show`, as cli-core's runs do.
