@@ -155,7 +155,7 @@ it("answers zoom search as declared hits, checks its options and pages with the 
     diagnostic: () => {},
     zoomSearch,
   }
-  setConfig(deps.configPath, "zoom.clientId", "example-client")
+  setConfig(deps.configPath, "zoom.client_id", "example-client")
   useProfile(deps.configPath, "work")
   const argv = ["zoom", "search", "plan", "--only", "docs,chat", "--limit", "20", "--json"]
   expect(await run(argv, deps)).toBe(0)

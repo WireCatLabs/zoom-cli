@@ -1,6 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate, customizeSharedCommand, describeProgram } from "@wirecat/cli-base/commands"
-import { changesAuthorityAt, FETCH, NO_EFFECTS, type RunOptions, sharedCommandTemplate } from "@wirecat/cli-core/cli"
+import { changesAuthorityAt, FETCH, type RunOptions, sharedCommandTemplate } from "@wirecat/cli-core/cli"
 import type { Level } from "@wirecat/cli-core/sends"
 import type { Command } from "commander"
 import { SHELL_OVERRIDES } from "./contract-overrides.js"
@@ -39,17 +39,6 @@ const addMcpCommandsDefinition = (program: Command, deps: McpCommandDeps): void 
         run: deps.run,
         ...(deps.signal() ? { signal: deps.signal() as AbortSignal } : {}),
       })
-    })
-  annotate(program.command("serve", { hidden: true }), { effects: NO_EFFECTS, mcp: false })
-    .description("moved: zm <profile> mcp")
-    .allowUnknownOption()
-    .allowExcessArguments()
-    .action(() => {
-      throw new CliError(
-        "validation_error",
-        "`zm serve --mcp` is now `zm <profile> mcp`: one server with zm_tools_search, zm_read and zm_write; " +
-          "the profile's permissions decide what it offers, in place of the serve flags",
-      )
     })
 }
 

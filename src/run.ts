@@ -1,4 +1,5 @@
-import { type ProgramDefinition, run as sharedRun } from "@wirecat/cli-core/cli"
+import { NONE_NAMED, type ProgramDefinition, runSettings, run as sharedRun } from "@wirecat/cli-core/cli"
+import { zoomRunsCommand } from "./commands.js"
 import { readConfig } from "./config.js"
 import { ZOOM_FIRST_SCREEN } from "./first-screen.js"
 import { discoveryLevels, permissionKeyForPath } from "./permissions.js"
@@ -9,13 +10,22 @@ import { ZM } from "./read-only.js"
 
 export interface ZoomLifecycle {
   prepare?: () => Promise<void>
+  fail?: (error: unknown) => Promise<void>
+}
+
+const configured = (path: string) => {
+  try {
+    return readConfig(path)
+  } catch {
+    return undefined
+  }
 }
 
 export const zoomDefinition = (deps: ProgramDeps, onFailure?: (error: unknown) => void): ProgramDefinition => {
   const lifecycle: ZoomLifecycle = {}
   return {
     app: ZM,
-    commands: () => [],
+    commands: () => [zoomRunsCommand()],
     firstScreen: ZOOM_FIRST_SCREEN,
     configuration: {
       permissionKey: permissionKeyForPath,
@@ -25,10 +35,12 @@ export const zoomDefinition = (deps: ProgramDeps, onFailure?: (error: unknown) =
         const profile = options?.needsProfile
           ? chooseProfile({ word, env, profiles: () => readConfig(deps.configPath).profiles })
           : (word ?? env.ZM_PROFILE ?? env.ZM_PROFILE_LOCK ?? "")
+        const { keepFailedRuns, keepRunsForDays } = runSettings(flags?.record, configured(deps.configPath))
         return {
           profile,
-          keepFailedRuns: false,
-          keepRunsForDays: 1,
+          ...(profile ? {} : { sources: { profile: NONE_NAMED } }),
+          keepFailedRuns,
+          keepRunsForDays,
           skillHint: false,
           ...(profile
             ? { permissions: discoveryLevels(readConfig(deps.configPath).permissions[profile] ?? {}, env) }
@@ -38,7 +50,10 @@ export const zoomDefinition = (deps: ProgramDeps, onFailure?: (error: unknown) =
     },
     configure: (program) => bindZoomProgram(program, deps, lifecycle, runCommand),
     prepare: () => lifecycle.prepare?.(),
-    onFailure: onFailure ? (error) => onFailure(error) : undefined,
+    onFailure: async (error) => {
+      await lifecycle.fail?.(error)
+      onFailure?.(error)
+    },
   }
 }
 

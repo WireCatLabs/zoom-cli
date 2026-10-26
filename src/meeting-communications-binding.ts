@@ -1,4 +1,5 @@
 import { CliError } from "@wirecat/cli-base"
+import { isFolderProvider } from "@wirecat/cli-core"
 import type { MeetingOwner } from "@wirecat/cli-core/meetings"
 import type { ContextSource } from "@wirecat/cli-core/services"
 import * as v from "valibot"
@@ -24,12 +25,12 @@ const resolveContextSource = async (
     let folderId: number | undefined
     let key = { provider: definition.provider, account: definition.account }
     const folder = definition.account.match(/^notes:([1-9]\d*)$/)
-    if (definition.kind === "document" && definition.provider === "folder" && folder) {
+    if (definition.kind === "document" && isFolderProvider(definition.provider) && folder) {
       const id = Number(folder[1])
       if (!Number.isSafeInteger(id)) throw new Error("invalid folder")
       folderId = id
       const found = await metadata.accountById(id)
-      if (found?.provider !== "folder") throw new Error("missing folder")
+      if (!found || !isFolderProvider(found.provider)) throw new Error("missing folder")
       key = found
     }
     const account = await metadata.storedAccount(key)

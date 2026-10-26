@@ -9,4 +9,4 @@ permissions:
 
 jobs:
   changelog:
-    uses: WireCatLabs/cli-base/.github/workflows/changelog-guard.yml@d0715b4d06af98c9e81accab93e084c2e3c27ce6 # cli-base: immutable released sections and duplicate headings
+    uses: WireCatLabs/cli-base/.github/workflows/changelog-guard.yml@a9aa6915309bd4ef415053df8f1af9b127f084cc # v0.61.0

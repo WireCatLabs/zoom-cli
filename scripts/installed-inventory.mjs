@@ -14,7 +14,7 @@ export const checkInstalledInventory = async ({ load, root }) => {
     },
     now: () => now,
   })
-  const alice = tokens.forProfile("AliceExample", null)
+  const alice = tokens.forProfile("AliceExample")
   alice.save({
     accessToken: "invented-access",
     refreshToken: "invented-refresh",

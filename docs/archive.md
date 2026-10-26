@@ -145,11 +145,6 @@ Piped output defaults to JSON. If an aggregate run fails, no partial JSON is pri
 checkpoints remain available for the next attempt. A meeting ID and date-range options cannot be combined;
 `--file-ids` applies only to a single meeting.
 
-`recordings sync` has been removed; use `recordings download` with the same date bounds. If a saved
-permission names `recordings.sync`, commands stop with migration guidance. Review that entry and replace it
-with `recordings.download` in the profile's permission map, preserving all other restrictions. The new entry
-applies to both single-meeting and date-range downloads. See [profile permissions](configuration.md#permissions).
-
 Checkpoints acknowledge earlier successful archives; they do not check current disk integrity or
 prove that all provider recordings were available. Run `recordings archive check` to check local
 files. Use `--no-resume` to rescan the full requested range without durable progress.

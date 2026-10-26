@@ -29,6 +29,11 @@ if [ "$mode" = local ]; then
   exec node scripts/release-local.ts
 fi
 version=$(node -p 'require("./package.json").version')
+# A pull request checked before the last release and merged after it put its entry in that release's section;
+# restore moves it to Unreleased, so the fold below brings it into this version.
+restored=$(npx -y -p @wirecat/cli-base@0.55.1 cli-dev changelog restore --land)
+[ -z "$restored" ] || echo "$restored"
+rerun_if_changed "$@"
 # A session that merges after the version was dated, but before it was published, adds Unreleased above it.
 # --land folds on a fresh main through its own pull request, and folds again once if main moves under it.
 # cli-dev is pinned rather than taken from the dependencies: cli-core accepts only an older cli-base.

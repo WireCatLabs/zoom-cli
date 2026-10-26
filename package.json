@@ -1,13 +1,13 @@
 {
   "name": "@wirecat/zoom-cli",
-  "version": "0.43.0",
+  "version": "0.50.1",
   "description": "Zoom cloud recording archives, persistent transcripts and meeting tools",
   "license": "Apache-2.0",
   "type": "module",
   "engines": {
     "node": "^22.16.0 || >=24"
   },
-  "packageManager": "pnpm@11.20.0",
+  "packageManager": "pnpm@11.28.8",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/WireCatLabs/zoom-cli.git"
@@ -45,7 +45,10 @@
     "ci:quick": "pnpm typecheck",
     "contracts:check": "cli-contract contracts/plan.json",
     "generate": "pnpm build && node scripts/commands.ts",
-    "generate:check": "pnpm build && node scripts/commands.ts --check",
+    "generate:check": "pnpm build && node scripts/commands.ts --check && node scripts/zoom-api/generate.ts --check",
+    "zoom:spec": "node scripts/zoom-api/trim.ts",
+    "zoom:generate": "node scripts/zoom-api/generate.ts",
+    "zoom:generate:check": "node scripts/zoom-api/generate.ts --check",
     "test:matrix": "pnpm test --maxWorkers 2 && pnpm build && pnpm test:matrix:check",
     "lint:commands": "node node_modules/@wirecat/cli-base/dist/dev/bin.js lint --cli dist/bin/zm.js",
     "test:matrix:check": "node node_modules/@wirecat/cli-base/dist/dev/bin.js test-matrix --program scripts/command-program.ts --untested scripts/test-matrix-untested.ts --name zm --check && git diff --exit-code -- docs/dev/test-matrix.md",
@@ -56,27 +59,27 @@
     "package:check": "node scripts/package-check.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/server": "2.3.0",
-    "@wirecat/cli-base": "0.51.0",
-    "@wirecat/cli-core": "0.412.0",
+    "@modelcontextprotocol/server": "2.4.0",
+    "@wirecat/cli-base": "0.57.0",
+    "@wirecat/cli-core": "0.435.0",
     "commander": "15.0.0",
     "valibot": "1.5.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.15",
-    "@cspell/dict-en-gb": "5.0.34",
+    "@biomejs/biome": "2.6.3",
+    "@cspell/dict-en-gb": "5.0.38",
     "@cspell/dict-es-es": "3.0.9",
-    "@cspell/dict-ru_ru": "2.3.3",
-    "@modelcontextprotocol/client": "2.3.0",
+    "@cspell/dict-ru_ru": "2.3.4",
+    "@modelcontextprotocol/client": "2.4.0",
     "@types/node": "^22.20.5",
-    "@vitest/coverage-v8": "^5.0.3",
-    "@wirecat/cli-testing": "0.5.2",
-    "cspell": "10.3.6",
-    "lefthook": "2.1.16",
-    "markdownlint-cli2": "0.23.3",
-    "rumdl": "^0.2.78",
+    "@vitest/coverage-v8": "^5.0.5",
+    "@wirecat/cli-testing": "0.5.3",
+    "cspell": "10.4.0",
+    "lefthook": "2.2.2",
+    "markdownlint-cli2": "0.24.0",
+    "rumdl": "^0.3.0",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.5"
   },
   "publishConfig": {
     "access": "public"

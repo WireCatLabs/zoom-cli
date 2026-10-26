@@ -45,19 +45,8 @@
       }
     },
     {
-      "id": "legacy-config-fingerprint",
-      "entry": "./rename-upgrade-config.mjs",
-      "args": ["snapshot", "{{root}}"],
-      "exit": 0,
-      "stream": "stdout",
-      "kind": "json",
-      "capture": {
-        "legacy_config_fingerprint": "/fingerprint"
-      }
-    },
-    {
       "id": "candidate-old-config-refused",
-      "args": ["config", "show", "--json"],
+      "args": ["contract", "meetings", "list", "--json"],
       "exit": 3,
       "stream": "stderr",
       "kind": "json",
@@ -72,17 +61,39 @@
       ]
     },
     {
-      "id": "explicit-config-key-rename",
-      "entry": "./rename-upgrade-config.mjs",
-      "args": ["convert", "{{root}}", "{{legacy_config_fingerprint}}"],
+      "id": "candidate-unset-clientId",
+      "args": ["config", "unset", "clientId", "--json"],
       "exit": 0,
       "stream": "stdout",
-      "kind": "json",
-      "json": {
-        "renamed": true,
-        "preserved_values": true,
-        "preserved_mode": true
-      }
+      "kind": "json"
+    },
+    {
+      "id": "candidate-unset-filesFolder",
+      "args": ["config", "unset", "filesFolder", "--json"],
+      "exit": 0,
+      "stream": "stdout",
+      "kind": "json"
+    },
+    {
+      "id": "candidate-unset-filesTimezone",
+      "args": ["config", "unset", "filesTimezone", "--json"],
+      "exit": 0,
+      "stream": "stdout",
+      "kind": "json"
+    },
+    {
+      "id": "candidate-unset-accountProfile",
+      "args": ["config", "unset", "accountProfile", "--json"],
+      "exit": 0,
+      "stream": "stdout",
+      "kind": "json"
+    },
+    {
+      "id": "candidate-timezone",
+      "args": ["config", "set", "files.timezone", "UTC", "--json"],
+      "exit": 0,
+      "stream": "stdout",
+      "kind": "json"
     },
     {
       "id": "candidate-config",
@@ -92,8 +103,7 @@
       "kind": "json",
       "json": {
         "item": {
-          "legacy_profile": "contract",
-          "profiles": ["contract"],
+          "profiles": [],
           "files_timezone": "UTC"
         }
       }
@@ -111,6 +121,7 @@
       "args": ["contract", "meetings", "list", "--json"],
       "exit": 0,
       "stream": "stdout",
+      "diagnostic": "the store moved to schema 34; every other WireCat CLI that uses it needs a version that speaks it \u2014 run `<cli> upgrade` for each\n",
       "kind": "json",
       "json": {
         "items": [

@@ -7,12 +7,19 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**327 ✅ · 1 ⛔ · 0 ❌** — 75 commands, 253 options.
+**338 ✅ · 1 ⛔ · 0 ❌** — 82 commands, 257 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
+| `runs list` |  | ✅ |  |
+| `runs list` | `--limit` | ✅ |  |
+| `runs list` | `--page` | ✅ |  |
+| `runs show` |  | ✅ |  |
+| `runs show` | `--problems` | ✅ |  |
+| `runs path` |  | ✅ |  |
 | `config show` |  | ✅ |  |
 | `config set` |  | ✅ |  |
+| `config unset` |  | ✅ |  |
 | `meetings list` |  | ✅ |  |
 | `meetings list` | `--json` | ✅ |  |
 | `meetings list` | `--jsonl` | ✅ |  |
@@ -139,6 +146,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `events list` | `--jsonl` | ✅ |  |
 | `commands` |  | ✅ |  |
 | `commands info` |  | ✅ |  |
+| `store info` |  | ✅ |  |
 | `complete` |  | ✅ |  |
 | `doctor` |  | ✅ |  |
 | `session status` |  | ✅ |  |
@@ -230,15 +238,18 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `remote-meetings cancel` | `--occurrence-id` | ✅ |  |
 | `remote-meetings cancel` | `--yes` | ✅ |  |
 | `remote-meetings cancel` | `--dry-run` | ✅ |  |
+| `contacts list` |  | ✅ |  |
+| `contacts show` |  | ✅ |  |
 | `zoom search` |  | ✅ |  |
 | `zoom search` | `--only` | ✅ |  |
 | `zoom search` | `--limit` | ✅ |  |
 | `zoom search` | `--cursor` | ✅ |  |
 | `skill show` |  | ✅ |  |
+| `skill show` | `--for` | ✅ |  |
 | `skill install` |  | ✅ |  |
 | `skill install` | `--for` | ✅ |  |
+| `skill status` |  | ✅ |  |
 | `mcp` |  | ✅ |  |
-| `serve` |  | ✅ |  |
 | `search all` |  | ✅ |  |
 | `search all` | `--only` | ✅ |  |
 | `search all` | `--limit` | ✅ |  |

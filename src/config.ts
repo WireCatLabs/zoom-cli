@@ -1,8 +1,18 @@
-import { existsSync } from "node:fs"
-import { CliError, isCliError, saveConfigFile } from "@wirecat/cli-base"
-import { loadSnakeCaseConfig } from "@wirecat/cli-core/cli"
+import { existsSync, readFileSync, statSync } from "node:fs"
+import { CliError, saveConfigFile } from "@wirecat/cli-base"
+import { issueMessage } from "@wirecat/cli-core/cli"
 import { LEVELS, type Level } from "@wirecat/cli-core/sends"
 import * as v from "valibot"
+import {
+  configIssues,
+  fileIssue,
+  isNode,
+  type LocatedIssue,
+  publicIssue,
+  removeAt,
+  SETTING_NAMES,
+  withoutIssues,
+} from "./config-issues.js"
 import { type ConfiguredContextSource, contextSourcesSchema, replaceContextSources } from "./context-sources.js"
 import { parsePermissions } from "./permissions.js"
 import { profilePattern } from "./profile.js"
@@ -19,9 +29,10 @@ export interface ZoomConfig {
   profiles: string[]
   /** What each profile may do: a command path, dotted, to a level (WC-PERM-1). */
   permissions: Record<string, Record<string, Level>>
-  /** The profile that owns a login saved before profiles were words; only that one may take it over. */
-  legacyProfile: string | null
   contextSources?: ConfiguredContextSource[]
+  /** Keep every run, not only the failed ones. */
+  record?: boolean
+  keepRunsForDays?: number
 }
 
 const ProfileEntry = v.strictObject({
@@ -29,14 +40,16 @@ const ProfileEntry = v.strictObject({
 })
 
 const ConfigFile = v.strictObject({
-  client_id: v.nullable(
-    v.pipe(
-      v.string(),
-      v.check((id) => id.trim() !== "" && !/\s/.test(id)),
+  client_id: v.optional(
+    v.nullable(
+      v.pipe(
+        v.string(),
+        v.check((id) => id.trim() !== "" && !/\s/.test(id), "has to be a Zoom client ID, without spaces"),
+      ),
     ),
   ),
-  source: v.picklist(["api", "files"]),
-  files_folder: v.nullable(v.string()),
+  source: v.optional(v.picklist(["api", "files"])),
+  files_folder: v.optional(v.nullable(v.string())),
   files_timezone: v.optional(
     v.nullable(
       v.pipe(
@@ -48,68 +61,102 @@ const ConfigFile = v.strictObject({
           } catch {
             return false
           }
-        }),
+        }, "has to be an IANA time zone, such as Europe/Madrid"),
       ),
     ),
   ),
-  account_profile: v.optional(v.nullable(v.pipe(v.string(), v.regex(profilePattern)))),
-  profiles: v.optional(v.record(v.pipe(v.string(), v.regex(profilePattern)), ProfileEntry)),
+  profiles: v.optional(
+    v.record(
+      v.pipe(v.string(), v.regex(profilePattern, "has to be a profile name of 64 characters at most")),
+      ProfileEntry,
+    ),
+  ),
   context_sources: v.optional(contextSourcesSchema),
+  record: v.optional(v.boolean()),
+  keep_runs_for_days: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
 })
 
-// The loader's issue text quotes the offending value ("received …"), which can be the client id.
-const keyOnly = (message: string): string => {
-  const [head, first] = message.split("\n")
-  const key = first?.trim().split(":")[0]
-  return key ? `${head?.replace(/:$/, "")}: ${key}` : message
+const DOCTOR = "zm doctor"
+
+export interface ConfigInspection {
+  found: boolean
+  /** Every problem in the file; the config below is what loads without them. */
+  issues: LocatedIssue[]
+  /** The file as written, or null when it is not a JSON object and nothing can be changed in it. */
+  raw: Record<string, unknown> | null
+  config: ZoomConfig
 }
 
-export const readConfig = (path: string): ZoomConfig => {
+const configOf = (file: v.InferOutput<typeof ConfigFile>): ZoomConfig => ({
+  clientId: file.client_id ?? null,
+  source: file.source ?? "api",
+  filesFolder: file.files_folder ?? null,
+  filesTimezone: file.files_timezone ?? null,
+  profiles: Object.keys(file.profiles ?? {}).sort(),
+  permissions: Object.fromEntries(
+    Object.entries(file.profiles ?? {}).flatMap(([name, entry]) =>
+      entry.permissions ? [[name, entry.permissions]] : [],
+    ),
+  ),
+  ...(file.context_sources === undefined ? {} : { contextSources: file.context_sources }),
+  ...(file.record === undefined ? {} : { record: file.record }),
+  ...(file.keep_runs_for_days === undefined ? {} : { keepRunsForDays: file.keep_runs_for_days }),
+})
+
+/**
+ * Reads the file without refusing it, for `doctor` and `config`. `permissionKeys`: the command paths a permission may
+ * name; without them a saved key is not checked.
+ */
+export const inspectConfig = (path: string, permissionKeys?: ReadonlySet<string>): ConfigInspection => {
+  let text: string
   try {
-    const file = loadSnakeCaseConfig(path, ConfigFile, () => {
-      if (existsSync(path)) throw new CliError("configuration_error", `${path} could not be read`)
-      return {
-        client_id: null,
-        source: "api" as const,
-        files_folder: null,
-        files_timezone: null,
-        account_profile: null,
-      }
-    })
-    return {
-      clientId: file.client_id,
-      source: file.source,
-      filesFolder: file.files_folder,
-      filesTimezone: file.files_timezone ?? null,
-      profiles: [
-        ...new Set([...Object.keys(file.profiles ?? {}), ...(file.account_profile ? [file.account_profile] : [])]),
-      ].sort(),
-      legacyProfile: file.account_profile ?? null,
-      permissions: Object.fromEntries(
-        Object.entries(file.profiles ?? {}).flatMap(([name, entry]) =>
-          entry.permissions ? [[name, entry.permissions]] : [],
-        ),
-      ),
-      ...(file.context_sources === undefined ? {} : { contextSources: file.context_sources }),
-    }
-  } catch (error) {
-    if (isCliError(error)) throw new CliError("configuration_error", keyOnly(error.message))
-    throw new CliError("configuration_error", `${path} could not be read`)
+    text = readFileSync(path, "utf8")
+  } catch {
+    if (!existsSync(path)) return { found: false, issues: [], raw: {}, config: configOf({}) }
+    const what = statSync(path, { throwIfNoEntry: false })?.isDirectory()
+      ? "the path is a folder, not a file"
+      : "the file could not be read"
+    return { found: true, issues: [fileIssue(path, what)], raw: null, config: configOf({}) }
+  }
+  const { issues, raw } = configIssues(text, path, ConfigFile, permissionKeys)
+  return {
+    found: true,
+    issues,
+    raw,
+    config: configOf(raw ? v.parse(ConfigFile, withoutIssues(raw, issues)) : {}),
   }
 }
 
-const saveConfig = (path: string, config: ZoomConfig): void =>
-  saveConfigFile(path, {
-    client_id: config.clientId,
-    source: config.source,
-    files_folder: config.filesFolder,
-    files_timezone: config.filesTimezone,
-    ...(config.legacyProfile ? { account_profile: config.legacyProfile } : {}),
-    profiles: Object.fromEntries(
-      config.profiles.map((name) => [name, config.permissions[name] ? { permissions: config.permissions[name] } : {}]),
-    ),
-    ...(config.contextSources === undefined ? {} : { context_sources: config.contextSources }),
-  })
+/** The settings every command but `config` and `doctor` runs on; a file with any problem is refused. */
+export const readConfig = (path: string, permissionKeys?: ReadonlySet<string>): ZoomConfig => {
+  const { issues, config } = inspectConfig(path, permissionKeys)
+  if (issues.length > 0) throw new CliError("configuration_error", issueMessage(issues.map(publicIssue), DOCTOR))
+  return config
+}
+
+/** Changes the file as written: whatever else it holds, problems included, stays as it was. */
+const changeFile = (
+  path: string,
+  permissionKeys: ReadonlySet<string> | undefined,
+  change: (raw: Record<string, unknown>, inspection: ConfigInspection) => void,
+): ZoomConfig => {
+  const inspection = inspectConfig(path, permissionKeys)
+  if (!inspection.raw)
+    throw new CliError("configuration_error", issueMessage(inspection.issues.map(publicIssue), DOCTOR))
+  const raw = structuredClone(inspection.raw)
+  change(raw, inspection)
+  saveConfigFile(path, raw)
+  return inspectConfig(path, permissionKeys).config
+}
+
+const profileEntry = (raw: Record<string, unknown>, profile: string): Record<string, unknown> => {
+  if (!isNode(raw.profiles)) raw.profiles = {}
+  const profiles = raw.profiles as Record<string, unknown>
+  if (!isNode(profiles[profile])) profiles[profile] = {}
+  return profiles[profile] as Record<string, unknown>
+}
+
+const FILE_KEYS = Object.fromEntries(Object.entries(SETTING_NAMES).map(([file, name]) => [name, file]))
 
 /**
  * `profile`: the one named on the command line, for the settings that belong to a profile. `permissionKeys`: the
@@ -119,62 +166,101 @@ export const setConfig = (
   path: string,
   key: string,
   value: string,
-  profile?: () => string,
+  profile?: () => string | undefined,
   permissionKeys?: ReadonlySet<string>,
-): ZoomConfig => {
-  const config = readConfig(path)
-  switch (key) {
-    case "permissions": {
-      const name = profile?.()
-      if (!name) throw new CliError("validation_error", "name a profile: `zm <profile> config set permissions …`")
-      config.permissions[name] = parsePermissions(value, permissionKeys ?? new Set())
-      if (!config.profiles.includes(name)) config.profiles = [...config.profiles, name].sort()
-      break
-    }
-    case "context.sources":
-      config.contextSources = replaceContextSources(value, profile?.() ?? null, config.contextSources)
-      break
-    case "zoom.client_id":
-    case "zoom.clientId":
-      if (!value.trim() || /\s/.test(value))
-        throw new CliError("validation_error", "client id must not contain whitespace")
-      config.clientId = value
-      break
-    case "account.profile":
-      throw new CliError(
-        "validation_error",
-        `the profile is the first word now, not a setting: \`zm ${profilePattern.test(value) ? value : "<profile>"} …\``,
-        { profiles: config.profiles },
-      )
-    case "source":
-      if (value !== "api" && value !== "files") throw new CliError("validation_error", "source must be api or files")
-      config.source = value
-      break
-    case "files.folder":
-      if (!value.trim()) throw new CliError("validation_error", "folder must not be empty")
-      config.filesFolder = value
-      break
-    case "files.timezone":
-      try {
-        new Intl.DateTimeFormat("en", { timeZone: value })
-      } catch {
-        throw new CliError("validation_error", "expected an IANA time zone")
+): ZoomConfig =>
+  changeFile(path, permissionKeys, (raw, { config, issues }) => {
+    switch (key) {
+      case "permissions": {
+        const name = profile?.()
+        if (!name) throw new CliError("validation_error", "name a profile: `zm <profile> config set permissions …`")
+        profileEntry(raw, name).permissions = parsePermissions(value, permissionKeys ?? new Set())
+        return
       }
-      config.filesTimezone = value
-      break
-    default:
-      throw new CliError("validation_error", "unknown config key")
-  }
-  saveConfig(path, config)
-  return config
+      case "context.sources": {
+        const broken = issues.find((issue) => issue.at[0] === "context_sources")
+        if (broken) throw new CliError("configuration_error", issueMessage([publicIssue(broken)], DOCTOR))
+        raw.context_sources = replaceContextSources(value, profile?.() ?? null, config.contextSources)
+        return
+      }
+      case "zoom.client_id":
+        if (!value.trim() || /\s/.test(value))
+          throw new CliError("validation_error", "client id must not contain whitespace")
+        raw.client_id = value
+        return
+      case "source":
+        if (value !== "api" && value !== "files") throw new CliError("validation_error", "source must be api or files")
+        raw.source = value
+        return
+      case "files.folder":
+        if (!value.trim()) throw new CliError("validation_error", "folder must not be empty")
+        raw.files_folder = value
+        return
+      case "files.timezone":
+        try {
+          new Intl.DateTimeFormat("en", { timeZone: value })
+        } catch {
+          throw new CliError("validation_error", "expected an IANA time zone")
+        }
+        raw.files_timezone = value
+        return
+      case "record":
+        if (value !== "true" && value !== "false")
+          throw new CliError("validation_error", "record must be true or false")
+        raw.record = value === "true"
+        return
+      case "keep_runs_for_days":
+        if (!/^[1-9]\d{0,4}$/.test(value))
+          throw new CliError("validation_error", "keep_runs_for_days must be a whole number of days, 1 or more")
+        raw.keep_runs_for_days = Number(value)
+        return
+      default:
+        throw new CliError("validation_error", "unknown config key")
+    }
+  })
+
+/**
+ * Removes a setting, or any part of the file `doctor` reports a problem in, by the name its fix gives.
+ * `profile`: the one named, if any; `context.sources` without one removes every profile's sources.
+ */
+export const unsetConfig = (
+  path: string,
+  key: string,
+  profile: string | undefined,
+  permissionKeys?: ReadonlySet<string>,
+): ZoomConfig =>
+  changeFile(path, permissionKeys, (raw, { issues }) => {
+    const reported = issues.find(
+      (issue) => issue.key === key && (issue.profile === undefined || issue.profile === profile),
+    )
+    if (key === "context.sources" && !reported && profile !== undefined && Array.isArray(raw.context_sources)) {
+      raw.context_sources = raw.context_sources.filter((source) => !isNode(source) || source.profile !== profile)
+      return
+    }
+    const at = reported?.at ?? (FILE_KEYS[key] ? [FILE_KEYS[key]] : profileSettingAt(key, profile))
+    removeAt(raw, at)
+    // Removing the last permission removes the section, as the file had none before it.
+    const entry = isNode(raw.profiles) ? raw.profiles[at[1] ?? ""] : undefined
+    if (at[2] === "permissions" && isNode(entry) && isNode(entry.permissions)) {
+      if (Object.keys(entry.permissions).length === 0) delete entry.permissions
+    }
+  })
+
+const profileSettingAt = (key: string, profile: string | undefined): string[] => {
+  if (key !== "permissions" && !key.startsWith("permissions."))
+    throw new CliError("validation_error", "unknown config key")
+  if (!profile) throw new CliError("validation_error", `name a profile: \`zm <profile> config unset ${key}\``)
+  return key === "permissions"
+    ? ["profiles", profile, "permissions"]
+    : ["profiles", profile, "permissions", key.slice("permissions.".length)]
 }
 
 /** A successful login makes a profile; the store account and the archive follow it by name. */
 export const addProfile = (path: string, profile: string): void => {
-  const config = readConfig(path)
-  if (config.profiles.includes(profile)) return
-  config.profiles = [...config.profiles, profile].sort()
-  saveConfig(path, config)
+  if (readConfig(path).profiles.includes(profile)) return
+  changeFile(path, undefined, (raw) => {
+    profileEntry(raw, profile)
+  })
 }
 
 /** The zone a transcript file name's time is read in: `files.timezone`, else this computer's. */

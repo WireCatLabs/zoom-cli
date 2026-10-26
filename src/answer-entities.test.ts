@@ -22,15 +22,16 @@ const HOUSEKEEPING_ANSWERS = new Set([
   "complete",
   "config set",
   "config show",
+  "config unset",
   "doctor",
   "guide",
   "help",
   "mcp",
-  "serve",
   "session start",
   "session status",
   "skill install",
   "skill show",
+  "skill status",
   "upgrade",
 ])
 
@@ -128,6 +129,7 @@ it("answers every command that declares an entity with that entity's schema", as
     ["stats meetings show", ["stats", "meetings", "show", "--since-time", "2026-10-01"]],
     ["stats meetings top", ["stats", "meetings", "top", "--since-time", "2026-10-01"]],
     ["mentions list", ["mentions", "list", "started_at>=2026-10-01"]],
+    ["store info", ["store", "info"]],
   ]
   const program = createProgram(deps)
   const commands = new Map(leaves(program).map((command) => [pathOf(command), command]))
@@ -139,7 +141,8 @@ it("answers every command that declares an entity with that entity's schema", as
   const declared = [...commands.keys()].filter((path) => metaOf(commands.get(path) as Command).output)
   expect(declared.sort()).toEqual(
     [...runs.map(([path]) => path), "meetings projects evidence", "meetings projects scan", "meetings prepare"]
-      // checked where their own fixtures are: offline-archive-cli, meeting-project-evidence and the preparation tests
+      // checked where their own fixtures are: offline-archive-cli, meeting-project-evidence, contacts, runs and the
+      // preparation tests
       .concat(
         [
           "meetings scheduled",
@@ -149,6 +152,11 @@ it("answers every command that declares an entity with that entity's schema", as
           "meetings status",
           "recordings status",
           "batch",
+          "contacts list",
+          "contacts show",
+          "runs list",
+          "runs show",
+          "runs path",
         ],
         Object.keys(ZOOM_ANSWER_ENTITIES),
       )

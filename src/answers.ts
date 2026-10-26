@@ -11,9 +11,8 @@ export const answerSchema = sharedAnswerSchema()
 const outputSchema: Record<string, unknown> = { ...jsonSchemaOf(v.union([answerSchema, errorObjectSchema])) }
 export const toolAnswerSchema: NonNullable<Tool["outputSchema"]> = { ...outputSchema, type: "object" }
 
-export const readMetadata = (now: () => number = Date.now): (() => Meta) => {
+export const readMetadata = (now: () => number = Date.now, runId: string = randomUUID()): (() => Meta) => {
   const started = now()
-  const runId = randomUUID()
   return () => metaNow({ run_id: runId, duration_ms: Math.max(0, Math.round(now() - started)) })
 }
 

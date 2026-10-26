@@ -1,6 +1,14 @@
 ---
 name: zoom-cli
 description: Archive Zoom cloud recordings, read stored meeting transcripts and summaries, or manage a Zoom meeting through zm. Use for Zoom CLI workflows, not joining calls or operating the desktop video client.
+metadata:
+  openclaw:
+    requires:
+      bins: [zm]
+    install:
+      - kind: node
+        package: "@wirecat/zoom-cli"
+        bins: [zm]
 ---
 
 # Zoom CLI
@@ -111,9 +119,9 @@ stderr) even when the command exits successfully.
 ## Prepare with selected communications
 
 Only use communications IDs explicitly configured for the selected profile through
-`zm config set context.sources`. A grant covers one whole message/mail account or document folder;
+`zm personal config set context.sources`. A grant covers one whole message/mail account or document folder;
 do not broaden scope for an agent. `zm config show` reveals the configured selections. A document
-folder can use provider `folder` and account `notes:<folder-id>` from `memo folders list`.
+folder uses provider `local` (a plain folder) or `obsidian` (a vault) and account `notes:<folder-id>` from `memo folders list`.
 
 `meetings prepare <series-id> --context-source <id> --context-query '<words>'` adds cited literal
 matches. Repeat the source flag as needed. Default communications history is fourteen days before
@@ -169,13 +177,15 @@ OPENAI_API_KEY, and `--offline` refuses remote inference. Never include credenti
 passages, and store filters do not apply. Its cursor continues candidate scanning, not global ranking.
 Follow row/text/candidate bounds; unknown coverage remains unknown.
 
-`zm <profile> mcp` serves these commands as `zm_tools_search`, `zm_read` and `zm_write`, as the profile's
-permissions allow; a call answers as the command does. Over MCP a change at level `ask` runs without a question.
+`zm <profile> mcp` is for clients that cannot run commands (chat apps, remote agents); prefer the commands
+above when you can run them. It serves them as `zm_tools_search`, `zm_read` and `zm_write`, with the same
+permissions as the command line; a call answers as the command does. Over MCP a change at level `ask` runs without a question.
 
 `zoom search [words] --only chat,docs,meetings` asks Zoom's own search live: it reaches chat and docs zm does not
 archive, but matches exact words only and gives no line for a meeting; prefer `search meetings` for stored meetings.
 
-`remote-meetings` uses numeric remote ids. Create/update/cancel ask first: without a terminal `--yes`
+`contacts list` reads company and external Zoom contacts live (`name:`, `email:`, `type:` narrow it); `contacts show` takes
+the `id` it returns, a Zoom user id or an email. `remote-meetings` uses numeric remote ids. Create/update/cancel ask first: without a terminal `--yes`
 applies an authorized change once (else exit 7), and `--dry-run` always previews. Exit 14 means an uncertain dispatched
 write: inspect remote state before retrying. Never automatically replay creation or cancellation.
 Tokens stay in the keyring. Missing scopes require app changes and a new login; cached session status
@@ -227,7 +237,7 @@ Add `--project <existing-name-key-or-alias>` only for an explicitly selected pro
 `project_evidence.pages` apart from confirmed memberships: each page retains its matched name,
 references and unknown/pending index coverage. Repeated refs across aliases are not independent
 corroboration. At most four pages fit; candidate pages yield bytes before notes and accepted context.
-Use `project_evidence.continuation` with `meetings projects evidence` / `meeting_project_evidence`,
+Use `project_evidence.continuation` with `meetings projects evidence` (over MCP, `zm_read` with that command),
 keeping its frozen project/query/limit/read budget and non-null cursor; omit a null cursor to restart.
 Do not pass its CLI `command` field as an MCP argument. Empty pages can have continuation. This reads
 existing words without refreshing the index, inferring a project or confirming membership.

@@ -139,7 +139,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         const list = wholeList("recordings list", await deps.recordings().list({ from, to, signal: deps.signal() }))
         deps.output(options.untilTime === undefined ? { ...list, meta: { timezone: zone } } : list)
       }),
-    "zm personal recordings list --since-time 2026-10-01 --until-time 2026-10-10 --json",
+    "zm personal recordings list --since-time 2026-10-01 --until-time 2026-10-10 --dry-run --json",
     REMOTE_READ,
   )
   label(
@@ -151,7 +151,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         deps.api()
         deps.output(itemOf(await deps.recordings().show(id, { signal: deps.signal() })))
       }),
-    "zm personal recordings show example-occurrence --json",
+    "zm personal recordings show example-occurrence --dry-run --json",
     REMOTE_READ,
   )
   label(
@@ -244,8 +244,8 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         },
       ),
     [
-      "zm personal recordings download example-occurrence --output-dir ./zoom-archive --json",
-      "zm personal recordings download --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl",
+      "zm personal recordings download example-occurrence --output-dir ./zoom-archive --dry-run --json",
+      "zm personal recordings download --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --dry-run --jsonl",
     ],
     FETCH,
   )
@@ -346,7 +346,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         deps.api()
         deps.output(wholeList("remote-meetings list", await deps.remoteMeetings().list({ signal: deps.signal() })))
       }),
-    "zm personal remote-meetings list --json",
+    "zm personal remote-meetings list --dry-run --json",
     REMOTE_READ,
   )
   label(
@@ -358,7 +358,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         deps.api()
         deps.output(itemOf(await deps.remoteMeetings().show(id, { signal: deps.signal() })))
       }),
-    "zm personal remote-meetings show 123456789 --json",
+    "zm personal remote-meetings show 123456789 --dry-run --json",
     REMOTE_READ,
   )
   label(
@@ -370,7 +370,7 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
         deps.api()
         deps.output(itemOf(await deps.remoteMeetings().invitation(id, { signal: deps.signal() })))
       }),
-    "zm personal remote-meetings invitation 123456789 --json",
+    "zm personal remote-meetings invitation 123456789 --dry-run --json",
     REMOTE_READ,
   )
   label(
