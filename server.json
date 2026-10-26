@@ -1,0 +1,35 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "dev.wirecat/zoom-cli",
+  "title": "WireCat Zoom",
+  "description": "Zoom cloud recordings and transcripts for agents, kept on your computer. Sign in with zm first.",
+  "websiteUrl": "https://wirecat.dev/en/docs/zoom",
+  "repository": {
+    "url": "https://github.com/WireCatLabs/zoom-cli",
+    "source": "github"
+  },
+  "version": "0.52.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@wirecat/zoom-cli",
+      "version": "0.52.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "valueHint": "profile",
+          "description": "The zm profile you signed in with",
+          "isRequired": true
+        },
+        {
+          "type": "positional",
+          "value": "mcp"
+        }
+      ]
+    }
+  ]
+}
