@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.50.1 — 26.10.2026
+
+### Fixed
+
+- **The `zoom-cli` skill says `zm <profile> mcp` is for clients that cannot run commands**, such as chat apps and remote
+  agents, and asks an agent that can run commands to use them. MCP calls keep the profile's permissions, as before.
+
 ## 0.50.0 — 26.10.2026
 
 ### Added
