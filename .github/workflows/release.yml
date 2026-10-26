@@ -184,3 +184,32 @@ jobs:
         run: |
           awk -v v="$VERSION" '$0 ~ "^## "v" " {on=1; next} /^## / && on {exit} on' CHANGELOG.md |
             gh release create "v$VERSION" --title "$VERSION" --notes-file -
+
+  # ClawHub's own workflow, pinned: it runs the ClawHub CLI from this commit and needs id-token only to read which
+  # commit that is. It publishes the skill only when it changed, as the next patch of ClawHub's own version line.
+  clawhub-dry-run:
+    needs: build
+    if: inputs.dry_run
+    permissions:
+      contents: read
+      id-token: write
+    uses: openclaw/clawhub/.github/workflows/skill-publish.yml@52358852d3510f1150756d48e8a72cb8c8e698e0 # main, 2026-10-25
+    with:
+      skill_path: skills/zoom-cli
+      owner: wirecat
+      dry_run: true
+
+  # After the tag, so a ClawHub failure never holds back the npm release.
+  clawhub:
+    needs: tag
+    if: ${{ !inputs.dry_run }}
+    permissions:
+      contents: read
+      id-token: write
+    uses: openclaw/clawhub/.github/workflows/skill-publish.yml@52358852d3510f1150756d48e8a72cb8c8e698e0 # main, 2026-10-25
+    with:
+      skill_path: skills/zoom-cli
+      owner: wirecat
+      dry_run: false
+    secrets:
+      clawhub_token: ${{ secrets.CLAWHUB_TOKEN }}
