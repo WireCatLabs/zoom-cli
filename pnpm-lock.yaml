@@ -18,8 +18,8 @@ importers:
         specifier: 0.59.0
         version: 0.59.0(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.5)
       '@wirecat/cli-core':
-        specifier: 0.443.0
-        version: 0.443.0(@wirecat/cli-base@0.59.0(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.5))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)
+        specifier: 0.448.0
+        version: 0.448.0(@wirecat/cli-base@0.59.0(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.5))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)
       commander:
         specifier: 15.0.0
         version: 15.0.0
@@ -1024,14 +1024,14 @@ packages:
       vitest:
         optional: true
 
-  '@wirecat/cli-core-onnx@1.0.1':
-    resolution: {integrity: sha512-4oLtnyhm8W69oCWYqCWYtUQEhaJYitivQmgLkKHAsPOCEJlZG8+IUzchEgGyq3X1rWFs66wRw6uVnKHjYRMyyQ==}
+  '@wirecat/cli-core-onnx@1.1.0':
+    resolution: {integrity: sha512-U274J90rLZ30SzODy9/re1cSw9e7LMGChJ/8a1e4qZ3MwoOan7XtXKd9wd5AuxEnzZuYUSF6TWPAwJ1sHlVOCw==}
 
   '@wirecat/cli-core-sqlite@1.1.0':
     resolution: {integrity: sha512-GpGlh/dAIX/nblBYCdT6DfWSLFxav9mxxeELQAfEuw+QZdT9unKxbi5xa02s/s4JS1P7n0PQx2sCABj4FlMRNw==}
 
-  '@wirecat/cli-core@0.443.0':
-    resolution: {integrity: sha512-6uubAl6IvN9PhTFXz9iCbxfdqHghrFKtnAlRmS7pSntXqIGpcFMLmH7xYJ4ceZT4nG659KBHlcOLgJX6F8iwYg==}
+  '@wirecat/cli-core@0.448.0':
+    resolution: {integrity: sha512-r0ulUowz36x0LMSzIYSh4uF9kWiU4QOairpZBLwvZyb5HejbtRHhiSxeyE6o8pFSRuG+wBc3IYMwHsH2bHqV2A==}
     engines: {node: ^22.16.0 || >=24}
     hasBin: true
     peerDependencies:
@@ -3249,13 +3249,13 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@wirecat/cli-core-onnx@1.0.1':
+  '@wirecat/cli-core-onnx@1.1.0':
     dependencies:
       onnxruntime-common: 1.30.0
 
   '@wirecat/cli-core-sqlite@1.1.0': {}
 
-  '@wirecat/cli-core@0.443.0(@wirecat/cli-base@0.59.0(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.5))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)':
+  '@wirecat/cli-core@0.448.0(@wirecat/cli-base@0.59.0(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.5))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)':
     dependencies:
       '@anthropic-ai/sdk': 1.3.0(zod@4.6.7)
       '@bomb.sh/tab': 0.0.22(commander@15.0.0)
@@ -3264,7 +3264,7 @@ snapshots:
       '@resvg/resvg-js': 2.6.2
       '@valibot/to-json-schema': 1.8.0(valibot@1.5.0(typescript@7.0.2))
       '@wirecat/cli-base': 0.59.0(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.5)
-      '@wirecat/cli-core-onnx': 1.0.1
+      '@wirecat/cli-core-onnx': 1.1.0
       '@wirecat/cli-core-sqlite': 1.1.0
       '@xmldom/xmldom': 0.9.12
       chardet: 2.2.0
