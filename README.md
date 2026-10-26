@@ -156,6 +156,7 @@ More: [compared with other tools](https://github.com/WireCatLabs/zoom-cli/blob/m
 | Zoom meetings | `remote-meetings list\|show\|invitation`, `remote-meetings create\|update\|cancel` |
 | Zoom contacts | `contacts list [name:… email:… type:company\|external]`, `contacts show <member id\|email>` |
 | What zm did | `runs list [query]`, `runs show <run-id> [--problems]`, `runs path <run-id>`; `--record` keeps a successful run too |
+| Zoom's own search | `zoom search`: chat, docs and meetings zm does not archive, read live |
 | Agents | `mcp`, `skill show`, `skill install [--for claude\|agents\|all]`, `commands --json`, `complete -- <words...>` |
 
 Zoom meeting changes, links, transcription, schedules, explicit `meetings embeddings` generation and

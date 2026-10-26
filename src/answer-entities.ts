@@ -114,6 +114,17 @@ const archiveImport = v.strictObject({
   superseded_transcripts: optionalCount,
   reason: v.optional(v.literal("missing_or_deleted")),
 })
+const searchHit = v.strictObject({
+  source: text,
+  id: nullableText,
+  title: nullableText,
+  time: nullableText,
+  text: nullableText,
+  url: nullableText,
+  people: v.array(text),
+  container_id: nullableText,
+  details: v.record(text, v.nullable(v.union([text, v.number(), flag]))),
+})
 export const ZOOM_ANSWER_ENTITIES = {
   "recordings list": { name: "zoom_recording", schema: recording },
   "recordings show": { name: "zoom_recording", schema: recording },
@@ -147,6 +158,7 @@ export const ZOOM_ANSWER_ENTITIES = {
   "remote-meetings create": { name: "zoom_remote_change", schema: remoteChange },
   "remote-meetings update": { name: "zoom_remote_change", schema: remoteChange },
   "remote-meetings cancel": { name: "zoom_remote_change", schema: remoteChange },
+  "zoom search": { name: "zoom_search_hit", schema: searchHit },
   "meetings embeddings": { name: "meeting_embedding", schema: MEETING_RESULT_ENTITIES.meeting_embedding, shared: true },
   "meetings sync": { name: "meeting_ingestion", schema: MEETING_RESULT_ENTITIES.meeting_ingestion, shared: true },
   "meetings import": { name: "meeting_ingestion", schema: MEETING_RESULT_ENTITIES.meeting_ingestion, shared: true },

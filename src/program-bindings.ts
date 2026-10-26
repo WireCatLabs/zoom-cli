@@ -62,6 +62,8 @@ import { meetingProgress } from "./sync-progress.js"
 import type { TokenManager } from "./tokens.js"
 import { addWatchCommand } from "./watch-commands.js"
 import { createWatchService } from "./watch-service.js"
+import { ZoomSearch } from "./zoom-search.js"
+import { addZoomSearchCommands } from "./zoom-search-commands.js"
 
 export const bindZoomProgram = (
   program: Command,
@@ -377,6 +379,12 @@ export const bindZoomProgram = (
   })
   addContactsCommands(program, {
     contacts: () => deps.contacts ?? new ZoomContacts(tokens(), fetchWithSignal(deps.fetch), remoteOptions),
+    api,
+    signal,
+    output,
+  })
+  addZoomSearchCommands(program, {
+    search: () => deps.zoomSearch ?? new ZoomSearch(tokens(), fetchWithSignal(deps.fetch)),
     api,
     signal,
     output,

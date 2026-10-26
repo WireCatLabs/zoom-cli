@@ -9,6 +9,7 @@
   the list. Each contact is the shared `contact` type, keyed by Zoom's member id. They need the
   `team_chat:read:list_contacts` and `team_chat:read:contact` scopes and a new `session start`.
 - The Zoom response checks are generated from Zoom's published Chat API description (`spec/zoom/`, `pnpm zoom:generate`).
+- `zoom search` searches your Zoom workspace live through Zoom's own search: chat messages, chats, Canvas docs, meetings and the rest of what your account holds, chosen with `--only`. It needs the `agentic_search:read:search` scope; Zoom's `ask` answers are not offered.
 
 ## 0.50.1 — 26.10.2026
 

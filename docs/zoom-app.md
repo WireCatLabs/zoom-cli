@@ -129,6 +129,7 @@ with `zm personal session status --json`.
 | `meeting:delete:meeting` | Cancel a remote meeting |
 | `team_chat:read:list_contacts` | List your company and external contacts with `contacts list` |
 | `team_chat:read:contact` | Show one contact and their phone numbers with `contacts show` |
+| `agentic_search:read:search` | Search chat, docs and meetings live with `zm personal zoom search` |
 
 Archiving does not require meeting write permissions. Changes preview by default; `--yes` applies
 one request. See [recording archives](archive.md#archive-cloud-recordings) or

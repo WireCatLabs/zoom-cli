@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**334 ✅ · 1 ⛔ · 0 ❌** — 81 commands, 254 options.
+**338 ✅ · 1 ⛔ · 0 ❌** — 82 commands, 257 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -240,6 +240,10 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `remote-meetings cancel` | `--dry-run` | ✅ |  |
 | `contacts list` |  | ✅ |  |
 | `contacts show` |  | ✅ |  |
+| `zoom search` |  | ✅ |  |
+| `zoom search` | `--only` | ✅ |  |
+| `zoom search` | `--limit` | ✅ |  |
+| `zoom search` | `--cursor` | ✅ |  |
 | `skill show` |  | ✅ |  |
 | `skill show` | `--for` | ✅ |  |
 | `skill install` |  | ✅ |  |
