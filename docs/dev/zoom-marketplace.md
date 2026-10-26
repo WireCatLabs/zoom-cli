@@ -67,13 +67,14 @@ else: reviewers reject scopes an app does not use.
 | `meeting:delete:meeting` | Cancels a meeting when the user runs `zm remote-meetings cancel`. |
 | `team_chat:read:list_contacts` | Lists the user's company and external contacts with `zm contacts list`. |
 | `team_chat:read:contact` | Shows one contact and their phone numbers with `zm contacts show`. |
+| `agentic_search:read:search` | Searches the user's Zoom chat, docs and meetings live with `zm zoom search`; results are shown, not stored. |
 
 Remove every other scope with the bin icon next to it, on both tabs. Scopes zm does not call, which Zoom's
 templates or earlier tests often add:
 
 | Group | Remove |
 |---|---|
-| Agentic Search | `agentic_search:read:knowledge_graph`, `agentic_search:read:ask`, `agentic_search:read:search` |
+| Agentic Search | `agentic_search:read:knowledge_graph`, `agentic_search:read:ask` |
 | Meetings | `meeting:read:meeting_audio`, `meeting:read:meeting_transcript` (both real-time streams), `meeting:read:participant`, `meeting:read:participant_feedback`, `meeting:read:participant_sharing` |
 | Webinars | `webinar:read:participant_data_connection`, `webinar:read:list_past_instances`, `webinar:read:list_past_participants`, `webinar:read:participant`, `webinar:read:participant_feedback`, `webinar:read:participant_sharing` |
 | Recording | `cloud_recording:read:recording_analytics_details`, `cloud_recording:read:content`, `cloud_recording:read:registrant_status`, `cloud_recording:read:recording` |
@@ -86,7 +87,7 @@ The **Scope description** box under the list asks how the data is used and wheth
 > zm reads this data only when the user runs a command. Meeting records, transcripts, summaries, participants,
 > recordings' details and chat are stored on the user's own computer in a local SQLite database file, unencrypted
 > by zm and protected by the operating system's file permissions; recordings the user downloads are files in a
-> folder they choose. Contacts are not stored. OAuth tokens are kept in the operating system's credential store. No
+> folder they choose. Contacts and live search results are not stored. OAuth tokens are kept in the operating system's credential store. No
 > data is sent to a WireCat server.
 
 If the two `team_chat` scopes are missing from the picker, search for "team chat" or "contact". Zoom may list them
@@ -162,7 +163,9 @@ Left menu, Production tab: **App Submission**.
    - **Add TXT record**: add the record in Cloudflare DNS for `wirecat.dev`.
 4. **Release notes for app reviewer**: paste the test plan below.
 5. **App activation**: **I will manually activate my app**, so the zm release with the built-in ID ships first.
-6. **Test account**: `None needed: zm uses the reviewer's own Zoom account.`
+6. **Test account**: a user on a paid Zoom account where `zm personal zoom search` returns results. Zoom's hosted
+   search depends on the account's license, so a reviewer's free account may fail it and reject the scope. Enter
+   the login in the form only, never in this file.
 7. Read and accept the **Marketplace developer agreement**, then **Submit**.
 
 Test plan for the reviewer:
@@ -171,7 +174,8 @@ Test plan for the reviewer:
 > login. Install Node.js 22 or later, then: `npm install -g @wirecat/zoom-cli`,
 > `zm config set zoom.client_id <production id>`, `zm personal session start` and approve in the browser.
 > Read: `zm personal meetings sync --since-time 2026-10-01`, `zm personal search meetings "<a word from a recent
-> meeting>"`, `zm personal recordings list`, `zm personal contacts list`. Manage meetings (each asks first; `--yes`
+> meeting>"`, `zm personal recordings list`, `zm personal contacts list`, `zm personal zoom search "<a word from a recent chat>"`
+> (use the test account above: search needs a paid Zoom license). Manage meetings (each asks first; `--yes`
 > applies): `zm personal remote-meetings create --title "Review test" --start-time 2026-12-01T10:00:00Z
 > --duration-minutes 30 --yes`, then `remote-meetings update <id> --title "Review test 2" --yes` and
 > `remote-meetings cancel <id> --yes`. Uninstall: remove the app under Manage → Added Apps. All data stays on the
