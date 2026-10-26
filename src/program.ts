@@ -38,6 +38,8 @@ export interface ProgramDeps {
   writeFile?: (path: string, content: string, options?: { signal?: AbortSignal }) => Promise<void>
   openBrowser: (url: string, browser?: string) => Promise<void>
   readPaste?: (signal: AbortSignal) => Promise<string>
+  /** Where `session start --answer-stdin` reads its answers; process.stdin when left out. */
+  stdin?: NodeJS.ReadableStream
   /** A y/N question, default no; only at a terminal. */
   confirm?: (question: string) => Promise<boolean>
   /** The WireCat first-run questions, before a command; only the real binary passes it. */

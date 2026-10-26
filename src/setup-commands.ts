@@ -3,6 +3,7 @@ import { dirname } from "node:path"
 import { CliError, type KeyringStore } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
 import {
+  answerStdinOption,
   type Body,
   commandWords,
   grantsAuthority,
@@ -14,6 +15,7 @@ import {
   privateFiles,
   REMOTE_WRITE,
   refuseCommandName,
+  signInSteps,
 } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { addStandardCommands } from "./commands.js"
@@ -97,6 +99,7 @@ export interface SessionCommandDeps {
     | "outputIsTTY"
     | "openBrowser"
     | "readPaste"
+    | "stdin"
   >
   getConfig: () => ZoomConfig
   output: (body: Body) => void
@@ -107,6 +110,8 @@ export interface SessionCommandDeps {
   fetch: () => typeof fetch
   signal: () => AbortSignal | undefined
 }
+
+const PASTE_PROMPT = "If the browser does not come back by itself, the address it ended on (code=…&state=…)"
 
 /** The shared discovery, doctor and session status commands, plus Zoom's browser login. */
 export const addSessionCommands = (program: Command, context: SessionCommandDeps): void => {
@@ -167,7 +172,8 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
     .command("start")
     .description("log in to Zoom through your browser")
     .option("--browser <program>", "browser program")
-    .action(async (opts: { browser?: string }) => {
+    .addOption(answerStdinOption())
+    .action(async (opts: { browser?: string; answerStdin?: boolean }) => {
       const config = getConfig()
       const selected = profile()
       refuseCommandName(selected, commandWords(program), "zm")
@@ -182,13 +188,28 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
           "configuration_error",
           `login requires browser approval; run zm ${selected} session start yourself`,
         )
+      const steps = signInSteps({
+        diagnostic: (line) => deps.diagnostic(`${line}\n`),
+        json: globals.json === true || globals.jsonl === true,
+        answers: opts.answerStdin === true,
+        ...(deps.stdin ? { input: deps.stdin } : {}),
+      })
       const done = await login({
         tokens: tokens(),
         signal: signal(),
         openBrowser: (url) => deps.openBrowser(url, opts.browser),
-        readPaste: deps.readPaste,
-        // Without a terminal this line is all an agent can pass on, so --quiet keeps it.
-        showUrl: (url) => deps.diagnostic(`Open this URL to approve Zoom login:\n${url}\n`),
+        readPaste: steps.answers
+          ? (stop) =>
+              steps
+                .ask({ field: "redirect", secret: true, prompt: PASTE_PROMPT }, stop)
+                // The browser's callback won the race; the question is withdrawn, not failed.
+                .catch((error: unknown) => (stop.aborted ? new Promise<string>(() => {}) : Promise.reject(error)))
+          : deps.readPaste,
+        showUrl: (url) =>
+          steps.answers
+            ? steps.openUrl(url, "Approve access to Zoom in the browser")
+            : // Without a terminal this line is all an agent can pass on, so --quiet keeps it.
+              deps.diagnostic(`Open this URL to approve Zoom login:\n${url}\n`),
       })
       addProfile(deps.configPath, selected)
       output(itemOf({ ...done, profile: selected }))
