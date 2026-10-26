@@ -29,6 +29,3 @@ an item here names it when zm only adopts it.
 - **ZM-11** · P2 · Agent end-to-end check of the meeting workflow on invented data (aliases → cited calls →
   passages → Memo findings → prepare), with the result in cli-testing.
   [plan](https://github.com/WireCatLabs/cli-private/blob/main/plans/2026-10-14-zoom-next-tasks.md)
-- **ZM-27** · P2 · `recordings sync` folds into `recordings download`: both save recordings to disk, and `sync` means
-  bringing the store up to date (owner, 2026-10-24). `download` takes the date range and resumes month by month as
-  `sync` does now; `sync` goes, with no alias. Start: `src/archive-commands.ts`.

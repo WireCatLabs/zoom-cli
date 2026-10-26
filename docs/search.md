@@ -79,7 +79,7 @@ Combine a participant identity or explicitly linked person with a project and da
 ```sh
 zm personal meetings people "Alice Example" --json
 zm personal search meetings "launch" --identity-id 12 --project RES --since-time 2026-09-12 --until-time 2026-10-12 --json
-zm personal search meetings "budget" --person-id 7 --topic costs --since-time 2026-09-12 --json
+zm personal search meetings "budget" --person-id 7 --topic-name costs --since-time 2026-09-12 --json
 zm personal search meetings "launch" --tag planning --limit 20 --json
 ```
 
@@ -91,7 +91,7 @@ spoke an anonymous transcript cue.
 
 `--project` accepts an existing canonical project name, key or explicit alias. Only confirmed
 meeting membership counts; an agent's proposed membership or a matching transcript word does
-not establish membership. `--tag` and `--topic` accept canonical names or explicit aliases of
+not establish membership. `--tag` and `--topic-name` accept canonical names or explicit aliases of
 labels already attached to a meeting; choose one label filter. Missing or ambiguous vocabulary
 names fail instead of silently broadening the search. A date alone covers the whole local day
 of the computer's zone, and a time without an offset is read in that zone; give an offset or `Z`
@@ -132,14 +132,13 @@ zm personal meetings task-proposal meeting:3/15/20/0 --type promise --json
 Broader search requires explicit `--only messages,mail,notes,meetings`. Message reads use the
 selected local account; mail reads include stored email accounts; notes are global to the shared
 store. Meeting matching uses word prefixes; unsupported meeting syntax or exact queries are reported
-as skipped. A meetings-only continuation uses the returned `item.meetings.next_cursor` as
-`--meeting-cursor '<json>'`, bound to its account and query. JSONL emits the report in one item record, retaining skips, coverage and cursors, followed by an end
-record. Skipped sources set `complete` to false and appear in `issues`; search still exits zero.
+as skipped. Continue the hit list with `--page`. JSONL emits one item per hit and an end record.
+Skipped sources set `meta.complete` to false and appear in `issues`; search still exits zero.
 
 ## Put filters in the query, and save a search
 
 The project, label and date filters can also be written in the query, joined to the words: `date:`, `project:`,
-`tag:` and `topic:` mean `--since-time`/`--until-time`, `--project`, `--tag` and `--topic`.
+`tag:` and `topic:` mean `--since-time`/`--until-time`, `--project`, `--tag` and `--topic-name`.
 
 ```sh
 zm personal search meetings "launch project:RES date>=30d" --json
@@ -306,9 +305,8 @@ later day does not shift your selection. Changed vocabulary or selection can inv
 The optional selection query accepts exact `meeting_id`, `identity_id`, `person_id`, `tag_id`,
 `event_id` and `series_id` values, each once and joined by AND, plus `started_at` dates/ranges.
 Date ranges include whole UTC calendar days; quoted ISO timestamps give exact bounds. OR,
-negation and confirmed project-membership filters are refused. The MCP tool
-`meeting_project_evidence` takes `project`, optional `query`, `limit`, `cursor` and
-`max_read_bytes`; its account is fixed by the server.
+negation and confirmed project-membership filters are refused. Over MCP, `zm_read` runs it as
+`{ "command": "meetings projects evidence", "arguments": { … } }` with the same arguments; the server fixes the profile.
 
 For every relevant retained cue, open `zm personal meetings passage <ref> --format markdown` and check the
 surrounding words. `association: "unconfirmed-word-evidence"` means candidate evidence: a key

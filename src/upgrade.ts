@@ -1,7 +1,7 @@
 import { join } from "node:path"
 import { createRenderer } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { FETCH, upgradeCommand } from "@wirecat/cli-core/cli"
+import { FETCH, overrideSharedContract, upgradeCommand } from "@wirecat/cli-core/cli"
 import { appUpdate } from "@wirecat/cli-core/update"
 import type { Command } from "commander"
 import { zmPaths } from "./folders.js"
@@ -24,7 +24,7 @@ export const addUpgradeCommand = (
   streams: { data: (text: string) => void; diagnostic: (text: string) => void },
 ): void => {
   const upgrade = program.addCommand(
-    annotate(
+    overrideSharedContract(
       upgradeCommand(ZM, "@wirecat/zoom-cli", (command) => {
         const format = command.parent?.opts().json ? "json" : "pretty"
         return {
@@ -36,7 +36,10 @@ export const addUpgradeCommand = (
           install: (argv) => runUpdate(argv),
         }
       }),
-      { effects: FETCH },
+      "Zoom upgrade checks npm and may install files, so it explicitly declares both the network read and local write.",
+      (command) => {
+        annotate(command, { effects: FETCH })
+      },
     ),
   )
   // `addCommand` does not pass the program's exit and output handling down, as `command()` does.

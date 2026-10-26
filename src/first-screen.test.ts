@@ -72,7 +72,7 @@ it("lists commands as text by section, and as JSON with --json", async () => {
   expect(await run(["commands"], deps)).toBe(0)
   const text = stdout.join("")
   expect(text).toMatch(/\nWrite\n {2}zm meetings transcribe/)
-  expect(text).toMatch(/\nAutomate\n {2}zm recordings schedule create/)
+  expect(text).toMatch(/\nAutomate\n(?: {2}zm .*\n)* {2}zm recordings schedule create/)
   expect(text).toContain("zm session start [options]")
   stdout.length = 0
   expect(await run(["commands", "--json"], deps)).toBe(0)

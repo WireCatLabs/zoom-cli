@@ -83,7 +83,7 @@ project link. The agent can check proposed labels against Memo's existing vocabu
 `meetings task-proposal --type promise` previews a follow-up task tied to that passage.
 
 **Keep the whole history.** *"Back up every recording since January."*
-`recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl` downloads
+`recordings download --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl` downloads
 video, audio, transcripts and chat with SHA-256 manifests; `recordings schedule` runs it daily.
 
 More: [the local archive][docs/archive.md] · [search and evidence][docs/search.md] ·
@@ -111,7 +111,8 @@ More: [MCP and skills][docs/mcp.md] · [connect your AI agent][wirecat/en/docs/a
   transcript revision, and corrected transcripts keep their history.
 - **Made for agents.** JSON output, bounded reads with explicit completeness, a skill and an MCP server.
 - **Safe by default.** Your own Zoom app, tokens only in the keyring, permissions per profile, and every
-  change to Zoom asked first at the terminal.
+  change to Zoom asks first at the terminal. Over MCP there is no terminal, so `ask` runs without a question;
+  use `deny` or `readonly` to stop a change.
 
 More: [security][docs/security.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
 
@@ -142,7 +143,7 @@ More: [compared with other tools](https://github.com/WireCatLabs/zoom-cli/blob/m
 
 | Task | Commands |
 |---|---|
-| Set up and log in | `config show`, `config set <key> <value>`, `session start [--browser <program>]`, `session status [--check]`, `doctor` |
+| Set up and log in | `config show`, `config set <key> <value>`, `config unset <key>`, `session start [--browser <program>]`, `session status [--check]`, `doctor` |
 | Bring meetings in | `meetings sync [--since-time <time>] [--lookback-days <days>]`, `meetings import <folder>`, `watch [api\|files] [folder] --jsonl` |
 | Read stored meetings | `meetings list`, `meetings show <meeting>`, `meetings transcript <meeting>`, `meetings summary <meeting>`, `meetings export <meeting> --format markdown\|vtt`, `events list` |
 | Search | `search meetings <query>`, `meetings people <query>`, `search all <query>` |
@@ -150,10 +151,11 @@ More: [compared with other tools](https://github.com/WireCatLabs/zoom-cli/blob/m
 | Several reads at once | `batch <file>` runs bounded `search meetings` and `meetings passage` requests from a JSON file |
 | Search by meaning | `search meetings <query> --model <model>`, `meetings embeddings --model <model>` |
 | Local transcription | `meetings transcribe <meeting> <file> --model <model>` |
-| Cloud recordings | `recordings list`, `recordings show <meeting>`, `recordings download <meeting> --output-dir <dir>`, `recordings sync --since-time <date> --until-time <date> --output-dir <dir> --jsonl`, `recordings schedule create\|list\|show\|run\|disable` |
+| Cloud recordings | `recordings list`, `recordings show <meeting>`, `recordings download <meeting> --output-dir <dir>`, `recordings download --since-time <date> --until-time <date> --output-dir <dir> --jsonl`, `recordings schedule create\|list\|show\|run\|disable` |
 | Local archive | `recordings archive show\|check\|locks\|recover <directory>`, `recordings archive transcript\|import <directory>`, `search recordings <directory> <query>` |
 | Zoom meetings | `remote-meetings list\|show\|invitation`, `remote-meetings create\|update\|cancel` |
 | Zoom contacts | `contacts list [name:… email:… type:company\|external]`, `contacts show <member id\|email>` |
+| What zm did | `runs list [query]`, `runs show <run-id> [--problems]`, `runs path <run-id>`; `--record` keeps a successful run too |
 | Agents | `mcp`, `skill show`, `skill install [--for claude\|agents\|all]`, `commands --json`, `complete -- <words...>` |
 
 Zoom meeting changes, links, transcription, schedules, explicit `meetings embeddings` generation and
@@ -217,7 +219,7 @@ More: [the local archive][docs/archive.md] · [Zoom on wirecat.dev][wirecat/en/d
 ## Archive cloud recordings
 
 ```sh
-zm personal recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl
+zm personal recordings download --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl
 zm personal recordings archive check ./zoom-archive --offline --json
 zm personal search recordings ./zoom-archive "example plan" --offline --json
 ```
@@ -284,7 +286,7 @@ More: [MCP and skills][docs/mcp.md] · [MCP and skills on wirecat.dev][wirecat/e
 ## Manage Zoom meetings
 
 ```sh
-zm personal remote-meetings create --title "Example planning" --start-time 2026-10-20T10:00:00Z --duration-minutes 30 --json
+zm personal remote-meetings create --title "Example planning" --start-time 2026-10-20T10:00:00Z --duration-minutes 30 --dry-run --json
 zm personal remote-meetings cancel 123456789 --dry-run --json
 ```
 

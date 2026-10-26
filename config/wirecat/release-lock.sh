@@ -8,7 +8,16 @@ wirecat_release_lock() {
     echo "release locking requires flock" >&2
     return 1
   }
-  _wirecat_release_lock="${XDG_RUNTIME_DIR:-/tmp}/leemour-release.lock"
+  # Keyed by package name, not folder: one package releases from several checkouts and worktrees.
+  _wirecat_release_key=$(node -e '
+    const { name } = JSON.parse(require("node:fs").readFileSync("package.json", "utf8"))
+    if (typeof name !== "string" || !name) throw Error("package.json has no name")
+    process.stdout.write(name.replace(/^@/, "").replace(/[^A-Za-z0-9._-]+/g, "-"))
+  ' 2>/dev/null) && [ -n "$_wirecat_release_key" ] || {
+    echo "release locking needs a package name in ./package.json" >&2
+    return 1
+  }
+  _wirecat_release_lock="${XDG_RUNTIME_DIR:-/tmp}/leemour-release-$_wirecat_release_key.lock"
   exec 9>>"$_wirecat_release_lock"
   if flock -E 75 -w "$_wirecat_release_wait" 9; then
     printf '%s pid %s since %s\n' "$(basename "$PWD")" "$$" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$_wirecat_release_lock.who"

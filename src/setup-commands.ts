@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
-import { CliError, isCliError, type KeyringStore } from "@wirecat/cli-base"
+import { dirname } from "node:path"
+import { CliError, type KeyringStore } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
 import {
   type Body,
@@ -10,12 +11,14 @@ import {
   LOCAL_WRITE,
   logsInOrOut,
   NO_EFFECTS,
+  privateFiles,
   REMOTE_WRITE,
   refuseCommandName,
 } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { addStandardCommands } from "./commands.js"
-import { addProfile, setConfig, type ZoomConfig } from "./config.js"
+import { addProfile, inspectConfig, setConfig, unsetConfig, type ZoomConfig } from "./config.js"
+import { publicIssue } from "./config-issues.js"
 import { login } from "./login.js"
 import { addModelsCommands } from "./models-commands.js"
 import { permissionKeys } from "./permissions.js"
@@ -47,23 +50,38 @@ export const addConfigCommands = (
   program: Command,
   {
     configPath,
-    getConfig,
     output,
-    profile,
-  }: { configPath: string; getConfig: () => ZoomConfig; output: (body: Body) => void; profile: () => string },
+    warn,
+    named,
+  }: {
+    configPath: string
+    output: (body: Body) => void
+    warn: (text: string) => void
+    /** The profile named for this command, if any; never asks for one. */
+    named: () => string | undefined
+  },
 ): void => {
   const cfg = annotate(program.command("config"), { effects: NO_EFFECTS }).description("local Zoom configuration")
   annotate(cfg.command("show"), { effects: LOCAL_READ })
     .description("show local configuration")
     .action(() => {
-      output(itemOf(getConfig()))
+      const { config, issues } = inspectConfig(configPath, permissionKeys(program))
+      output(itemOf(config))
+      for (const issue of issues)
+        warn(`${issue.what}, so it is left out${issue.fix ? ` — \`${issue.fix}\` removes it` : ""}`)
     })
   grantsAuthority(annotate(cfg.command("set"), { effects: LOCAL_WRITE }))
     .description("set a configuration value")
     .argument("<key>", "setting name, such as zoom.client_id")
     .argument("<value>", "new value")
     .action((key: string, value: string) => {
-      output(itemOf(setConfig(configPath, key, value, profile, permissionKeys(program))))
+      output(itemOf(setConfig(configPath, key, value, named, permissionKeys(program))))
+    })
+  grantsAuthority(annotate(cfg.command("unset"), { effects: LOCAL_WRITE, examples: ["zm config unset files.folder"] }))
+    .description("remove a setting, or a part of the file doctor reports a problem in")
+    .argument("<key>", "setting name, such as files.folder, or the key a doctor fix names")
+    .action((key: string) => {
+      output(itemOf(unsetConfig(configPath, key, named(), permissionKeys(program))))
     })
 }
 
@@ -98,27 +116,19 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
     raw: buffer,
     doctor: () => {
       const keyring = probeKeyring(deps.tokens.options.keyring)
-      let config: ZoomConfig
-      try {
-        config = getConfig()
-      } catch (error) {
-        if (!isCliError(error)) throw error
-        return {
-          version: VERSION,
-          runtime: { node: process.versions.node },
-          config: { readable: false, path: deps.configPath, error: error.message },
-          profiles: null,
-          authentication: { configured: null, state: "not_checked", keyring },
-          database: "not_checked",
-        }
-      }
+      const { found, issues, config } = inspectConfig(deps.configPath, permissionKeys(program))
+      const files = privateFiles({ files: [deps.configPath], dirs: [dirname(deps.configPath)] })
+      if (files.checked) for (const { fix } of files.problems) deps.diagnostic(`to make it private: ${fix}`)
       return {
         version: VERSION,
         runtime: { node: process.versions.node },
-        config: { readable: true, path: deps.configPath, source: config.source },
+        config: { path: deps.configPath, found, issues: issues.map(publicIssue) },
         profiles: config.profiles,
         authentication: { configured: config.clientId !== null, state: "not_checked", keyring },
         database: "not_checked",
+        files: files.checked
+          ? { ...files, problems: files.problems.map(({ path, mode, want }) => ({ path, mode, want })) }
+          : files,
       }
     },
     sessionStatus: async (check) => {

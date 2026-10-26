@@ -7,7 +7,7 @@ import {
   isCliError,
   projectFields,
 } from "@wirecat/cli-base"
-import { type Body, environmentOf, snakeKeys } from "@wirecat/cli-core/cli"
+import { type Body, commandRuns, environmentOf, snakeKeys } from "@wirecat/cli-core/cli"
 import type { MeetingStore } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
 import { addZoomSkillCommands } from "./agent-skill.js"
@@ -15,7 +15,7 @@ import { declareZoomAnswers } from "./answer-entities.js"
 import { type AnswerFormat, bodyOf, renderBody, wholeList } from "./answer-output.js"
 import { addArchiveCommands } from "./archive-commands.js"
 import { readArchiveTranscripts, searchArchiveTranscripts } from "./archive-transcripts.js"
-import { annotateMeetingCommands } from "./commands.js"
+import { annotateMeetingCommands, markProfileFree } from "./commands.js"
 import { filesZone, profileAccountKey, readConfig } from "./config.js"
 import { ZoomContacts } from "./contacts.js"
 import { addContactsCommands } from "./contacts-commands.js"
@@ -29,11 +29,12 @@ import { type ContextCapture, captureContextSources } from "./meeting-communicat
 import { addZoomInventoryCommand } from "./meeting-inventory.js"
 import type { ZoomPreparationOptions } from "./meeting-preparation.js"
 import { configuredMeetingSource } from "./meeting-source.js"
-import { guardCommand } from "./permissions.js"
+import { discoveryLevels, guardCommand, permissionKeys } from "./permissions.js"
 import { chooseProfile } from "./profile.js"
 import { PROFILE_HELP, recordProfile } from "./profile-word.js"
 import type { ProgramDeps } from "./program.js"
 import { addProgressCommands } from "./progress-commands.js"
+import { ZM } from "./read-only.js"
 import { addRecordingScheduleCommands } from "./recording-schedule-commands.js"
 import { zoomRecordingSchedule } from "./recording-schedule-setup.js"
 import {
@@ -45,6 +46,7 @@ import {
 } from "./recordings.js"
 import type { RemoteOptions } from "./remote-http.js"
 import { ZoomRemoteMeetings } from "./remote-meetings.js"
+import { observedFetch } from "./request-events.js"
 import type { ZoomLifecycle } from "./run.js"
 import { addConfigCommands, addSessionCommands } from "./setup-commands.js"
 import { addStoreCommands } from "./store-commands.js"
@@ -87,7 +89,7 @@ export const bindZoomProgram = (
     }
   }
   let config: ReturnType<typeof readConfig> | undefined
-  const getConfig = () => (config ??= readConfig(deps.configPath))
+  const getConfig = () => (config ??= readConfig(deps.configPath, permissionKeys(program)))
   let connecting: Promise<StoreConnection> | undefined
   let execution: ExecutionState | undefined
   let fields: string[] | undefined
@@ -107,6 +109,13 @@ export const bindZoomProgram = (
       profiles: () => getConfig().profiles,
     }))
   const currentExecution = () => execution
+  const runs = commandRuns({
+    app: ZM,
+    settings: getConfig,
+    profile: named,
+    format: () => (formatOf() === "pretty" ? "pretty" : "json"),
+  })
+  lifecycle.fail = (error) => runs.fail(error)
   const signal = () => currentExecution()?.signal ?? environmentOf(program).signal ?? deps.signal
   const fetchWithSignal =
     (fetcher: typeof fetch): typeof fetch =>
@@ -115,14 +124,14 @@ export const bindZoomProgram = (
       if (program.opts().offline)
         throw new CliError("configuration_error", "the command requires network access; remove --offline")
       const operation = signal()
-      return fetcher(input, {
+      return observedFetch(fetcher, runs.events)(input, {
         ...init,
         signal: operation && init?.signal ? AbortSignal.any([operation, init.signal]) : (operation ?? init?.signal),
       })
     }
   const tokens = () =>
     (activeTokens ??= deps.tokens
-      .forProfile(profile(), getConfig().legacyProfile)
+      .forProfile(profile())
       .withSignal(signal(), fetchWithSignal(deps.tokens.options.fetch)))
   const buffer = (text: string) => {
     if (!execution) throw new CliError("configuration_error", "command execution is not initialized")
@@ -210,6 +219,7 @@ export const bindZoomProgram = (
   })
   lifecycle.prepare = async () => {
     const action = activeAction
+    runs.start(action)
     const flags = action.optsWithGlobals()
     for (const option of action.options) {
       const key = option.attributeName()
@@ -221,7 +231,7 @@ export const bindZoomProgram = (
     if (asking) await asking
     const opts = action.optsWithGlobals()
     if (opts.json && opts.jsonl) throw new CliError("validation_error", "choose --json or --jsonl")
-    execution = sharedExecution(action, environmentOf(program), deps.now)
+    execution = sharedExecution(action, environmentOf(program), deps.now, runs.runId())
     checkCancelled(signal())
     if (
       (action.parent?.name() === "meetings" && ["sync", "import"].includes(action.name())) ||
@@ -258,7 +268,7 @@ export const bindZoomProgram = (
     }
     output(wholeList("list", items))
   }
-  addConfigCommands(program, { configPath: deps.configPath, getConfig, output, profile })
+  addConfigCommands(program, { configPath: deps.configPath, output, warn: deps.diagnostic, named })
   const fetchApi = () => fetchWithSignal(deps.fetch)
   const configured = configuredMeetingSource({ deps, getConfig, tokens, fetch: fetchApi, zones })
   const source = configured.source
@@ -418,7 +428,11 @@ export const bindZoomProgram = (
   })
   addMcpCommands(program, {
     profile,
-    permissions: (name) => readConfig(deps.configPath).permissions[name] ?? {},
+    permissions: (name) =>
+      discoveryLevels(
+        readConfig(deps.configPath, permissionKeys(program)).permissions[name] ?? {},
+        deps.env ?? process.env,
+      ),
     run: (argv, environment) => runForAgent(execute, argv, given, environment),
     signal,
     serve: deps.serveMcp,
@@ -443,6 +457,7 @@ export const bindZoomProgram = (
   addProgressCommands(program, { profile, env: deps.env ?? process.env, now: deps.now, output })
   declareZoomAnswers(program)
   annotateMeetingCommands(program)
+  markProfileFree(program)
   installFirstScreen(program)
   program.hook("postAction", async () => {
     if (connecting) {
@@ -457,5 +472,6 @@ export const bindZoomProgram = (
     checkCancelled(signal())
     execution?.output.flush(given.data)
     execution = undefined
+    await runs.succeed()
   })
 }

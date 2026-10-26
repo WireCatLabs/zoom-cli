@@ -1,22 +1,9 @@
 import { metaOf } from "@wirecat/cli-base/commands"
-import {
-  type AppIdentity,
-  changesAuthorityNow,
-  isLogin,
-  isStoreChange,
-  readOnlyLockOf,
-  readOnlyRefusal,
-} from "@wirecat/cli-core/cli"
+import { changesAuthorityNow, isLogin, isStoreChange, readOnlyLockOf, readOnlyRefusal } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
-import { VERSION } from "./version.js"
+import { ZM } from "./identity.js"
 
-export const ZM: AppIdentity = {
-  command: "zm",
-  appName: "zoom-cli",
-  envPrefix: "ZM",
-  description: "Zoom meeting transcripts and summaries",
-  version: VERSION,
-}
+export { ZM }
 
 const pathOf = (command: Command): string => {
   const words: string[] = []
@@ -39,7 +26,7 @@ export const refusalOf = (command: Command): string | undefined => {
   if (effects?.remote === "write") return "change Zoom"
   if (usesEmbeddings(command, path)) return "build meeting vectors or send text to an embedding service"
   if (changesAuthorityNow(command)) return "change what a later run may do"
-  if (!effects || isStoreChange(command)) return "change the message store or local files"
+  if (!effects || isStoreChange(command)) return "change the local store or local files"
   return undefined
 }
 

@@ -1,6 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
 import { metaOf } from "@wirecat/cli-base/commands"
-import { setupPermissionCeiling } from "@wirecat/cli-core/cli"
+import { readOnlyLockOf, setupPermissionCeiling } from "@wirecat/cli-core/cli"
 import {
   CEILING_KEY,
   keyForCommand,
@@ -12,7 +12,7 @@ import {
 import type { Command } from "commander"
 import { PROFILE_FREE } from "./commands.js"
 import type { ZoomConfig } from "./config.js"
-import { refusalOf, refuseChangeWhenReadOnly } from "./read-only.js"
+import { refusalOf, refuseChangeWhenReadOnly, ZM } from "./read-only.js"
 
 /** A change to Zoom asks first. A built-in default only tightens what the owner set (WC-PERM-7). */
 export const DEFAULT_PERMISSIONS: Readonly<Record<string, Level>> = {
@@ -20,8 +20,18 @@ export const DEFAULT_PERMISSIONS: Readonly<Record<string, Level>> = {
   "remote-meetings": "ask",
 }
 
+export const discoveryLevels = (own: Readonly<Record<string, Level>>, env: NodeJS.ProcessEnv) => {
+  const ceiling = setupPermissionCeiling(env)
+  return {
+    ...DEFAULT_PERMISSIONS,
+    ...own,
+    ...(ceiling ? { [CEILING_KEY]: ceiling } : {}),
+    ...(readOnlyLockOf(ZM, env) ? { [CEILING_KEY]: "readonly" as const } : {}),
+  }
+}
+
 /** Looking after the tool — its settings, its login, its help — is never gated (WC-PERM-5). */
-const HOUSEKEEPING = new Set([...PROFILE_FREE, "session", "serve", "mcp"])
+const HOUSEKEEPING = new Set([...PROFILE_FREE, "session", "mcp"])
 
 export const pathOf = (command: Command): string[] => {
   const words: string[] = []

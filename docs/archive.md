@@ -11,7 +11,7 @@ folder are separate copies; a recording backup is not automatically searchable i
 |---|---|---|
 | Hosted meetings available to your app | `zm personal meetings sync --lookback-days 7` | List meetings, open one transcript and inspect missing parts |
 | Downloaded VTT transcript files | `zm personal meetings import ./downloaded-transcripts` | Compare the imported date/title with the original |
-| Cloud recording assets | Recording list, download or sync | Verify the destination manifest and checksums |
+| Cloud recording assets | Recording list or download | Verify the destination manifest and checksums |
 | Archived VTT files to add to search | Archive import | Check its receipt, then search the stored text |
 
 For the API paths, connect the app with the [permissions for that task](zoom-app.md#add-archive-or-management-access).
@@ -131,16 +131,19 @@ list ends today in the computer's zone, or in `--timezone`, and `meta.timezone` 
 For recording history across months, use:
 
 ```sh
-zm personal recordings sync --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl
+zm personal recordings download --since-time 2026-01-01 --until-time 2026-10-10 --output-dir ./zoom-archive --jsonl
 ```
 
-Sync accepts explicit ordered dates spanning at most ten calendar years. It splits them into monthly
+A date-range download accepts explicit ordered dates spanning at most ten calendar years. It splits them into monthly
 requests, deduplicates occurrence UUIDs and downloads serially. Each JSONL item record describes one
 completed occurrence; earlier receipts and completed files remain if a later request fails. Repeat the
 same range or an overlapping recent range to discover new assets. With a selected local profile,
-sync saves durable progress and retains pending recordings. Use `--recheck-since-time YYYY-MM-DD` to
+the download saves durable progress and retains pending recordings. Use `--recheck-since-time YYYY-MM-DD` to
 rediscover recent dates for late or changed assets, and `--checkpoint` to select its checkpoint file.
-`--max-pages` and `--max-entries` bound discovery. Headless sync requires `--jsonl`.
+`--max-pages` and `--max-entries` bound discovery. Use `--jsonl` to stream completed receipts, or `--json` for a bounded list returned after the whole range finishes.
+Piped output defaults to JSON. If an aggregate run fails, no partial JSON is printed; completed files and durable
+checkpoints remain available for the next attempt. A meeting ID and date-range options cannot be combined;
+`--file-ids` applies only to a single meeting.
 
 Checkpoints acknowledge earlier successful archives; they do not check current disk integrity or
 prove that all provider recordings were available. Run `recordings archive check` to check local

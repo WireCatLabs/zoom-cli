@@ -1,6 +1,8 @@
-import { mkdtemp, writeFile } from "node:fs/promises"
+import { execFileSync } from "node:child_process"
+import { statSync } from "node:fs"
+import { chmod, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 import { CliError, memoryKeyring } from "@wirecat/cli-base"
 import { describeProgram, flatten, parseCommandsDocument } from "@wirecat/cli-base/commands"
 import { describe, expect, it, vi } from "vitest"
@@ -110,7 +112,7 @@ describe("portable CLI discovery and diagnostics", () => {
   })
   it("reports keyring failure without reading a saved login or opening the database", async () => {
     const { deps, stdout } = await setup()
-    setConfig(deps.configPath, "zoom.clientId", "example-client")
+    setConfig(deps.configPath, "zoom.client_id", "example-client")
     useProfile(deps.configPath, "example")
     vi.spyOn(deps.tokens.options.keyring, "get").mockImplementation(() => {
       throw new Error("unexpected keyring")
@@ -138,26 +140,138 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(get).toHaveBeenCalledWith(expect.stringMatching(/^zoom-cli-doctor:/), "probe")
     expect(get).toHaveBeenCalledTimes(1)
   })
-  it("answers doctor with an old camelCase config, naming its first key and no value", async () => {
+  it("lists every config problem in doctor, without values, and doctor is clean once each fix has run", async () => {
     const { deps, stdout, stderr } = await setup()
     await writeFile(
       deps.configPath,
-      JSON.stringify({ clientId: "example-old-client", source: "api", filesTimezone: "UTC" }),
+      JSON.stringify({
+        example_id: "example-secret-client",
+        source: "api",
+        example_setting: "example",
+        files_timezone: "Example/Nowhere",
+        profiles: { work: { permissions: { "example.nothing": "deny" } } },
+      }),
     )
     expect(await run(["--json", "doctor"], deps)).toBe(0)
-    expect(readAnswer(stdout[0] ?? "{}")).toMatchObject({
-      config: {
-        readable: false,
-        error: `${deps.configPath}: clientId is an unknown setting; rename it to client_id (and 2 more problems)`,
-      },
-      authentication: { state: "not_checked" },
+    const { config } = readAnswer(stdout.at(-1) ?? "{}") as { config: { issues: { fix?: string }[] } }
+    expect(config).toEqual({
+      path: deps.configPath,
+      found: true,
+      issues: [
+        {
+          kind: "invalid_value",
+          file: deps.configPath,
+          key: "files.timezone",
+          what: "setting files.timezone has to be an IANA time zone, such as Europe/Madrid",
+          fix: "zm config unset files.timezone",
+        },
+        {
+          kind: "unknown_setting",
+          file: deps.configPath,
+          key: "example_id",
+          what: "setting example_id is not a setting of zm",
+          fix: "zm config unset example_id",
+        },
+        {
+          kind: "unknown_setting",
+          file: deps.configPath,
+          key: "example_setting",
+          what: "setting example_setting is not a setting of zm",
+          fix: "zm config unset example_setting",
+        },
+        {
+          kind: "unknown_permission",
+          file: deps.configPath,
+          profile: "work",
+          key: "permissions.example.nothing",
+          what: "permissions.example.nothing names no command",
+          fix: "zm work config unset permissions.example.nothing",
+        },
+      ],
     })
-    expect(await run(["--json", "config", "show"], deps)).toBe(3)
-    expect(JSON.parse(stderr[0] ?? "{}").error).toMatchObject({
+    expect(await run(["--json", "work", "meetings", "list"], deps)).toBe(3)
+    expect(JSON.parse(stderr.at(-1) ?? "{}").error).toMatchObject({
       code: "configuration_error",
-      message: `${deps.configPath}: clientId is an unknown setting; rename it to client_id (and 2 more problems)`,
+      message:
+        `${deps.configPath}: setting files.timezone has to be an IANA time zone, such as Europe/Madrid — remove it ` +
+        "with `zm config unset files.timezone`" +
+        " (and 3 more problems — `zm doctor` lists them all)",
     })
-    expect([...stdout, ...stderr].join("")).not.toContain("example-old-client")
+    expect(await run(["--json", "config", "show"], deps)).toBe(0)
+    expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({ source: "api", profiles: ["work"] })
+    expect(stderr.join("")).toContain(
+      "setting example_setting is not a setting of zm, so it is left out — `zm config unset example_setting` removes it",
+    )
+    for (const { fix } of config.issues) expect(await run((fix ?? "").split(" ").slice(1), deps)).toBe(0)
+    expect(await run(["--json", "doctor"], deps)).toBe(0)
+    expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({ config: { issues: [] }, profiles: ["work"] })
+    expect(JSON.parse(await readFile(deps.configPath, "utf8"))).toEqual({ source: "api", profiles: { work: {} } })
+    expect([...stdout, ...stderr].join("")).not.toContain("example-secret-client")
+  })
+  it("reports where broken JSON stops parsing, with no fix, and still answers", async () => {
+    const { deps, stdout } = await setup()
+    await writeFile(deps.configPath, '{\n  "source": "api",\n  oops\n}\n')
+    expect(await run(["--json", "doctor"], deps)).toBe(0)
+    expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({
+      config: {
+        found: true,
+        issues: [
+          {
+            kind: "invalid_json",
+            file: deps.configPath,
+            line: 3,
+            column: 3,
+            what: "the file is not valid JSON at line 3, column 3",
+          },
+        ],
+      },
+      profiles: [],
+    })
+  })
+  it.skipIf(process.platform === "win32")(
+    "reports a config file and folder others can read, with the chmod that fixes each",
+    async () => {
+      const { deps, stdout, stderr } = await setup()
+      const folder = dirname(deps.configPath)
+      await writeFile(deps.configPath, JSON.stringify({ source: "api" }))
+      await chmod(deps.configPath, 0o644)
+      await chmod(folder, 0o775)
+      expect(await run(["--json", "doctor"], deps)).toBe(0)
+      expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({
+        config: { issues: [] },
+        files: {
+          checked: true,
+          ok: false,
+          problems: [
+            { path: deps.configPath, mode: "0644", want: "0600" },
+            { path: folder, mode: "0775", want: "0700" },
+          ],
+        },
+      })
+      const fixes = stderr.map((line) => line.trimEnd()).filter((line) => line.startsWith("to make it private: "))
+      expect(fixes).toEqual([
+        `to make it private: chmod 600 '${deps.configPath}'`,
+        `to make it private: chmod 700 '${folder}'`,
+      ])
+      for (const fix of fixes) execFileSync("sh", ["-c", fix.slice("to make it private: ".length)])
+      expect(await run(["--json", "doctor"], deps)).toBe(0)
+      expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({ files: { checked: true, ok: true, problems: [] } })
+      await chmod(deps.configPath, 0o644)
+      expect(await run(["config", "set", "source", "files"], deps)).toBe(0)
+      expect(statSync(deps.configPath).mode & 0o777).toBe(0o600)
+    },
+  )
+  it("answers when the config path is a folder, naming it as the problem", async () => {
+    const { deps, stdout } = await setup()
+    await mkdir(deps.configPath)
+    expect(await run(["--json", "doctor"], deps)).toBe(0)
+    expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({
+      config: {
+        found: true,
+        issues: [{ kind: "invalid_value", file: deps.configPath, what: "the path is a folder, not a file" }],
+      },
+      profiles: [],
+    })
   })
   it("inspects cached OAuth status without refresh and keeps local profiles distinct", async () => {
     const { deps, stdout, stderr } = await setup()
@@ -172,11 +286,11 @@ describe("portable CLI discovery and diagnostics", () => {
       state: "not_configured",
       profile: "local-example",
     })
-    setConfig(deps.configPath, "zoom.clientId", "example-client")
+    setConfig(deps.configPath, "zoom.client_id", "example-client")
     useProfile(deps.configPath, "local-example")
     expect(await run(["--json", "session", "status"], deps)).toBe(0)
     expect(readAnswer(stdout.at(-1) ?? "{}").state).toBe("missing")
-    deps.tokens.forProfile("local-example", null).save({
+    deps.tokens.forProfile("local-example").save({
       accessToken: "example-access-secret",
       refreshToken: "example-refresh-secret",
       expiresAt: 1000,
@@ -197,7 +311,7 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(stdout.join("")).not.toContain("example-access-secret")
     expect(stdout.join("")).not.toContain("example-refresh-secret")
     deps.tokens
-      .forProfile("local-example", null)
+      .forProfile("local-example")
       .save({ accessToken: "example", refreshToken: "example", expiresAt: 3600000, scopes: ["example:read"] })
     expect(await run(["--json", "session", "status", "--check"], deps)).toBe(3)
     deps.checkSession = async () => ({ id: "example-user" })
@@ -212,7 +326,7 @@ describe("portable CLI discovery and diagnostics", () => {
   it("uses shared errors and exit mappings without private generic details", async () => {
     expect(new CliError("rate_limited", "example")).toBeInstanceOf(CliError)
     const { deps, stderr } = await setup()
-    setConfig(deps.configPath, "zoom.clientId", "example-client")
+    setConfig(deps.configPath, "zoom.client_id", "example-client")
     useProfile(deps.configPath)
     for (const [code, exit] of [
       ["rate_limited", 8],
@@ -246,7 +360,7 @@ describe("portable CLI discovery and diagnostics", () => {
   it("refuses login in CI or with --no-input, before opening a browser", async () => {
     const { deps, stdout, stderr } = await setup()
     const message = () => JSON.parse(stderr.at(-1) ?? "{}").error.message
-    setConfig(deps.configPath, "zoom.clientId", "example-client")
+    setConfig(deps.configPath, "zoom.client_id", "example-client")
     deps.env = { CI: "1" }
     expect(await run(["example", "session", "start"], deps)).toBe(3)
     expect(message()).toContain("run zm example session start yourself")
@@ -274,7 +388,7 @@ describe("portable CLI discovery and diagnostics", () => {
 
 it("quiet keeps the login URL, the one thing an agent can pass on, and the failure envelope", async () => {
   const { deps, stdout, stderr } = await setup()
-  setConfig(deps.configPath, "zoom.clientId", "example-client")
+  setConfig(deps.configPath, "zoom.client_id", "example-client")
   expect(await run(["example", "--quiet", "session", "start"], deps)).toBe(3)
   expect(stdout).toEqual([])
   expect(stderr).toHaveLength(2)

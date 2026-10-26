@@ -88,12 +88,6 @@ the browser. Each profile's login is its own keyring entry, `<client id>:<profil
 `ZM_PROFILE_LOCK=personal` pins a process to one profile: a first word or `ZM_PROFILE` naming any
 other is refused with `permission_error`. Set it where an agent runs.
 
-### Upgrading from 0.34 and earlier
-
-The old `account.profile` setting is no longer read to pick a profile, and `zm config set
-account.profile` is refused. Its value still appears among the profiles, and the login saved before
-the upgrade moves to that profile the first time you use it: `zm personal meetings sync`.
-
 `MESSAGING_STORE` selects the shared database. Use the same path for Zoom, Memo and your MCP
 client when connecting meeting evidence with notes and projects. File imports do not advance
 the pull cursor; when switching ingestion sources, an older explicit `--since-time` may be needed.
@@ -103,9 +97,7 @@ the pull cursor; when switching ingestion sources, an older explicit `--since-ti
 There is no logout command. To withdraw the app's account access, remove/revoke the app in Zoom
 App Marketplace's app management. To remove the local token, open your operating system's password store and delete the entry
 whose service is `zoom-cli:<configuration directory>` (for example `zoom-cli:/home/you/.config/zm`;
-`zm doctor --json` shows the directory) and whose account is `<Public Client ID>:<profile>`. A login saved by 0.34 or
-earlier has the Public Client ID alone as its account; once the profile has taken it over, that old entry is unused and
-can be deleted. Uninstalling `zm` does not revoke Zoom authorization or erase saved meetings. See
+`zm doctor --json` shows the directory) and whose account is `<Public Client ID>:<profile>`. Uninstalling `zm` does not revoke Zoom authorization or erase saved meetings. See
 [security](security.md) before sharing data with an agent.
 
 Several Zoom users on one computer are several profiles: each has its own keyring entry and its own meetings.

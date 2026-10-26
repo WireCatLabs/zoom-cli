@@ -12,7 +12,7 @@ import { readConfig, setConfig } from "./config.js"
 import { number, object, string } from "./errors.js"
 import { FilesSource, fileMeeting, importFile, readDownloadedFiles } from "./files.js"
 import { login, REDIRECT } from "./login.js"
-import { createProgram, type ProgramDeps, run } from "./program.js"
+import { type ProgramDeps, run } from "./program.js"
 import { lazyRunLog } from "./run-log.js"
 import { TOKEN_LOG_ALLOW, TokenManager } from "./tokens.js"
 
@@ -684,7 +684,7 @@ describe("zm", () => {
   it("configures the public client, validates keys and keeps config nonsecret", async () => {
     const { deps, stdout } = await programSetup()
     expect(readConfig(deps.configPath).clientId).toBeNull()
-    expect(await run(["config", "set", "zoom.clientId", "example-client"], deps)).toBe(0)
+    expect(await run(["config", "set", "zoom.client_id", "example-client"], deps)).toBe(0)
     expect(await run(["--json", "config", "show"], deps)).toBe(0)
     expect(readAnswer(stdout[1] ?? "{}")).toHaveProperty("client_id", "example-client")
     setConfig(deps.configPath, "files.timezone", "Europe/Madrid")
@@ -693,7 +693,7 @@ describe("zm", () => {
     for (const [key, value] of [
       ["unknown", "value"],
       ["source", "browser"],
-      ["zoom.clientId", " "],
+      ["zoom.client_id", " "],
       ["files.folder", " "],
       ["files.timezone", "invalid"],
     ])
@@ -701,7 +701,7 @@ describe("zm", () => {
     await writeFile(deps.configPath, "invalid")
     expect(() => readConfig(deps.configPath)).toThrow(/not valid JSON/)
     await writeFile(deps.configPath, "{}")
-    expect(() => readConfig(deps.configPath)).toThrow(/client_id is missing/)
+    expect(readConfig(deps.configPath)).toMatchObject({ clientId: null, source: "api", filesFolder: null })
   })
   it("imports a folder through the real command and lists its meeting in memory", async () => {
     const { deps, stdout } = await programSetup()
@@ -709,10 +709,8 @@ describe("zm", () => {
     expect(readAnswer(stdout[0] ?? "{}")).toMatchObject({ meetings: 1 })
     expect(await run(["--jsonl", "meetings", "list"], deps)).toBe(0)
     expect(readJsonl(stdout[1] ?? "")[0]).toHaveProperty("title")
-    expect(await run(["import", "example-folder"], deps)).toBe(2)
     expect(await run(["--help"], deps)).toBe(0)
     expect(await run(["--version"], deps)).toBe(0)
-    expect(createProgram(deps).commands.map((cmd) => cmd.name())).not.toContain("import")
   })
   it("pulls from the configured files source and reports missing store or source configuration", async () => {
     const { deps, stdout } = await programSetup()
@@ -727,7 +725,7 @@ describe("zm", () => {
     expect(await run(["--json", "--jsonl", "config", "show"], deps)).toBe(2)
     expect(await run(["session", "start"], deps)).toBe(2)
     expect(await run(["example", "session", "start"], deps)).toBe(3)
-    setConfig(deps.configPath, "zoom.clientId", "example-client")
+    setConfig(deps.configPath, "zoom.client_id", "example-client")
     expect(await run(["--no-input", "example", "session", "start"], deps)).toBe(3)
   })
   it("logs in through an injected browser and exposes only status and grants", async () => {
@@ -739,7 +737,7 @@ describe("zm", () => {
         )
       },
     })
-    setConfig(setup.deps.configPath, "zoom.clientId", "example-client")
+    setConfig(setup.deps.configPath, "zoom.client_id", "example-client")
     expect(await run(["example", "--json", "session", "start", "--browser", "example-browser"], setup.deps)).toBe(0)
     expect(readAnswer(setup.stdout[0] ?? "{}")).toEqual({ logged_in: true, scopes, profile: "example" })
     expect(setup.stdout.join("")).not.toContain("example-access")
@@ -765,7 +763,9 @@ it("config reads expose only supported public fields and parser failures are one
       unexpected: "example-private-value",
     }),
   )
-  expect(() => readConfig(setup.deps.configPath)).toThrow(`${setup.deps.configPath}: unexpected is an unknown setting`)
+  expect(() => readConfig(setup.deps.configPath)).toThrow(
+    `${setup.deps.configPath}: setting unexpected is not a setting of zm — remove it with \`zm config unset unexpected\``,
+  )
   expect(() => readConfig(setup.deps.configPath)).not.toThrow(/example-private-value/)
   expect(await run(["example", "unknown-command"], setup.deps)).toBe(2)
   expect(setup.stdout).toEqual([])

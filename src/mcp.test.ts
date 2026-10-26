@@ -52,7 +52,7 @@ const setup = async (permissions?: Record<string, string>, line = "Ship the exam
     diagnostic: () => {},
     remoteMeetings: { create: created } as unknown as RemoteMeetingsService,
   }
-  setConfig(deps.configPath, "zoom.clientId", "example-client")
+  setConfig(deps.configPath, "zoom.client_id", "example-client")
   useProfile(deps.configPath, "work", env)
   delete env.ZM_PROFILE
   const transcripts = join(directory, "transcripts")
@@ -110,9 +110,15 @@ it("offers finite commands and reserves authority changes for an explicit grant"
     "meetings embeddings",
   ])
     expect(all).toContain(offered)
-  for (const hidden of ["config set", "skill install", "session start", "mcp", "serve", "watch", "complete"])
-    expect(all).not.toContain(hidden)
+  for (const hidden of ["session start", "mcp", "serve", "watch", "complete"]) expect(all).not.toContain(hidden)
 
+  for (const path of ["config set", "skill install"]) {
+    expect(all).toContain(path)
+    const described = (await call("zm_tools_search", { query: path })).structuredContent.items.find(
+      (item) => item.command === path,
+    )
+    expect(described).toMatchObject({ availability: { available: false, permission: "mcp.authority" } })
+  }
   const granted = await setup({ "mcp.authority": "allow" })
   const withAuthority = (await granted.call("zm_tools_search", {})).structuredContent.items.map((item) => item.command)
   expect(withAuthority).toContain("config set")
@@ -130,7 +136,7 @@ it("offers finite commands and reserves authority changes for an explicit grant"
   expect(escalation.structuredContent.error.code).toBe("permission_error")
 })
 
-it("takes ask as yes, since no one is at a terminal, and withholds what the profile denies", async () => {
+it("takes ask as yes, since no one is at a terminal, and marks denied commands unavailable", async () => {
   const asked = await setup()
   const created = await asked.call("zm_write", {
     command: "remote-meetings create",
@@ -144,7 +150,11 @@ it("takes ask as yes, since no one is at a terminal, and withholds what the prof
     (item: { command: string }) => item.command,
   )
   expect(all).toContain("remote-meetings list")
-  expect(all).not.toContain("remote-meetings create")
+  expect(all).toContain("remote-meetings create")
+  const found = (
+    await denied.call("zm_tools_search", { query: "remote-meetings create" })
+  ).structuredContent.items.find((item) => item.command === "remote-meetings create")
+  expect(found).toMatchObject({ availability: { available: false, permission: "remote-meetings.create" } })
   const refused = await denied.call("zm_write", {
     command: "remote-meetings create",
     arguments: { title: "Example", type: "1" },
@@ -185,7 +195,16 @@ it("serves the named profile's commands from the command line", async () => {
       setConfig(deps.configPath, "permissions", '{"meetings":"deny"}', () => "work", new Set(["meetings"]))
       const refused = await client.callTool({ name: "zm_read", arguments: { command: "meetings list", arguments: {} } })
       expect(refused.isError).toBe(true)
-      expect(options.permissions()).toEqual({ meetings: "deny" })
+      expect(options.permissions()).toMatchObject({ meetings: "deny" })
+      const discovered = await client.callTool({ name: "zm_tools_search", arguments: { query: "meetings list" } })
+      expect(discovered.structuredContent).toMatchObject({
+        items: expect.arrayContaining([
+          expect.objectContaining({
+            command: "meetings list",
+            availability: expect.objectContaining({ available: false }),
+          }),
+        ]),
+      })
     } finally {
       await client.close()
       await server.close()
@@ -197,15 +216,6 @@ it("serves the named profile's commands from the command line", async () => {
   const paths = (commands: readonly CommandInfo[]): string[] =>
     commands.flatMap((command) => [command.path.join(" "), ...paths(command.commands)])
   expect(paths(options?.commands ?? [])).toContain("meetings list")
-})
-
-it("points the old serve command at the profile's mcp command", async () => {
-  const { deps } = await setup()
-  const errors: string[] = []
-  const serveMcp = vi.fn(async (_options: ZoomMcpOptions) => {})
-  expect(await run(["work", "serve", "--mcp"], { ...deps, serveMcp, diagnostic: (text) => errors.push(text) })).toBe(2)
-  expect(errors.join("")).toContain("zm <profile> mcp")
-  expect(serveMcp).not.toHaveBeenCalled()
 })
 
 it("serves over a transport until the command is stopped", async () => {
@@ -252,4 +262,37 @@ it("runs native shared discovery and guides with Core's agent environment and ke
       jsonlSchema: { anyOf: expect.any(Array) },
     },
   })
+})
+
+it("runs date-range downloads through the same typed command over MCP", async () => {
+  const { deps, call } = await setup()
+  deps.recordings = {
+    list: vi.fn(),
+    show: vi.fn(),
+    catalog: () => ({
+      provider: "zoom",
+      list: async () => ({
+        items: [{ id: "123456789", externalId: "example-occurrence", title: "Example", startedAt: null, assets: [] }],
+        nextCursor: null,
+      }),
+    }),
+    download: async () => ({
+      uuid: "example-occurrence",
+      manifestPath: "example.json",
+      downloaded: [],
+      skipped: [],
+      unavailable: [],
+    }),
+  }
+  const answer = await call("zm_write", {
+    command: "recordings download",
+    arguments: {
+      since_time: "2026-10-01",
+      until_time: "2026-10-11",
+      output_dir: join(deps.configPath, "..", "archive"),
+      resume: false,
+    },
+  })
+  expect(answer.isError).toBeFalsy()
+  expect(answer.structuredContent).toMatchObject({ items: [{ meeting: { uuid: "example-occurrence" } }] })
 })

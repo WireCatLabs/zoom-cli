@@ -7,12 +7,19 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**333 ✅ · 1 ⛔ · 0 ❌** — 77 commands, 257 options.
+**332 ✅ · 1 ⛔ · 0 ❌** — 79 commands, 254 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
+| `runs list` |  | ✅ |  |
+| `runs list` | `--limit` | ✅ |  |
+| `runs list` | `--page` | ✅ |  |
+| `runs show` |  | ✅ |  |
+| `runs show` | `--problems` | ✅ |  |
+| `runs path` |  | ✅ |  |
 | `config show` |  | ✅ |  |
 | `config set` |  | ✅ |  |
+| `config unset` |  | ✅ |  |
 | `meetings list` |  | ✅ |  |
 | `meetings list` | `--json` | ✅ |  |
 | `meetings list` | `--jsonl` | ✅ |  |
@@ -139,6 +146,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `events list` | `--jsonl` | ✅ |  |
 | `commands` |  | ✅ |  |
 | `commands info` |  | ✅ |  |
+| `store info` |  | ✅ |  |
 | `complete` |  | ✅ |  |
 | `doctor` |  | ✅ |  |
 | `session status` |  | ✅ |  |
@@ -149,6 +157,8 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `upgrade` | `--check` | ✅ |  |
 | `models list` |  | ✅ |  |
 | `models download` |  | ✅ |  |
+| `models download` | `--offline` | ✅ |  |
+| `models download` | `--accept-terms` | ✅ |  |
 | `watch` |  | ✅ |  |
 | `watch` | `--since-time` | ✅ |  |
 | `watch` | `--lookback-days` | ✅ |  |
@@ -157,24 +167,19 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `recordings list` | `--since-time` | ✅ |  |
 | `recordings list` | `--until-time` | ✅ |  |
 | `recordings list` | `--timezone` | ✅ |  |
-| `recordings sync` |  | ✅ |  |
-| `recordings sync` | `--since-time` | ✅ |  |
-| `recordings sync` | `--until-time` | ✅ |  |
-| `recordings sync` | `--output-dir` | ✅ |  |
-| `recordings sync` | `--max-bytes` | ✅ |  |
-| `recordings sync` | `--resume` | ✅ |  |
-| `recordings sync` | `--no-resume` | ✅ |  |
-| `recordings sync` | `--checkpoint` | ✅ |  |
-| `recordings sync` | `--recheck-since-time` | ✅ |  |
-| `recordings sync` | `--max-pages` | ✅ |  |
-| `recordings sync` | `--max-entries` | ✅ |  |
 | `recordings show` |  | ✅ |  |
 | `recordings download` |  | ✅ |  |
 | `recordings download` | `--output-dir` | ✅ |  |
+| `recordings download` | `--since-time` | ✅ |  |
+| `recordings download` | `--until-time` | ✅ |  |
 | `recordings download` | `--file-ids` | ✅ |  |
 | `recordings download` | `--max-bytes` | ✅ |  |
 | `recordings download` | `--resume` | ✅ |  |
 | `recordings download` | `--no-resume` | ✅ |  |
+| `recordings download` | `--checkpoint` | ✅ |  |
+| `recordings download` | `--recheck-since-time` | ✅ |  |
+| `recordings download` | `--max-pages` | ✅ |  |
+| `recordings download` | `--max-entries` | ✅ |  |
 | `recordings archive transcript` |  | ✅ |  |
 | `recordings archive transcript` | `--uuid` | ✅ |  |
 | `recordings archive transcript` | `--file-ids` | ✅ |  |
@@ -233,13 +238,12 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `remote-meetings cancel` | `--occurrence-id` | ✅ |  |
 | `remote-meetings cancel` | `--yes` | ✅ |  |
 | `remote-meetings cancel` | `--dry-run` | ✅ |  |
-| `contacts list` |  | ✅ |  |
-| `contacts show` |  | ✅ |  |
 | `skill show` |  | ✅ |  |
+| `skill show` | `--for` | ✅ |  |
 | `skill install` |  | ✅ |  |
 | `skill install` | `--for` | ✅ |  |
+| `skill status` |  | ✅ |  |
 | `mcp` |  | ✅ |  |
-| `serve` |  | ✅ |  |
 | `search all` |  | ✅ |  |
 | `search all` | `--only` | ✅ |  |
 | `search all` | `--limit` | ✅ |  |
@@ -254,7 +258,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `search meetings` | `--series-id` | ✅ |  |
 | `search meetings` | `--project` | ✅ |  |
 | `search meetings` | `--tag` | ✅ |  |
-| `search meetings` | `--topic` | ✅ |  |
+| `search meetings` | `--topic-name` | ✅ |  |
 | `search meetings` | `--since-time` | ✅ |  |
 | `search meetings` | `--until-time` | ✅ |  |
 | `search meetings` | `--limit` | ✅ |  |
@@ -274,7 +278,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `stats meetings show` | `--timezone` | ✅ |  |
 | `stats meetings show` | `--event-id` | ✅ |  |
 | `stats meetings show` | `--project` | ✅ |  |
-| `stats meetings show` | `--topic` | ✅ |  |
+| `stats meetings show` | `--topic-name` | ✅ |  |
 | `stats meetings show` | `--max-rows` | ✅ |  |
 | `stats meetings top` |  | ✅ |  |
 | `stats meetings top` | `--since-time` | ✅ |  |
@@ -282,7 +286,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `stats meetings top` | `--timezone` | ✅ |  |
 | `stats meetings top` | `--event-id` | ✅ |  |
 | `stats meetings top` | `--project` | ✅ |  |
-| `stats meetings top` | `--topic` | ✅ |  |
+| `stats meetings top` | `--topic-name` | ✅ |  |
 | `stats meetings top` | `--max-rows` | ✅ |  |
 | `stats meetings top` | `--limit` | ✅ |  |
 | `review` |  | ✅ |  |
@@ -291,22 +295,17 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `review` | `--timezone` | ✅ |  |
 | `review` | `--event-id` | ✅ |  |
 | `review` | `--project` | ✅ |  |
-| `review` | `--topic` | ✅ |  |
+| `review` | `--topic-name` | ✅ |  |
 | `review` | `--limit` | ✅ |  |
 | `mentions list` |  | ✅ |  |
-| `mentions list` | `--since-time` | ✅ |  |
-| `mentions list` | `--until-time` | ✅ |  |
 | `mentions list` | `--timezone` | ✅ |  |
-| `mentions list` | `--event-id` | ✅ |  |
-| `mentions list` | `--project` | ✅ |  |
-| `mentions list` | `--topic` | ✅ |  |
 | `mentions list` | `--limit` | ✅ |  |
 | `mentions list` | `--max-messages` | ✅ |  |
 | `searches create` |  | ✅ |  |
 | `searches create` | `--replace` | ✅ |  |
 | `searches create` | `--event-id` | ✅ |  |
 | `searches create` | `--project` | ✅ |  |
-| `searches create` | `--topic` | ✅ |  |
+| `searches create` | `--topic-name` | ✅ |  |
 | `searches create` | `--since-time` | ✅ |  |
 | `searches create` | `--until-time` | ✅ |  |
 | `searches create` | `--limit` | ✅ |  |

@@ -58,7 +58,7 @@ describe("ZM_READ_ONLY", () => {
     const { deps, network, stderr } = await setup({ ZM_READ_ONLY: "1" })
     expect(await run([...args, "--json"], deps)).toBe(5)
     expect(stderr.join("")).toContain("this process is read-only (ZM_READ_ONLY)")
-    if (what === "outside a sync") expect(stderr.join("")).toMatch(/message store|what a later run may do/)
+    if (what === "outside a sync") expect(stderr.join("")).toMatch(/local store|what a later run may do/)
     else expect(stderr.join("")).toContain(what)
     expect(network).not.toHaveBeenCalled()
     expect(deps.connectStore).not.toHaveBeenCalled()
@@ -67,7 +67,7 @@ describe("ZM_READ_ONLY", () => {
   it.each([
     [["meetings", "sync", "--json"]],
     [["recordings", "download", "123456789", "--output-dir", "/tmp/zm-archive", "--json"]],
-    [["recordings", "sync", "--since-time", "2026-01-01", "--output-dir", "/tmp/zm-archive", "--json"]],
+    [["recordings", "download", "--since-time", "2026-01-01", "--output-dir", "/tmp/zm-archive", "--json"]],
     [["watch", "api", "--jsonl"]],
   ])("lets the mirroring sync %j run", async (args) => {
     const { deps, stderr } = await setup({ ZM_READ_ONLY: "1" })

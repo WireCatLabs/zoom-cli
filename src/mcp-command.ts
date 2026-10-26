@@ -1,10 +1,12 @@
 import { CliError } from "@wirecat/cli-base"
-import { annotate, describeProgram } from "@wirecat/cli-base/commands"
-import { changesAuthorityAt, FETCH, NO_EFFECTS, type RunOptions } from "@wirecat/cli-core/cli"
+import { annotate, customizeSharedCommand, describeProgram } from "@wirecat/cli-base/commands"
+import { changesAuthorityAt, FETCH, type RunOptions, sharedCommandTemplate } from "@wirecat/cli-core/cli"
 import type { Level } from "@wirecat/cli-core/sends"
 import type { Command } from "commander"
+import { SHELL_OVERRIDES } from "./contract-overrides.js"
 import type { RunCommand, ZoomMcpOptions } from "./mcp.js"
 import type { ProgramDeps } from "./program.js"
+import { ZM } from "./read-only.js"
 
 export interface McpCommandDeps {
   profile: () => string
@@ -15,7 +17,7 @@ export interface McpCommandDeps {
 }
 
 /** `zm <profile> mcp`: the shared three-tool MCP server over stdio, for the named profile (WC-CMD-5, WC-MCP-9). */
-export const addMcpCommands = (program: Command, deps: McpCommandDeps): void => {
+const addMcpCommandsDefinition = (program: Command, deps: McpCommandDeps): void => {
   annotate(program.command("mcp"), {
     effects: FETCH,
     lifetime: "persistent",
@@ -37,17 +39,6 @@ export const addMcpCommands = (program: Command, deps: McpCommandDeps): void => 
         run: deps.run,
         ...(deps.signal() ? { signal: deps.signal() as AbortSignal } : {}),
       })
-    })
-  annotate(program.command("serve", { hidden: true }), { effects: NO_EFFECTS, mcp: false })
-    .description("moved: zm <profile> mcp")
-    .allowUnknownOption()
-    .allowExcessArguments()
-    .action(() => {
-      throw new CliError(
-        "validation_error",
-        "`zm serve --mcp` is now `zm <profile> mcp`: one server with zm_tools_search, zm_read and zm_write; " +
-          "the profile's permissions decide what it offers, in place of the serve flags",
-      )
     })
 }
 
@@ -79,3 +70,16 @@ export const runForAgent = async (
   })
   return { code, stdout: stdout.join(""), stderr: stderr.join("") }
 }
+
+export const addMcpCommands = (...args: Parameters<typeof addMcpCommandsDefinition>) =>
+  customizeSharedCommand(
+    sharedCommandTemplate(ZM, "mcp"),
+    "Zoom serves meeting and archive commands over stdio under its selected profile; HTTP-specific options are unsupported.",
+    () => {
+      addMcpCommandsDefinition(...args)
+      const command = args[0].commands.find((command) => command.name() === "mcp")
+      if (!command) throw new Error("mcp builder did not install its command")
+      return command
+    },
+    SHELL_OVERRIDES.mcp,
+  )

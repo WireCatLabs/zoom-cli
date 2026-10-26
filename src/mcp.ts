@@ -8,6 +8,7 @@ import { isBody, itemAnswer } from "@wirecat/cli-core/cli"
 import { type McpCommand, registerCommands, runCommandForAgent, toolsFromCommands } from "@wirecat/cli-core/mcp"
 import type { Level } from "@wirecat/cli-core/sends"
 import { DEFAULT_PERMISSIONS, permissionKeyForPath } from "./permissions.js"
+import { ZM } from "./read-only.js"
 import { VERSION } from "./version.js"
 
 /** One run of the CLI for an agent: its exit code and what it printed, the answer on stdout or the error on stderr. */
@@ -28,7 +29,7 @@ export interface ZoomMcpOptions {
   transport?: Parameters<McpServer["connect"]>[0]
 }
 
-const EXCLUDED = [["mcp"], ["serve"], ["complete"], ["watch"]]
+const EXCLUDED = [["mcp"], ["complete"], ["watch"]]
 /** A remote embedding service is the owner's choice on the command line; over MCP only an installed model answers. */
 const OMITTED = ["base_url", "dims"]
 
@@ -44,12 +45,15 @@ const visible = (value: unknown): unknown => {
 }
 
 /** The levels a tool call is checked against: the built-in defaults under the profile's own, as on the command line. */
-const levelsOf = (own: Readonly<Record<string, Level>>): Record<string, Level> => ({ ...DEFAULT_PERMISSIONS, ...own })
+const levelsOf = (own: Readonly<Record<string, Level>>): Record<string, Level> => ({
+  ...DEFAULT_PERMISSIONS,
+  ...own,
+})
 
 /**
  * The shared WireCat MCP surface over zm's own commands: `zm_tools_search`, `zm_read`, `zm_write` (WC-MCP-1, 2). A
  * call runs the command line itself, so it answers and fails as the command does (WC-MCP-10); `ask` counts as yes,
- * since no one is at a terminal (WC-MCP-7), and what the profile denies is neither offered nor run (WC-MCP-6).
+ * since no one is at a terminal (WC-MCP-7), and denied commands stay discoverable with availability but cannot run (WC-MCP-6).
  */
 export const createZoomMcpServer = (options: ZoomMcpOptions): McpServer => {
   const server = new McpServer(
@@ -75,6 +79,8 @@ export const createZoomMcpServer = (options: ZoomMcpOptions): McpServer => {
   }
   const offered = () =>
     toolsFromCommands(options.commands, {
+      includeUnavailable: true,
+      currentLevels: () => levelsOf(options.permissions()),
       exclude: EXCLUDED,
       omit: OMITTED,
       levels: levelsOf(options.permissions()),
@@ -89,6 +95,7 @@ export const createZoomMcpServer = (options: ZoomMcpOptions): McpServer => {
         title: tool.title,
         description: tool.description,
         writes: tool.writes,
+        availability: tool.availability,
         input: tool.input,
         run: async (input) => {
           if (tool.command === "config set" && input.key === "permissions")
@@ -108,7 +115,7 @@ export const createZoomMcpServer = (options: ZoomMcpOptions): McpServer => {
       },
     ]),
   )
-  registerCommands(server, "zm", commands)
+  registerCommands(server, "zm", commands, undefined, undefined, ZM.messenger)
   return server
 }
 

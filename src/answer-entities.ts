@@ -117,8 +117,7 @@ const archiveImport = v.strictObject({
 export const ZOOM_ANSWER_ENTITIES = {
   "recordings list": { name: "zoom_recording", schema: recording },
   "recordings show": { name: "zoom_recording", schema: recording },
-  "recordings download": { name: "zoom_archive", schema: archive },
-  "recordings sync": { name: "zoom_archive_receipt", schema: archiveReceipt },
+  "recordings download": { name: "zoom_archive", schema: v.union([archive, archiveReceipt]) },
   "recordings archive show": { name: "zoom_archive_manifest", schema: manifest },
   "recordings archive check": {
     name: "zoom_archive_check",

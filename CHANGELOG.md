@@ -10,6 +10,136 @@
   `team_chat:read:list_contacts` and `team_chat:read:contact` scopes and a new `session start`.
 - The Zoom response checks are generated from Zoom's published Chat API description (`spec/zoom/`, `pnpm zoom:generate`).
 
+## 0.50.1 — 26.10.2026
+
+### Fixed
+
+- **The `zoom-cli` skill says `zm <profile> mcp` is for clients that cannot run commands**, such as chat apps and remote
+  agents, and asks an agent that can run commands to use them. MCP calls keep the profile's permissions, as before.
+
+## 0.50.0 — 26.10.2026
+
+### Added
+
+- **The `zoom-cli` skill tells OpenClaw and ClawHub that it needs `zm`, and how to install it** (`metadata.openclaw`: `requires.bins` and the npm package `@wirecat/zoom-cli`). With `zm` missing from PATH, OpenClaw marks the skill not ready and offers to install the package. Claude Code and Codex ignore the block.
+
+## 0.49.0 — 26.10.2026
+
+### Changed — may break callers
+
+- **cli-core 0.435.0 moves the shared store to version 34**, which keeps an index for search by meaning (sqlite-vec, shipped in `@wirecat/cli-core-sqlite` 1.1.0). Once zm, or any WireCat CLI on cli-core 0.434.0 or later, has opened the store, zm 0.48 and older refuse it and ask to be upgraded, so upgrade every WireCat CLI together.
+- **`zm upgrade`'s help shows only `zm upgrade --check` as its example.** Copied and run, the bare `zm upgrade` example upgraded zm.
+
+### Fixed
+
+- **A run with no profile no longer records `"profile": ""`.** A usage error before any command (`zm models`) and the Zoom token log now leave `profile` out of `runs list` and `runs show`, as cli-core's runs do.
+
+## 0.48.0 — 25.10.2026
+
+### Fixed
+
+- **A bare `zm --version` answers before the program loads**: about 50 module files in place of 1,150 (cli-core's `cli/start`). `--version` with anything else on the line goes through the program as before.
+
+## 0.47.0 — 25.10.2026
+
+### Added
+
+- `zm store info --json` describes the shared store: where it is, its schema against the one zm reads (`schema.reason`, and `schema.upgrade` — what zm's next run moves it to), and which tools used it. It opens the store read-only and needs no profile, so WireCat Desktop can tell whether zm can read the store.
+
+### Changed — may break callers
+
+- **Run recording comes from cli-core 0.430.0** (`commandRuns`) in place of zm's own copy. Runs are kept as before — a failed command always, a successful one under `--record` or `record: true`, nothing under `--no-record` — and an answer's `meta.run_id` still names its run. Two small differences in what a run holds: a run with no profile leaves `profile` out of `runs list` and `runs show` instead of `""`, and a Zoom response of 400 or more is logged with `error_code: provider_error`.
+
+## 0.46.0 — 25.10.2026
+
+### Added
+
+- **`zm config unset <key>`** removes a setting, or any part of the file that `doctor` reports a problem in, by the key its `fix` names. `zm config show`, `set` and `unset` run on a file with problems: `show` prints each problem after the settings that still load, and `set` and `unset` leave the rest of the file as written.
+- **A run says what was typed and, when it failed, what went wrong** (cli-core 0.425.0). `zm runs list` and `zm runs show` gain `cli_command` (`zm config show`), `argv` with every value that may be content or a secret written `[redacted]`, `agent` when a coding agent ran it, and `error`: its class, code, masked message and a short stack.
+- **`zm skill status`** says, for Claude Code and for Codex and Gemini CLI, whether the installed SKILL.md matches this version, and **`zm skill show --for claude|agents`** prints the copy installed there (cli-base 0.56.0).
+
+### Changed — may break callers
+
+- **If you last signed in with zm 0.34 or earlier, sign in again: run `zm <profile> session start`.** zm no longer moves a login saved under the Public Client ID alone to a profile; zm finds no login for that profile until you do.
+- **`zm doctor --json` lists every problem in the config file as `config.issues`, in place of `config.error`** (cli-core 0.423.0). Each issue is `{ kind, file, profile?, key?, line?, column?, what, fix? }`, with `kind` one of `invalid_json`, `unknown_setting`, `unknown_permission` or `invalid_value`. `what` says what a value has to be and never shows the saved value; `fix` is a `zm config unset` command that runs exactly as written, left out for invalid JSON, where `line` and `column` say where reading stopped. Doctor exits 0 with no top-level `error` on a file with problems, and still fills `profiles` and `authentication` from what loads. `config.readable` and `config.source` are gone; `config.found` says whether the file exists.
+- **Old setting names are no longer read.** `account_profile`, the camelCase keys (`clientId`, `filesFolder`, `filesTimezone`, `accountProfile`) and the `zoom.clientId` selector are unknown like any other key, with no hint about what they became.
+- **A saved permission key that names no command stops every command except `config` and `doctor`**, with the `config unset` that removes it. This includes `recordings.sync`.
+- Every command except `config` and `doctor` refuses a file with problems by its first problem, how to remove it and how many more `doctor` lists. `client_id`, `source` and `files_folder` may be left out of the file; `zm config set` writes only the setting it changes.
+- The hidden `zm serve` command is gone; `zm <profile> mcp` is the MCP server.
+- **A `--dry-run` preview says `effects.service_contacted: false` and no longer has `effects.messenger_contacted`**, and its `permission.key` is zm's own key for the command, as help's availability already was: a preview of `watch` names `watch`, not `messages` (cli-core 0.426.0).
+- **`zm config set` saves `config.json` owner-only (`0600`)** instead of `0644` (cli-base 0.57.0). Anything that reads the file as another user can no longer read it after the next save.
+- **A broken part of a setting is reported as the whole setting.** A bad entry in `context_sources` is one `invalid_value` issue on `context.sources` with the fix `zm config unset context.sources`, and the rest of the file still loads. An `invalid_json` issue always has its `line` and `column` (cli-core 0.425.0).
+
+### Security
+
+- **`zm doctor` reports a `config.json` or config folder other users can read.** `files.problems` in its answer lists each as `{ path, mode, want, fix }` (`0600` for the file, `0700` for the folder), and stderr prints `to make it private: chmod 600 '<path>'` for each; nothing is changed on disk. Windows is not checked.
+
+### Fixed
+
+- **`zm doctor` answers when the config path is a folder or cannot be read**, with one `invalid_value` issue for the whole file and no fix, instead of failing. Other commands refuse such a file with the same words.
+- **Help shows `config`, `doctor`, `models` and `runs` without a profile**, since they read none: `Usage: zm doctor [options]` and `zm doctor --json`, not `zm <profile> doctor` and `zm personal doctor --json`. A profile word before them still works.
+- The MCP read and write tools say "names, titles, what people wrote" in place of "names, titles, messages", and their example command is `runs list`, which runs as it is, in place of the group `runs`. `zm --help` says drive is "searchable with your other WireCat data".
+- MCP no longer offers a command group that only prints its help, such as `config` or `meetings`; their commands are still offered one by one.
+
+## 0.45.0 — 25.10.2026
+
+### Added
+
+- `zm runs list [query]`, `zm runs show <run-id>` and `zm runs path <run-id>` read the run log, with no profile. A failed
+  command is kept as a run, `--record` keeps a successful one too, and `--no-record` keeps nothing; the new `record` and
+  `keep_runs_for_days` settings change the default and how long runs stay. Each Zoom request is logged with its method,
+  masked path, status and duration only, and an answer's `meta.run_id` is now the id `runs show` takes.
+
+### Changed — may break callers
+
+- A Zoom change that asks first (`ask` permission) no longer asks when the output goes to a pipe or a file: it refuses with `confirmation_required` and says to add `--yes`, as it already did without a terminal. At a terminal it still asks.
+
+### Fixed
+
+- Help, `commands`, MCP tool descriptions and the agent skill describe zm, not a messenger (cli-core 0.422.0, `messenger: false`): `--brief` and `--full` speak of found items, `--trace` and `--record` of content, `commands info` shows `zm commands info commands`, and the MCP tools no longer suggest "unread" or "send message". Examples that would reach Zoom or change something now carry `--dry-run` or leave out `--yes`, so each runs offline as written.
+- `zm <profile> session start` opens the browser on macOS and Windows; it always tried `xdg-open` before. `--browser` still picks the program.
+
+## 0.44.0 — 25.10.2026
+
+### Changed — may break callers
+
+- **The shared store moves to version 33 (cli-core 0.420.0).** Once this version opens the store, a CLI on an older cli-core refuses it and asks to be upgraded, so upgrade every WireCat CLI that shares the store together.
+- A document source in `context.sources` names its notes folder with provider `local` or `obsidian`, as the store says from version 32 on; one saved with provider `folder` still resolves. Before, a folder the store had renamed made preparation refuse the source.
+- `mentions list` takes the meeting window as the query field `started_at`, such as `started_at>=30d` or `started_at:[2026-10-01 TO 2026-10-31]`. Its `--since-time` and `--until-time` options are removed, with no alias; `review` and the stats commands keep them.
+
+### Added
+
+- Meeting mentions accept a schema-derived URL query, selected inside the shared link reader before result limits.
+
+## 0.43.0 — 24.10.2026
+
+### Changed — may break callers
+
+- **Shared command contracts and model commands come from Core.** Provider source and transport differences are explicit and discoverable; silent edits fail before execution. Stored meeting topic labels use `--topic-name`; forum `--topic` retains its id meaning.
+
+### Added
+
+- **Meeting links accept native queries.** `mentions list event_id:1`, `project:RES` and `topic:planning` select the underlying meetings before links are read. Stored events accept native id, origin and time queries.
+
+### Fixed
+
+- Guides describe current permission discovery, unified-search paging and already-shipped meeting workflows. Retired command names are removed from the read-only examples.
+
+## 0.42.0 — 24.10.2026
+
+### Changed — may break callers
+
+- `recordings download` handles either one meeting or a date range. `recordings sync` is removed with no alias; use `recordings download --since-time … --until-time …`. Existing archives, checkpoints and scheduled jobs remain compatible.
+- Saved `recordings.sync` permissions must be reviewed and renamed to `recordings.download`; stale entries stop permissioned commands instead of losing their restrictions.
+
+### Added
+
+- Date-range downloads support bounded JSON receipt lists, including over MCP. `--jsonl` continues to stream completed receipts so earlier results survive later failures.
+
+### Fixed
+
+- Permission-denied commands remain searchable over MCP with current availability and a reason. Named-profile CLI help shows availability; calls still refuse before execution.
+
 ## 0.41.0 — 24.10.2026
 
 ### Changed — may break callers

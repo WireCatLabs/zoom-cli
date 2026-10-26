@@ -231,7 +231,7 @@ zm personal stats meetings top --project RES --limit 5 --json
 `show` gives the meetings, lines, words and talk time in the selection, by week (weeks start on Monday in
 `--timezone`, the computer's zone by default), with the ten speakers who talked most. `top` lists speakers by talk
 time, with their lines, words, meetings and share of the talk. Both take `--since-time`, `--until-time`,
-`--event-id`, `--project` and `--topic`, read as `search meetings` reads them.
+`--event-id`, `--project` and `--topic-name`, read as `search meetings` reads them.
 
 A speaker is the person a participant is linked to, else the participant, else the name the transcript gives; a line
 with no speaker counts as `unknown`. Talk time is each line's length, so two people talking at once both count. A
@@ -255,7 +255,7 @@ It takes the same filters as `stats meetings`.
 ## Find links shared in meeting chat
 
 ```sh
-zm personal mentions list --since-time 30d --json
+zm personal mentions list started_at>=30d --json
 ```
 
 `meetings sync` stores the chat Zoom saves with a cloud recording, when the login has
@@ -312,7 +312,7 @@ does not import that transcript into the meeting database until you request arch
 | `watch [api\|files] [folder] --jsonl` | repeatedly ingest from Zoom or a folder (default: configured source) in the foreground |
 | `recordings list`, `recordings show <meeting>` | discover cloud recordings and asset metadata |
 | `recordings download <meeting> --output-dir <dir>` | archive available recording files |
-| `recordings sync --since-time <date> --until-time <date> --output-dir <dir> --jsonl` | archive recording history across calendar months |
+| `recordings download --since-time <date> --until-time <date> --output-dir <dir> --jsonl` | download recording history across calendar months; `--json` also returns a bounded list |
 | `recordings schedule create\|list\|show\|run\|disable` | plan and manage local daily archive jobs |
 | `recordings archive show\|check\|locks <directory>` | inspect local manifests, checksums or locks |
 | `recordings archive recover <directory>` | preview recovery of stale local locks |
@@ -335,8 +335,8 @@ Use `--json` for one complete answer. A single result has `item`; a list has `it
 `meta.duration_ms` and `meta.complete`,
 with optional `next` steps and `missing` information. Result keys use snake_case.
 
-Detailed reports, including participant discovery, evidence, semantic search and unified search,
-keep their coverage and report-specific continuation inside `item`. Stored meeting word search
+Detailed reports, including participant discovery, evidence and semantic search, keep their coverage
+and report-specific continuation inside `item`. Unified `search all` returns hit lists and uses `--page`. Stored meeting word search
 returns standard hit items with `ref`, `meeting`, `excerpt` and `offset_ms`. When stored, `source`
 adds the meeting title, `started_at`, evidence `ref` and document `url`. A null URL means no source
 permalink is stored; a meeting join link is not an evidence link. Meeting details use

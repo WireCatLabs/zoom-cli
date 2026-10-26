@@ -36,14 +36,13 @@ describe("command deadlines", () => {
         .filter(([, command]) => !command.commands.length && commandDeadline(command) !== 30000)
         .map(([path, command]) => [path, commandDeadline(command)]),
     )
-    expect(declared).toEqual({
+    expect(declared).toStrictEqual({
       "meetings sync": 3600000,
       "meetings transcribe": 3600000,
       "recordings archive check": 3600000,
       "recordings download": 3600000,
       "recordings schedule run": 3600000,
-      "recordings sync": 3600000,
-      serve: undefined,
+      mcp: undefined,
       "session start": 300000,
       watch: undefined,
     })

@@ -30,7 +30,6 @@ export const lazyRunLog = (options: RunLogOptions): RunLog => {
         const run = startRun({
           runsDir: options.runsDir,
           command: options.command,
-          profile: "",
           service: resource.service,
           cliVersion: options.version,
           ...(options.onError ? { onError: options.onError } : {}),

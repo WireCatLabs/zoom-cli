@@ -17,6 +17,7 @@ const setup = async () => {
   const store = join(directory, "store.db")
   const env: NodeJS.ProcessEnv = { MESSAGING_STORE: store, HOME: directory }
   const stdout: string[] = []
+  const stderr: string[] = []
   const deps: ProgramDeps = {
     configPath: join(directory, "config.json"),
     env,
@@ -27,7 +28,7 @@ const setup = async () => {
     connectStore: createStoreConnector({ path: store, env }),
     openBrowser: async () => {},
     data: (text) => stdout.push(text),
-    diagnostic: () => {},
+    diagnostic: (text) => stderr.push(text),
   }
   setConfig(deps.configPath, "files.timezone", "UTC")
   useProfile(deps.configPath, "work", env)
@@ -46,7 +47,7 @@ const setup = async () => {
   )
   expect(await run(["work", "meetings", "import", transcripts, "--json"], deps)).toBe(0)
   stdout.length = 0
-  return { deps, stdout }
+  return { deps, stdout, stderr }
 }
 
 it("reviews the meetings since a point: newest first, talk and transcript size, and says what is missing", async () => {
@@ -79,17 +80,32 @@ it("says no chat is stored when there are no links to list", async () => {
   expect(answer.missing[0].why).toMatch(/no meeting chat is stored/)
 })
 
-it("takes every filter on both commands, and says when a project or topic name is unknown", async () => {
-  const { deps, stdout } = await setup()
-  const window = ["--since-time", "2026-10-01", "--until-time", "2026-10-31", "--timezone", "UTC", "--event-id", "999"]
+it("pushes review selectors and native mention queries into the stored read", async () => {
+  const { deps, stdout, stderr } = await setup()
   for (const command of [
     ["review", "--limit", "5"],
     ["mentions", "list", "--limit", "5", "--max-messages", "100"],
   ]) {
-    expect(await run(["work", ...command, ...window, "--json"], deps)).toBe(0)
+    const mention = command[0] === "mentions"
+    const window = mention
+      ? ["started_at:[2026-10-01 TO 2026-10-31]", "--timezone", "UTC"]
+      : ["--since-time", "2026-10-01", "--until-time", "2026-10-31", "--timezone", "UTC"]
+    const result = await run(
+      ["work", ...command, ...window, ...(mention ? ["event_id:999"] : ["--event-id", "999"]), "--json"],
+      deps,
+    )
+    expect(result, stderr.join("\n")).toBe(0)
     expect(JSON.parse(stdout.join("")).items).toEqual([])
     stdout.length = 0
-    for (const name of ["--project", "--topic"])
-      expect(await run(["work", ...command, name, "Absent example", "--json"], deps)).toBe(6)
+    for (const [flag, field] of [
+      ["--project", "project"],
+      ["--topic-name", "topic"],
+    ] as const)
+      expect(
+        await run(
+          ["work", ...command, ...(mention ? [`${field}:"Absent example"`] : [flag, "Absent example"]), "--json"],
+          deps,
+        ),
+      ).toBe(6)
   }
 })

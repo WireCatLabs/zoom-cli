@@ -93,7 +93,7 @@ it("saves every search meetings option it keeps, and replaces a saved search by 
   const all = [
     ["--event-id", "999"],
     ["--project", "Absent example"],
-    ["--topic", "Absent example"],
+    ["--topic-name", "Absent example"],
     ["--since-time", "2026-10-01"],
     ["--until-time", "2026-10-31"],
     ["--limit", "5"],
