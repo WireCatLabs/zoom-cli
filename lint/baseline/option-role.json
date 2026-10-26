@@ -2,5 +2,6 @@
   "meetings embeddings --after-hash",
   "meetings embeddings --after-transcript-id",
   "meetings evidence --after-transcript-id",
-  "search meetings --tag"
+  "search meetings --tag",
+  "session start --answer-stdin"
 ]
