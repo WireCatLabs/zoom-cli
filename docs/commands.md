@@ -26,7 +26,7 @@ These options apply to every command.
 | `--full` | found items with their whole text and every provider field. |
 | `--dry-run` | preview parsed arguments and permissions before running the action. |
 | `--yes` | go ahead without the question an ask level puts before a write. |
-| `--record` | keep this run — ids and timings, never content. |
+| `--record` | keep this run, with the command as typed and secrets hidden; record_input false leaves the typed words out. |
 | `--no-record` | do not keep it, whatever the configuration says. |
 
 ## `zm runs`
@@ -775,6 +775,7 @@ zm session start [options]
 | Option | What it does |
 |---|---|
 | `--browser <program>` | browser program. |
+| `--answer-stdin` | with --json and no terminal: print each question as a `needs` line on stderr and read its answer, one line, from stdin. |
 
 **Returns:** log in to Zoom through your browser
 
@@ -1405,7 +1406,7 @@ zm skill show [options]
 
 ### `zm skill install`
 
-write SKILL.md to \~/.claude/skills/zoom-cli/ (Claude Code) and \~/.agents/skills/zoom-cli/ (Codex, Gemini CLI)
+write SKILL.md to \~/.claude/skills/zoom-cli/ (Claude Code) and \~/.agents/skills/zoom-cli/ (Codex, Gemini CLI, OpenClaw); --for hermes also has Hermes read \~/.agents/skills, which changes Hermes's own settings, so all leaves it out
 
 **Changes local data.**
 
@@ -1415,7 +1416,7 @@ zm skill install [options]
 
 | Option | What it does |
 |---|---|
-| `--for <agents>` | which agents to install for. One of: `claude`, `agents`, `all`. Default: `all`. |
+| `--for <agents>` | which agents to install for. One of: `claude`, `agents`, `hermes`, `all`. Default: `all`. |
 
 **Returns:** install the tool's instructions for AI agents
 
@@ -1423,7 +1424,7 @@ zm skill install [options]
 
 ### `zm skill status`
 
-for each place `zm skill install` writes to: the path, the version installed there, and whether it is current, stale, missing or unversioned
+for each place `zm skill install` writes to, and for the copy Hermes reads: the path, the version installed there, and whether it is current, stale, missing or unversioned
 
 ```sh
 zm skill status
