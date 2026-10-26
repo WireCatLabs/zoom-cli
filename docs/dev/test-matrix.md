@@ -7,347 +7,347 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**16 ✅ · 1 ⛔ · 323 ❌** — 82 commands, 258 options.
+**339 ✅ · 1 ⛔ · 0 ❌** — 82 commands, 258 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
-| `runs list` |  | ❌ |  |
-| `runs list` | `--limit` | ❌ |  |
-| `runs list` | `--page` | ❌ |  |
-| `runs show` |  | ❌ |  |
-| `runs show` | `--problems` | ❌ |  |
-| `runs path` |  | ❌ |  |
+| `runs list` |  | ✅ |  |
+| `runs list` | `--limit` | ✅ |  |
+| `runs list` | `--page` | ✅ |  |
+| `runs show` |  | ✅ |  |
+| `runs show` | `--problems` | ✅ |  |
+| `runs path` |  | ✅ |  |
 | `config show` |  | ✅ |  |
 | `config set` |  | ✅ |  |
-| `config unset` |  | ❌ |  |
+| `config unset` |  | ✅ |  |
 | `meetings list` |  | ✅ |  |
 | `meetings list` | `--json` | ✅ |  |
-| `meetings list` | `--jsonl` | ❌ |  |
-| `meetings list` | `--limit` | ❌ |  |
-| `meetings list` | `--page` | ❌ |  |
+| `meetings list` | `--jsonl` | ✅ |  |
+| `meetings list` | `--limit` | ✅ |  |
+| `meetings list` | `--page` | ✅ |  |
 | `meetings show` |  | ✅ |  |
-| `meetings show` | `--json` | ❌ |  |
-| `meetings show` | `--jsonl` | ❌ |  |
-| `meetings transcript` |  | ❌ |  |
-| `meetings transcript` | `--history` | ❌ |  |
-| `meetings transcript` | `--json` | ❌ |  |
-| `meetings transcript` | `--jsonl` | ❌ |  |
-| `meetings summary` |  | ❌ |  |
-| `meetings summary` | `--json` | ❌ |  |
-| `meetings summary` | `--jsonl` | ❌ |  |
-| `meetings export` |  | ❌ |  |
-| `meetings export` | `--format` | ❌ |  |
-| `meetings export` | `--transcript-id` | ❌ |  |
-| `meetings export` | `--output` | ❌ |  |
-| `meetings export` | `--json` | ❌ |  |
-| `meetings export` | `--jsonl` | ❌ |  |
-| `meetings people` |  | ❌ |  |
-| `meetings people` | `--json` | ❌ |  |
-| `meetings people` | `--jsonl` | ❌ |  |
-| `meetings people` | `--limit` | ❌ |  |
-| `meetings people` | `--scan-limit` | ❌ |  |
-| `meetings people` | `--max-read-bytes` | ❌ |  |
-| `meetings people` | `--cursor` | ❌ |  |
+| `meetings show` | `--json` | ✅ |  |
+| `meetings show` | `--jsonl` | ✅ |  |
+| `meetings transcript` |  | ✅ |  |
+| `meetings transcript` | `--history` | ✅ |  |
+| `meetings transcript` | `--json` | ✅ |  |
+| `meetings transcript` | `--jsonl` | ✅ |  |
+| `meetings summary` |  | ✅ |  |
+| `meetings summary` | `--json` | ✅ |  |
+| `meetings summary` | `--jsonl` | ✅ |  |
+| `meetings export` |  | ✅ |  |
+| `meetings export` | `--format` | ✅ |  |
+| `meetings export` | `--transcript-id` | ✅ |  |
+| `meetings export` | `--output` | ✅ |  |
+| `meetings export` | `--json` | ✅ |  |
+| `meetings export` | `--jsonl` | ✅ |  |
+| `meetings people` |  | ✅ |  |
+| `meetings people` | `--json` | ✅ |  |
+| `meetings people` | `--jsonl` | ✅ |  |
+| `meetings people` | `--limit` | ✅ |  |
+| `meetings people` | `--scan-limit` | ✅ |  |
+| `meetings people` | `--max-read-bytes` | ✅ |  |
+| `meetings people` | `--cursor` | ✅ |  |
 | `meetings sync` |  | ✅ |  |
 | `meetings sync` | `--json` | ✅ |  |
-| `meetings sync` | `--jsonl` | ❌ |  |
+| `meetings sync` | `--jsonl` | ✅ |  |
 | `meetings sync` | `--since-time` | ✅ |  |
-| `meetings sync` | `--lookback-days` | ❌ |  |
+| `meetings sync` | `--lookback-days` | ✅ |  |
 | `meetings import` |  | ✅ |  |
 | `meetings import` | `--json` | ✅ |  |
-| `meetings import` | `--jsonl` | ❌ |  |
-| `meetings scheduled` |  | ❌ |  |
-| `meetings scheduled` | `--since-time` | ❌ |  |
-| `meetings scheduled` | `--before-time` | ❌ |  |
-| `meetings scheduled` | `--limit` | ❌ |  |
-| `meetings scheduled` | `--max-read-bytes` | ❌ |  |
-| `meetings scheduled` | `--bytes` | ❌ |  |
-| `meetings scheduled` | `--cursor` | ❌ |  |
-| `meetings projects evidence` |  | ❌ |  |
-| `meetings projects evidence` | `--limit` | ❌ |  |
-| `meetings projects evidence` | `--cursor` | ❌ |  |
-| `meetings projects evidence` | `--max-read-bytes` | ❌ |  |
-| `meetings projects scan` |  | ❌ |  |
-| `meetings projects scan` | `--limit` | ❌ |  |
-| `meetings projects scan` | `--cues` | ❌ |  |
-| `meetings projects scan` | `--bytes` | ❌ |  |
-| `meetings projects scan` | `--max-read-bytes` | ❌ |  |
-| `meetings projects scan` | `--cursor` | ❌ |  |
-| `meetings prepare` |  | ❌ |  |
-| `meetings prepare` | `--context-source` | ❌ |  |
-| `meetings prepare` | `--context-query` | ❌ |  |
-| `meetings prepare` | `--context-since-time` | ❌ |  |
-| `meetings prepare` | `--context-before-time` | ❌ |  |
-| `meetings prepare` | `--project` | ❌ |  |
-| `meetings prepare` | `--since-time` | ❌ |  |
-| `meetings prepare` | `--before-time` | ❌ |  |
-| `meetings prepare` | `--history-since-time` | ❌ |  |
-| `meetings prepare` | `--meetings` | ❌ |  |
-| `meetings prepare` | `--cues` | ❌ |  |
-| `meetings prepare` | `--context-limit` | ❌ |  |
-| `meetings prepare` | `--max-read-bytes` | ❌ |  |
-| `meetings prepare` | `--bytes` | ❌ |  |
-| `meetings update` |  | ❌ |  |
-| `meetings update` | `--event-id` | ❌ |  |
-| `meetings update` | `--expected-event-id` | ❌ |  |
-| `meetings update` | `--yes` | ❌ |  |
-| `meetings update` | `--dry-run` | ❌ |  |
-| `meetings link` |  | ❌ |  |
-| `meetings link` | `--participant-id` | ❌ |  |
-| `meetings link` | `--person` | ❌ |  |
-| `meetings link` | `--source` | ❌ |  |
-| `meetings link` | `--expected-person` | ❌ |  |
-| `meetings link` | `--yes` | ❌ |  |
-| `meetings link` | `--dry-run` | ❌ |  |
-| `meetings transcribe` |  | ❌ |  |
-| `meetings transcribe` | `--model` | ❌ |  |
-| `meetings transcribe` | `--models-dir` | ❌ |  |
-| `meetings transcribe` | `--max-bytes` | ❌ |  |
-| `meetings transcribe` | `--max-duration` | ❌ |  |
-| `meetings transcribe` | `--max-segments` | ❌ |  |
-| `meetings transcribe` | `--max-text-bytes` | ❌ |  |
-| `meetings transcribe` | `--yes` | ❌ |  |
-| `meetings transcribe` | `--dry-run` | ❌ |  |
-| `meetings evidence` |  | ❌ |  |
-| `meetings evidence` | `--cues` | ❌ |  |
-| `meetings evidence` | `--bytes` | ❌ |  |
-| `meetings evidence` | `--cursor` | ❌ |  |
-| `meetings evidence` | `--after-transcript-id` | ❌ |  |
-| `meetings evidence` | `--max-read-bytes` | ❌ |  |
-| `meetings evidence` | `--max-transcript-pages` | ❌ |  |
-| `meetings context` |  | ❌ |  |
-| `meetings context` | `--cues` | ❌ |  |
-| `meetings context` | `--bytes` | ❌ |  |
-| `meetings context` | `--meetings` | ❌ |  |
-| `meetings context` | `--scan-limit` | ❌ |  |
-| `meetings context` | `--since-time` | ❌ |  |
-| `meetings task-proposal` |  | ❌ |  |
-| `meetings task-proposal` | `--type` | ❌ |  |
-| `meetings passage` |  | ❌ |  |
-| `meetings passage` | `--before-n` | ❌ |  |
-| `meetings passage` | `--after-n` | ❌ |  |
-| `meetings passage` | `--bytes` | ❌ |  |
-| `meetings passage` | `--max-read-bytes` | ❌ |  |
-| `meetings passage` | `--expected-fingerprint` | ❌ |  |
-| `meetings passage` | `--format` | ❌ |  |
-| `meetings embeddings` |  | ❌ |  |
-| `meetings embeddings` | `--model` | ❌ |  |
-| `meetings embeddings` | `--base-url` | ❌ |  |
-| `meetings embeddings` | `--dims` | ❌ |  |
-| `meetings embeddings` | `--limit` | ❌ |  |
-| `meetings embeddings` | `--max-rows` | ❌ |  |
-| `meetings embeddings` | `--max-text-bytes` | ❌ |  |
-| `meetings embeddings` | `--after-transcript-id` | ❌ |  |
-| `meetings embeddings` | `--after-hash` | ❌ |  |
-| `meetings embeddings` | `--yes` | ❌ |  |
-| `meetings status` |  | ❌ |  |
-| `events list` |  | ❌ |  |
-| `events list` | `--json` | ❌ |  |
-| `events list` | `--jsonl` | ❌ |  |
-| `commands` |  | ❌ |  |
-| `commands info` |  | ❌ |  |
-| `store info` |  | ❌ |  |
-| `complete` |  | ❌ |  |
-| `doctor` |  | ❌ |  |
-| `session status` |  | ❌ |  |
-| `session status` | `--check` | ❌ |  |
+| `meetings import` | `--jsonl` | ✅ |  |
+| `meetings scheduled` |  | ✅ |  |
+| `meetings scheduled` | `--since-time` | ✅ |  |
+| `meetings scheduled` | `--before-time` | ✅ |  |
+| `meetings scheduled` | `--limit` | ✅ |  |
+| `meetings scheduled` | `--max-read-bytes` | ✅ |  |
+| `meetings scheduled` | `--bytes` | ✅ |  |
+| `meetings scheduled` | `--cursor` | ✅ |  |
+| `meetings projects evidence` |  | ✅ |  |
+| `meetings projects evidence` | `--limit` | ✅ |  |
+| `meetings projects evidence` | `--cursor` | ✅ |  |
+| `meetings projects evidence` | `--max-read-bytes` | ✅ |  |
+| `meetings projects scan` |  | ✅ |  |
+| `meetings projects scan` | `--limit` | ✅ |  |
+| `meetings projects scan` | `--cues` | ✅ |  |
+| `meetings projects scan` | `--bytes` | ✅ |  |
+| `meetings projects scan` | `--max-read-bytes` | ✅ |  |
+| `meetings projects scan` | `--cursor` | ✅ |  |
+| `meetings prepare` |  | ✅ |  |
+| `meetings prepare` | `--context-source` | ✅ |  |
+| `meetings prepare` | `--context-query` | ✅ |  |
+| `meetings prepare` | `--context-since-time` | ✅ |  |
+| `meetings prepare` | `--context-before-time` | ✅ |  |
+| `meetings prepare` | `--project` | ✅ |  |
+| `meetings prepare` | `--since-time` | ✅ |  |
+| `meetings prepare` | `--before-time` | ✅ |  |
+| `meetings prepare` | `--history-since-time` | ✅ |  |
+| `meetings prepare` | `--meetings` | ✅ |  |
+| `meetings prepare` | `--cues` | ✅ |  |
+| `meetings prepare` | `--context-limit` | ✅ |  |
+| `meetings prepare` | `--max-read-bytes` | ✅ |  |
+| `meetings prepare` | `--bytes` | ✅ |  |
+| `meetings update` |  | ✅ |  |
+| `meetings update` | `--event-id` | ✅ |  |
+| `meetings update` | `--expected-event-id` | ✅ |  |
+| `meetings update` | `--yes` | ✅ |  |
+| `meetings update` | `--dry-run` | ✅ |  |
+| `meetings link` |  | ✅ |  |
+| `meetings link` | `--participant-id` | ✅ |  |
+| `meetings link` | `--person` | ✅ |  |
+| `meetings link` | `--source` | ✅ |  |
+| `meetings link` | `--expected-person` | ✅ |  |
+| `meetings link` | `--yes` | ✅ |  |
+| `meetings link` | `--dry-run` | ✅ |  |
+| `meetings transcribe` |  | ✅ |  |
+| `meetings transcribe` | `--model` | ✅ |  |
+| `meetings transcribe` | `--models-dir` | ✅ |  |
+| `meetings transcribe` | `--max-bytes` | ✅ |  |
+| `meetings transcribe` | `--max-duration` | ✅ |  |
+| `meetings transcribe` | `--max-segments` | ✅ |  |
+| `meetings transcribe` | `--max-text-bytes` | ✅ |  |
+| `meetings transcribe` | `--yes` | ✅ |  |
+| `meetings transcribe` | `--dry-run` | ✅ |  |
+| `meetings evidence` |  | ✅ |  |
+| `meetings evidence` | `--cues` | ✅ |  |
+| `meetings evidence` | `--bytes` | ✅ |  |
+| `meetings evidence` | `--cursor` | ✅ |  |
+| `meetings evidence` | `--after-transcript-id` | ✅ |  |
+| `meetings evidence` | `--max-read-bytes` | ✅ |  |
+| `meetings evidence` | `--max-transcript-pages` | ✅ |  |
+| `meetings context` |  | ✅ |  |
+| `meetings context` | `--cues` | ✅ |  |
+| `meetings context` | `--bytes` | ✅ |  |
+| `meetings context` | `--meetings` | ✅ |  |
+| `meetings context` | `--scan-limit` | ✅ |  |
+| `meetings context` | `--since-time` | ✅ |  |
+| `meetings task-proposal` |  | ✅ |  |
+| `meetings task-proposal` | `--type` | ✅ |  |
+| `meetings passage` |  | ✅ |  |
+| `meetings passage` | `--before-n` | ✅ |  |
+| `meetings passage` | `--after-n` | ✅ |  |
+| `meetings passage` | `--bytes` | ✅ |  |
+| `meetings passage` | `--max-read-bytes` | ✅ |  |
+| `meetings passage` | `--expected-fingerprint` | ✅ |  |
+| `meetings passage` | `--format` | ✅ |  |
+| `meetings embeddings` |  | ✅ |  |
+| `meetings embeddings` | `--model` | ✅ |  |
+| `meetings embeddings` | `--base-url` | ✅ |  |
+| `meetings embeddings` | `--dims` | ✅ |  |
+| `meetings embeddings` | `--limit` | ✅ |  |
+| `meetings embeddings` | `--max-rows` | ✅ |  |
+| `meetings embeddings` | `--max-text-bytes` | ✅ |  |
+| `meetings embeddings` | `--after-transcript-id` | ✅ |  |
+| `meetings embeddings` | `--after-hash` | ✅ |  |
+| `meetings embeddings` | `--yes` | ✅ |  |
+| `meetings status` |  | ✅ |  |
+| `events list` |  | ✅ |  |
+| `events list` | `--json` | ✅ |  |
+| `events list` | `--jsonl` | ✅ |  |
+| `commands` |  | ✅ |  |
+| `commands info` |  | ✅ |  |
+| `store info` |  | ✅ |  |
+| `complete` |  | ✅ |  |
+| `doctor` |  | ✅ |  |
+| `session status` |  | ✅ |  |
+| `session status` | `--check` | ✅ |  |
 | `session start` |  | ✅ |  |
-| `session start` | `--browser` | ❌ |  |
+| `session start` | `--browser` | ✅ |  |
 | `session start` | `--answer-stdin` | ✅ |  |
-| `upgrade` |  | ❌ |  |
-| `upgrade` | `--check` | ❌ |  |
-| `models list` |  | ❌ |  |
-| `models download` |  | ❌ |  |
-| `models download` | `--offline` | ❌ |  |
-| `models download` | `--accept-terms` | ❌ |  |
-| `watch` |  | ❌ |  |
-| `watch` | `--since-time` | ❌ |  |
-| `watch` | `--lookback-days` | ❌ |  |
-| `watch` | `--pause` | ❌ |  |
-| `recordings list` |  | ❌ |  |
-| `recordings list` | `--since-time` | ❌ |  |
-| `recordings list` | `--until-time` | ❌ |  |
-| `recordings list` | `--timezone` | ❌ |  |
-| `recordings show` |  | ❌ |  |
-| `recordings download` |  | ❌ |  |
-| `recordings download` | `--output-dir` | ❌ |  |
-| `recordings download` | `--since-time` | ❌ |  |
-| `recordings download` | `--until-time` | ❌ |  |
-| `recordings download` | `--file-ids` | ❌ |  |
-| `recordings download` | `--max-bytes` | ❌ |  |
-| `recordings download` | `--resume` | ❌ |  |
-| `recordings download` | `--no-resume` | ❌ |  |
-| `recordings download` | `--checkpoint` | ❌ |  |
-| `recordings download` | `--recheck-since-time` | ❌ |  |
-| `recordings download` | `--max-pages` | ❌ |  |
-| `recordings download` | `--max-entries` | ❌ |  |
-| `recordings archive transcript` |  | ❌ |  |
-| `recordings archive transcript` | `--uuid` | ❌ |  |
-| `recordings archive transcript` | `--file-ids` | ❌ |  |
-| `recordings archive transcript` | `--max-bytes` | ❌ |  |
-| `recordings archive show` |  | ❌ |  |
-| `recordings archive check` |  | ❌ |  |
-| `recordings archive locks` |  | ❌ |  |
-| `recordings archive recover` |  | ❌ |  |
-| `recordings archive recover` | `--yes` | ❌ |  |
-| `recordings archive recover` | `--dry-run` | ❌ |  |
-| `recordings archive import` |  | ❌ |  |
-| `recordings archive import` | `--uuid` | ❌ |  |
-| `recordings archive import` | `--file-ids` | ❌ |  |
-| `recordings archive import` | `--max-bytes` | ❌ |  |
-| `recordings archive import` | `--max-total-bytes` | ❌ |  |
-| `recordings schedule create` |  | ❌ |  |
-| `recordings schedule create` | `--name` | ❌ |  |
-| `recordings schedule create` | `--output-dir` | ❌ |  |
-| `recordings schedule create` | `--since-time` | ❌ |  |
-| `recordings schedule create` | `--at` | ❌ |  |
-| `recordings schedule create` | `--timezone` | ❌ |  |
-| `recordings schedule create` | `--lookback-days` | ❌ |  |
-| `recordings schedule create` | `--max-bytes` | ❌ |  |
-| `recordings schedule create` | `--yes` | ❌ |  |
-| `recordings schedule create` | `--dry-run` | ❌ |  |
-| `recordings schedule list` |  | ❌ |  |
-| `recordings schedule show` |  | ❌ |  |
-| `recordings schedule run` |  | ❌ |  |
-| `recordings schedule disable` |  | ❌ |  |
-| `recordings schedule disable` | `--yes` | ❌ |  |
-| `recordings schedule disable` | `--dry-run` | ❌ |  |
-| `recordings status` |  | ❌ |  |
-| `recordings status` | `--checkpoint` | ❌ |  |
-| `remote-meetings list` |  | ❌ |  |
-| `remote-meetings show` |  | ❌ |  |
-| `remote-meetings invitation` |  | ❌ |  |
-| `remote-meetings create` |  | ❌ |  |
-| `remote-meetings create` | `--title` | ❌ |  |
-| `remote-meetings create` | `--start-time` | ❌ |  |
-| `remote-meetings create` | `--duration-minutes` | ❌ |  |
-| `remote-meetings create` | `--timezone` | ❌ |  |
-| `remote-meetings create` | `--agenda` | ❌ |  |
-| `remote-meetings create` | `--type` | ❌ |  |
-| `remote-meetings create` | `--yes` | ❌ |  |
-| `remote-meetings create` | `--dry-run` | ❌ |  |
-| `remote-meetings update` |  | ❌ |  |
-| `remote-meetings update` | `--title` | ❌ |  |
-| `remote-meetings update` | `--start-time` | ❌ |  |
-| `remote-meetings update` | `--duration-minutes` | ❌ |  |
-| `remote-meetings update` | `--timezone` | ❌ |  |
-| `remote-meetings update` | `--agenda` | ❌ |  |
-| `remote-meetings update` | `--type` | ❌ |  |
-| `remote-meetings update` | `--yes` | ❌ |  |
-| `remote-meetings update` | `--dry-run` | ❌ |  |
-| `remote-meetings cancel` |  | ❌ |  |
-| `remote-meetings cancel` | `--occurrence-id` | ❌ |  |
-| `remote-meetings cancel` | `--yes` | ❌ |  |
-| `remote-meetings cancel` | `--dry-run` | ❌ |  |
-| `contacts list` |  | ❌ |  |
-| `contacts show` |  | ❌ |  |
-| `zoom search` |  | ❌ |  |
-| `zoom search` | `--only` | ❌ |  |
-| `zoom search` | `--limit` | ❌ |  |
-| `zoom search` | `--cursor` | ❌ |  |
-| `skill show` |  | ❌ |  |
-| `skill show` | `--for` | ❌ |  |
-| `skill install` |  | ❌ |  |
-| `skill install` | `--for` | ❌ |  |
-| `skill status` |  | ❌ |  |
-| `mcp` |  | ❌ |  |
-| `search all` |  | ❌ |  |
-| `search all` | `--only` | ❌ |  |
-| `search all` | `--limit` | ❌ |  |
-| `search all` | `--page` | ❌ |  |
-| `search all` | `--max-meetings` | ❌ |  |
-| `search all` | `--exact` | ❌ |  |
-| `search meetings` |  | ❌ |  |
-| `search meetings` | `--meeting-id` | ❌ |  |
-| `search meetings` | `--identity-id` | ❌ |  |
-| `search meetings` | `--person-id` | ❌ |  |
-| `search meetings` | `--event-id` | ❌ |  |
-| `search meetings` | `--series-id` | ❌ |  |
-| `search meetings` | `--project` | ❌ |  |
-| `search meetings` | `--tag` | ❌ |  |
-| `search meetings` | `--topic-name` | ❌ |  |
-| `search meetings` | `--since-time` | ❌ |  |
-| `search meetings` | `--until-time` | ❌ |  |
-| `search meetings` | `--limit` | ❌ |  |
-| `search meetings` | `--cursor` | ❌ |  |
-| `search meetings` | `--max-read-bytes` | ❌ |  |
-| `search meetings` | `--model` | ❌ |  |
-| `search meetings` | `--base-url` | ❌ |  |
-| `search meetings` | `--dims` | ❌ |  |
-| `search meetings` | `--max-chunks` | ❌ |  |
-| `search meetings` | `--max-rows` | ❌ |  |
-| `search meetings` | `--max-text-bytes` | ❌ |  |
-| `search recordings` |  | ❌ |  |
-| `search recordings` | `--limit` | ❌ |  |
-| `stats meetings show` |  | ❌ |  |
-| `stats meetings show` | `--since-time` | ❌ |  |
-| `stats meetings show` | `--until-time` | ❌ |  |
-| `stats meetings show` | `--timezone` | ❌ |  |
-| `stats meetings show` | `--event-id` | ❌ |  |
-| `stats meetings show` | `--project` | ❌ |  |
-| `stats meetings show` | `--topic-name` | ❌ |  |
-| `stats meetings show` | `--max-rows` | ❌ |  |
-| `stats meetings top` |  | ❌ |  |
-| `stats meetings top` | `--since-time` | ❌ |  |
-| `stats meetings top` | `--until-time` | ❌ |  |
-| `stats meetings top` | `--timezone` | ❌ |  |
-| `stats meetings top` | `--event-id` | ❌ |  |
-| `stats meetings top` | `--project` | ❌ |  |
-| `stats meetings top` | `--topic-name` | ❌ |  |
-| `stats meetings top` | `--max-rows` | ❌ |  |
-| `stats meetings top` | `--limit` | ❌ |  |
-| `review` |  | ❌ |  |
-| `review` | `--since-time` | ❌ |  |
-| `review` | `--until-time` | ❌ |  |
-| `review` | `--timezone` | ❌ |  |
-| `review` | `--event-id` | ❌ |  |
-| `review` | `--project` | ❌ |  |
-| `review` | `--topic-name` | ❌ |  |
-| `review` | `--limit` | ❌ |  |
-| `mentions list` |  | ❌ |  |
-| `mentions list` | `--timezone` | ❌ |  |
-| `mentions list` | `--limit` | ❌ |  |
-| `mentions list` | `--max-messages` | ❌ |  |
-| `searches create` |  | ❌ |  |
-| `searches create` | `--replace` | ❌ |  |
-| `searches create` | `--event-id` | ❌ |  |
-| `searches create` | `--project` | ❌ |  |
-| `searches create` | `--topic-name` | ❌ |  |
-| `searches create` | `--since-time` | ❌ |  |
-| `searches create` | `--until-time` | ❌ |  |
-| `searches create` | `--limit` | ❌ |  |
-| `searches create` | `--max-read-bytes` | ❌ |  |
-| `searches create` | `--model` | ❌ |  |
-| `searches create` | `--base-url` | ❌ |  |
-| `searches create` | `--dims` | ❌ |  |
-| `searches create` | `--max-chunks` | ❌ |  |
-| `searches create` | `--max-rows` | ❌ |  |
-| `searches create` | `--max-text-bytes` | ❌ |  |
-| `searches run` |  | ❌ |  |
-| `searches list` |  | ❌ |  |
-| `searches show` |  | ❌ |  |
-| `searches delete` |  | ❌ |  |
-| `batch` |  | ❌ |  |
-| `batch` | `--max-read-bytes` | ❌ |  |
-| `batch` | `--format` | ❌ |  |
-| `guide` |  | ❌ |  |
-| `help` |  | ❌ |  |
+| `upgrade` |  | ✅ |  |
+| `upgrade` | `--check` | ✅ |  |
+| `models list` |  | ✅ |  |
+| `models download` |  | ✅ |  |
+| `models download` | `--offline` | ✅ |  |
+| `models download` | `--accept-terms` | ✅ |  |
+| `watch` |  | ✅ |  |
+| `watch` | `--since-time` | ✅ |  |
+| `watch` | `--lookback-days` | ✅ |  |
+| `watch` | `--pause` | ✅ |  |
+| `recordings list` |  | ✅ |  |
+| `recordings list` | `--since-time` | ✅ |  |
+| `recordings list` | `--until-time` | ✅ |  |
+| `recordings list` | `--timezone` | ✅ |  |
+| `recordings show` |  | ✅ |  |
+| `recordings download` |  | ✅ |  |
+| `recordings download` | `--output-dir` | ✅ |  |
+| `recordings download` | `--since-time` | ✅ |  |
+| `recordings download` | `--until-time` | ✅ |  |
+| `recordings download` | `--file-ids` | ✅ |  |
+| `recordings download` | `--max-bytes` | ✅ |  |
+| `recordings download` | `--resume` | ✅ |  |
+| `recordings download` | `--no-resume` | ✅ |  |
+| `recordings download` | `--checkpoint` | ✅ |  |
+| `recordings download` | `--recheck-since-time` | ✅ |  |
+| `recordings download` | `--max-pages` | ✅ |  |
+| `recordings download` | `--max-entries` | ✅ |  |
+| `recordings archive transcript` |  | ✅ |  |
+| `recordings archive transcript` | `--uuid` | ✅ |  |
+| `recordings archive transcript` | `--file-ids` | ✅ |  |
+| `recordings archive transcript` | `--max-bytes` | ✅ |  |
+| `recordings archive show` |  | ✅ |  |
+| `recordings archive check` |  | ✅ |  |
+| `recordings archive locks` |  | ✅ |  |
+| `recordings archive recover` |  | ✅ |  |
+| `recordings archive recover` | `--yes` | ✅ |  |
+| `recordings archive recover` | `--dry-run` | ✅ |  |
+| `recordings archive import` |  | ✅ |  |
+| `recordings archive import` | `--uuid` | ✅ |  |
+| `recordings archive import` | `--file-ids` | ✅ |  |
+| `recordings archive import` | `--max-bytes` | ✅ |  |
+| `recordings archive import` | `--max-total-bytes` | ✅ |  |
+| `recordings schedule create` |  | ✅ |  |
+| `recordings schedule create` | `--name` | ✅ |  |
+| `recordings schedule create` | `--output-dir` | ✅ |  |
+| `recordings schedule create` | `--since-time` | ✅ |  |
+| `recordings schedule create` | `--at` | ✅ |  |
+| `recordings schedule create` | `--timezone` | ✅ |  |
+| `recordings schedule create` | `--lookback-days` | ✅ |  |
+| `recordings schedule create` | `--max-bytes` | ✅ |  |
+| `recordings schedule create` | `--yes` | ✅ |  |
+| `recordings schedule create` | `--dry-run` | ✅ |  |
+| `recordings schedule list` |  | ✅ |  |
+| `recordings schedule show` |  | ✅ |  |
+| `recordings schedule run` |  | ✅ |  |
+| `recordings schedule disable` |  | ✅ |  |
+| `recordings schedule disable` | `--yes` | ✅ |  |
+| `recordings schedule disable` | `--dry-run` | ✅ |  |
+| `recordings status` |  | ✅ |  |
+| `recordings status` | `--checkpoint` | ✅ |  |
+| `remote-meetings list` |  | ✅ |  |
+| `remote-meetings show` |  | ✅ |  |
+| `remote-meetings invitation` |  | ✅ |  |
+| `remote-meetings create` |  | ✅ |  |
+| `remote-meetings create` | `--title` | ✅ |  |
+| `remote-meetings create` | `--start-time` | ✅ |  |
+| `remote-meetings create` | `--duration-minutes` | ✅ |  |
+| `remote-meetings create` | `--timezone` | ✅ |  |
+| `remote-meetings create` | `--agenda` | ✅ |  |
+| `remote-meetings create` | `--type` | ✅ |  |
+| `remote-meetings create` | `--yes` | ✅ |  |
+| `remote-meetings create` | `--dry-run` | ✅ |  |
+| `remote-meetings update` |  | ✅ |  |
+| `remote-meetings update` | `--title` | ✅ |  |
+| `remote-meetings update` | `--start-time` | ✅ |  |
+| `remote-meetings update` | `--duration-minutes` | ✅ |  |
+| `remote-meetings update` | `--timezone` | ✅ |  |
+| `remote-meetings update` | `--agenda` | ✅ |  |
+| `remote-meetings update` | `--type` | ✅ |  |
+| `remote-meetings update` | `--yes` | ✅ |  |
+| `remote-meetings update` | `--dry-run` | ✅ |  |
+| `remote-meetings cancel` |  | ✅ |  |
+| `remote-meetings cancel` | `--occurrence-id` | ✅ |  |
+| `remote-meetings cancel` | `--yes` | ✅ |  |
+| `remote-meetings cancel` | `--dry-run` | ✅ |  |
+| `contacts list` |  | ✅ |  |
+| `contacts show` |  | ✅ |  |
+| `zoom search` |  | ✅ |  |
+| `zoom search` | `--only` | ✅ |  |
+| `zoom search` | `--limit` | ✅ |  |
+| `zoom search` | `--cursor` | ✅ |  |
+| `skill show` |  | ✅ |  |
+| `skill show` | `--for` | ✅ |  |
+| `skill install` |  | ✅ |  |
+| `skill install` | `--for` | ✅ |  |
+| `skill status` |  | ✅ |  |
+| `mcp` |  | ✅ |  |
+| `search all` |  | ✅ |  |
+| `search all` | `--only` | ✅ |  |
+| `search all` | `--limit` | ✅ |  |
+| `search all` | `--page` | ✅ |  |
+| `search all` | `--max-meetings` | ✅ |  |
+| `search all` | `--exact` | ✅ |  |
+| `search meetings` |  | ✅ |  |
+| `search meetings` | `--meeting-id` | ✅ |  |
+| `search meetings` | `--identity-id` | ✅ |  |
+| `search meetings` | `--person-id` | ✅ |  |
+| `search meetings` | `--event-id` | ✅ |  |
+| `search meetings` | `--series-id` | ✅ |  |
+| `search meetings` | `--project` | ✅ |  |
+| `search meetings` | `--tag` | ✅ |  |
+| `search meetings` | `--topic-name` | ✅ |  |
+| `search meetings` | `--since-time` | ✅ |  |
+| `search meetings` | `--until-time` | ✅ |  |
+| `search meetings` | `--limit` | ✅ |  |
+| `search meetings` | `--cursor` | ✅ |  |
+| `search meetings` | `--max-read-bytes` | ✅ |  |
+| `search meetings` | `--model` | ✅ |  |
+| `search meetings` | `--base-url` | ✅ |  |
+| `search meetings` | `--dims` | ✅ |  |
+| `search meetings` | `--max-chunks` | ✅ |  |
+| `search meetings` | `--max-rows` | ✅ |  |
+| `search meetings` | `--max-text-bytes` | ✅ |  |
+| `search recordings` |  | ✅ |  |
+| `search recordings` | `--limit` | ✅ |  |
+| `stats meetings show` |  | ✅ |  |
+| `stats meetings show` | `--since-time` | ✅ |  |
+| `stats meetings show` | `--until-time` | ✅ |  |
+| `stats meetings show` | `--timezone` | ✅ |  |
+| `stats meetings show` | `--event-id` | ✅ |  |
+| `stats meetings show` | `--project` | ✅ |  |
+| `stats meetings show` | `--topic-name` | ✅ |  |
+| `stats meetings show` | `--max-rows` | ✅ |  |
+| `stats meetings top` |  | ✅ |  |
+| `stats meetings top` | `--since-time` | ✅ |  |
+| `stats meetings top` | `--until-time` | ✅ |  |
+| `stats meetings top` | `--timezone` | ✅ |  |
+| `stats meetings top` | `--event-id` | ✅ |  |
+| `stats meetings top` | `--project` | ✅ |  |
+| `stats meetings top` | `--topic-name` | ✅ |  |
+| `stats meetings top` | `--max-rows` | ✅ |  |
+| `stats meetings top` | `--limit` | ✅ |  |
+| `review` |  | ✅ |  |
+| `review` | `--since-time` | ✅ |  |
+| `review` | `--until-time` | ✅ |  |
+| `review` | `--timezone` | ✅ |  |
+| `review` | `--event-id` | ✅ |  |
+| `review` | `--project` | ✅ |  |
+| `review` | `--topic-name` | ✅ |  |
+| `review` | `--limit` | ✅ |  |
+| `mentions list` |  | ✅ |  |
+| `mentions list` | `--timezone` | ✅ |  |
+| `mentions list` | `--limit` | ✅ |  |
+| `mentions list` | `--max-messages` | ✅ |  |
+| `searches create` |  | ✅ |  |
+| `searches create` | `--replace` | ✅ |  |
+| `searches create` | `--event-id` | ✅ |  |
+| `searches create` | `--project` | ✅ |  |
+| `searches create` | `--topic-name` | ✅ |  |
+| `searches create` | `--since-time` | ✅ |  |
+| `searches create` | `--until-time` | ✅ |  |
+| `searches create` | `--limit` | ✅ |  |
+| `searches create` | `--max-read-bytes` | ✅ |  |
+| `searches create` | `--model` | ✅ |  |
+| `searches create` | `--base-url` | ✅ |  |
+| `searches create` | `--dims` | ✅ |  |
+| `searches create` | `--max-chunks` | ✅ |  |
+| `searches create` | `--max-rows` | ✅ |  |
+| `searches create` | `--max-text-bytes` | ✅ |  |
+| `searches run` |  | ✅ |  |
+| `searches list` |  | ✅ |  |
+| `searches show` |  | ✅ |  |
+| `searches delete` |  | ✅ |  |
+| `batch` |  | ✅ |  |
+| `batch` | `--max-read-bytes` | ✅ |  |
+| `batch` | `--format` | ✅ |  |
+| `guide` |  | ✅ |  |
+| `help` |  | ✅ |  |
 | *global* | `--version` | ✅ |  |
-| *global* | `--verbose` | ❌ |  |
+| *global* | `--verbose` | ✅ |  |
 | *global* | `--json` | ✅ |  |
 | *global* | `--jsonl` | ✅ |  |
-| *global* | `--quiet` | ❌ |  |
-| *global* | `--trace` | ❌ |  |
-| *global* | `--debug` | ❌ |  |
-| *global* | `--timeout` | ❌ |  |
-| *global* | `--offline` | ❌ |  |
+| *global* | `--quiet` | ✅ |  |
+| *global* | `--trace` | ✅ |  |
+| *global* | `--debug` | ✅ |  |
+| *global* | `--timeout` | ✅ |  |
+| *global* | `--offline` | ✅ |  |
 | *global* | `--no-input` | ✅ |  |
-| *global* | `--max-input-bytes` | ❌ |  |
-| *global* | `--max-output-bytes` | ❌ |  |
-| *global* | `--brief` | ❌ |  |
-| *global* | `--full` | ❌ |  |
-| *global* | `--dry-run` | ❌ |  |
-| *global* | `--yes` | ❌ |  |
-| *global* | `--record` | ❌ |  |
-| *global* | `--no-record` | ❌ |  |
+| *global* | `--max-input-bytes` | ✅ |  |
+| *global* | `--max-output-bytes` | ✅ |  |
+| *global* | `--brief` | ✅ |  |
+| *global* | `--full` | ✅ |  |
+| *global* | `--dry-run` | ✅ |  |
+| *global* | `--yes` | ✅ |  |
+| *global* | `--record` | ✅ |  |
+| *global* | `--no-record` | ✅ |  |
 | *global* | `--help-all` | ⛔ | first-screen.test.ts and the installed-package acceptance check it; Commander exits before preAction tracing. |
