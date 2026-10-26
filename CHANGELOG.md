@@ -4,6 +4,11 @@
 
 ### Added
 
+- **`zm <profile> session start --json --answer-stdin` signs in from WireCat Desktop (cli-core 0.443.0).** The Zoom
+  page to approve is an `open_url` line on stderr instead of the plain one, and the fallback paste of the address the
+  browser ended on is a `needs` line answered with one line on stdin; when the browser's callback comes first, the
+  question is withdrawn. Without `--answer-stdin` nothing changes.
+- zm now builds on cli-core 0.443.0 and cli-base 0.59.0, the range cli-core 0.443.0 needs.
 - **`contacts list` and `contacts show` read your Zoom contacts** live from Zoom: company colleagues and external
   contacts, with name and email, and phone numbers in `show`. `name:`, `email:` and `type:company|external` narrow
   the list. Each contact is the shared `contact` type, keyed by Zoom's member id. They need the

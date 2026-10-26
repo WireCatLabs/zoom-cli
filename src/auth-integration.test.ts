@@ -2,6 +2,7 @@ import { mkdtemp, writeFile } from "node:fs/promises"
 import { connect } from "node:net"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { PassThrough } from "node:stream"
 import { CliError, memoryKeyring } from "@wirecat/cli-base"
 import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { describe, expect, it } from "vitest"
@@ -249,6 +250,44 @@ describe("CLI configuration isolation", () => {
     }
     expect(await run(["example", "session", "start"], deps)).toBe(14)
     expect(JSON.parse(stderr.at(-1) ?? "{}").error.code).toBe("outcome_unknown")
+  })
+  it("with --answer-stdin, gives the page as an open_url line and takes the pasted address on stdin", async () => {
+    const { deps, stdout, stderr } = await setup()
+    setConfig(deps.configPath, "zoom.client_id", "example-client")
+    deps.tokens = manager()
+    deps.openBrowser = async () => {}
+    const stdin = new PassThrough()
+    deps.stdin = stdin
+    const events = () =>
+      stderr
+        .flatMap((text) => text.split("\n"))
+        .filter((line) => line.startsWith('{"event"'))
+        .map((line) => JSON.parse(line))
+    const answered = (async () => {
+      while (!events().some((e) => e.event === "needs")) await new Promise((done) => setTimeout(done, 5))
+      const state = new URL(events()[0].url).searchParams.get("state")
+      stdin.write(`code=example-code&state=${state}\n`)
+    })()
+    expect(await run(["example", "session", "start", "--json", "--answer-stdin"], deps)).toBe(0)
+    await answered
+    expect(events().map(({ event, field, secret }) => [event, field, secret])).toEqual([
+      ["open_url", undefined, undefined],
+      ["needs", "redirect", true],
+    ])
+    expect(events()[0].url).toMatch(/^https:\/\/zoom\.us\/oauth\/authorize\?/)
+    expect(stderr.join("")).not.toContain("Open this URL")
+    expect(stdout.join("")).not.toContain("example-code")
+  })
+  it("with --answer-stdin, withdraws the paste question when the browser's callback comes first", async () => {
+    const { deps, stderr } = await setup()
+    setConfig(deps.configPath, "zoom.client_id", "example-client")
+    deps.tokens = manager()
+    deps.stdin = new PassThrough()
+    deps.openBrowser = async (url) => {
+      await fetch(callback(url, { code: "example-code" }))
+    }
+    expect(await run(["example", "session", "start", "--json", "--answer-stdin"], deps)).toBe(0)
+    expect(stderr.join("")).toContain('"event":"needs"')
   })
   it("delegates all configured file-source parts without changing the source port", async () => {
     const { deps } = await setup()
