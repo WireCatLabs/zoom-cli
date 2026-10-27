@@ -622,16 +622,16 @@ it("starts MCP without touching configuration or the meeting store and preserves
   deps.serveMcp = vi.fn(async ({ signal }) => {
     expect(signal?.aborted).toBe(false)
   })
-  expect(await run(["example", "mcp"], deps)).toBe(0)
+  expect(await run(["example", "mcp", "serve"], deps)).toBe(0)
   expect(deps.serveMcp).toHaveBeenCalledWith(expect.objectContaining({ profile: "example" }))
   expect(deps.connectStore).not.toHaveBeenCalled()
   expect(stdout).toEqual([])
   expect(stderr).toEqual([])
-  expect(await run(["example", "mcp", "--json"], deps)).toBe(2)
+  expect(await run(["example", "mcp", "serve", "--json"], deps)).toBe(2)
   expect(deps.serveMcp).toHaveBeenCalledOnce()
 })
 
-it("serves every profile from zm mcp with no profile, each call in that profile's own zm <profile> mcp", async () => {
+it("serves every profile from zm mcp serve with no profile, each call in that profile's own zm <profile> mcp serve", async () => {
   const { deps, stdout } = await setup()
   const { ZM_PROFILE: _named, ...env } = process.env
   deps.env = env
@@ -640,22 +640,22 @@ it("serves every profile from zm mcp with no profile, each call in that profile'
   deps.serveMcp = vi.fn(async () => {})
   deps.serveAllMcp = vi.fn(async () => {})
 
-  expect(await run(["mcp"], deps)).toBe(0)
+  expect(await run(["mcp", "serve"], deps)).toBe(0)
 
   expect(deps.serveMcp).not.toHaveBeenCalled()
   const options = vi.mocked(deps.serveAllMcp).mock.calls[0]?.[0]
   expect(options?.profiles()).toEqual(["personal", "work"])
-  expect(options?.child("work").args.slice(-2)).toEqual(["work", "mcp"])
+  expect(options?.child("work").args.slice(-3)).toEqual(["work", "mcp", "serve"])
   expect(options?.instructions).toContain('Every tool needs "profile"')
   expect(stdout).toEqual([])
 })
 
-it("says so when zm mcp has no profile to serve", async () => {
+it("says so when zm mcp serve has no profile to serve", async () => {
   const { deps, stderr } = await setup()
   const { ZM_PROFILE: _named, ...env } = process.env
   deps.env = env
   deps.serveAllMcp = vi.fn(async () => {})
-  expect(await run(["mcp"], deps)).not.toBe(0)
+  expect(await run(["mcp", "serve"], deps)).not.toBe(0)
   expect(stderr.join("")).toContain("no zm profile on this computer yet")
   expect(deps.serveAllMcp).not.toHaveBeenCalled()
 })

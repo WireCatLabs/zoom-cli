@@ -1,7 +1,7 @@
 import { realpathSync } from "node:fs"
 import { CliError } from "@wirecat/cli-base"
 import { annotate, customizeSharedCommand, describeProgram } from "@wirecat/cli-base/commands"
-import { changesAuthorityAt, FETCH, type RunOptions, sharedCommandTemplate } from "@wirecat/cli-core/cli"
+import { changesAuthorityAt, FETCH, LOCAL_READ, type RunOptions, sharedCommandTemplate } from "@wirecat/cli-core/cli"
 import type { AllProfilesOptions } from "@wirecat/cli-core/mcp"
 import type { Level } from "@wirecat/cli-core/sends"
 import type { Command } from "commander"
@@ -12,7 +12,7 @@ import { ZM } from "./read-only.js"
 
 export interface McpCommandDeps {
   profile: () => string
-  /** The profile named on the command line or in the environment; none means `zm mcp` serves every profile. */
+  /** The profile named on the command line or in the environment; none means `zm mcp serve` serves every profile. */
   named: () => string | undefined
   profiles: () => readonly string[]
   permissions: (profile: string) => Readonly<Record<string, Level>>
@@ -23,17 +23,25 @@ export interface McpCommandDeps {
 }
 
 /**
- * `zm <profile> mcp`: the shared three-tool MCP server over stdio, for the named profile (WC-CMD-5, WC-MCP-9). With no
- * profile, `zm mcp` serves every profile: each tool takes one, and runs in that profile's own `zm <profile> mcp`.
+ * `zm <profile> mcp serve`: the shared three-tool MCP server over stdio, for the named profile (WC-CMD-5, WC-MCP-9).
+ * With no profile, `zm mcp serve` serves every profile: each tool takes one, and runs in that profile's own
+ * `zm <profile> mcp serve`. Zoom has no HTTP server, so there are no browser logins for an `mcp revoke` to forget.
  */
 const addMcpCommandsDefinition = (program: Command, deps: McpCommandDeps): void => {
-  annotate(program.command("mcp"), {
+  const mcp = annotate(program.command("mcp"), { effects: LOCAL_READ, mcp: false })
+    .summary("serve zm's commands to an AI agent")
+    .description("serve zm's commands to an agent over MCP — `claude mcp add zm -- zm <profile> mcp serve`")
+  annotate(mcp.command("serve"), {
     effects: FETCH,
     lifetime: "persistent",
     mcp: false,
-    examples: ["zm personal mcp"],
+    examples: ["zm personal mcp serve"],
   })
-    .description("serve zm's commands to an agent over stdio; with no profile, every profile")
+    .summary("serve this profile's commands to an AI agent")
+    .description(
+      "serve this profile to an agent over MCP, on stdin and stdout — `claude mcp add zm -- zm <profile> mcp serve`; " +
+        "with no profile, `zm mcp serve` serves every profile and each tool asks which",
+    )
     .action(async () => {
       const opts = program.opts()
       if (opts.json || opts.jsonl)
@@ -56,7 +64,7 @@ const serveEveryProfile = async (deps: McpCommandDeps) => {
   if (deps.profiles().length === 0)
     throw new CliError(
       "validation_error",
-      "no zm profile on this computer yet — create one with `zm personal session start`, then run `zm mcp` again",
+      "no zm profile on this computer yet — create one with `zm personal session start`, then run `zm mcp serve` again",
     )
   const serveAll = deps.serveAll ?? (await import("@wirecat/cli-core/mcp")).serveAllProfilesOverStdio
   const script = realpathSync(process.argv[1] ?? "")
@@ -65,7 +73,7 @@ const serveEveryProfile = async (deps: McpCommandDeps) => {
     version: ZM.version,
     name: "Zoom",
     profiles: () => [...deps.profiles()],
-    child: (profile) => ({ command: process.execPath, args: [script, profile, "mcp"], env: process.env }),
+    child: (profile) => ({ command: process.execPath, args: [script, profile, "mcp", "serve"], env: process.env }),
     instructions:
       'Zoom accounts, one per profile. Every tool needs "profile" — ask if the owner named none, never guess. Find ' +
       "a command with zm_tools_search, then run it with zm_read or zm_write: { command, arguments }. Transcripts, " +

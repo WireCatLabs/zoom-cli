@@ -93,7 +93,7 @@ More: [the local archive][docs/archive.md] · [search and evidence][docs/search.
 
 - **Command line + skill.** `zm skill install` adds the packaged guide for Claude Code, Codex and
   Gemini CLI. Every command speaks `--json` or `--jsonl`, and `zm commands --json` describes them all.
-- **MCP.** `zm personal mcp` serves zm's commands to Claude Desktop, Cursor and other MCP clients, as
+- **MCP.** `zm personal mcp serve` serves zm's commands to Claude Desktop, Cursor and other MCP clients, as
   far as the profile's permissions allow.
   [Connecting a client][docs/mcp.md].
 
@@ -157,7 +157,7 @@ More: [compared with other tools](https://github.com/WireCatLabs/zoom-cli/blob/m
 | Zoom contacts | `contacts list [name:… email:… type:company\|external]`, `contacts show <member id\|email>` |
 | What zm did | `runs list [query]`, `runs show <run-id> [--problems]`, `runs path <run-id>`; `--record` keeps a successful run too |
 | Zoom's own search | `zoom search`: chat, docs and meetings zm does not archive, read live |
-| Agents | `mcp`, `skill show`, `skill install [--for claude\|agents\|all]`, `commands --json`, `complete -- <words...>` |
+| Agents | `mcp serve`, `skill show`, `skill install [--for claude\|agents\|all]`, `commands --json`, `complete -- <words...>` |
 
 Zoom meeting changes, links, transcription, schedules, explicit `meetings embeddings` generation and
 lock recovery preview by default and run once with `--yes`; `--dry-run` keeps the preview. Word search
@@ -272,7 +272,7 @@ More: [transcribe local audio][docs/archive.md#transcribe-local-audio] · [Zoom 
 with the profile it speaks for:
 
 ```json
-{ "mcpServers": { "zoom": { "command": "zm", "args": ["personal", "mcp"] } } }
+{ "mcpServers": { "zoom": { "command": "zm", "args": ["personal", "mcp", "serve"] } } }
 ```
 
 The server offers zm's commands as the three tools every WireCat CLI serves — `zm_tools_search`, `zm_read`,

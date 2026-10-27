@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Changed — may break callers
+
+- **The MCP server is now `zm <profile> mcp serve`; `zm mcp` only shows help (cli-core 0.463.0).** Every WireCat
+  CLI now names its server the same way. Update MCP client entries from `["personal", "mcp"]` to
+  `["personal", "mcp", "serve"]`, and `claude mcp add zm -- zm personal mcp serve`. With no profile, `zm mcp serve`
+  serves every profile, as `zm mcp` did. The MCP Registry entry and the Docker image start `zm mcp serve`. Zoom has
+  no HTTP server, so it has no `mcp revoke`.
+- **`zm skill show`, `skill status` and `skill install` answer `--json` as `{ item, meta }` (cli-core 0.462.0).**
+  What was the whole answer is now under `item`, like every other single-thing answer.
+- **The shared store moves to version 35 (cli-core 0.463.0).** The first `zm` command after the upgrade adds a
+  column for calendar series. Other WireCat CLIs that open the same store then need a version that speaks it; `zm`
+  says so once and names `<cli> upgrade`.
+
 ## 0.55.0 — 27.10.2026
 
 ### Added
