@@ -126,6 +126,18 @@ export const SHELL_OVERRIDES: Readonly<{
     },
     {
       command: ["mcp", "serve"],
+      field: "description",
+      before:
+        "serve this profile to an agent over MCP, on stdin and stdout — `claude mcp add zm -- zm <profile> mcp serve`; " +
+        "with no profile, `zm mcp serve` serves every profile and each tool asks which",
+      after:
+        "serve this profile to an agent over MCP, on stdin and stdout — `claude mcp add zm -- zm <profile> mcp serve`; " +
+        "`--profiles a,b` or `--profiles all` serves several from one server and each tool asks which",
+      reason:
+        "Zoom serves meeting and archive commands over stdio under its selected profile; HTTP-specific options are unsupported.",
+    },
+    {
+      command: ["mcp", "serve"],
       field: "effects",
       before: {
         remote: "write",
@@ -178,7 +190,15 @@ export const SHELL_OVERRIDES: Readonly<{
           mandatory: false,
         },
       ],
-      after: [],
+      after: [
+        {
+          flags: "--profiles <names|all>",
+          description:
+            "serve several profiles from one server instead of one: names, comma-separated, or all for every profile",
+          takes_value: true,
+          mandatory: false,
+        },
+      ],
       reason:
         "Zoom serves meeting and archive commands over stdio under its selected profile; HTTP-specific options are unsupported.",
     },

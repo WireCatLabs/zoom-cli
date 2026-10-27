@@ -3,6 +3,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { CliError, memoryKeyring } from "@wirecat/cli-base"
 import { snakeKeys } from "@wirecat/cli-core/cli"
+import type { AllProfilesOptions } from "@wirecat/cli-core/mcp"
 import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { describe, expect, it, vi } from "vitest"
 import { readAnswer, readJsonlPage } from "../scripts/testing/answers.js"
@@ -631,23 +632,57 @@ it("starts MCP without touching configuration or the meeting store and preserves
   expect(deps.serveMcp).toHaveBeenCalledOnce()
 })
 
-it("serves every profile from zm mcp serve with no profile, each call in that profile's own zm <profile> mcp serve", async () => {
-  const { deps, stdout } = await setup()
-  const { ZM_PROFILE: _named, ...env } = process.env
-  deps.env = env
-  addProfile(deps.configPath, "work")
-  addProfile(deps.configPath, "personal")
-  deps.serveMcp = vi.fn(async () => {})
-  deps.serveAllMcp = vi.fn(async () => {})
+const twoProfiles = async () => {
+  const context = await setup()
+  const { ZM_PROFILE: _named, ZM_PROFILE_LOCK: _lock, ...env } = process.env
+  context.deps.env = env
+  addProfile(context.deps.configPath, "work")
+  addProfile(context.deps.configPath, "personal")
+  const serveAll = vi.fn(async (_options: AllProfilesOptions) => {})
+  context.deps.serveMcp = vi.fn(async () => {})
+  context.deps.serveAllMcp = serveAll
+  return { ...context, serveAll }
+}
 
-  expect(await run(["mcp", "serve"], deps)).toBe(0)
+it("serves the profiles --profiles names from one server, each call in that profile's own zm <profile> mcp serve", async () => {
+  const { deps, stdout, serveAll } = await twoProfiles()
+
+  expect(await run(["mcp", "serve", "--profiles", "all"], deps)).toBe(0)
+  expect(await run(["mcp", "serve", "--profiles", "work"], deps)).toBe(0)
+  expect(await run(["mcp", "serve", "--profiles", "work,personal"], deps)).toBe(0)
 
   expect(deps.serveMcp).not.toHaveBeenCalled()
-  const options = vi.mocked(deps.serveAllMcp).mock.calls[0]?.[0]
-  expect(options?.profiles()).toEqual(["personal", "work"])
+  const served = serveAll.mock.calls.map(([options]) => options.profiles())
+  expect(served).toEqual([["personal", "work"], ["work"], ["personal", "work"]])
+  const options = serveAll.mock.calls[0]?.[0]
   expect(options?.child("work").args.slice(-3)).toEqual(["work", "mcp", "serve"])
   expect(options?.instructions).toContain('Every tool needs "profile"')
   expect(stdout).toEqual([])
+})
+
+it("refuses zm mcp serve that names no profile, both a profile and --profiles, or an unknown one", async () => {
+  const { deps, stderr } = await twoProfiles()
+
+  expect(await run(["mcp", "serve"], deps)).toBe(2)
+  expect(stderr.join("")).toContain("profiles here: personal, work")
+  expect(await run(["work", "mcp", "serve", "--profiles", "all"], deps)).toBe(2)
+  expect(stderr.join("")).toContain("not both")
+  expect(await run(["mcp", "serve", "--profiles", "work,nobody"], deps)).toBe(2)
+  expect(stderr.join("")).toContain('no profile named \\"nobody')
+  expect(await run(["mcp", "serve", "--profiles", "all,work"], deps)).toBe(2)
+
+  expect(deps.serveAllMcp).not.toHaveBeenCalled()
+  expect(deps.serveMcp).not.toHaveBeenCalled()
+})
+
+it("lets --profiles name only the locked profile under ZM_PROFILE_LOCK", async () => {
+  const { deps, serveAll } = await twoProfiles()
+  deps.env = { ...deps.env, ZM_PROFILE_LOCK: "work" }
+
+  expect(await run(["mcp", "serve", "--profiles", "all"], deps)).toBe(5)
+  expect(await run(["mcp", "serve", "--profiles", "work"], deps)).toBe(0)
+
+  expect(serveAll.mock.calls.map(([options]) => options.profiles())).toEqual([["work"]])
 })
 
 it("says so when zm mcp serve has no profile to serve", async () => {
@@ -655,7 +690,7 @@ it("says so when zm mcp serve has no profile to serve", async () => {
   const { ZM_PROFILE: _named, ...env } = process.env
   deps.env = env
   deps.serveAllMcp = vi.fn(async () => {})
-  expect(await run(["mcp", "serve"], deps)).not.toBe(0)
+  expect(await run(["mcp", "serve", "--profiles", "all"], deps)).toBe(2)
   expect(stderr.join("")).toContain("no zm profile on this computer yet")
   expect(deps.serveAllMcp).not.toHaveBeenCalled()
 })

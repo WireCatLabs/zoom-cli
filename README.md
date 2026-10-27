@@ -94,7 +94,7 @@ More: [the local archive][docs/archive.md] · [search and evidence][docs/search.
 - **Command line + skill.** `zm skill install` adds the packaged guide for Claude Code, Codex and
   Gemini CLI. Every command speaks `--json` or `--jsonl`, and `zm commands --json` describes them all.
 - **MCP.** `zm personal mcp serve` serves zm's commands to Claude Desktop, Cursor and other MCP clients, as
-  far as the profile's permissions allow.
+  far as the profile's permissions allow; `zm mcp serve --profiles all` serves every profile from one server.
   [Connecting a client][docs/mcp.md].
 
 Your agent. Your meetings. Your rules.

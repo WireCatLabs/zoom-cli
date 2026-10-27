@@ -64,6 +64,26 @@ server does not start, use the full path from `command -v zm` on Linux/macOS or 
 command. If you set `ZM_CONFIG_DIR` or `MESSAGING_STORE`, pass the same values in the entry's `env`, or the server
 reads a different profile or database. Keep stdout for protocol messages; omit `--json` and `--jsonl`.
 
+### Several profiles from one server
+
+`zm mcp serve --profiles work,personal` serves the profiles it names from one server, and `zm mcp serve --profiles
+all` serves every profile here, so an AI app needs one Zoom entry, not one per profile. Each tool then takes a
+required `profile`, and the agent is told to ask when you named none. A call runs in that profile's own
+`zm <profile> mcp serve`, with that profile's permissions. The server names the profiles it serves on stderr when it
+starts.
+
+A server always names what it serves: `zm mcp serve` with no profile and no `--profiles` stops and lists the
+profiles here, and so do a profile together with `--profiles` and a name that is not a profile here. Under
+`ZM_PROFILE_LOCK`, `--profiles` may name only the locked profile.
+
+```json
+{
+  "mcpServers": {
+    "zoom": { "command": "zm", "args": ["mcp", "serve", "--profiles", "all"] }
+  }
+}
+```
+
 ## Try the connection
 
 After installing the skill, start a new agent session if it has not discovered the instructions.

@@ -438,6 +438,7 @@ export const bindZoomProgram = (
     profile,
     named,
     profiles: () => getConfig().profiles,
+    env: () => deps.env ?? process.env,
     permissions: (name) =>
       discoveryLevels(
         readConfig(deps.configPath, permissionKeys(program)).permissions[name] ?? {},
