@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **Meaning search runs on the native ONNX Runtime on Windows too (cli-core 0.451.0).** After `zm models
+  download`, text models and the reranker use the native library on Windows x64 and arm64, as they already did on
+  Linux and macOS: 2–3× faster than WebAssembly. The download takes `onnxruntime.dll` from the `onnxruntime-node` npm
+  package (113.5 MB, once, checked by sha256). Results are the same.
+
 ## 0.53.0 — 27.10.2026
 
 ### Added
