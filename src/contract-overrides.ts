@@ -128,8 +128,7 @@ export const SHELL_OVERRIDES: Readonly<{
       field: "description",
       before:
         "serve this profile to an agent over MCP, on stdin and stdout — `claude mcp add zm -- zm <profile> mcp`; with no profile, `zm mcp` serves every profile and each tool asks which",
-      after:
-        "serve zm's commands to an MCP agent over stdio, as the named profile allows them; with no profile, every profile",
+      after: "serve zm's commands to an agent over stdio; with no profile, every profile",
       reason:
         "Zoom serves meeting and archive commands over stdio under its selected profile; HTTP-specific options are unsupported.",
     },

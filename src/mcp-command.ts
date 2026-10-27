@@ -33,9 +33,7 @@ const addMcpCommandsDefinition = (program: Command, deps: McpCommandDeps): void 
     mcp: false,
     examples: ["zm personal mcp"],
   })
-    .description(
-      "serve zm's commands to an MCP agent over stdio, as the named profile allows them; with no profile, every profile",
-    )
+    .description("serve zm's commands to an agent over stdio; with no profile, every profile")
     .action(async () => {
       const opts = program.opts()
       if (opts.json || opts.jsonl)
