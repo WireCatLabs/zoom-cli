@@ -33,6 +33,8 @@ export interface ZoomConfig {
   /** Keep every run, not only the failed ones. */
   record?: boolean
   keepRunsForDays?: number
+  keepSuccessfulRunsForDays?: number
+  runsSizeLimitMb?: number
 }
 
 const ProfileEntry = v.strictObject({
@@ -74,6 +76,8 @@ const ConfigFile = v.strictObject({
   context_sources: v.optional(contextSourcesSchema),
   record: v.optional(v.boolean()),
   keep_runs_for_days: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
+  keep_successful_runs_for_days: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
+  runs_size_limit_mb: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
 })
 
 const DOCTOR = "zm doctor"
@@ -101,6 +105,10 @@ const configOf = (file: v.InferOutput<typeof ConfigFile>): ZoomConfig => ({
   ...(file.context_sources === undefined ? {} : { contextSources: file.context_sources }),
   ...(file.record === undefined ? {} : { record: file.record }),
   ...(file.keep_runs_for_days === undefined ? {} : { keepRunsForDays: file.keep_runs_for_days }),
+  ...(file.keep_successful_runs_for_days === undefined
+    ? {}
+    : { keepSuccessfulRunsForDays: file.keep_successful_runs_for_days }),
+  ...(file.runs_size_limit_mb === undefined ? {} : { runsSizeLimitMb: file.runs_size_limit_mb }),
 })
 
 /**
@@ -213,6 +221,19 @@ export const setConfig = (
         if (!/^[1-9]\d{0,4}$/.test(value))
           throw new CliError("validation_error", "keep_runs_for_days must be a whole number of days, 1 or more")
         raw.keep_runs_for_days = Number(value)
+        return
+      case "keep_successful_runs_for_days":
+        if (!/^[1-9]\d{0,4}$/.test(value))
+          throw new CliError(
+            "validation_error",
+            "keep_successful_runs_for_days must be a whole number of days, 1 or more",
+          )
+        raw.keep_successful_runs_for_days = Number(value)
+        return
+      case "runs_size_limit_mb":
+        if (!/^[1-9]\d{0,5}$/.test(value))
+          throw new CliError("validation_error", "runs_size_limit_mb must be a whole number of megabytes, 1 or more")
+        raw.runs_size_limit_mb = Number(value)
         return
       default:
         throw new CliError("validation_error", "unknown config key")
