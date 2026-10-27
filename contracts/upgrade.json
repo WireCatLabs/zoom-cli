@@ -121,7 +121,7 @@
       "args": ["contract", "meetings", "list", "--json"],
       "exit": 0,
       "stream": "stdout",
-      "diagnostic": "the store moved to schema 34; every other WireCat CLI that uses it needs a version that speaks it \u2014 run `<cli> upgrade` for each\n",
+      "diagnostic": "the store moved to schema 35; every other WireCat CLI that uses it needs a version that speaks it \u2014 run `<cli> upgrade` for each\n",
       "kind": "json",
       "json": {
         "items": [

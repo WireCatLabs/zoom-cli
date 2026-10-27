@@ -22,6 +22,10 @@
         {
           "type": "positional",
           "value": "mcp"
+        },
+        {
+          "type": "positional",
+          "value": "serve"
         }
       ]
     }

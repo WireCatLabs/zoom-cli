@@ -368,14 +368,14 @@ it("rescans real downloaded files so corrections replace current search while pr
 
 it("publishes usable mcp/login discovery examples and lifetimes", async () => {
   const { deps, output } = await setup()
-  expect(await run(["commands", "mcp", "--json"], deps)).toBe(0)
-  expect(JSON.parse(output.at(-1) ?? "{}").commands[0].examples).toEqual(["zm personal mcp"])
+  expect(await run(["commands", "mcp", "serve", "--json"], deps)).toBe(0)
+  expect(JSON.parse(output.at(-1) ?? "{}").commands[0].examples).toEqual(["zm personal mcp serve"])
   expect(await run(["commands", "session", "start", "--json"], deps)).toBe(0)
   expect(JSON.parse(output.at(-1) ?? "{}").commands[0].examples).toEqual(["zm personal session start"])
   expect(JSON.parse(output.at(-1) ?? "{}").commands[0].lifetime).toBe("interactive")
   expect(await run(["commands", "watch", "--json"], deps)).toBe(0)
   expect(JSON.parse(output.at(-1) ?? "{}").commands[0].lifetime).toBe("persistent")
-  expect(await run(["commands", "mcp", "--json"], deps)).toBe(0)
+  expect(await run(["commands", "mcp", "serve", "--json"], deps)).toBe(0)
   expect(JSON.parse(output.at(-1) ?? "{}").commands[0].lifetime).toBe("persistent")
 })
 

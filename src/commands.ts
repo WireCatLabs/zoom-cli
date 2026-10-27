@@ -136,7 +136,7 @@ export const zoomRunsCommand = (): Command => {
 }
 const exampleFor = (path: string): string => {
   const profile = PROFILE_FREE.has(path.split(" ")[0] ?? "") ? "" : "personal "
-  if (path === "mcp") return "zm personal mcp"
+  if (path === "mcp serve") return "zm personal mcp serve"
   if (path === "session start") return "zm personal session start"
   const argumentsByPath: Record<string, string> = {
     "commands info": "meetings list",

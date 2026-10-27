@@ -50,7 +50,7 @@ export const ZOOM_FIRST_SCREEN = {
     { command: "meetings prepare <series-id>", does: "a briefing with sources before a meeting" },
     { command: "meetings transcribe <meeting> <file>", does: "a recording turned into text on this machine" },
     { command: "recordings schedule create …", does: "a daily, checked archive of cloud recordings" },
-    { command: "mcp", does: "commands for an MCP agent, limited by the profile’s permissions" },
+    { command: "mcp serve", does: "commands for an MCP agent, limited by the profile’s permissions" },
     {
       command: "ZM_READ_ONLY=1 zm …",
       does: "blocks changes to Zoom, login, settings, files and the store; syncs run",

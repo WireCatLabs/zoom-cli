@@ -118,22 +118,29 @@ export const SHELL_OVERRIDES: Readonly<{
     {
       command: ["mcp"],
       field: "summary",
-      before: "serve this profile's commands to an AI agent",
-      after: null,
+      before: "serve this profile's commands to an AI agent, and set that up",
+      after: "serve zm's commands to an AI agent",
       reason:
         "Zoom serves meeting and archive commands over stdio under its selected profile; HTTP-specific options are unsupported.",
     },
     {
       command: ["mcp"],
       field: "description",
-      before:
-        "serve this profile to an agent over MCP, on stdin and stdout — `claude mcp add zm -- zm <profile> mcp`; with no profile, `zm mcp` serves every profile and each tool asks which",
-      after: "serve zm's commands to an agent over stdio; with no profile, every profile",
+      before: "serve this profile to an agent over MCP and set it up — `claude mcp add zm -- zm <profile> mcp serve`",
+      after: "serve zm's commands to an agent over MCP — `claude mcp add zm -- zm <profile> mcp serve`",
       reason:
         "Zoom serves meeting and archive commands over stdio under its selected profile; HTTP-specific options are unsupported.",
     },
     {
       command: ["mcp"],
+      field: "children",
+      before: ["serve", "revoke", "server", "config", "add", "check"],
+      after: ["serve"],
+      reason:
+        "Zoom serves meeting and archive commands over stdio under its selected profile; HTTP-specific options are unsupported.",
+    },
+    {
+      command: ["mcp", "serve"],
       field: "effects",
       before: {
         remote: "write",
@@ -147,15 +154,15 @@ export const SHELL_OVERRIDES: Readonly<{
         "Zoom serves meeting and archive commands over stdio under its selected profile; HTTP-specific options are unsupported.",
     },
     {
-      command: ["mcp"],
-      field: "runnable",
-      before: true,
-      after: null,
+      command: ["mcp", "serve"],
+      field: "examples",
+      before: ["zm personal mcp serve", "zm personal mcp serve --http --public-url https://laptop.example.ts.net"],
+      after: ["zm personal mcp serve"],
       reason:
         "Zoom serves meeting and archive commands over stdio under its selected profile; HTTP-specific options are unsupported.",
     },
     {
-      command: ["mcp"],
+      command: ["mcp", "serve"],
       field: "options",
       before: [
         {
@@ -185,30 +192,8 @@ export const SHELL_OVERRIDES: Readonly<{
           takes_value: true,
           mandatory: false,
         },
-        {
-          flags: "--revoke",
-          description: "forget every login given to a browser app; each must log in again",
-          takes_value: false,
-          mandatory: false,
-        },
       ],
       after: [],
-      reason:
-        "Zoom serves meeting and archive commands over stdio under its selected profile; HTTP-specific options are unsupported.",
-    },
-    {
-      command: ["mcp"],
-      field: "children",
-      before: ["server", "config", "add", "check"],
-      after: [],
-      reason:
-        "Zoom serves meeting and archive commands over stdio under its selected profile; HTTP-specific options are unsupported.",
-    },
-    {
-      command: ["mcp"],
-      field: "examples",
-      before: null,
-      after: ["zm personal mcp"],
       reason:
         "Zoom serves meeting and archive commands over stdio under its selected profile; HTTP-specific options are unsupported.",
     },
@@ -253,7 +238,7 @@ export const SHELL_OVERRIDES: Readonly<{
     {
       command: ["search", "all"],
       field: "summary",
-      before: "search stored messages, notes and selected meeting transcripts",
+      before: "search stored messages, notes, calendar events and selected meeting transcripts",
       after: null,
       reason:
         "Zoom searches explicit local meeting and archive sources, with opt-in unified store reads rather than a live messenger backend.",
@@ -262,7 +247,7 @@ export const SHELL_OVERRIDES: Readonly<{
       command: ["search", "all"],
       field: "description",
       before:
-        "search messenger messages and notes in the local store, and a meeting account's transcripts when --source names one — best match first; not mail (the separate memo CLI searches it: memo search mail), tasks, people, memories or projects. Use it when you do not know where something was written; search messages or notes reads one kind with all its fields",
+        "search messenger messages and notes in the local store, calendar events when the store holds a calendar, and a meeting account's transcripts when --source names one — best match first; not mail (the separate memo CLI searches it: memo search mail), tasks, people, memories or projects. Use it when you do not know where something was written; search messages or notes reads one kind with all its fields",
       after: "search meetings and, with --only, messages, mail and notes in the local store",
       reason:
         "Zoom searches explicit local meeting and archive sources, with opt-in unified store reads rather than a live messenger backend.",
@@ -318,7 +303,7 @@ export const SHELL_OVERRIDES: Readonly<{
         {
           flags: "--only <resources>",
           description:
-            "only these resources, separated by commas: messages, notes; meetings when --source names a meeting account",
+            "only these resources, separated by commas: messages, notes, events; meetings when --source names a meeting account",
           takes_value: true,
           mandatory: false,
         },

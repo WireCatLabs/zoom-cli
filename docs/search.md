@@ -198,7 +198,7 @@ fingerprints; Markdown quotes transcript content as text. Use
 `--json=items.ref,items.start_ms,items.speaker_name,items.text` for compact structured cues.
 Coverage and continuation remain available; field selection does not reduce the stored read.
 
-Over MCP (`zm personal mcp`) an agent runs the same `meetings passage` through `zm_read`, with the same
+Over MCP (`zm personal mcp serve`) an agent runs the same `meetings passage` through `zm_read`, with the same
 arguments; the profile is fixed by the server. Ask the agent to quote
 and cite the surrounding passage before suggesting a fact or follow-up task.
 
