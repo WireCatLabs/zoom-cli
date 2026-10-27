@@ -105,7 +105,10 @@ export class TokenManager {
       }
     } catch (error) {
       if (isCliError(error) && error.code === "configuration_error") throw error
-      throw new CliError("authentication_error", "saved login is invalid; run zm <profile> session start again")
+      throw new CliError(
+        "authentication_error",
+        "saved login is invalid; run zm <profile> session start again, or sign in from WireCat Desktop (Tools → Zoom → Manage)",
+      )
     }
   }
   save(tokens: Tokens, account = this.accountOf()): void {
@@ -206,7 +209,11 @@ export class TokenManager {
     const clientId = this.options.clientId
     const account = this.options.account ?? clientId
     const saved = this.load(account)
-    if (!saved) throw new CliError("authentication_error", "run zm <profile> session start first")
+    if (!saved)
+      throw new CliError(
+        "authentication_error",
+        "run zm <profile> session start first, or sign in from WireCat Desktop (Tools → Zoom → Manage)",
+      )
     if (saved.expiresAt > (this.options.now?.() ?? Date.now()) + 30000) return saved
     let refreshing = this.refreshState.get(account)
     if (!refreshing) {

@@ -72,7 +72,10 @@ export class ZoomMcp {
     const text = await response.text()
     const message = parseMessage(text, response.headers.get("content-type"), id)
     if (response.status === 401)
-      throw new CliError("authentication_error", "Zoom refused the login; run zm <profile> session start again")
+      throw new CliError(
+        "authentication_error",
+        "Zoom refused the login; run zm <profile> session start again, or sign in from WireCat Desktop (Tools → Zoom → Manage)",
+      )
     // Zoom answers a missing scope with 403 and JSON-RPC error -32003 naming the scopes it wants.
     if (response.status === 403 && record(message?.error) && message.error.code === -32003)
       throw new CliError(
