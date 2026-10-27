@@ -164,3 +164,11 @@ A pull request that changes only `CHANGELOG.md` and the version in `package.json
 passed, saying why ([`scripts/ci-unchanged.sh`](../../scripts/ci-unchanged.sh),
 [`scripts/ci-fingerprint.sh`](../../scripts/ci-fingerprint.sh)). The push to `main` that follows runs the full
 validation.
+
+## The bundle a user installs
+
+`pnpm build` compiles `src/` with `tsc`, then cli-base's `cli-dev bundle`
+([WC-LAY-10](https://github.com/WireCatLabs/cli-base/blob/main/docs/standards/layout.md))
+bundles `dist/bin/zm.js` into `dist/bundle/` and makes the bin a loader. The vitest suite runs
+against `src/`, so `scripts/smoke-bundle.ts` is the proof the bundle works: `pnpm smoke:node` runs it
+under Node and `pnpm smoke:bun` under Bun, both in CI.
