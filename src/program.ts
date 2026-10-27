@@ -1,5 +1,6 @@
 import { CliError, type SleepLike } from "@wirecat/cli-base"
 import { type BaseEnvironment, createProgram as sharedProgram } from "@wirecat/cli-core/cli"
+import type { AllProfilesOptions } from "@wirecat/cli-core/mcp"
 import type { MeetingSource, MeetingStore } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
 import type {
@@ -54,6 +55,7 @@ export interface ProgramDeps {
   signal?: AbortSignal
   sleep?: SleepLike
   serveMcp?: (options: ZoomMcpOptions) => Promise<void>
+  serveAllMcp?: (options: AllProfilesOptions) => Promise<void>
   streamData?: (text: string, signal: AbortSignal) => Promise<void>
 }
 export const run = runCommand

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Added
+
+- **`zm mcp` with no profile serves every profile over stdio (cli-core 0.450.0).** An AI app needs one connector for
+  Zoom, not one per profile. Each tool takes a required `profile` (every profile here, no default) and the agent is
+  told to ask when you did not name the account; the call runs in that profile's own `zm <profile> mcp`, with its own
+  permissions. `zm <profile> mcp` is unchanged. The MCP Registry entry starts `zm mcp` with no profile.
+
 ### Fixed
 
 - **Every command spends less time getting ready (cli-base 0.62.0, cli-core 0.449.0).** The check of shared commands now

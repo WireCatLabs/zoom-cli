@@ -1436,7 +1436,7 @@ zm skill status
 
 ## `zm mcp`
 
-serve zm's commands to an MCP agent over stdio, as the named profile allows them
+serve zm's commands to an MCP agent over stdio, as the named profile allows them; with no profile, every profile
 
 **Changes local data.**
 
@@ -1444,7 +1444,7 @@ serve zm's commands to an MCP agent over stdio, as the named profile allows them
 zm mcp
 ```
 
-**Returns:** serve zm's commands to an MCP agent over stdio, as the named profile allows them
+**Returns:** serve zm's commands to an MCP agent over stdio, as the named profile allows them; with no…
 
 **Example:** `zm personal mcp`
 
