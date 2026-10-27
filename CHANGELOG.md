@@ -4,16 +4,49 @@
 
 ### Changed — may break callers
 
+- **cli-core 0.467.0 and cli-base 0.64.0.** cli-core accepts only cli-base 0.64, so both pins move together.
+- **Every search hit marks the text someone else wrote (cli-core 0.464.0).** `zm search all`, `search meetings` and
+  a project's meeting evidence carry `untrusted` on each hit (`["title", "excerpt"]`, a message or mail hit also
+  `sender_name`), so an agent reads that text as data. A caller that checks hits against an older, strict copy of
+  their shape refuses the new field.
 - **The MCP server is now `zm <profile> mcp serve`; `zm mcp` only shows help (cli-core 0.463.0).** Every WireCat
   CLI now names its server the same way. Update MCP client entries from `["personal", "mcp"]` to
   `["personal", "mcp", "serve"]`, and `claude mcp add zm -- zm personal mcp serve`. With no profile, `zm mcp serve`
   serves every profile, as `zm mcp` did. The MCP Registry entry and the Docker image start `zm mcp serve`. Zoom has
   no HTTP server, so it has no `mcp revoke`.
-- **`zm skill show`, `skill status` and `skill install` answer `--json` as `{ item, meta }` (cli-core 0.462.0).**
-  What was the whole answer is now under `item`, like every other single-thing answer.
 - **The shared store moves to version 35 (cli-core 0.463.0).** The first `zm` command after the upgrade adds a
   column for calendar series. Other WireCat CLIs that open the same store then need a version that speaks it; `zm`
   says so once and names `<cli> upgrade`.
+- **Every run is now kept, successes too (cli-core record-every-run).** Before, only failed runs were kept unless
+  `--record` or `record true`. A successful run stays 7 days (`keep_successful_runs_for_days`), a failed one 30
+  (`keep_runs_for_days`), and the run log stays under `runs_size_limit_mb` (200 MB; the oldest successes go first).
+  `record false` now keeps failed runs (before: nothing); `--no-record` still keeps nothing. `zm watch` and `zm mcp
+  serve` keep a success only under `--record`. A kept run holds the words you typed (a meeting id, a search), in a
+  local file only you can read; `zm config set record_input failed` keeps them only in a failed run, `false` masks
+  them everywhere.
+- **Re-run `zm mcp add` or `zm mcp config`** after this upgrade, so your AI app starts `zm mcp serve`.
+- **`zm skill show`, `skill status` and `skill install` answer `--json` as `{ item, meta }` (cli-core 0.462.0).**
+  What was the whole answer is now under `item`, like every other single-thing answer.
+- **Over MCP, `--resume`/`--no-resume` is one boolean (cli-core 0.459.0).** An agent sends `resume: false`;
+  `no_resume` is refused as an unknown argument.
+- **`zm search all` reads calendar events too (cli-core 0.453.0, 0.460.0)** when gcal stored them in the shared
+  store: hits of kind `event` with an `event:<id>` reference and `untrusted: ["title", "excerpt"]`, `--only events`,
+  and `events` in `searched`. A store with no calendar answers as before.
+- **A run says who asked for it (cli-core).** `run.json` gains `via` (`cli`, `mcp-stdio`, `mcp-http`, `desktop`),
+  `mcp` (tool, request and connection ids) and `agent.client` (the AI app's name and version). A reader that checks
+  a run against an older copy of its shape refuses the new fields.
+
+### Added
+
+- **Each Zoom request in a run says its attempt and the wait before a retry.** A request line now carries the method,
+  the path with every id as `:id`, `transport: "http"`, `attempt` (2 and up for a retry) and `wait_ms`, the
+  Retry-After or backoff waited first; a recording download tried again counts its attempts too. A refused answer
+  names Zoom's error code (`zoom.429`, `zoom.3001`), read from an error body of 4 KB at most, never its message. A
+  429 shows as an error answer, then the retry. Never the URL as sent, its query, or any other part of a body.
+- **`zm config set keep_successful_runs_for_days <days>`, `runs_size_limit_mb <MB>` and `record_input
+  true|false|failed`.**
+- **`zm upgrade` names the MCP sessions still on the old version** (cli-core): after an install it lists this
+  install's `zm mcp serve` processes as `stale_sessions` and says to restart them from your AI app.
 
 ## 0.55.0 — 27.10.2026
 

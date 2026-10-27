@@ -106,7 +106,7 @@ describe("token refresh log", () => {
     return { runsDir, run: lazyRunLog({ runsDir, command: "oauth token", version: "0.0.0", allow: TOKEN_LOG_ALLOW }) }
   }
   const events = async (runsDir: string) => {
-    const [day] = await readdir(runsDir)
+    const [day] = (await readdir(runsDir)).filter((name) => !name.startsWith("."))
     const [id] = (await readdir(join(runsDir, day ?? ""))).filter((name) => name !== "index.jsonl")
     const text = await readFile(join(runsDir, day ?? "", id ?? "", "events.jsonl"), "utf8")
     return {

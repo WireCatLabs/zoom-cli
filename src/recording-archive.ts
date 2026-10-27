@@ -2,6 +2,7 @@ import { lstat, mkdir, realpath, unlink } from "node:fs/promises"
 import { join } from "node:path"
 import { CliError, isCliError } from "@wirecat/cli-base"
 import { retryableStatus, statusToCode } from "@wirecat/cli-base/http"
+import { withAttempt } from "@wirecat/cli-core/cli"
 import type { WriterLease } from "@wirecat/cli-core/files"
 import { type RecordingTransferSource, transferRecording } from "@wirecat/cli-core/meetings"
 import { checkCancelled } from "./errors.js"
@@ -262,12 +263,18 @@ export const archiveRecording = async (
       const temp = storage.path
       const tokens = await remote.tokens.tokens()
       let entry: ArchivedFile | undefined
+      let waitMs: number | undefined
+      const { id, format } = asset
       for (let attempt = 0; ; attempt++) {
         try {
-          const transferred = await transferRecording(
-            transferSource(remote, urls.get(asset.id) ?? "", tokens.accessToken, asset.format, signal),
-            storage,
-            { locator, maxBytes, expectedSize: asset.size, signal },
+          const transferred = await withAttempt(
+            { attempt: attempt + 1, ...(waitMs === undefined ? {} : { waitMs }) },
+            () =>
+              transferRecording(
+                transferSource(remote, urls.get(id) ?? "", tokens.accessToken, format, signal),
+                storage,
+                { locator, maxBytes, expectedSize: asset.size, signal },
+              ),
           )
           entry = { ...metadata, size: transferred.size, sha256: transferred.sha256 }
           if (asset.size !== null && entry.size !== asset.size)
@@ -289,12 +296,11 @@ export const archiveRecording = async (
             error instanceof DownloadFailure
               ? retryableStatus(error.response.status)
               : isCliError(error) && error.code === "network_error"
-          if (
-            attempt >= 2 ||
-            !retryable ||
-            !(await remote.pause(error instanceof DownloadFailure ? error.response : null, attempt, signal))
-          )
+          if (attempt >= 2 || !retryable) throw error
+          const paused = performance.now()
+          if (!(await remote.pause(error instanceof DownloadFailure ? error.response : null, attempt, signal)))
             throw error
+          waitMs = Math.round(performance.now() - paused)
         }
       }
       if (!entry) throw new CliError("invalid_response", "recording transfer did not produce a verified receipt")
