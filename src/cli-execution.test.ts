@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from "vitest"
 import { readAnswer, readJsonlPage } from "../scripts/testing/answers.js"
 import { fakeConnection } from "../scripts/testing/connection.js"
 import { useProfile } from "../scripts/testing/profile.js"
-import { profileAccountKey, readConfig, setConfig } from "./config.js"
+import { addProfile, profileAccountKey, readConfig, setConfig } from "./config.js"
 import { writeExportFile } from "./output-file.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
@@ -629,6 +629,35 @@ it("starts MCP without touching configuration or the meeting store and preserves
   expect(stderr).toEqual([])
   expect(await run(["example", "mcp", "--json"], deps)).toBe(2)
   expect(deps.serveMcp).toHaveBeenCalledOnce()
+})
+
+it("serves every profile from zm mcp with no profile, each call in that profile's own zm <profile> mcp", async () => {
+  const { deps, stdout } = await setup()
+  const { ZM_PROFILE: _named, ...env } = process.env
+  deps.env = env
+  addProfile(deps.configPath, "work")
+  addProfile(deps.configPath, "personal")
+  deps.serveMcp = vi.fn(async () => {})
+  deps.serveAllMcp = vi.fn(async () => {})
+
+  expect(await run(["mcp"], deps)).toBe(0)
+
+  expect(deps.serveMcp).not.toHaveBeenCalled()
+  const options = vi.mocked(deps.serveAllMcp).mock.calls[0]?.[0]
+  expect(options?.profiles()).toEqual(["personal", "work"])
+  expect(options?.child("work").args.slice(-2)).toEqual(["work", "mcp"])
+  expect(options?.instructions).toContain('Every tool needs "profile"')
+  expect(stdout).toEqual([])
+})
+
+it("says so when zm mcp has no profile to serve", async () => {
+  const { deps, stderr } = await setup()
+  const { ZM_PROFILE: _named, ...env } = process.env
+  deps.env = env
+  deps.serveAllMcp = vi.fn(async () => {})
+  expect(await run(["mcp"], deps)).not.toBe(0)
+  expect(stderr.join("")).toContain("no zm profile on this computer yet")
+  expect(deps.serveAllMcp).not.toHaveBeenCalled()
 })
 
 it("classifies dispatched token failures as uncertain while preflight cancellation never dispatches", async () => {

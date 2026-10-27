@@ -436,6 +436,8 @@ export const bindZoomProgram = (
   })
   addMcpCommands(program, {
     profile,
+    named,
+    profiles: () => getConfig().profiles,
     permissions: (name) =>
       discoveryLevels(
         readConfig(deps.configPath, permissionKeys(program)).permissions[name] ?? {},
@@ -444,6 +446,7 @@ export const bindZoomProgram = (
     run: (argv, environment) => runForAgent(execute, argv, given, environment),
     signal,
     serve: deps.serveMcp,
+    ...(deps.serveAllMcp ? { serveAll: deps.serveAllMcp } : {}),
   })
   addStoreCommands(program, {
     deps,

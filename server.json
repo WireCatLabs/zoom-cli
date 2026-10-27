@@ -21,12 +21,6 @@
       "packageArguments": [
         {
           "type": "positional",
-          "valueHint": "profile",
-          "description": "The zm profile you signed in with",
-          "isRequired": true
-        },
-        {
-          "type": "positional",
           "value": "mcp"
         }
       ]
