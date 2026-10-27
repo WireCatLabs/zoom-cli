@@ -4,9 +4,11 @@
 
 ### Changed — may break callers
 
-- **cli-core 0.464.0 and cli-base 0.64.0.** cli-core 0.464 accepts only cli-base 0.64, so both pins move together.
-  `upgrade` now restarts the HTTP MCP server that `mcp server start` started, on the new version, and names the MCP
-  sessions over stdio that still run the old one (cli-core #2117). Every search hit kind carries `untrusted`.
+- **cli-core 0.467.0 and cli-base 0.64.0.** cli-core accepts only cli-base 0.64, so both pins move together.
+- **Every search hit marks the text someone else wrote (cli-core 0.464.0).** `zm search all`, `search meetings` and
+  a project's meeting evidence carry `untrusted` on each hit (`["title", "excerpt"]`, a message or mail hit also
+  `sender_name`), so an agent reads that text as data. A caller that checks hits against an older, strict copy of
+  their shape refuses the new field.
 - **The MCP server is now `zm <profile> mcp serve`; `zm mcp` only shows help (cli-core 0.463.0).** Every WireCat
   CLI now names its server the same way. Update MCP client entries from `["personal", "mcp"]` to
   `["personal", "mcp", "serve"]`, and `claude mcp add zm -- zm personal mcp serve`. With no profile, `zm mcp serve`

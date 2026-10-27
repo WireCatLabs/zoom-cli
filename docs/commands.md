@@ -26,8 +26,8 @@ These options apply to every command.
 | `--full` | found items with their whole text and every provider field. |
 | `--dry-run` | preview parsed arguments and permissions before running the action. |
 | `--yes` | go ahead without the question an ask level puts before a write. |
-| `--record` | keep this run, with the command as typed and secrets hidden; record_input false leaves the typed words out. |
-| `--no-record` | do not keep it, whatever the configuration says. |
+| `--record` | keep this run even where the config says record false; record_input false leaves the typed words out. |
+| `--no-record` | do not keep this run, even if it fails. |
 
 ## `zm runs`
 
@@ -50,7 +50,7 @@ zm runs list [query] [options]
 | `--limit <n>` | how many to show. Default: `20`. |
 | `--page <n>` | which page, starting at 1. Default: `1`. |
 
-**Returns:** run — run_id, command, started_at, status, cli_version, profile, completed_at, requests, and 20 more; every field: zm commands info runs list
+**Returns:** run — run_id, command, started_at, status, cli_version, profile, completed_at, requests, and 23 more; every field: zm commands info runs list
 
 **Example:** `zm runs list --limit 10`
 
@@ -70,7 +70,7 @@ zm runs show <run-id> [options]
 |---|---|
 | `--problems` | only failed responses, warnings and crashes. |
 
-**Returns:** run details — run_id, command, started_at, status, cli_version, directory, event_count, events, and 19 more; every field: zm commands info runs show
+**Returns:** run details — run_id, command, started_at, status, cli_version, directory, event_count, events, and 22 more; every field: zm commands info runs show
 
 **Example:** `zm runs show run-101`
 
