@@ -41,7 +41,7 @@ const setup = async () => {
     diagnostic: () => {},
   }
   const runsDir = join(directory, "state", "runs")
-  const kept = async (): Promise<{ command: string; status: string; dir: string }[]> => {
+  const kept = async (): Promise<{ command: string; status: string; dir: string; argv?: string[] }[]> => {
     const days = await readdir(runsDir).catch(() => [])
     const runs = []
     for (const day of days.filter((name) => !name.startsWith(".")))
@@ -96,6 +96,17 @@ it("keeps every run, and only the failed ones with record false", async () => {
   const commands = (await listed()).items.map((item) => `${item.command} ${item.status}`)
   expect(commands.filter((command) => command.startsWith("config show"))).toHaveLength(1)
   expect(commands).toContain("meetings list failed")
+})
+
+it("keeps a failed run's typed words under record_input failed, and none under false", async () => {
+  const { deps, kept } = await setup()
+  setConfig(deps.configPath, "record_input", "failed")
+  expect(await run(["config", "show", "Kai Sample", "--json"], deps)).not.toBe(0)
+  expect((await kept())[0]?.argv?.join(" ")).toContain("Kai Sample")
+  setConfig(deps.configPath, "record_input", "false")
+  expect(await run(["config", "show", "Kai Sample", "--json"], deps)).not.toBe(0)
+  const argv = (await kept()).map((one) => one.argv?.join(" ") ?? "")
+  expect(argv.filter((line) => line.includes("Kai Sample"))).toHaveLength(1)
 })
 
 it("keeps nothing with --no-record, even on a failure", async () => {
@@ -267,12 +278,14 @@ it("sets record and how long and how much of the run log to keep and keeps them 
   setConfig(deps.configPath, "keep_runs_for_days", "14")
   setConfig(deps.configPath, "keep_successful_runs_for_days", "3")
   setConfig(deps.configPath, "runs_size_limit_mb", "50")
+  setConfig(deps.configPath, "record_input", "failed")
   setConfig(deps.configPath, "source", "files")
   expect(readConfig(deps.configPath)).toMatchObject({
     record: true,
     keepRunsForDays: 14,
     keepSuccessfulRunsForDays: 3,
     runsSizeLimitMb: 50,
+    recordInput: "failed",
     source: "files",
   })
   expect(() => setConfig(deps.configPath, "runs_size_limit_mb", "0")).toThrow(/whole number/)

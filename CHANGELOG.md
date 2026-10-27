@@ -17,8 +17,19 @@
   (`keep_runs_for_days`), and the run log stays under `runs_size_limit_mb` (200 MB; the oldest successes go first).
   `record false` now keeps failed runs (before: nothing); `--no-record` still keeps nothing. `zm watch` and `zm mcp
   serve` keep a success only under `--record`. A kept run holds the words you typed (a meeting id, a search), in a
-  local file only you can read.
+  local file only you can read; `zm config set record_input failed` keeps them only in a failed run, `false` masks
+  them everywhere.
 - **Re-run `zm mcp add` or `zm mcp config`** after this upgrade, so your AI app starts `zm mcp serve`.
+- **`zm skill show`, `skill status` and `skill install` answer `--json` as `{ item, meta }` (cli-core 0.462.0).**
+  What was the whole answer is now under `item`, like every other single-thing answer.
+- **Over MCP, `--resume`/`--no-resume` is one boolean (cli-core 0.459.0).** An agent sends `resume: false`;
+  `no_resume` is refused as an unknown argument.
+- **`zm search all` reads calendar events too (cli-core 0.453.0, 0.460.0)** when gcal stored them in the shared
+  store: hits of kind `event` with an `event:<id>` reference and `untrusted: ["title", "excerpt"]`, `--only events`,
+  and `events` in `searched`. A store with no calendar answers as before.
+- **A run says who asked for it (cli-core).** `run.json` gains `via` (`cli`, `mcp-stdio`, `mcp-http`, `desktop`),
+  `mcp` (tool, request and connection ids) and `agent.client` (the AI app's name and version). A reader that checks
+  a run against an older copy of its shape refuses the new fields.
 
 ### Added
 
@@ -26,7 +37,8 @@
   the path with every id as `:id`, `transport: "http"`, `attempt` (2 and up for a retry) and `wait_ms`, the
   Retry-After or backoff waited first. A 429 shows as an error answer, then the retry. Never the URL as sent, its
   query, or a body.
-- **`zm config set keep_successful_runs_for_days <days>` and `zm config set runs_size_limit_mb <MB>`.**
+- **`zm config set keep_successful_runs_for_days <days>`, `runs_size_limit_mb <MB>` and `record_input
+  true|false|failed`.**
 - **`zm upgrade` names the MCP sessions still on the old version** (cli-core): after an install it lists this
   install's `zm mcp serve` processes as `stale_sessions` and says to restart them from your AI app.
 

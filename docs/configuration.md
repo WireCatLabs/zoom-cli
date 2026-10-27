@@ -17,6 +17,7 @@ Set a value with `zm config set <key> <value>`, remove it with `zm config unset 
 | `context.sources` | JSON array of explicitly selected message, mail or document accounts for this profile; empty by default ([setup below](#select-communications-for-preparation)) |
 | `files.timezone` | the IANA zone of downloaded transcript filenames, for example `Europe/Madrid`; unset: this computer's zone |
 | `record` | `false` keeps only failed runs in the [run log](#run-log); unset or `true`: every run |
+| `record_input` | `false` writes every typed value that may be content as `[redacted]`; `failed` does so in a successful run only; unset or `true`: the command as typed, secrets hidden |
 | `keep_runs_for_days` | how many days a failed run stays before it is removed; 30 by default |
 | `keep_successful_runs_for_days` | how many days a successful run stays; 7 by default |
 | `runs_size_limit_mb` | the most the run log may hold; the oldest successful runs go first; 200 by default |
@@ -27,7 +28,8 @@ using its API. `ZOOM_CLIENT_ID` is not a runtime setting for the installed `zm` 
 `zm config set zoom.client_id` rather than an environment variable copied from a development probe.
 
 The file stores these settings as `client_id`, `files_folder`, `files_timezone`, `source`, `context_sources`,
-`record`, `keep_runs_for_days`, `keep_successful_runs_for_days` and `runs_size_limit_mb`, and the profiles on this computer under `profiles`. Any other key is a problem in
+`record`, `record_input`, `keep_runs_for_days`, `keep_successful_runs_for_days` and `runs_size_limit_mb`, and the
+profiles on this computer under `profiles`. Any other key is a problem in
 the file.
 
 ## Problems in the file
