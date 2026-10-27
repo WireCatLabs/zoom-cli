@@ -19,11 +19,14 @@ jobs:
     uses: WireCatLabs/cli-base/.github/workflows/node-ci.yml@08d954b245268c7552a2d33a9ed4c78743784e5a # v0.61.2
     with:
       pack: ${{ inputs.pack || github.event_name == 'workflow_dispatch' }}
+      bun-run: pnpm build && pnpm smoke:bun
       cli: true
       bin: zm
       # Off until the unit suite passes on Windows and macOS: 22–25 tests there assume POSIX paths, modes,
       # symlinks and systemd. The installed-package proof below still runs on all three.
       platforms: false
+      checks: |
+        pnpm smoke:node
 
   installed-platforms:
     needs: ci
