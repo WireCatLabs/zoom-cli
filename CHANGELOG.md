@@ -35,8 +35,9 @@
 
 - **Each Zoom request in a run says its attempt and the wait before a retry.** A request line now carries the method,
   the path with every id as `:id`, `transport: "http"`, `attempt` (2 and up for a retry) and `wait_ms`, the
-  Retry-After or backoff waited first. A 429 shows as an error answer, then the retry. Never the URL as sent, its
-  query, or a body.
+  Retry-After or backoff waited first; a recording download tried again counts its attempts too. A refused answer
+  names Zoom's error code (`zoom.429`, `zoom.3001`), read from an error body of 4 KB at most, never its message. A
+  429 shows as an error answer, then the retry. Never the URL as sent, its query, or any other part of a body.
 - **`zm config set keep_successful_runs_for_days <days>`, `runs_size_limit_mb <MB>` and `record_input
   true|false|failed`.**
 - **`zm upgrade` names the MCP sessions still on the old version** (cli-core): after an install it lists this

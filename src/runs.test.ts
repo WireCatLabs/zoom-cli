@@ -189,7 +189,10 @@ it("keeps a request that never got an answer as an error response in the failed 
 it("logs a 429 as an error answer, then the retry as attempt 2 with the Retry-After it waited", async () => {
   const events: RequestEvent[] = []
   const answers = [
-    new Response("{}", { status: 429, headers: { "retry-after": "2" } }),
+    new Response(JSON.stringify({ code: 429, message: "Kai Sample's daily limit" }), {
+      status: 429,
+      headers: { "retry-after": "2" },
+    }),
     new Response(JSON.stringify({ meetings: [] })),
   ]
   const fetcher = observedFetch(
@@ -230,6 +233,7 @@ it("logs a 429 as an error answer, then the retry as attempt 2 with the Retry-Af
       status: 429,
       outcome: "error",
       errorCode: "provider_error",
+      providerError: "zoom.429",
     },
     {
       event: "request",
@@ -254,7 +258,23 @@ it("logs a 429 as an error answer, then the retry as attempt 2 with the Retry-Af
       outcome: "ok",
     },
   ])
-  expect(JSON.stringify(events)).not.toMatch(/someone|page_size|example-access/)
+  expect(JSON.stringify(events)).not.toMatch(/someone|page_size|example-access|Kai|limit/)
+})
+
+it("names a refusal by Zoom's code only, and not at all from a large or non-JSON body", async () => {
+  const nameOf = async (body: string) => {
+    const events: RequestEvent[] = []
+    const response = await observedFetch(
+      async () => new Response(body, { status: 404 }),
+      (event) => events.push(event),
+    )("https://api.zoom.us/v2/meetings/85746065432")
+    expect(await response.text()).toBe(body)
+    return events.at(-1)?.providerError
+  }
+  expect(await nameOf(JSON.stringify({ code: 3001, message: "Meeting Kai Sample not found" }))).toBe("zoom.3001")
+  expect(await nameOf(JSON.stringify({ code: 3001, message: "x".repeat(5000) }))).toBeUndefined()
+  expect(await nameOf("<html>Kai Sample</html>")).toBeUndefined()
+  expect(await nameOf(JSON.stringify({ code: "Kai Sample", message: "" }))).toBeUndefined()
 })
 
 it("masks every path segment that is not a fixed word, and drops the host and query", () => {

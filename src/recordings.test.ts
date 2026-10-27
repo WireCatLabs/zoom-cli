@@ -3,11 +3,13 @@ import { createHash, randomUUID } from "node:crypto"
 import { mkdir, mkdtemp, readdir, readFile, symlink, writeFile } from "node:fs/promises"
 import { hostname, tmpdir } from "node:os"
 import { join } from "node:path"
+import type { RequestEvent } from "@wirecat/cli-core/cli"
 import { describe, expect, it } from "vitest"
 import { inspectArchiveLocks, recoverArchiveLocks } from "./recording-archive.js"
 import { inspectArchive, verifyArchive } from "./recording-manifest.js"
 import { ZoomRecordings } from "./recordings.js"
 import { ZoomRemote } from "./remote-http.js"
+import { observedFetch } from "./request-events.js"
 
 const grants = ["cloud_recording:read:list_user_recordings", "cloud_recording:read:list_recording_files"]
 const tokens = (scopes = grants) => ({
@@ -353,6 +355,31 @@ describe("safe remote requests", () => {
     ).rejects.toThrow(/could not be completed/)
     expect(errors).toBe(3)
   })
+})
+
+it("logs each download retry as its own attempt, with the wait before it", async () => {
+  const destination = await temp()
+  const events: RequestEvent[] = []
+  let attempts = 0
+  const recordings = new ZoomRecordings(
+    tokens(),
+    observedFetch(
+      async (input) => {
+        if (String(input).includes("api.zoom.us")) return response(meeting())
+        attempts++
+        if (attempts === 1) return new Response(null, { status: 429, headers: { "retry-after": "2" } })
+        return new Response("hello")
+      },
+      (event) => events.push(event),
+    ),
+    { sleep: async () => {} },
+  )
+  await recordings.download("example", { ...scope, destination })
+  const downloads = events.filter((event) => event.event === "request" && !event.operation.includes("/v2/"))
+  expect(downloads.map(({ attempt, waitMs }) => [attempt, waitMs === undefined ? undefined : "waited"])).toEqual([
+    [1, undefined],
+    [2, "waited"],
+  ])
 })
 
 it("retries interrupted streams with Retry-After and cancels partial output cleanly", async () => {
