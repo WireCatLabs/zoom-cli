@@ -8,6 +8,13 @@
   cli-base 0.65 knows the verbs `serve` and `revoke`, so their lint baseline entries are gone, and its `cli-dev bundle`
   finds a server started with a flag before `mcp serve`. From cli-core 0.468, an MCP server offers a command that only
   fetches into the store through its read tool.
+- **`zm mcp serve` names what it serves (WC-MCP-9).** With no profile it no longer serves every profile:
+  it stops with `validation_error` (exit 2) and lists the profiles here. Serve one with `zm <profile> mcp serve`,
+  several with `zm mcp serve --profiles work,personal`, or every one with `zm mcp serve --profiles all`; update an
+  MCP client entry of `["mcp", "serve"]` to `["mcp", "serve", "--profiles", "all"]`. A profile together with
+  `--profiles`, a name that is not a profile here, or `all` inside a list is refused with `validation_error`; under
+  `ZM_PROFILE_LOCK`, `--profiles` may name only the locked profile (`permission_error`, exit 5). The server names the
+  profiles it serves on stderr when it starts. The MCP Registry entry now starts `zm mcp serve --profiles all`.
 
 ## 0.56.0 — 27.10.2026
 

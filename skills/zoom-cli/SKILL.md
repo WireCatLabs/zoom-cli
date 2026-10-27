@@ -180,6 +180,8 @@ Follow row/text/candidate bounds; unknown coverage remains unknown.
 `zm <profile> mcp serve` is for clients that cannot run commands (chat apps, remote agents); prefer the commands
 above when you can run them. It serves them as `zm_tools_search`, `zm_read` and `zm_write`, with the same
 permissions as the command line; a call answers as the command does. Over MCP a change at level `ask` runs without a question.
+`zm mcp serve --profiles a,b` or `--profiles all` serves several profiles from one server; each tool then needs
+`profile` — ask which if the owner named none.
 
 `zoom search [words] --only chat,docs,meetings` asks Zoom's own search live: it reaches chat and docs zm does not
 archive, but matches exact words only and gives no line for a meeting; prefer `search meetings` for stored meetings.

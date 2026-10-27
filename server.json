@@ -26,6 +26,11 @@
         {
           "type": "positional",
           "value": "serve"
+        },
+        {
+          "type": "named",
+          "name": "--profiles",
+          "value": "all"
         }
       ]
     }

@@ -1440,13 +1440,17 @@ serve zm's commands to an agent over MCP — `claude mcp add zm -- zm <profile> 
 
 ### `zm mcp serve`
 
-serve this profile to an agent over MCP, on stdin and stdout — `claude mcp add zm -- zm <profile> mcp serve`; with no profile, `zm mcp serve` serves every profile and each tool asks which
+serve this profile to an agent over MCP, on stdin and stdout — `claude mcp add zm -- zm <profile> mcp serve`; `--profiles a,b` or `--profiles all` serves several from one server and each tool asks which
 
 **Changes local data.**
 
 ```sh
-zm mcp serve
+zm mcp serve [options]
 ```
+
+| Option | What it does |
+|---|---|
+| `--profiles <names\|all>` | serve several profiles from one server instead of one: names, comma-separated, or all for every profile. |
 
 **Returns:** serve this profile's commands to an AI agent
 
