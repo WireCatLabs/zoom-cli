@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Changed — may break callers
+
+- **cli-core 0.469.0 and cli-base 0.65.0.** cli-core 0.469 accepts only cli-base 0.65, so both pins move together.
+  cli-base 0.65 knows the verbs `serve` and `revoke`, so their lint baseline entries are gone, and its `cli-dev bundle`
+  finds a server started with a flag before `mcp serve`. From cli-core 0.468, an MCP server offers a command that only
+  fetches into the store through its read tool.
+
 ## 0.56.0 — 27.10.2026
 
 ### Changed — may break callers
