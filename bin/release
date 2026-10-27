@@ -65,7 +65,23 @@ for _ in $(seq 30); do
   sleep 2
 done
 [ -n "$run" ] || { echo "release dispatch not found; check GitHub Actions" >&2; exit 1; }
-if ! gh run watch "$run" --exit-status; then
+# gh run watch also exits non-zero when one of its own requests to GitHub fails, while the run goes on:
+# only the run's conclusion says whether the release failed.
+watch_release() {
+  for _ in $(seq 30); do
+    gh run watch "$run" --exit-status && return 0
+    state=$(gh run view "$run" --json status,conclusion --jq '.status + ":" + .conclusion' 2>/dev/null || true)
+    case "$state" in
+      completed:success) return 0 ;;
+      completed:*) return 1 ;;
+    esac
+    echo "lost the watch on release run $run; watching it again" >&2
+    sleep 10
+  done
+  echo "lost track of release run $run — see gh run view $run" >&2
+  exit 1
+}
+if ! watch_release; then
   echo "release failed; inspect: gh run view $run --log-failed" >&2
   echo "for an unpublished package, check the first-publication setup in docs/dev/RELEASING.md" >&2
   exit 1
