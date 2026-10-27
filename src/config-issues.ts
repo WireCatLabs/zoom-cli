@@ -19,6 +19,9 @@ export const SETTING_NAMES: Readonly<Record<string, string>> = {
   context_sources: "context.sources",
   record: "record",
   keep_runs_for_days: "keep_runs_for_days",
+  keep_successful_runs_for_days: "keep_successful_runs_for_days",
+  runs_size_limit_mb: "runs_size_limit_mb",
+  record_input: "record_input",
 }
 
 const SHELL_SAFE = /^[A-Za-z0-9_.:@-]*$/

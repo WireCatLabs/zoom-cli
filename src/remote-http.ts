@@ -2,6 +2,7 @@ import { setTimeout } from "node:timers/promises"
 import { CliError, isCliError } from "@wirecat/cli-base"
 import { providerWaitMs, readJsonResponse, retryableStatus, statusToCode } from "@wirecat/cli-base/http"
 import { checkCancelled, object } from "./errors.js"
+import type { WireInit } from "./request-events.js"
 import type { TokenManager } from "./tokens.js"
 
 export interface RemoteOptions {
@@ -48,37 +49,43 @@ export class ZoomRemote {
     private readonly options: RemoteOptions = {},
   ) {}
   async pause(response: Response | null, attempt: number, signal: AbortSignal): Promise<boolean> {
+    return (await this.wait(response, attempt, signal)) !== null
+  }
+  /** The milliseconds waited before the next attempt, or null when it should not be made. */
+  private async wait(response: Response | null, attempt: number, signal: AbortSignal): Promise<number | null> {
     const delay = response
       ? (providerWaitMs(response.headers, () => new Date(this.options.now?.() ?? Date.now())) ?? 250 * 2 ** attempt)
       : 250 * 2 ** attempt
-    if (!Number.isFinite(delay) || delay > 30000) return false
+    if (!Number.isFinite(delay) || delay > 30000) return null
     checkCancelled(signal)
-    await (this.options.sleep ?? ((ms, abort) => setTimeout(ms, undefined, { signal: abort })))(
-      Math.max(0, delay),
-      signal,
-    )
-    return true
+    const waited = Math.max(0, delay)
+    await (this.options.sleep ?? ((ms, abort) => setTimeout(ms, undefined, { signal: abort })))(waited, signal)
+    return waited
   }
   async get(target: string | URL, accessToken: string, signal: AbortSignal, retry = true): Promise<Response> {
+    let waitMs: number | null = null
     for (let attempt = 0; ; attempt++) {
       checkCancelled(signal)
       let response: Response
       try {
-        response = await this.fetcher(target, {
+        const init: WireInit = {
           headers: { authorization: `Bearer ${accessToken}` },
           redirect: "manual",
           signal,
-        })
+          attempt: attempt + 1,
+          ...(waitMs === null ? {} : { waitMs }),
+        }
+        response = await this.fetcher(target, init)
       } catch {
         checkCancelled(signal)
-        if (retry && attempt < 2 && (await this.pause(null, attempt, signal))) continue
+        waitMs = retry && attempt < 2 ? await this.wait(null, attempt, signal) : null
+        if (waitMs !== null) continue
         throw new CliError("network_error", "Zoom request could not be completed")
       }
-      if (retry && attempt < 2 && retryableStatus(response.status) && (await this.pause(response, attempt, signal))) {
-        await response.body?.cancel()
-        continue
-      }
-      return response
+      waitMs =
+        retry && attempt < 2 && retryableStatus(response.status) ? await this.wait(response, attempt, signal) : null
+      if (waitMs === null) return response
+      await response.body?.cancel()
     }
   }
   /** Follows Zoom's redirects to a file, checking every hop's host; the caller judges the final response. */

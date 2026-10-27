@@ -2,12 +2,14 @@ import { mkdtemp, readdir, readFile, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
+import type { RequestEvent } from "@wirecat/cli-core/cli"
 import { expect, it } from "vitest"
 import { declaredAnswerIssue } from "../scripts/testing/answers.js"
 import { TEST_PROFILE, useProfile } from "../scripts/testing/profile.js"
 import { readConfig, setConfig } from "./config.js"
 import { createProgram, type ProgramDeps, run } from "./program.js"
-import { operationOf } from "./request-events.js"
+import { ZoomRemote } from "./remote-http.js"
+import { observedFetch, operationOf } from "./request-events.js"
 import { lazyRunLog } from "./run-log.js"
 import { TokenManager } from "./tokens.js"
 
@@ -39,10 +41,10 @@ const setup = async () => {
     diagnostic: () => {},
   }
   const runsDir = join(directory, "state", "runs")
-  const kept = async (): Promise<{ command: string; status: string; dir: string }[]> => {
+  const kept = async (): Promise<{ command: string; status: string; dir: string; argv?: string[] }[]> => {
     const days = await readdir(runsDir).catch(() => [])
     const runs = []
-    for (const day of days)
+    for (const day of days.filter((name) => !name.startsWith(".")))
       for (const entry of await readdir(join(runsDir, day), { withFileTypes: true })) {
         if (!entry.isDirectory()) continue
         const dir = join(runsDir, day, entry.name)
@@ -84,22 +86,32 @@ it("keeps the failure of a config that will not load", async () => {
   expect(await kept()).toMatchObject([{ command: "meetings list", status: "failed" }])
 })
 
-it("keeps a successful run only with --record or record in the config", async () => {
-  const { deps, kept } = await setup()
+it("keeps every run, and only the failed ones with record false", async () => {
+  const { deps, listed } = await setup()
   expect(await run(["config", "show", "--json"], deps)).toBe(0)
-  expect(await kept()).toEqual([])
-  expect(await run(["--record", "config", "show", "--json"], deps)).toBe(0)
-  expect(await kept()).toMatchObject([{ command: "config show", status: "success" }])
-  setConfig(deps.configPath, "record", "true")
+  expect((await listed()).items).toMatchObject([{ command: "config show", status: "success" }])
+  setConfig(deps.configPath, "record", "false")
   expect(await run(["config", "show", "--json"], deps)).toBe(0)
-  expect(await kept()).toHaveLength(2)
+  expect(await run(["meetings", "list", "--json"], deps)).not.toBe(0)
+  const commands = (await listed()).items.map((item) => `${item.command} ${item.status}`)
+  expect(commands.filter((command) => command.startsWith("config show"))).toHaveLength(1)
+  expect(commands).toContain("meetings list failed")
 })
 
-it("keeps nothing with --no-record or record false, even on a failure", async () => {
+it("keeps a failed run's typed words under record_input failed, and none under false", async () => {
+  const { deps, kept } = await setup()
+  setConfig(deps.configPath, "record_input", "failed")
+  expect(await run(["config", "show", "Kai Sample", "--json"], deps)).not.toBe(0)
+  expect((await kept())[0]?.argv?.join(" ")).toContain("Kai Sample")
+  setConfig(deps.configPath, "record_input", "false")
+  expect(await run(["config", "show", "Kai Sample", "--json"], deps)).not.toBe(0)
+  const argv = (await kept()).map((one) => one.argv?.join(" ") ?? "")
+  expect(argv.filter((line) => line.includes("Kai Sample"))).toHaveLength(1)
+})
+
+it("keeps nothing with --no-record, even on a failure", async () => {
   const { deps, kept } = await setup()
   expect(await run(["--no-record", "meetings", "list", "--json"], deps)).not.toBe(0)
-  setConfig(deps.configPath, "record", "false")
-  expect(await run(["meetings", "list", "--json"], deps)).not.toBe(0)
   expect(await kept()).toEqual([])
 })
 
@@ -126,6 +138,13 @@ it("logs each Zoom request's masked operation, status and duration, and the answ
     ["provider.request", "GET /v2/users/me/meetings", undefined],
     ["provider.response", "GET /v2/users/me/meetings", 200],
   ])
+  expect(events[1].attributes).toMatchObject({
+    level: "wire",
+    method: "GET",
+    endpoint_template: "/v2/users/me/meetings",
+    transport: "http",
+    attempt: 1,
+  })
   expect(JSON.stringify(events)).not.toContain("example-access")
   const { items } = await listed()
   expect(items.map((item) => item.run_id)).toEqual([answerRun])
@@ -159,12 +178,103 @@ it("keeps a request that never got an answer as an error response in the failed 
   }
   expect(await run(["--json", "remote-meetings", "list"], deps)).not.toBe(0)
   const [failed] = await kept()
-  expect(failed).toMatchObject({ command: "remote-meetings list", status: "failed", kept_because_failed: true })
+  expect(failed).toMatchObject({ command: "remote-meetings list", status: "failed" })
   const events = (await readFile(join(failed?.dir ?? "", "events.jsonl"), "utf8"))
     .trim()
     .split("\n")
     .map((line) => JSON.parse(line))
   expect(events.at(-1)?.attributes).toMatchObject({ outcome: "error", error_code: "network_error" })
+})
+
+it("logs a 429 as an error answer, then the retry as attempt 2 with the Retry-After it waited", async () => {
+  const events: RequestEvent[] = []
+  const answers = [
+    new Response(JSON.stringify({ code: 429, message: "Kai Sample's daily limit" }), {
+      status: 429,
+      headers: { "retry-after": "2" },
+    }),
+    new Response(JSON.stringify({ meetings: [] })),
+  ]
+  const fetcher = observedFetch(
+    async () => answers.shift() ?? new Response("{}"),
+    (event) => events.push(event),
+  )
+  const remote = new ZoomRemote(
+    {
+      tokens: async () => ({
+        accessToken: "example-access",
+        refreshToken: "example-refresh",
+        expiresAt: Number.MAX_SAFE_INTEGER,
+        scopes: ["meeting:read:list_meetings"],
+      }),
+    },
+    fetcher,
+    { sleep: async () => {} },
+  )
+  await remote.request("/users/someone@example.com/meetings?page_size=300", "meeting:read:list_meetings")
+  expect(events.map(({ durationMs: _, ...event }) => event)).toEqual([
+    {
+      event: "request",
+      operation: "GET /v2/users/:id/meetings",
+      level: "wire",
+      method: "GET",
+      endpointTemplate: "/v2/users/:id/meetings",
+      transport: "http",
+      attempt: 1,
+    },
+    {
+      event: "response",
+      operation: "GET /v2/users/:id/meetings",
+      level: "wire",
+      method: "GET",
+      endpointTemplate: "/v2/users/:id/meetings",
+      transport: "http",
+      attempt: 1,
+      status: 429,
+      outcome: "error",
+      errorCode: "provider_error",
+      providerError: "zoom.429",
+    },
+    {
+      event: "request",
+      operation: "GET /v2/users/:id/meetings",
+      level: "wire",
+      method: "GET",
+      endpointTemplate: "/v2/users/:id/meetings",
+      transport: "http",
+      attempt: 2,
+      waitMs: 2000,
+    },
+    {
+      event: "response",
+      operation: "GET /v2/users/:id/meetings",
+      level: "wire",
+      method: "GET",
+      endpointTemplate: "/v2/users/:id/meetings",
+      transport: "http",
+      attempt: 2,
+      waitMs: 2000,
+      status: 200,
+      outcome: "ok",
+    },
+  ])
+  expect(JSON.stringify(events)).not.toMatch(/someone|page_size|example-access|Kai|limit/)
+})
+
+it("names a refusal by Zoom's code only, and not at all from a large or non-JSON body", async () => {
+  const nameOf = async (body: string) => {
+    const events: RequestEvent[] = []
+    const response = await observedFetch(
+      async () => new Response(body, { status: 404 }),
+      (event) => events.push(event),
+    )("https://api.zoom.us/v2/meetings/85746065432")
+    expect(await response.text()).toBe(body)
+    return events.at(-1)?.providerError
+  }
+  expect(await nameOf(JSON.stringify({ code: 3001, message: "Meeting Kai Sample not found" }))).toBe("zoom.3001")
+  expect(await nameOf(JSON.stringify({ code: 3001, message: "x".repeat(5000) }))).toBeUndefined()
+  expect(await nameOf("<html>Kai Sample</html>")).toBeUndefined()
+  expect(await nameOf(JSON.stringify({ code: "Kai Sample", message: "" }))).toBeUndefined()
 })
 
 it("masks every path segment that is not a fixed word, and drops the host and query", () => {
@@ -182,12 +292,23 @@ it("masks every path segment that is not a fixed word, and drops the host and qu
   expect(operationOf("GET", "not a url")).toBe("GET :url")
 })
 
-it("sets record and keep_runs_for_days in the config and keeps them across other settings", async () => {
+it("sets record and how long and how much of the run log to keep and keeps them across other settings", async () => {
   const { deps } = await setup()
   setConfig(deps.configPath, "record", "true")
   setConfig(deps.configPath, "keep_runs_for_days", "14")
+  setConfig(deps.configPath, "keep_successful_runs_for_days", "3")
+  setConfig(deps.configPath, "runs_size_limit_mb", "50")
+  setConfig(deps.configPath, "record_input", "failed")
   setConfig(deps.configPath, "source", "files")
-  expect(readConfig(deps.configPath)).toMatchObject({ record: true, keepRunsForDays: 14, source: "files" })
+  expect(readConfig(deps.configPath)).toMatchObject({
+    record: true,
+    keepRunsForDays: 14,
+    keepSuccessfulRunsForDays: 3,
+    runsSizeLimitMb: 50,
+    recordInput: "failed",
+    source: "files",
+  })
+  expect(() => setConfig(deps.configPath, "runs_size_limit_mb", "0")).toThrow(/whole number/)
   expect(() => setConfig(deps.configPath, "keep_runs_for_days", "0")).toThrow(/whole number/)
   expect(() => setConfig(deps.configPath, "record", "yes")).toThrow(/true or false/)
 })
@@ -197,7 +318,7 @@ it("opens the token run log without a profile", async () => {
   const tokenRun = lazyRunLog({ runsDir, command: "oauth token", version: "0.0.0", allow: [] })
   tokenRun.log.info({ event: "token.refresh" })
   await tokenRun.finish("success")
-  const [day] = await readdir(runsDir)
+  const [day] = (await readdir(runsDir)).filter((name) => !name.startsWith("."))
   const [entry] = await readdir(join(runsDir, day ?? ""))
   const recorded = JSON.parse(await readFile(join(runsDir, day ?? "", entry ?? "", "run.json"), "utf8"))
   expect(recorded).toMatchObject({ command: "oauth token", status: "success" })
