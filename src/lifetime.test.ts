@@ -42,7 +42,7 @@ describe("command deadlines", () => {
       "recordings archive check": 3600000,
       "recordings download": 3600000,
       "recordings schedule run": 3600000,
-      mcp: undefined,
+      "mcp serve": undefined,
       "session start": 300000,
       watch: undefined,
     })

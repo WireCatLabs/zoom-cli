@@ -24,7 +24,7 @@ the default is both. Installation is explicit and does not run when a command st
 
 ## The MCP server
 
-`zm personal mcp` serves zm's commands over MCP's stdio protocol as three tools, the same three every WireCat CLI
+`zm personal mcp serve` serves zm's commands over MCP's stdio protocol as three tools, the same three every WireCat CLI
 serves:
 
 | Tool | What it does |
@@ -53,7 +53,7 @@ In the `mcpServers` format of
 ```json
 {
   "mcpServers": {
-    "zoom": { "command": "zm", "args": ["personal", "mcp"] }
+    "zoom": { "command": "zm", "args": ["personal", "mcp", "serve"] }
   }
 }
 ```

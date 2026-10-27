@@ -674,7 +674,7 @@ zm events list [query] [options]
 | `--json` | one JSON value. |
 | `--jsonl` | one JSON object per item. |
 
-**Returns:** event — id, event_series_id, title, description, location, starts_at, ends_at, timezone, and 7 more; every field: zm commands info events list
+**Returns:** event — id, event_series_id, title, description, location, starts_at, ends_at, timezone, and 8 more; every field: zm commands info events list
 
 **Example:** `zm personal events list --json`
 
@@ -1436,17 +1436,21 @@ zm skill status
 
 ## `zm mcp`
 
-serve zm's commands to an agent over stdio; with no profile, every profile
+serve zm's commands to an agent over MCP — `claude mcp add zm -- zm <profile> mcp serve`
+
+### `zm mcp serve`
+
+serve this profile to an agent over MCP, on stdin and stdout — `claude mcp add zm -- zm <profile> mcp serve`; with no profile, `zm mcp serve` serves every profile and each tool asks which
 
 **Changes local data.**
 
 ```sh
-zm mcp
+zm mcp serve
 ```
 
-**Returns:** serve zm's commands to an agent over stdio; with no profile, every profile
+**Returns:** serve this profile's commands to an AI agent
 
-**Example:** `zm personal mcp`
+**Example:** `zm personal mcp serve`
 
 ## `zm search`
 
@@ -1472,7 +1476,7 @@ zm search all <query> [options]
 | `--max-meetings <n>` | most meetings to look through, newest first, or all (default 100). |
 | `--exact` | request exact matching; unsupported meeting queries are reported as skipped. |
 
-**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 6 more; every field: zm commands info search all
+**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 7 more; every field: zm commands info search all
 
 **Example:** `zm personal search all "example plan" --json`
 
@@ -1535,7 +1539,7 @@ zm search recordings <directory> <query> [options]
 |---|---|
 | `--limit <n>` | how many hits, 1 through 1000 (default 100). |
 
-**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 6 more; every field: zm commands info search recordings
+**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 7 more; every field: zm commands info search recordings
 
 **Example:** `zm personal search recordings ./zoom-archive "example plan" --limit 100 --offline --json`
 

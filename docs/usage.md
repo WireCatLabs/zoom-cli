@@ -321,7 +321,7 @@ does not import that transcript into the meeting database until you request arch
 | `recordings archive import <directory>` | verify archived VTT assets and append them to stored occurrences |
 | `remote-meetings list\|show\|invitation` | read upcoming Zoom meetings and invitations |
 | `remote-meetings create\|update\|cancel` | a simple Zoom meeting change, asked first; `--dry-run` previews |
-| `mcp` | serve zm's commands to an MCP agent over stdio, as the profile's permissions allow |
+| `mcp serve` | serve zm's commands to an MCP agent over stdio, as the profile's permissions allow |
 | `stats meetings show\|top` | talk time, lines and words by speaker and by week |
 | `skill show`, `skill install --for agents` | print or explicitly install the packaged agent guide |
 

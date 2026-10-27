@@ -205,7 +205,7 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
 
   it("discovers the installed MCP tools for a named profile without config or database and exits on EOF", async () => {
     const isolated = join(install, "mcp-config")
-    const child = spawn(executable, ["personal", "mcp"], {
+    const child = spawn(executable, ["personal", "mcp", "serve"], {
       cwd: install,
       env: { ...environment(), ZM_CONFIG_DIR: isolated, MESSAGING_STORE: join(install, "mcp-unused.db") },
       stdio: ["pipe", "pipe", "pipe"],

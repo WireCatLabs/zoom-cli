@@ -250,7 +250,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `skill install` |  | ✅ |  |
 | `skill install` | `--for` | ✅ |  |
 | `skill status` |  | ✅ |  |
-| `mcp` |  | ✅ |  |
+| `mcp serve` |  | ✅ |  |
 | `search all` |  | ✅ |  |
 | `search all` | `--only` | ✅ |  |
 | `search all` | `--limit` | ✅ |  |

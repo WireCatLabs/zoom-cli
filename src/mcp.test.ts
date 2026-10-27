@@ -210,7 +210,7 @@ it("serves the named profile's commands from the command line", async () => {
       await server.close()
     }
   })
-  expect(await run(["work", "mcp"], { ...deps, serveMcp })).toBe(0)
+  expect(await run(["work", "mcp", "serve"], { ...deps, serveMcp })).toBe(0)
   const [options] = serveMcp.mock.calls[0] ?? []
   expect(options?.profile).toBe("work")
   const paths = (commands: readonly CommandInfo[]): string[] =>

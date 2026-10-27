@@ -469,7 +469,7 @@ const [peopleContinuation] = jsonl(peopleJsonl.stdout)
 assert.ok(peopleContinuation.items.every((item) => String(item.meeting_id) !== foreignMeetingId))
 assert.equal(typeof peopleContinuation.page.has_more, "boolean")
 // The installed package ships no MCP client, so the proof speaks newline-delimited JSON-RPC itself.
-const child = spawn(process.execPath, [...prefix, entry, "invented-platform", "mcp"], {
+const child = spawn(process.execPath, [...prefix, entry, "invented-platform", "mcp", "serve"], {
   cwd: root,
   env: environment,
   stdio: ["pipe", "pipe", "pipe"],

@@ -4,4 +4,4 @@ FROM node:24-slim
 # hadolint ignore=DL3016
 RUN npm install -g @wirecat/zoom-cli && npm cache clean --force
 USER node
-CMD ["zm", "glama", "mcp"]
+CMD ["zm", "glama", "mcp", "serve"]

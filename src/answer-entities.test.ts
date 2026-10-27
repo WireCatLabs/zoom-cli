@@ -26,7 +26,7 @@ const HOUSEKEEPING_ANSWERS = new Set([
   "doctor",
   "guide",
   "help",
-  "mcp",
+  "mcp serve",
   "session start",
   "session status",
   "skill install",
