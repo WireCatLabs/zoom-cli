@@ -26,16 +26,30 @@ export const operationOf = (method: string, url: string): string => {
   return `${method.toUpperCase()} /${words.join("/")}`
 }
 
+/** What `ZoomRemote` adds for the run's request line; the fetch itself never sees it. */
+export interface WireInit extends RequestInit {
+  /** 1 for the first try, 2 and up for a retry. */
+  attempt?: number
+  /** What was waited before this attempt: Retry-After, or the backoff. */
+  waitMs?: number
+}
+
 /** A fetch that logs each request's operation, status and duration into the command's run — never its content. */
 export const observedFetch =
   (fetcher: typeof fetch, sink: (event: RequestEvent) => void): typeof fetch =>
   async (input, init) => {
-    const answered = providerRequest(
-      operationOf(init?.method ?? "GET", input instanceof Request ? input.url : String(input)),
-      sink,
-    )
+    const { attempt = 1, waitMs, ...sent } = (init ?? {}) as WireInit
+    const method = (sent.method ?? "GET").toUpperCase()
+    const operation = operationOf(method, input instanceof Request ? input.url : String(input))
+    const answered = providerRequest(operation, sink, {
+      method,
+      endpointTemplate: operation.slice(method.length + 1),
+      transport: "http",
+      attempt,
+      ...(waitMs === undefined ? {} : { waitMs }),
+    })
     try {
-      const response = await fetcher(input, init)
+      const response = await fetcher(input, init === undefined ? undefined : sent)
       answered(
         response.status < 400 ? { status: response.status } : { status: response.status, errorCode: "provider_error" },
       )
