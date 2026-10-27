@@ -199,20 +199,52 @@ jobs:
       owner: wirecat
       dry_run: true
 
-  # After the tag, so a ClawHub failure never holds back the npm release.
+  # After the tag, so a ClawHub failure never holds back the npm release. The same CLI commit as the dry run, but run
+  # here instead of through ClawHub's workflow, which GitHub cannot let fail: a version stuck pending ClawHub's scan
+  # is not counted as the latest, so the next publish picks it again and gets "already exists" (openclaw/clawhub#4046).
+  # That one error warns; any other fails. Bump CLAWHUB_SHA together with the dry run's pin.
   clawhub:
     needs: tag
     if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
-    uses: openclaw/clawhub/.github/workflows/skill-publish.yml@52358852d3510f1150756d48e8a72cb8c8e698e0 # main, 2026-10-25
-    with:
-      skill_path: skills/zoom-cli
-      owner: wirecat
-      dry_run: false
-    secrets:
-      clawhub_token: ${{ secrets.CLAWHUB_TOKEN }}
+    env:
+      SKILL_PATH: skills/zoom-cli
+      CLAWHUB_SHA: 52358852d3510f1150756d48e8a72cb8c8e698e0
+      CLAWHUB_URL: https://clawhub.ai
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: openclaw/clawhub
+          ref: ${{ env.CLAWHUB_SHA }}
+          path: clawhub-source
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.4
+      - run: bun install --frozen-lockfile
+        working-directory: clawhub-source
+      - name: publish the skill
+        env:
+          CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
+          CLAWHUB_CONFIG_PATH: ${{ runner.temp }}/clawhub-config.json
+        run: |
+          (umask 077; jq -n --arg r "$CLAWHUB_URL" --arg t "$CLAWHUB_TOKEN" '{registry: $r, token: $t}' > "$CLAWHUB_CONFIG_PATH")
+          status=0
+          output=$(bun clawhub-source/packages/clawhub/src/cli.ts --workdir "$GITHUB_WORKSPACE" \
+            --site "$CLAWHUB_URL" --registry "$CLAWHUB_URL" skill publish "$SKILL_PATH" --json \
+            --owner wirecat --tags latest --source-repo "$GITHUB_REPOSITORY" --source-commit "$GITHUB_SHA" \
+            --source-path "$SKILL_PATH" --source-ref "$GITHUB_REF" 2>&1) || status=$?
+          echo "$output"
+          if [ "$status" -ne 0 ] && grep -q "already exists" <<< "$output"; then
+            echo "::warning::ClawHub already has this skill version, still pending its stalled scan — not republished (openclaw/clawhub#4046)"
+            exit 0
+          fi
+          exit "$status"
 
   # The official MCP Registry lists the MCP server as dev.wirecat/zoom-cli, and MCP directories copy their entries from it.
   # The registry checks that npm's copy of this version names it in package.json's mcpName.
