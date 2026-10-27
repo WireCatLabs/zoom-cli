@@ -16,8 +16,10 @@ Set a value with `zm config set <key> <value>`, remove it with `zm config unset 
 | `files.folder` | Transcript folder for file-source pull/watch; unset by default |
 | `context.sources` | JSON array of explicitly selected message, mail or document accounts for this profile; empty by default ([setup below](#select-communications-for-preparation)) |
 | `files.timezone` | the IANA zone of downloaded transcript filenames, for example `Europe/Madrid`; unset: this computer's zone |
-| `record` | `true` keeps every run in the [run log](#run-log), `false` keeps none, not even a failure; unset: only failed runs |
-| `keep_runs_for_days` | how many days a kept run stays before it is removed; 30 by default |
+| `record` | `false` keeps only failed runs in the [run log](#run-log); unset or `true`: every run |
+| `keep_runs_for_days` | how many days a failed run stays before it is removed; 30 by default |
+| `keep_successful_runs_for_days` | how many days a successful run stays; 7 by default |
+| `runs_size_limit_mb` | the most the run log may hold; the oldest successful runs go first; 200 by default |
 
 Check `zm config show` after editing. The profile is not a setting: it is the first word of each
 command ([profiles](sessions.md#select-a-local-profile)). Changing the client ID selects a different keyring entry, so authorize that app before
@@ -25,7 +27,7 @@ using its API. `ZOOM_CLIENT_ID` is not a runtime setting for the installed `zm` 
 `zm config set zoom.client_id` rather than an environment variable copied from a development probe.
 
 The file stores these settings as `client_id`, `files_folder`, `files_timezone`, `source`, `context_sources`,
-`record` and `keep_runs_for_days`, and the profiles on this computer under `profiles`. Any other key is a problem in
+`record`, `keep_runs_for_days`, `keep_successful_runs_for_days` and `runs_size_limit_mb`, and the profiles on this computer under `profiles`. Any other key is a problem in
 the file.
 
 ## Problems in the file
@@ -94,10 +96,11 @@ profile permissions. See [MCP and skills](mcp.md#the-mcp-server).
 
 ## Run log
 
-`zm` keeps a failed command as a run: the command's words, the profile, how it ended, and one event per Zoom request
-with its method, path (every id masked as `:id`), status and duration. It never keeps arguments, meeting content,
-names, emails or tokens. `--record` keeps a successful run too, `--no-record` keeps nothing for this command, and the
-`record` setting changes the default. `zm runs list`, `zm runs show <run-id>` and `zm runs path <run-id>` read the
+`zm` keeps every command as a run: the command's words, the profile, how it ended, and one event per Zoom request
+with its method, path (every id masked as `:id`), status, duration, attempt (2 and up for a retry) and the wait before
+a retry. It never keeps meeting content, names, emails or tokens. A successful run is kept 7 days and a failed one 30.
+`record false` keeps only failed runs, `--record` keeps this run anyway, and `--no-record` keeps nothing for this
+command. `zm runs list`, `zm runs show <run-id>` and `zm runs path <run-id>` read the
 log without a profile; an answer's `meta.run_id` is the id `runs show` takes.
 
 ## Environment variables

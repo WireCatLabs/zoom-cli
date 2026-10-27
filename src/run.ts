@@ -35,12 +35,16 @@ export const zoomDefinition = (deps: ProgramDeps, onFailure?: (error: unknown) =
         const profile = options?.needsProfile
           ? chooseProfile({ word, env, profiles: () => readConfig(deps.configPath).profiles })
           : (word ?? env.ZM_PROFILE ?? env.ZM_PROFILE_LOCK ?? "")
-        const { keepFailedRuns, keepRunsForDays } = runSettings(flags?.record, configured(deps.configPath))
+        const { keepFailedRuns, keepRunsForDays, keepSuccessfulRunsForDays } = runSettings(
+          flags?.record,
+          configured(deps.configPath),
+        )
         return {
           profile,
           ...(profile ? {} : { sources: { profile: NONE_NAMED } }),
           keepFailedRuns,
           keepRunsForDays,
+          keepSuccessfulRunsForDays,
           skillHint: false,
           ...(profile
             ? { permissions: discoveryLevels(readConfig(deps.configPath).permissions[profile] ?? {}, env) }
