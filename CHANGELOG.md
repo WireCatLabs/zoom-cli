@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Not signed in, the error and the MCP instructions also offer WireCat Desktop.** A missing, invalid or refused
+  login now says: run `zm <profile> session start` in a terminal, or sign in from WireCat Desktop (Tools → Zoom →
+  Manage). Over MCP the agent is told never to ask for codes or passwords.
+
 ## 0.54.0 — 27.10.2026
 
 ### Fixed

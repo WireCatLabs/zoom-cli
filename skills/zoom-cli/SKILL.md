@@ -191,7 +191,8 @@ write: inspect remote state before retrying. Never automatically replay creation
 Tokens stay in the keyring. Missing scopes require app changes and a new login; cached session status
 is local, while `--check` verifies remotely. To log in, run `zm personal session start` in the background, read the
 URL after `Open this URL to approve Zoom login:` and give it to the person as a link; their browser must be on
-this computer. `--no-input` cannot approve it. `--timeout` bounds finite commands; watch/MCP are foreground lifetimes.
+this computer. The owner can also sign in from WireCat Desktop (Tools → Zoom → Manage). `--no-input` cannot approve
+it. `--timeout` bounds finite commands; watch/MCP are foreground lifetimes.
 
 ## Discover candidate scheduled series
 
