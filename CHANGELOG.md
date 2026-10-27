@@ -7,6 +7,9 @@
 - **Every command spends less time getting ready (cli-base 0.62.0, cli-core 0.449.0).** The check of shared commands now
   describes each command once, not again for every group above it. It was about 60% of each command's setup; in tg a
   warm `run(["--version"])` went from 49 to 29 ms. It catches the same changes as before.
+- **`bin/release` no longer says a release failed while its run is still going.** `gh run watch` also stops with an
+  error when one of its own requests to GitHub fails; the script now watches the run again and decides from the run's
+  result.
 
 ## 0.52.0 — 26.10.2026
 
