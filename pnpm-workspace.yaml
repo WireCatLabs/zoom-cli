@@ -5,4 +5,6 @@ minimumReleaseAgeExclude:
   - "@wirecat/*"
 
 overrides:
+  # markdownlint 0.42.0 (its latest) pins re2js 2.8.6 exactly (GHSA-gg6h-894w-4m9c).
+  markdownlint>re2js: 2.8.7
   micromark-extension-math>katex: 0.18.2
