@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **cli-core 0.473.0** (cli-base stays 0.65.0). `zm runs show` of a failed run has `error.cause_code` when the
+  connection failure carried one (`ETIMEDOUT`, a server response code), and `zm --help` lists the `mail` CLI under
+  "Works with". zm keeps its own stdio-only `mcp serve`; cli-core's new `--profiles` option on the shared `mcp serve`
+  contract is declared as zoom's, unchanged.
+
 ## 0.57.0 — 27.10.2026
 
 ### Changed — may break callers

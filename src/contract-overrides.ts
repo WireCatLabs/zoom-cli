@@ -129,7 +129,7 @@ export const SHELL_OVERRIDES: Readonly<{
       field: "description",
       before:
         "serve this profile to an agent over MCP, on stdin and stdout — `claude mcp add zm -- zm <profile> mcp serve`; " +
-        "with no profile, `zm mcp serve` serves every profile and each tool asks which",
+        "`zm mcp serve --profiles a,b` or `--profiles all` serves those profiles from one server and each tool asks which",
       after:
         "serve this profile to an agent over MCP, on stdin and stdout — `claude mcp add zm -- zm <profile> mcp serve`; " +
         "`--profiles a,b` or `--profiles all` serves several from one server and each tool asks which",
@@ -153,7 +153,11 @@ export const SHELL_OVERRIDES: Readonly<{
     {
       command: ["mcp", "serve"],
       field: "examples",
-      before: ["zm personal mcp serve", "zm personal mcp serve --http --public-url https://laptop.example.ts.net"],
+      before: [
+        "zm personal mcp serve",
+        "zm mcp serve --profiles work,personal",
+        "zm personal mcp serve --http --public-url https://laptop.example.ts.net",
+      ],
       after: ["zm personal mcp serve"],
       reason:
         "Zoom serves meeting and archive commands over stdio under its selected profile; HTTP-specific options are unsupported.",
@@ -166,6 +170,13 @@ export const SHELL_OVERRIDES: Readonly<{
           flags: "--permission <key=level>",
           description:
             "make a permission stricter for this server only, like messages.send=deny; it never loosens the profile; repeat for more keys",
+          takes_value: true,
+          mandatory: false,
+        },
+        {
+          flags: "--profiles <names|all>",
+          description:
+            "serve several profiles from one server instead of one: names, comma-separated, or all for every profile",
           takes_value: true,
           mandatory: false,
         },
