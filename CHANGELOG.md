@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-### Changed
+### Changed — may break callers
 
 - **The agent skill is listed on ClawHub as `wirecat-zoom`.** Install it with
   `openclaw skills install @wirecat/wirecat-zoom`. The `zoom-cli` listing is no longer updated.
