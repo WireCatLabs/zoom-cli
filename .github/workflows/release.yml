@@ -211,6 +211,7 @@ jobs:
       contents: read
     env:
       SKILL_PATH: skills/zoom-cli
+      CLAWHUB_SLUG: wirecat-zoom
       CLAWHUB_SHA: 52358852d3510f1150756d48e8a72cb8c8e698e0
       CLAWHUB_URL: https://clawhub.ai
     steps:
@@ -236,7 +237,7 @@ jobs:
           (umask 077; jq -n --arg r "$CLAWHUB_URL" --arg t "$CLAWHUB_TOKEN" '{registry: $r, token: $t}' > "$CLAWHUB_CONFIG_PATH")
           status=0
           output=$(bun clawhub-source/packages/clawhub/src/cli.ts --workdir "$GITHUB_WORKSPACE" \
-            --site "$CLAWHUB_URL" --registry "$CLAWHUB_URL" skill publish "$SKILL_PATH" --json \
+            --site "$CLAWHUB_URL" --registry "$CLAWHUB_URL" skill publish "$SKILL_PATH" --slug "$CLAWHUB_SLUG" --json \
             --owner wirecat --tags latest --source-repo "$GITHUB_REPOSITORY" --source-commit "$GITHUB_SHA" \
             --source-path "$SKILL_PATH" --source-ref "$GITHUB_REF" 2>&1) || status=$?
           echo "$output"
