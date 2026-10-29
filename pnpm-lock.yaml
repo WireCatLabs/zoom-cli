@@ -16,10 +16,10 @@ importers:
         version: 2.4.0
       '@wirecat/cli-base':
         specifier: 0.65.0
-        version: 0.65.0(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.5)
+        version: 0.65.0(commander@15.0.0)(esbuild@0.28.2)(typescript@7.0.2)(vitest@5.0.5)
       '@wirecat/cli-core':
-        specifier: 0.469.0
-        version: 0.469.0(@wirecat/cli-base@0.65.0(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.5))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)
+        specifier: 0.473.0
+        version: 0.473.0(@wirecat/cli-base@0.65.0(commander@15.0.0)(esbuild@0.28.2)(typescript@7.0.2)(vitest@5.0.5))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)
       commander:
         specifier: 15.0.0
         version: 15.0.0
@@ -1192,8 +1192,8 @@ packages:
   '@wirecat/cli-core-sqlite@1.1.0':
     resolution: {integrity: sha512-GpGlh/dAIX/nblBYCdT6DfWSLFxav9mxxeELQAfEuw+QZdT9unKxbi5xa02s/s4JS1P7n0PQx2sCABj4FlMRNw==}
 
-  '@wirecat/cli-core@0.469.0':
-    resolution: {integrity: sha512-wKbFaA1C5eyOEp85FJT5izCuOe4KCA9k8bLyrKZAAdyxZYnJJYu18sZRKHADmQl5AwCuEEEuNRS9kq9XFzV6Iw==}
+  '@wirecat/cli-core@0.473.0':
+    resolution: {integrity: sha512-ZJYzX/b87Qz75J7hLi0yUmXBxXNzskQh4/QYOZGBsHv10AUH7ugqZTyB+KnrN7IeHGy12fF5dHLFAWHyb1JuQQ==}
     engines: {node: ^22.16.0 || >=24}
     hasBin: true
     peerDependencies:
@@ -1473,6 +1473,9 @@ packages:
 
   dingbat-to-unicode@1.0.2:
     resolution: {integrity: sha512-R0bRerYzy/EZP6QzD3Hkl6JjUDA1Mnn+pd928w0nWjPzihnbAR6dcjGJGiRyznj5E4S1duEKzWrTqw02DPcdzg==}
+
+  disposable-email-domains-js@1.26.0:
+    resolution: {integrity: sha512-pSqALZAiuw6HDC1HqhhtvShRnniUNObQ6kzwa5N280XbyxxCPBZnQQ7fO6Uk/CNTi4cAaKE1UZl3Mc30Zfj4UA==}
 
   dom-serializer@2.0.0:
     resolution: {integrity: sha512-wIkAryiqt/nV5EQKqQpo3SToSOV9J0DnbJqwK7Wv/Trc92zIAYZ4FlMu+JPFW1DfGFt81ZTCGgDEabffXeLyJg==}
@@ -2284,6 +2287,10 @@ packages:
     resolution: {integrity: sha512-wQ0b/W4Fr01qtpHlqSqspcj3EhBvimsdh0KlHhH8HRZnMsEa0ea2fTULOXOS9ccQr3om+GcGRk4e+isrZWV8qQ==}
     engines: {node: '>=16.20.0'}
 
+  postal-mime@4.1.4:
+    resolution: {integrity: sha512-+6Qsn7Q2TSLMScfN4X2VQIclPRKgDAtKhytQex3fVSV/+HgVaawtsQGzKYDQLQIBR7b4Vfg+88WRGvuF/kwLSw==}
+    engines: {node: '>=20'}
+
   postcss@8.5.29:
     resolution: {integrity: sha512-49cGhUbXj8Qenv0iTMxA1cFBzxXoctpC9Ujd77t1WcbJIr6nF/eI7g/8MgxrYldFRuAXvja7xQRwavoW7kgrxQ==}
     engines: {node: ^10 || ^12 || >=14}
@@ -2486,6 +2493,13 @@ packages:
   tinyrainbow@3.2.0:
     resolution: {integrity: sha512-LgO3D9yZJjApUiuUfl9iFAwrtaX4+lok3wJIqttGoKCHlWUqHqbQpnxCf82L8FjgKsh4iGo78hqJwgL8F6To2A==}
     engines: {node: '>=14.0.0'}
+
+  tldts-core@7.4.20:
+    resolution: {integrity: sha512-C630TWXZCZmLq0F2bW4QqwnaaxCQ/svpAqvJwnC4JvgEM5ohhBnGsEzTLSOXcN+xjz+kEaHS5uoWIw2klnqd0A==}
+
+  tldts@7.4.19:
+    resolution: {integrity: sha512-48dH6aSpQnpbzDUc4vIQZ1VjB8tkK+e8c1yx05/SZK+rkssgjEOlxDd/yU8/a4vGYQ9vRgJr9dwMq9TJ0b3X2Q==}
+    hasBin: true
 
   to-regex-range@5.0.1:
     resolution: {integrity: sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==}
@@ -3481,7 +3495,7 @@ snapshots:
     dependencies:
       '@wasm-audio-decoders/common': 9.0.7
 
-  '@wirecat/cli-base@0.65.0(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.5)':
+  '@wirecat/cli-base@0.65.0(commander@15.0.0)(esbuild@0.28.2)(typescript@7.0.2)(vitest@5.0.5)':
     dependencies:
       '@valibot/to-json-schema': 1.8.0(valibot@1.5.0(typescript@7.0.2))
       cli-table3: 0.6.5
@@ -3490,6 +3504,7 @@ snapshots:
     optionalDependencies:
       '@napi-rs/keyring': 2.1.2
       commander: 15.0.0
+      esbuild: 0.28.2
       vitest: 5.0.5(@opentelemetry/api@1.10.0)(@types/node@22.20.5)(@vitest/coverage-v8@5.0.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)(yaml@2.9.1))
     transitivePeerDependencies:
       - typescript
@@ -3500,7 +3515,7 @@ snapshots:
 
   '@wirecat/cli-core-sqlite@1.1.0': {}
 
-  '@wirecat/cli-core@0.469.0(@wirecat/cli-base@0.65.0(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.5))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)':
+  '@wirecat/cli-core@0.473.0(@wirecat/cli-base@0.65.0(commander@15.0.0)(esbuild@0.28.2)(typescript@7.0.2)(vitest@5.0.5))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)':
     dependencies:
       '@anthropic-ai/sdk': 1.3.0(zod@4.6.7)
       '@bomb.sh/tab': 0.0.22(commander@15.0.0)
@@ -3508,7 +3523,7 @@ snapshots:
       '@modelcontextprotocol/server': 2.4.0
       '@resvg/resvg-js': 2.6.2
       '@valibot/to-json-schema': 1.8.0(valibot@1.5.0(typescript@7.0.2))
-      '@wirecat/cli-base': 0.65.0(commander@15.0.0)(typescript@7.0.2)(vitest@5.0.5)
+      '@wirecat/cli-base': 0.65.0(commander@15.0.0)(esbuild@0.28.2)(typescript@7.0.2)(vitest@5.0.5)
       '@wirecat/cli-core-onnx': 1.2.0
       '@wirecat/cli-core-sqlite': 1.1.0
       '@xmldom/xmldom': 0.9.12
@@ -3518,6 +3533,7 @@ snapshots:
       dictionary-en: 4.0.0
       dictionary-es: 4.0.0
       dictionary-ru: 3.0.0
+      disposable-email-domains-js: 1.26.0
       echarts: 6.1.0
       fflate: 0.8.3
       iconv-lite: 0.7.3
@@ -3530,10 +3546,12 @@ snapshots:
       mdast-util-gfm: 3.1.0
       micromark-extension-gfm: 3.0.0
       ogg-opus-decoder: 1.7.5
+      postal-mime: 4.1.4
       psl: 1.15.0
       qrcode-generator: 2.0.4
       sherpa-onnx: 2.0.0
       string-width: 8.3.0
+      tldts: 7.4.19
       unpdf: 1.9.1
       valibot: 1.5.0(typescript@7.0.2)
       word-extractor: 1.0.4
@@ -3834,6 +3852,8 @@ snapshots:
   dictionary-ru@3.0.0: {}
 
   dingbat-to-unicode@1.0.2: {}
+
+  disposable-email-domains-js@1.26.0: {}
 
   dom-serializer@2.0.0:
     dependencies:
@@ -4869,6 +4889,8 @@ snapshots:
 
   pkce-challenge@5.0.1: {}
 
+  postal-mime@4.1.4: {}
+
   postcss@8.5.29:
     dependencies:
       nanoid: 3.3.20
@@ -5106,6 +5128,12 @@ snapshots:
       picomatch: 4.0.7
 
   tinyrainbow@3.2.0: {}
+
+  tldts-core@7.4.20: {}
+
+  tldts@7.4.19:
+    dependencies:
+      tldts-core: 7.4.20
 
   to-regex-range@5.0.1:
     dependencies:
