@@ -69,9 +69,13 @@ const ConfigFile = v.strictObject({
     ),
   ),
   profiles: v.optional(
-    v.record(
-      v.pipe(v.string(), v.regex(profilePattern, "has to be a profile name of 64 characters at most")),
-      ProfileEntry,
+    v.pipe(
+      // valibot's record takes a list too, reading its items as profiles named "0", "1"…
+      v.custom<unknown>((value) => !Array.isArray(value), "has to be an object keyed by profile name, not a list"),
+      v.record(
+        v.pipe(v.string(), v.regex(profilePattern, "has to be a profile name of 64 characters at most")),
+        ProfileEntry,
+      ),
     ),
   ),
   context_sources: v.optional(contextSourcesSchema),

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **A config file with `profiles` written as a list is a configuration error, not a crash.** Every command refused it
+  with "the command failed; this is a bug" (exit 1); now it exits 3 with "setting profiles has to be an object keyed by
+  profile name" and the fix `zm config unset profiles`, as a `profiles` of any other wrong type already did.
+
 ## 0.59.0 — 29.10.2026
 
 ### Changed — may break callers
