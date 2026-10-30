@@ -151,6 +151,26 @@ describe("config names", () => {
     expect(saved(path)).not.toHaveProperty("context_sources")
   })
 
+  it.each([[[{ name: "work" }]], [["work"]], [[]]])(
+    "refuses profiles written as a list (%j) as one setting",
+    (profiles) => {
+      const path = configPath()
+      writeFileSync(path, JSON.stringify({ source: "files", profiles }))
+      expect(inspectConfig(path).issues.map(publicIssue)).toEqual([
+        {
+          kind: "invalid_value",
+          file: path,
+          key: "profiles",
+          what: "setting profiles has to be an object keyed by profile name",
+          fix: "zm config unset profiles",
+        },
+      ])
+      expect(() => readConfig(path)).toThrow("setting profiles has to be an object keyed by profile name")
+      unsetConfig(path, "profiles", undefined)
+      expect(saved(path)).toEqual({ source: "files" })
+    },
+  )
+
   it("removes an unknown key with a dot in it, not the setting before the dot", () => {
     const path = configPath()
     writeFileSync(path, JSON.stringify({ source: "files", "source.example": true }))
