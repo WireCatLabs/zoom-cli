@@ -7,7 +7,7 @@ import {
   isCliError,
   projectFields,
 } from "@wirecat/cli-base"
-import { type Body, commandRuns, environmentOf, snakeKeys } from "@wirecat/cli-core/cli"
+import { type Body, commandRuns, environmentOf, isBody, itemAnswer, snakeKeys } from "@wirecat/cli-core/cli"
 import type { MeetingStore } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
 import { addZoomSkillCommands } from "./agent-skill.js"
@@ -23,13 +23,12 @@ import { cancellableStore, checkCancelled, ZoneAssumptions } from "./errors.js"
 import { commandDeadline, duration, type ExecutionState, sharedExecution } from "./execution.js"
 import { fileNamesHelp, importFile, readDownloadedFiles, validateDownloadedFiles } from "./files.js"
 import { installFirstScreen } from "./first-screen.js"
-import { addMcpCommands, runForAgent } from "./mcp-command.js"
 import { addZoomMeetingCommands } from "./meeting-commands.js"
 import { type ContextCapture, captureContextSources } from "./meeting-communications-binding.js"
 import { addZoomInventoryCommand } from "./meeting-inventory.js"
 import type { ZoomPreparationOptions } from "./meeting-preparation.js"
 import { configuredMeetingSource } from "./meeting-source.js"
-import { discoveryLevels, guardCommand, permissionKeys } from "./permissions.js"
+import { guardCommand, permissionKeys } from "./permissions.js"
 import { chooseProfile } from "./profile.js"
 import { PROFILE_HELP, recordProfile } from "./profile-word.js"
 import type { ProgramDeps } from "./program.js"
@@ -65,12 +64,7 @@ import { createWatchService } from "./watch-service.js"
 import { ZoomSearch } from "./zoom-search.js"
 import { addZoomSearchCommands } from "./zoom-search-commands.js"
 
-export const bindZoomProgram = (
-  program: Command,
-  given: ProgramDeps,
-  lifecycle: ZoomLifecycle,
-  execute: (args: string[], deps: ProgramDeps) => Promise<number>,
-): void => {
+export const bindZoomProgram = (program: Command, given: ProgramDeps, lifecycle: ZoomLifecycle): void => {
   const deps: ProgramDeps = {
     ...given,
     data: (text) => environmentOf(program).streams?.data(text.replace(/\n$/, "")),
@@ -176,7 +170,9 @@ export const bindZoomProgram = (
   }
   const connected = (intent: StoreConnectRequest["intent"] = "read") => (connecting ??= openStore(intent))
   const zones = new ZoneAssumptions()
-  const ask = () => (program.opts().input === false ? undefined : deps.confirm)
+  // Over MCP no one is at a terminal, so `ask` counts as yes (WC-MCP-7).
+  const ask = () =>
+    program.opts().input === false ? undefined : environmentOf(program).agent ? async () => true : deps.confirm
   const maxOutputBytes = () => {
     const value = program.opts().maxOutputBytes
     return value === undefined ? undefined : Number(value)
@@ -257,7 +253,12 @@ export const bindZoomProgram = (
     }
     requireAccount()
   }
-  const output = (body: Body) => buffer(rendered(body))
+  const output = (body: Body) => {
+    const agent = environmentOf(program).agent
+    if (!agent) return buffer(rendered(body))
+    const packet: unknown = JSON.parse(rendered(body, "json"))
+    agent.result(isBody(packet) ? packet : itemAnswer(packet))
+  }
   const outputItems = async (values: AsyncIterable<unknown>) => {
     const items: unknown[] = []
     // Fails on the row that crosses --max-output-bytes, so a long iterator stops reading there.
@@ -333,7 +334,9 @@ export const bindZoomProgram = (
     const grace = operation.aborted ? createDeadline({ timeoutMs: 1000 }) : undefined
     try {
       await emitReceipt(text, maxOutputBytes(), async (serialized) => {
-        if (deps.streamData) await deps.streamData(serialized, grace?.signal ?? operation)
+        // An MCP server owns stdout for its protocol; a receipt goes into the call's captured answer instead.
+        if (environmentOf(program).agent) deps.data(serialized)
+        else if (deps.streamData) await deps.streamData(serialized, grace?.signal ?? operation)
         else given.data(serialized)
       })
     } catch (error) {
@@ -433,21 +436,6 @@ export const bindZoomProgram = (
     signal,
     now: deps.now,
     output: (value) => output(bodyOf(value)),
-  })
-  addMcpCommands(program, {
-    profile,
-    named,
-    profiles: () => getConfig().profiles,
-    env: () => deps.env ?? process.env,
-    permissions: (name) =>
-      discoveryLevels(
-        readConfig(deps.configPath, permissionKeys(program)).permissions[name] ?? {},
-        deps.env ?? process.env,
-      ),
-    run: (argv, environment) => runForAgent(execute, argv, given, environment),
-    signal,
-    serve: deps.serveMcp,
-    ...(deps.serveAllMcp ? { serveAll: deps.serveAllMcp } : {}),
   })
   addStoreCommands(program, {
     deps,

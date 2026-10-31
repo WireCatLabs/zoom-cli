@@ -287,7 +287,7 @@ does not import that transcript into the meeting database until you request arch
 | `session start [--browser <program>]` | approve access through your browser |
 | `commands --json` | discover command arguments, flags and examples |
 | `complete -- <words...>` | answer shell completion requests |
-| `doctor` | inspect local runtime and public config without login or database access |
+| `doctor` | inspect the installation: version, paths, config problems, profiles, store; no keyring, login or network |
 | `session status` | inspect saved OAuth state separately from local data profiles |
 | `meetings import <folder>` | import `.vtt` or zoom-searcher `.txt` transcripts into the selected local profile; names the zone file times were read in |
 | `meetings sync [--since-time <time>]` | fetch occurrences from the configured source |

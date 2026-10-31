@@ -94,7 +94,7 @@ More: [the local archive][docs/archive.md] · [search and evidence][docs/search.
 - **Command line + skill.** `zm skill install` adds the packaged guide for Claude Code, Codex and
   Gemini CLI. Every command speaks `--json` or `--jsonl`, and `zm commands --json` describes them all.
 - **MCP.** `zm personal mcp serve` serves zm's commands to Claude Desktop, Cursor and other MCP clients, as
-  far as the profile's permissions allow; `zm mcp serve --profiles all` serves every profile from one server.
+  far as the profile's permissions allow; `zm mcp serve --profiles all` serves every profile from one server, and `--http` serves browser apps behind your tunnel.
   [Connecting a client][docs/mcp.md].
 
 Your agent. Your meetings. Your rules.
@@ -157,7 +157,7 @@ More: [compared with other tools](https://github.com/WireCatLabs/zoom-cli/blob/m
 | Zoom contacts | `contacts list [name:… email:… type:company\|external]`, `contacts show <member id\|email>` |
 | What zm did | `runs list [query]`, `runs show <run-id> [--problems]`, `runs path <run-id>`; `--record` keeps a successful run too |
 | Zoom's own search | `zoom search`: chat, docs and meetings zm does not archive, read live |
-| Agents | `mcp serve`, `skill show`, `skill install [--for claude\|agents\|all]`, `commands --json`, `complete -- <words...>` |
+| Agents | `mcp serve [--profiles <names\|all>] [--http] [--permission <key=level>]`, `mcp add`, `mcp check`, `mcp config`, `mcp revoke`, `mcp server start\|stop\|status`, `skill show`, `skill install [--for claude\|agents\|all]`, `commands --json`, `complete -- <words...>` |
 
 Zoom meeting changes, links, transcription, schedules, explicit `meetings embeddings` generation and
 lock recovery preview by default and run once with `--yes`; `--dry-run` keeps the preview. Word search
@@ -331,7 +331,7 @@ More: [configuration][docs/configuration.md] · [Zoom on wirecat.dev][wirecat/en
 - Network: Zoom's API, plus an embedding endpoint only when you name one. `--offline` refuses both.
 - Manifests and saved jobs never hold signed URLs, tokens or credentials; diagnostics omit raw
   provider error text.
-- The MCP server offers reads and writes for one fixed profile, limited by its permissions; `ask` writes run without a terminal question.
+- The MCP server offers reads and writes for the profile it serves (or each profile `--profiles` names), limited by its permissions; `ask` writes run without a terminal question.
 - `ZM_READ_ONLY=1` refuses changes to Zoom, the login, settings and anything you added (imports, links,
   transcripts, exports, jobs), with exit 5, before any network call; reads and the syncs that copy Zoom into
   the store or an archive still run. Give it to an agent that should only read.

@@ -31,10 +31,11 @@ serves:
 |---|---|
 | `zm_tools_search` | finds the command for a task — "meetings list", "search", "prepare" — with its arguments |
 | `zm_read` | runs a command that changes nothing: `{ "command": "meetings list", "arguments": {} }` |
-| `zm_write` | runs a command that changes something, such as `remote-meetings create`, or `search meetings`, which updates the word index first |
+| `zm_write` | runs a command that changes something, such as `remote-meetings create` |
 
 A call runs the command line itself, so it answers and fails exactly as `zm personal <command> --json` does. The
-server speaks for the profile named in its `args`; a caller cannot change it. `watch`, `complete` and the server itself are not offered. Shared inventory (`meetings scheduled`), project scanning and upgrade are available under the profile permissions.
+server speaks for the profile named in its `args`; a caller cannot change it. `watch` and the server itself are not
+offered. Shared inventory (`meetings scheduled`), project scanning and upgrade are available under the profile permissions.
 Interactive login (`session start`) stays in the terminal.
 Settings, skill installation, upgrade and archive timer changes require `mcp.authority` at `allow` or `ask`;
 profile permissions can only be changed in a terminal.
@@ -63,6 +64,21 @@ environment ([MCP debugging guide](https://modelcontextprotocol.io/docs/tools/de
 server does not start, use the full path from `command -v zm` on Linux/macOS or `where.exe zm` on Windows as the
 command. If you set `ZM_CONFIG_DIR` or `MESSAGING_STORE`, pass the same values in the entry's `env`, or the server
 reads a different profile or database. Keep stdout for protocol messages; omit `--json` and `--jsonl`.
+
+### Make one server stricter
+
+`zm personal mcp serve --permission meetings=deny` makes a permission stricter for that server only, and repeats for more
+keys. It never loosens the profile: a value that would is refused when the server starts, and so is a key that names no
+command. `zm personal mcp config` and `zm personal mcp add` take the same flag, and `mcp add` and `mcp check` set up
+and test the entry for Codex or Claude Code.
+
+### Browser apps over HTTP
+
+`zm personal mcp serve --http --public-url https://<name>.ts.net` serves on `127.0.0.1` for AI apps in a browser,
+behind your own tunnel; `--port` changes the local port (default 8765). Writes follow the profile's permissions, as
+over stdio. A browser app logs in once with a code that the server prints on stderr (`mcp server status` shows it
+again); its access lasts one hour and its refresh 30 days. `zm personal mcp revoke` ends every login. `zm personal mcp server start`, `stop` and `status` run
+that server in the background, and `--profiles` works with all of these.
 
 ### Several profiles from one server
 

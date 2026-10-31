@@ -1,18 +1,16 @@
-import { randomUUID } from "node:crypto"
-import { dirname } from "node:path"
-import { CliError, type KeyringStore } from "@wirecat/cli-base"
+import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
 import {
   answerStdinOption,
   type Body,
   commandWords,
+  environmentOf,
   grantsAuthority,
   itemOf,
   LOCAL_READ,
   LOCAL_WRITE,
   logsInOrOut,
   NO_EFFECTS,
-  privateFiles,
   REMOTE_WRITE,
   refuseCommandName,
   signInSteps,
@@ -20,7 +18,6 @@ import {
 import type { Command } from "commander"
 import { addStandardCommands } from "./commands.js"
 import { addProfile, inspectConfig, setConfig, unsetConfig, type ZoomConfig } from "./config.js"
-import { publicIssue } from "./config-issues.js"
 import { login } from "./login.js"
 import { addModelsCommands } from "./models-commands.js"
 import { permissionKeys } from "./permissions.js"
@@ -28,24 +25,10 @@ import type { ProgramDeps } from "./program.js"
 import { getZoomProfile } from "./recordings.js"
 import type { TokenManager } from "./tokens.js"
 import { addUpgradeCommand } from "./upgrade.js"
-import { VERSION } from "./version.js"
 
-const probeKeyring = (keyring: KeyringStore): "available" | "unavailable" => {
-  const service = `zoom-cli-doctor:${randomUUID()}`
-  let available = false
-  try {
-    keyring.set(service, "probe", "doctor-test")
-    available = keyring.get(service, "probe") === "doctor-test"
-  } catch {
-    available = false
-  } finally {
-    try {
-      if (!keyring.delete(service, "probe")) available = false
-    } catch {
-      available = false
-    }
-  }
-  return available ? "available" : "unavailable"
+const refuseAgentPermissions = (command: Command, key: string) => {
+  if (environmentOf(command).agent && (key === "permissions" || key.startsWith("permissions.")))
+    throw new CliError("permission_error", "change profile permissions in a terminal")
 }
 
 export const addConfigCommands = (
@@ -76,13 +59,15 @@ export const addConfigCommands = (
     .description("set a configuration value")
     .argument("<key>", "setting name, such as zoom.client_id")
     .argument("<value>", "new value")
-    .action((key: string, value: string) => {
+    .action(function (this: Command, key: string, value: string) {
+      refuseAgentPermissions(this, key)
       output(itemOf(setConfig(configPath, key, value, named, permissionKeys(program))))
     })
   grantsAuthority(annotate(cfg.command("unset"), { effects: LOCAL_WRITE, examples: ["zm config unset files.folder"] }))
     .description("remove a setting, or a part of the file doctor reports a problem in")
     .argument("<key>", "setting name, such as files.folder, or the key a doctor fix names")
-    .action((key: string) => {
+    .action(function (this: Command, key: string) {
+      refuseAgentPermissions(this, key)
       output(itemOf(unsetConfig(configPath, key, named(), permissionKeys(program))))
     })
 }
@@ -119,23 +104,6 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
   addStandardCommands(program, {
     output,
     raw: buffer,
-    doctor: () => {
-      const keyring = probeKeyring(deps.tokens.options.keyring)
-      const { found, issues, config } = inspectConfig(deps.configPath, permissionKeys(program))
-      const files = privateFiles({ files: [deps.configPath], dirs: [dirname(deps.configPath)] })
-      if (files.checked) for (const { fix } of files.problems) deps.diagnostic(`to make it private: ${fix}`)
-      return {
-        version: VERSION,
-        runtime: { node: process.versions.node },
-        config: { path: deps.configPath, found, issues: issues.map(publicIssue) },
-        profiles: config.profiles,
-        authentication: { configured: config.clientId !== null, state: "not_checked", keyring },
-        database: "not_checked",
-        files: files.checked
-          ? { ...files, problems: files.problems.map(({ path, mode, want }) => ({ path, mode, want })) }
-          : files,
-      }
-    },
     sessionStatus: async (check) => {
       const config = getConfig()
       const selected = profile()

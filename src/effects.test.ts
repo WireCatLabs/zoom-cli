@@ -39,11 +39,12 @@ describe("command effects", () => {
     ).toEqual([])
   })
 
-  it("write to Zoom only for login and meeting changes", () => {
+  it("write to Zoom only for login, meeting changes and the MCP server that offers them", () => {
     const writers = all(program)
       .filter(([, command]) => metaOf(command).effects?.remote === "write")
       .map(([path]) => path)
     expect(writers.sort()).toEqual([
+      "mcp serve",
       "remote-meetings cancel",
       "remote-meetings create",
       "remote-meetings update",

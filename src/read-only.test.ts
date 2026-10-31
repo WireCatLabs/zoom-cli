@@ -38,8 +38,8 @@ const setup = async (env: NodeJS.ProcessEnv) => {
 
 describe("ZM_READ_ONLY", () => {
   it.each([
-    [["remote-meetings", "create", "--title", "Example", "--yes"], "change Zoom"],
-    [["remote-meetings", "cancel", "123456789", "--yes"], "change Zoom"],
+    [["remote-meetings", "create", "--title", "Example", "--yes"], "remote-meetings create"],
+    [["remote-meetings", "cancel", "123456789", "--yes"], "remote-meetings cancel"],
     [["session", "start"], "log in or out"],
     [["meetings", "import", "./downloaded"], "outside a sync"],
     [["meetings", "link", "1", "--participant-id", "1", "--person", "p1", "--yes"], "outside a sync"],

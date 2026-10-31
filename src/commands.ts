@@ -1,36 +1,25 @@
 import { CliError } from "@wirecat/cli-base"
-import {
-  annotate,
-  customizeSharedCommand,
-  describeOptions,
-  describeProgram,
-  flatten,
-  metaOf,
-} from "@wirecat/cli-base/commands"
+import { annotate, describeOptions, describeProgram, flatten, metaOf } from "@wirecat/cli-base/commands"
 import { formatSuggestions, suggest } from "@wirecat/cli-base/completion"
 import {
   type Body,
   commandsCommand,
   hasSharedContract,
   itemOf,
-  LOCAL_READ,
   NO_EFFECTS,
   overrideSharedContract,
   profileFree,
   REMOTE_READ,
   runsCommand,
-  sharedCommandTemplate,
   sharedStoreCommand,
 } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { wholeList } from "./answer-output.js"
-import { SHELL_OVERRIDES } from "./contract-overrides.js"
 import { ZM } from "./read-only.js"
 
 export interface StandardCommandsDeps {
   output: (body: Body) => void
   raw: (text: string) => void
-  doctor: () => unknown
   sessionStatus: (check: boolean) => Promise<unknown>
 }
 const addStandardCommandsDefinition = (program: Command, deps: StandardCommandsDeps): void => {
@@ -51,13 +40,6 @@ const addStandardCommandsDefinition = (program: Command, deps: StandardCommandsD
         else deps.raw(`${formatSuggestions(suggestions)}\n`)
       }),
     { effects: NO_EFFECTS, examples: ["zm complete -- meetings s"] },
-  )
-  annotate(
-    program
-      .command("doctor")
-      .description("check local runtime and public config without a login or database")
-      .action(() => deps.output(itemOf(deps.doctor()))),
-    { effects: LOCAL_READ, examples: ["zm doctor --json"] },
   )
   const session = annotate(program.command("session"), { effects: NO_EFFECTS }).description(
     "the saved Zoom login, separate from local data profiles",
@@ -153,16 +135,4 @@ const exampleFor = (path: string): string => {
   return `zm ${profile}${path}${argumentsByPath[path] ? ` ${argumentsByPath[path]}` : ""} --json`
 }
 
-export const addStandardCommands = (...args: Parameters<typeof addStandardCommandsDefinition>) => {
-  customizeSharedCommand(
-    sharedCommandTemplate(ZM, "doctor"),
-    "Zoom local diagnostics inspect runtime and public config only; online account checks belong to session status.",
-    () => {
-      addStandardCommandsDefinition(...args)
-      const command = args[0].commands.find((command) => command.name() === "doctor")
-      if (!command) throw new Error("doctor builder did not install its command")
-      return command
-    },
-    SHELL_OVERRIDES.doctor,
-  )
-}
+export const addStandardCommands = addStandardCommandsDefinition

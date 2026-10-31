@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+### Changed — may break callers
+
+- **`mcp` and `doctor` are cli-core's shared commands** (cli-core 0.497.0, was 0.491.0; cli-base stays 0.65.0), as in
+  `mail`, `gcal` and `drive`, so `zm` no longer differs from them on those paths.
+  - `mcp serve` gains `--http`, `--port`, `--public-url` and `--permission <key=level>`, and `mcp` gains `revoke`,
+    `server start|stop|status`, `config`, `add` and `check`. Over HTTP the server follows WC-MCP-12: it listens on
+    `127.0.0.1`, a browser app logs in with a one-time code, and writes follow the profile's permissions.
+    `--permission` only makes a level stricter; one that would loosen it, or names no command, is refused at start.
+  - `zm mcp serve --profiles all` on a computer with no profile exits 3 (configuration error), where it exited 2.
+  - Over MCP, `search meetings` is a read: call it with `zm_read`, not `zm_write`. `complete` is now offered as a
+    tool. `config unset permissions…` is refused over MCP, as `config set permissions` already was.
+  - `doctor --json` now has `paths`, `store`, `oauth_client`, `read_only`, `profile_lock` and `runtime.platform`.
+    It no longer has `authentication` or `database`, and no longer tests the keyring; `oauth_client` says
+    `own`, or `zoom.client_id is not set`.
+  - A refusal by a profile's permissions or by `ZM_READ_ONLY` names the command: `profile work denies meetings.list`,
+    `this process is read-only (ZM_READ_ONLY) — it cannot run remote-meetings create`.
+
 ## 0.60.0 — 31.10.2026
 
 ### Changed — may break callers

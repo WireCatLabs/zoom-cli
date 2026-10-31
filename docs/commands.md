@@ -90,6 +90,177 @@ zm runs path <run-id>
 
 **Example:** `zm runs path run-101`
 
+## `zm doctor`
+
+check this installation: version, paths, config, profiles, store; no keyring or network
+
+```sh
+zm doctor
+```
+
+**Returns:** check this installation: version, paths, config, profiles, store; no keyring…
+
+**Example:** `zm doctor`, `zm doctor --json`
+
+## `zm mcp`
+
+serve this profile to an agent over MCP and set it up — `claude mcp add zm -- zm <profile> mcp serve`
+
+### `zm mcp serve`
+
+serve this profile to an agent over MCP, on stdin and stdout — `claude mcp add zm -- zm <profile> mcp serve`; `zm mcp serve --profiles a,b` or `--profiles all` serves those profiles from one server and each tool asks which
+
+**Changes remote Zoom data.**
+
+```sh
+zm mcp serve [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--permission <key=level>` | make a permission stricter for this server only, like remote-meetings=deny; it never loosens the profile; repeat for more keys. |
+| `--profiles <names\|all>` | serve several profiles from one server instead of one: names, comma-separated, or all for every profile. |
+| `--http` | serve over HTTP on 127.0.0.1 for ChatGPT and Claude in the browser, behind your tunnel; the profile's permissions decide. |
+| `--port <port>` | the local port for --http (default 8765). |
+| `--public-url <url>` | the tunnel's https address the browser apps use, e.g. https://<name>.ts.net or https://<name>.ts.net/tg. |
+
+**Returns:** serve this profile's commands to an AI agent
+
+**Example:** `zm personal mcp serve`, `zm personal mcp serve --profiles work,personal`, `zm personal mcp serve --http --public-url https://laptop.example.ts.net`
+
+### `zm mcp revoke`
+
+forget every login `mcp serve --http` gave a browser app, of this profile or of the server `--profiles` names; each app must log in again
+
+**Changes local data.**
+
+```sh
+zm mcp revoke [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--profiles <names\|all>` | serve several profiles from one server instead of one: names, comma-separated, or all for every profile. |
+
+**Returns:** forget every login given to a browser app
+
+**Example:** `zm personal mcp revoke`, `zm personal mcp revoke --profiles all`
+
+### `zm mcp server`
+
+start, stop and check `mcp serve --http` in the background; status shows the login code for a browser app
+
+#### `zm mcp server start`
+
+start `mcp serve --http` apart from this shell and answer once it listens, with its login code
+
+**Changes local data.**
+
+```sh
+zm mcp server start [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--port <port>` | the local port (default 8765). |
+| `--public-url <url>` | the tunnel's https address the browser apps use, e.g. https://<name>.ts.net or https://<name>.ts.net/tg. |
+| `--permission <key=level>` | make a permission stricter for this server only; repeat for more keys. |
+| `--profiles <names\|all>` | the server of several profiles that `mcp serve --profiles` serves: names, comma-separated, or all. |
+
+**Returns:** start the HTTP MCP server in the background
+
+**Example:** `zm personal mcp server start --public-url https://laptop.example.ts.net`
+
+#### `zm mcp server stop`
+
+stop `mcp serve --http` — only one that `mcp server start` started
+
+**Changes local data.**
+
+```sh
+zm mcp server stop [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--profiles <names\|all>` | the server of several profiles that `mcp serve --profiles` serves: names, comma-separated, or all. |
+
+**Returns:** stop the background HTTP MCP server
+
+**Example:** `zm personal mcp server stop`
+
+#### `zm mcp server status`
+
+whether `mcp serve --http` runs, on which port and address, the login code for a new browser app, and the apps logged in
+
+```sh
+zm mcp server status [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--profiles <names\|all>` | the server of several profiles that `mcp serve --profiles` serves: names, comma-separated, or all. |
+
+**Returns:** whether the HTTP MCP server runs, its login code and the apps logged in
+
+**Example:** `zm personal mcp server status --json`
+
+### `zm mcp config`
+
+print the mcpServers entry for Claude Desktop, Cursor and others, with full paths; writes nothing
+
+```sh
+zm mcp config [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--permission <key=level>` | make a permission stricter for this server only, like remote-meetings=deny; it never loosens the profile; repeat for more keys. |
+| `--profiles <names\|all>` | serve several profiles from one server instead of one: names, comma-separated, or all for every profile. |
+
+**Returns:** print the local MCP configuration of this profile, or of those --profiles names
+
+**Example:** `zm personal mcp config`, `zm personal mcp config --profiles all`
+
+### `zm mcp add`
+
+add this profile's local MCP server to Codex or Claude Code
+
+**Changes local data.**
+
+```sh
+zm mcp add <client> [options]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `client` | required | codex or claude-code. |
+
+| Option | What it does |
+|---|---|
+| `--allow-writes` | acknowledge that this profile offers writing tools. |
+| `--permission <key=level>` | make a permission stricter for this server only, like remote-meetings=deny; it never loosens the profile; repeat for more keys. |
+
+**Returns:** add this profile's local MCP server to Codex or Claude Code
+
+**Example:** `zm personal mcp add codex --allow-writes`
+
+### `zm mcp check`
+
+check this profile's local MCP handshake and tool list
+
+```sh
+zm mcp check [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--permission <key=level>` | make a permission stricter for this server only, like remote-meetings=deny; it never loosens the profile; repeat for more keys. |
+
+**Returns:** check this profile's local MCP handshake and tool list
+
+**Example:** `zm personal mcp check`
+
 ## `zm config`
 
 local Zoom configuration
@@ -674,7 +845,7 @@ zm events list [query] [options]
 | `--json` | one JSON value. |
 | `--jsonl` | one JSON object per item. |
 
-**Returns:** event — id, event_series_id, title, description, location, starts_at, ends_at, timezone, and 8 more; every field: zm commands info events list
+**Returns:** event — id, event_series_id, title, description, location, starts_at, ends_at, timezone, and 12 more; every field: zm commands info events list
 
 **Example:** `zm personal events list --json`
 
@@ -729,18 +900,6 @@ zm complete [words]
 **Returns:** answer shell completion requests
 
 **Example:** `zm complete -- meetings s`
-
-## `zm doctor`
-
-check local runtime and public config without a login or database
-
-```sh
-zm doctor
-```
-
-**Returns:** check local runtime and public config without a login or database
-
-**Example:** `zm doctor --json`
 
 ## `zm session`
 
@@ -1433,28 +1592,6 @@ zm skill status
 **Returns:** whether the installed instructions for AI agents match this version
 
 **Example:** `zm skill status`, `zm skill status --json`
-
-## `zm mcp`
-
-serve zm's commands to an agent over MCP — `claude mcp add zm -- zm <profile> mcp serve`
-
-### `zm mcp serve`
-
-serve this profile to an agent over MCP, on stdin and stdout — `claude mcp add zm -- zm <profile> mcp serve`; `--profiles a,b` or `--profiles all` serves several from one server and each tool asks which
-
-**Changes local data.**
-
-```sh
-zm mcp serve [options]
-```
-
-| Option | What it does |
-|---|---|
-| `--profiles <names\|all>` | serve several profiles from one server instead of one: names, comma-separated, or all for every profile. |
-
-**Returns:** serve this profile's commands to an AI agent
-
-**Example:** `zm personal mcp serve`
 
 ## `zm search`
 

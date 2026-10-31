@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**340 ✅ · 1 ⛔ · 0 ❌** — 82 commands, 259 options.
+**349 ✅ · 15 ⛔ · 0 ❌** — 89 commands, 275 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -17,6 +17,32 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `runs show` |  | ✅ |  |
 | `runs show` | `--problems` | ✅ |  |
 | `runs path` |  | ✅ |  |
+| `doctor` |  | ✅ |  |
+| `mcp serve` |  | ✅ |  |
+| `mcp serve` | `--permission` | ✅ |  |
+| `mcp serve` | `--profiles` | ✅ |  |
+| `mcp serve` | `--http` | ✅ |  |
+| `mcp serve` | `--port` | ⛔ | starts an HTTP server or a background process that runs until stopped; cli-core's appMcpCommand; its own tests drive it, and src/mcp.test.ts runs zm's server, config, revoke, status and refusals |
+| `mcp serve` | `--public-url` | ⛔ | starts an HTTP server or a background process that runs until stopped; cli-core's appMcpCommand; its own tests drive it, and src/mcp.test.ts runs zm's server, config, revoke, status and refusals |
+| `mcp revoke` |  | ✅ |  |
+| `mcp revoke` | `--profiles` | ✅ |  |
+| `mcp server start` |  | ⛔ | starts an HTTP server or a background process that runs until stopped; cli-core's appMcpCommand; its own tests drive it, and src/mcp.test.ts runs zm's server, config, revoke, status and refusals |
+| `mcp server start` | `--port` | ⛔ | starts an HTTP server or a background process that runs until stopped; cli-core's appMcpCommand; its own tests drive it, and src/mcp.test.ts runs zm's server, config, revoke, status and refusals |
+| `mcp server start` | `--public-url` | ⛔ | starts an HTTP server or a background process that runs until stopped; cli-core's appMcpCommand; its own tests drive it, and src/mcp.test.ts runs zm's server, config, revoke, status and refusals |
+| `mcp server start` | `--permission` | ⛔ | starts an HTTP server or a background process that runs until stopped; cli-core's appMcpCommand; its own tests drive it, and src/mcp.test.ts runs zm's server, config, revoke, status and refusals |
+| `mcp server start` | `--profiles` | ⛔ | starts an HTTP server or a background process that runs until stopped; cli-core's appMcpCommand; its own tests drive it, and src/mcp.test.ts runs zm's server, config, revoke, status and refusals |
+| `mcp server stop` |  | ⛔ | starts an HTTP server or a background process that runs until stopped; cli-core's appMcpCommand; its own tests drive it, and src/mcp.test.ts runs zm's server, config, revoke, status and refusals |
+| `mcp server stop` | `--profiles` | ⛔ | starts an HTTP server or a background process that runs until stopped; cli-core's appMcpCommand; its own tests drive it, and src/mcp.test.ts runs zm's server, config, revoke, status and refusals |
+| `mcp server status` |  | ✅ |  |
+| `mcp server status` | `--profiles` | ✅ |  |
+| `mcp config` |  | ✅ |  |
+| `mcp config` | `--permission` | ✅ |  |
+| `mcp config` | `--profiles` | ✅ |  |
+| `mcp add` |  | ⛔ | writes an agent client's own configuration or starts a child server; cli-core's appMcpCommand; its own tests drive it, and src/mcp.test.ts runs zm's server, config, revoke, status and refusals |
+| `mcp add` | `--allow-writes` | ⛔ | writes an agent client's own configuration or starts a child server; cli-core's appMcpCommand; its own tests drive it, and src/mcp.test.ts runs zm's server, config, revoke, status and refusals |
+| `mcp add` | `--permission` | ⛔ | writes an agent client's own configuration or starts a child server; cli-core's appMcpCommand; its own tests drive it, and src/mcp.test.ts runs zm's server, config, revoke, status and refusals |
+| `mcp check` |  | ⛔ | writes an agent client's own configuration or starts a child server; cli-core's appMcpCommand; its own tests drive it, and src/mcp.test.ts runs zm's server, config, revoke, status and refusals |
+| `mcp check` | `--permission` | ⛔ | writes an agent client's own configuration or starts a child server; cli-core's appMcpCommand; its own tests drive it, and src/mcp.test.ts runs zm's server, config, revoke, status and refusals |
 | `config show` |  | ✅ |  |
 | `config set` |  | ✅ |  |
 | `config unset` |  | ✅ |  |
@@ -148,7 +174,6 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `commands info` |  | ✅ |  |
 | `store info` |  | ✅ |  |
 | `complete` |  | ✅ |  |
-| `doctor` |  | ✅ |  |
 | `session status` |  | ✅ |  |
 | `session status` | `--check` | ✅ |  |
 | `session start` |  | ✅ |  |
@@ -250,8 +275,6 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `skill install` |  | ✅ |  |
 | `skill install` | `--for` | ✅ |  |
 | `skill status` |  | ✅ |  |
-| `mcp serve` |  | ✅ |  |
-| `mcp serve` | `--profiles` | ✅ |  |
 | `search all` |  | ✅ |  |
 | `search all` | `--only` | ✅ |  |
 | `search all` | `--limit` | ✅ |  |
