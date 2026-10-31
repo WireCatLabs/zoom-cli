@@ -24,7 +24,7 @@ describe("where a login is kept (WC-SECR-4)", () => {
   it("falls back to a private file without asking and warns once when the keyring fails", () => {
     const { tokens, configDir, file } = manager(brokenKeyring())
     const stderr = vi.spyOn(process.stderr, "write").mockImplementation(() => true)
-    tokens.storedIn("keyring").save(login)
+    tokens.storedIn("keyring").save(login, undefined, { signIn: true })
     const profile = tokens.forProfile("work")
     profile.save(login)
     expect(profile.load()).toEqual(login)
@@ -38,17 +38,20 @@ describe("where a login is kept (WC-SECR-4)", () => {
 
   it("keeps a login in the file when asked, and a refresh stays there", () => {
     const { tokens, keyring } = manager()
-    tokens.storedIn("file").save(login)
+    keyring.set("example-service", "example-client", JSON.stringify(login))
+    tokens.storedIn("file").save(login, undefined, { signIn: true })
     tokens.save({ ...login, accessToken: "example-refreshed" })
     expect(tokens.storageOf()).toBe("file")
     expect(keyring.get("example-service", "example-client")).toBeNull()
     expect(tokens.load()?.accessToken).toBe("example-refreshed")
   })
 
-  it("moves a file login back to the keyring on the next keyring login", () => {
+  it("keeps a refresh in the file and moves the login back to the keyring on the next sign-in", () => {
     const { tokens, keyring, file } = manager()
-    tokens.storedIn("file").save(login)
-    tokens.storedIn("keyring").save(login)
+    tokens.storedIn("file").save(login, undefined, { signIn: true })
+    tokens.save(login)
+    expect(tokens.storageOf()).toBe("file")
+    tokens.storedIn("keyring").save(login, undefined, { signIn: true })
     expect(tokens.storageOf()).toBe("keyring")
     expect(file()).not.toHaveProperty(["example-client"])
     expect(keyring.get("example-service", "example-client")).not.toBeNull()

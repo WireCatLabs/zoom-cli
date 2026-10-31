@@ -92,13 +92,17 @@ zm runs path <run-id>
 
 ## `zm doctor`
 
-check this installation: version, paths, config, profiles, store; no keyring or network
+the state this installation is in, without connecting unless --online
 
 ```sh
-zm doctor
+zm doctor [options]
 ```
 
-**Returns:** check this installation: version, paths, config, profiles, store; no keyring…
+| Option | What it does |
+|---|---|
+| `--online` | also connect once and read the account; sends nothing. |
+
+**Returns:** the state this installation is in, without connecting unless --online
 
 **Example:** `zm doctor`, `zm doctor --json`
 
