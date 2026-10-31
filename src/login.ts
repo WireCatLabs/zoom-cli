@@ -95,7 +95,7 @@ export const login = async (options: LoginOptions) => {
       redirect_uri: REDIRECT,
       code_verifier: verifier,
     })
-    return { loggedIn: true, scopes: tokens.scopes }
+    return { loggedIn: true, scopes: tokens.scopes, credentialStorage: options.tokens.storageOf() }
   } finally {
     options.signal?.removeEventListener("abort", onAbort)
     clearTimeout(timer)

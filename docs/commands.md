@@ -775,6 +775,7 @@ zm session start [options]
 | Option | What it does |
 |---|---|
 | `--browser <program>` | browser program. |
+| `--credential-storage <storage>` | where the login is kept: keyring (the default, which falls back to a private file by itself when no keyring works), or file, not recommended. Default: `keyring`. |
 | `--answer-stdin` | with --json and no terminal: print each question as a `needs` line on stderr and read its answer, one line, from stdin. |
 
 **Returns:** log in to Zoom through your browser

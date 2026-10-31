@@ -259,7 +259,7 @@ describe("PKCE login", () => {
         await fetch(`${callback}/callback?${new URLSearchParams({ state, code: "example-code" })}`)
       },
     })
-    expect(result).toEqual({ loggedIn: true, scopes: ["meeting:read:list_meetings"] })
+    expect(result).toEqual({ loggedIn: true, scopes: ["meeting:read:list_meetings"], credentialStorage: "keyring" })
     await expect(fetch(`${callback}/callback`)).rejects.toThrow()
   })
   it("accepts pasted callback parameters when browser launch fails", async () => {
@@ -728,6 +728,26 @@ describe("zm", () => {
     setConfig(deps.configPath, "zoom.client_id", "example-client")
     expect(await run(["--no-input", "example", "session", "start"], deps)).toBe(3)
   })
+  it("keeps the login in a private file with --credential-storage file", async () => {
+    const configDir = await temporary()
+    const setup = await programSetup({
+      tokens: new TokenManager({ ...tokenManager().options, configDir }),
+      openBrowser: async (url) => {
+        const state = new URL(url).searchParams.get("state") ?? ""
+        await fetch(
+          `http://127.0.0.1:${state.split(".")[0]}/callback?${new URLSearchParams({ state, code: "example-code" })}`,
+        )
+      },
+    })
+    setConfig(setup.deps.configPath, "zoom.client_id", "example-client")
+    const start = ["example", "--json", "session", "start", "--browser", "example-browser"]
+    expect(await run([...start, "--credential-storage", "file"], setup.deps)).toBe(0)
+    expect(readAnswer(setup.stdout[0] ?? "{}")).toMatchObject({ credential_storage: "file" })
+    expect(JSON.parse(await readFile(join(configDir, "credentials.json"), "utf8"))).toHaveProperty([
+      "example-client:example",
+    ])
+    expect(await run([...start, "--credential-storage", "cloud"], setup.deps)).toBe(2)
+  })
   it("logs in through an injected browser and exposes only status and grants", async () => {
     const setup = await programSetup({
       openBrowser: async (url) => {
@@ -739,7 +759,12 @@ describe("zm", () => {
     })
     setConfig(setup.deps.configPath, "zoom.client_id", "example-client")
     expect(await run(["example", "--json", "session", "start", "--browser", "example-browser"], setup.deps)).toBe(0)
-    expect(readAnswer(setup.stdout[0] ?? "{}")).toEqual({ logged_in: true, scopes, profile: "example" })
+    expect(readAnswer(setup.stdout[0] ?? "{}")).toEqual({
+      logged_in: true,
+      scopes,
+      profile: "example",
+      credential_storage: "keyring",
+    })
     expect(setup.stdout.join("")).not.toContain("example-access")
   })
 })

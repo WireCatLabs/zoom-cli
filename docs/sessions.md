@@ -21,7 +21,10 @@ the callback reaches a listener here. `--quiet` keeps the URL.
 
 Omit `--browser firefox` to use the default browser. Zoom displays the app's requested permissions;
 sign in to the intended account and approve. The tool stores tokens in the operating system's
-keyring, never the public configuration file. If that password store is unavailable, login fails.
+keyring, never the public configuration file. If that password store is unavailable, login keeps them in
+`credentials.json` in zm's config folder, readable by you only, says so once on stderr and answers
+`credential_storage: "file"`; it never asks. `--credential-storage file` chooses the file outright. The keyring is
+safer, so we do not recommend it. The next `session start` that reaches the keyring moves the tokens back.
 
 ## Finish the browser callback
 

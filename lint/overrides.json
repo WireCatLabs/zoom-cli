@@ -5,5 +5,12 @@
     "reason": "zoom search reads Zoom's own live search across several resource kinds; no one vocabulary resource names that mix, and the shared search group is local-only.",
     "owner": "@leemour",
     "review_after": "2027-01-25"
+  },
+  {
+    "rule": "option-role",
+    "target": "session start --credential-storage",
+    "reason": "The sign-in flag of WC-SECR-4: keyring, which falls back to a private file by itself, or file. cli-base adds it to the vocabulary (WireCatLabs/cli-base#419); remove this when this CLI is on that cli-base.",
+    "owner": "@WireCatLabs",
+    "review_after": "2027-01-31"
   }
 ]
