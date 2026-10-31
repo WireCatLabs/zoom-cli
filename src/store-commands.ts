@@ -3,6 +3,7 @@ import {
   addMeetingBatchCommand,
   addMeetingProjectCandidatesCommand,
   type Body,
+  environmentOf,
   formatMeetingBatch,
 } from "@wirecat/cli-core/cli"
 import type { MeetingBatchReader } from "@wirecat/cli-core/meetings"
@@ -188,6 +189,9 @@ export const addStoreCommands = (program: Command, context: StoreCommandContext)
     fields,
     meta,
     input: async (path, signal) => {
+      // An MCP server's stdin is its protocol.
+      if (path === "-" && environmentOf(program).agent)
+        throw new CliError("validation_error", "batch input cannot come from stdin over MCP; pass a file path")
       if (!deps.readBatchInput) throw new CliError("configuration_error", "batch input reader is unavailable")
       return deps.readBatchInput(path, signal)
     },

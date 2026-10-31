@@ -307,3 +307,11 @@ it("prints the agent's MCP entry on mcp config with the profiles and permissions
     expect.arrayContaining(["mcp", "serve", "--profiles", "all", "--permission", "meetings=deny"]),
   )
 })
+
+it("never reads the protocol's stdin as batch input", async () => {
+  const readBatchInput = vi.fn(async () => "{}")
+  const { call } = await setup(undefined, undefined, { readBatchInput })
+  const answer = await call("zm_read", { command: "batch", arguments: { file: "-" } })
+  expect(answer.isError).toBe(true)
+  expect(readBatchInput).not.toHaveBeenCalled()
+})
