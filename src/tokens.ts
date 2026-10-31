@@ -36,7 +36,7 @@ export const TOKEN_LOG_EVENT = "zoom.token.exchange"
 // parent abort, only the request's own 30 s limit can have fired.
 const abortReason = (parent?: AbortSignal): string =>
   !parent?.aborted ? "timeout" : isCliError(parent.reason) ? parent.reason.code : "cancelled"
-type Stores = { auto: Credentials; file: Credentials }
+type Stores = { auto: Credentials; file: Credentials; keyring: Credentials }
 
 const storesOf = ({ configDir, service, keyring }: TokenOptions): Stores | undefined =>
   configDir === undefined
@@ -44,6 +44,7 @@ const storesOf = ({ configDir, service, keyring }: TokenOptions): Stores | undef
     : {
         auto: new Credentials({ configDir, service, keyring }),
         file: new Credentials({ configDir, service, keyring, storage: "file" }),
+        keyring: new Credentials({ configDir, service, keyring, storage: "keyring" }),
       }
 
 export class TokenManager {
@@ -116,8 +117,7 @@ export class TokenManager {
     return this.options.account ?? this.options.clientId
   }
   private read(account: string): string | null {
-    // The file first: once it holds the login, a locked keyring is never touched for it.
-    if (this.stores) return this.stores.file.read(account)?.secret ?? this.stores.auto.read(account)?.secret ?? null
+    if (this.stores) return this.stores.auto.read(account)?.secret ?? null
     try {
       return this.options.keyring.get(this.options.service, account)
     } catch {
@@ -154,19 +154,30 @@ export class TokenManager {
       )
     }
   }
-  save(tokens: Tokens, account = this.accountOf()): void {
+  /** `signIn` moves a login kept in the file back to the keyring; a refresh stays where the login is. */
+  save(tokens: Tokens, account = this.accountOf(), { signIn = false } = {}): void {
     if (this.stores) {
-      const { auto, file } = this.stores
-      const storage = this.options.storage ?? this.storageOf(account)
       const value = JSON.stringify(tokens)
-      if (storage === "file") file.write(account, value)
-      else auto.write(account, value, this.options.storage === "keyring" ? { signIn: true } : undefined)
+      if (this.options.storage !== "file") {
+        this.stores.auto.write(account, value, { signIn })
+        return
+      }
+      this.stores.file.write(account, value)
+      if (signIn) this.forgetKeyringCopy(account)
       return
     }
     try {
       this.options.keyring.set(this.options.service, account, JSON.stringify(tokens))
     } catch {
       throw new CliError("configuration_error", "could not save login to the system keyring")
+    }
+  }
+  /** After `--credential-storage file`: an older keyring copy must not outlive the file the owner chose. */
+  private forgetKeyringCopy(account: string): void {
+    try {
+      this.stores?.keyring.remove(account)
+    } catch {
+      // No keyring on this computer: there is no copy to forget.
     }
   }
   async exchange(
@@ -247,7 +258,7 @@ export class TokenManager {
       scopes: typeof body.scope === "string" ? body.scope.split(/\s+/).filter(Boolean) : (previous?.scopes ?? []),
     }
     try {
-      this.save(tokens, account)
+      this.save(tokens, account, { signIn: params.grant_type !== "refresh_token" })
     } catch (error) {
       record("error", { outcome: "save_failed", status: response.status, ...rotated, saved: false })
       throw error

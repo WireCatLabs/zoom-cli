@@ -4,15 +4,23 @@
 
 ### Added
 
-- **`zm doctor --online` checks for a newer zm.** It reads the npm registry once and says whether a newer
-  `@wirecat/zoom-cli` is published; without `--online`, `doctor` still connects to nothing. Its summary is now "the
-  state this installation is in, without connecting unless --online", as in the other CLIs.
+- **`zm doctor --online` also says whether a newer `@wirecat/zoom-cli` is published**, from one read of the npm
+  registry. Without `--online`, `doctor` connects to nothing.
 
-### Changed — may break callers
+## 0.62.0 — 31.10.2026
 
-- **cli-core 0.507.0** (was 0.503.0) and **cli-base 0.68.1** (was 0.67.0). A login saved with
-  `session start --credential-storage keyring` now leaves the file copy removal to cli-base's `signIn` write; the
-  behaviour is the same.
+### Added
+
+- **`zm doctor --online`**, from cli-core 0.507.0: also connects once and reads the account, sending nothing.
+  Without the flag `doctor` is as before and connects to nothing.
+
+### Fixed
+
+- **The keyring's file fallback now comes from cli-base 0.68.1 and cli-core 0.507.0**, with no glue of zoom's own. A
+  login in the private file is read from there and its refreshes stay there; the next `session start` that reaches the
+  keyring moves it back and removes the file copy. `session start --credential-storage file` also removes an older
+  keyring copy, so it cannot come back. Answers and `credential_storage` are as in 0.61.0, and the keyring warning still
+  comes once per run.
 
 ## 0.61.0 — 31.10.2026
 

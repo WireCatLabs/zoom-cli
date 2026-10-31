@@ -18,7 +18,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `runs show` | `--problems` | ✅ |  |
 | `runs path` |  | ✅ |  |
 | `doctor` |  | ✅ |  |
-| `doctor` | `--online` | ⛔ | reaches the npm registry; cli-core's own tests drive the check, and this CLI only names its package |
+| `doctor` | `--online` | ⛔ | connects to Zoom and npm; cli-core's appDoctorCommand, whose app-mcp-command tests drive --online |
 | `mcp serve` |  | ✅ |  |
 | `mcp serve` | `--permission` | ✅ |  |
 | `mcp serve` | `--profiles` | ✅ |  |
