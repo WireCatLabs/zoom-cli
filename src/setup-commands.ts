@@ -172,8 +172,17 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
     .command("start")
     .description("log in to Zoom through your browser")
     .option("--browser <program>", "browser program")
+    .option(
+      "--credential-storage <storage>",
+      "where the login is kept: keyring (the default, which falls back to a private file by itself when no " +
+        "keyring works), or file, not recommended",
+      "keyring",
+    )
     .addOption(answerStdinOption())
-    .action(async (opts: { browser?: string; answerStdin?: boolean }) => {
+    .action(async (opts: { browser?: string; answerStdin?: boolean; credentialStorage: string }) => {
+      if (opts.credentialStorage !== "keyring" && opts.credentialStorage !== "file")
+        throw new CliError("validation_error", "--credential-storage takes keyring or file")
+      const storage: "keyring" | "file" = opts.credentialStorage
       const config = getConfig()
       const selected = profile()
       refuseCommandName(selected, commandWords(program), "zm")
@@ -195,7 +204,7 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
         ...(deps.stdin ? { input: deps.stdin } : {}),
       })
       const done = await login({
-        tokens: tokens(),
+        tokens: tokens().storedIn(storage),
         signal: signal(),
         openBrowser: (url) => deps.openBrowser(url, opts.browser),
         readPaste: steps.answers

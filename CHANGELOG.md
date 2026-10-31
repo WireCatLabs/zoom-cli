@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **`session start` falls back to a private file when the keyring fails, and never asks** (WC-SECR-4). Login used to
+  fail with "could not save login to the system keyring". Now it keeps the tokens in `credentials.json` in zm's
+  config folder (mode 600), says so once on stderr and answers `credential_storage: "file"`; every later command
+  reads and refreshes them there. `--credential-storage file` chooses the file outright, not recommended; the next
+  `session start` that reaches the keyring moves them back. The keyring entry keeps its name, so nobody signs in again.
+
 ## 0.60.0 — 31.10.2026
 
 ### Changed — may break callers

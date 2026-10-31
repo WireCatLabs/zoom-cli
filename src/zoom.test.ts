@@ -259,7 +259,7 @@ describe("PKCE login", () => {
         await fetch(`${callback}/callback?${new URLSearchParams({ state, code: "example-code" })}`)
       },
     })
-    expect(result).toEqual({ loggedIn: true, scopes: ["meeting:read:list_meetings"] })
+    expect(result).toEqual({ loggedIn: true, scopes: ["meeting:read:list_meetings"], credentialStorage: "keyring" })
     await expect(fetch(`${callback}/callback`)).rejects.toThrow()
   })
   it("accepts pasted callback parameters when browser launch fails", async () => {
@@ -739,7 +739,12 @@ describe("zm", () => {
     })
     setConfig(setup.deps.configPath, "zoom.client_id", "example-client")
     expect(await run(["example", "--json", "session", "start", "--browser", "example-browser"], setup.deps)).toBe(0)
-    expect(readAnswer(setup.stdout[0] ?? "{}")).toEqual({ logged_in: true, scopes, profile: "example" })
+    expect(readAnswer(setup.stdout[0] ?? "{}")).toEqual({
+      logged_in: true,
+      scopes,
+      profile: "example",
+      credential_storage: "keyring",
+    })
     expect(setup.stdout.join("")).not.toContain("example-access")
   })
 })
