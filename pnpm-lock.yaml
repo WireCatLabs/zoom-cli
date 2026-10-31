@@ -19,8 +19,8 @@ importers:
         specifier: 0.67.0
         version: 0.67.0(commander@15.0.0)(esbuild@0.28.2)(typescript@7.0.2)(vitest@5.0.5)
       '@wirecat/cli-core':
-        specifier: 0.497.0
-        version: 0.497.0(@wirecat/cli-base@0.67.0(commander@15.0.0)(esbuild@0.28.2)(typescript@7.0.2)(vitest@5.0.5))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)
+        specifier: 0.503.0
+        version: 0.503.0(@wirecat/cli-base@0.67.0(commander@15.0.0)(esbuild@0.28.2)(typescript@7.0.2)(vitest@5.0.5))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)
       commander:
         specifier: 15.0.0
         version: 15.0.0
@@ -1199,13 +1199,13 @@ packages:
   '@wirecat/cli-core-sqlite@1.1.0':
     resolution: {integrity: sha512-GpGlh/dAIX/nblBYCdT6DfWSLFxav9mxxeELQAfEuw+QZdT9unKxbi5xa02s/s4JS1P7n0PQx2sCABj4FlMRNw==}
 
-  '@wirecat/cli-core@0.497.0':
-    resolution: {integrity: sha512-aS5sOkNXR4nL+SGiz5XbYtCwgSEZZvs9Q5wnHhkQSCutGgjtkHwtcvnIuWa4MkJWrNgQea4NHc9qEt+KSr05ow==}
+  '@wirecat/cli-core@0.503.0':
+    resolution: {integrity: sha512-86rKXKFgBB+Ov4vtIHIKhbqd8OdTbO3fYNL4xmig2hoVR09w5HPdKZLQCHaxH+XOGidctqbsqBFaccE/TzP7mA==}
     engines: {node: ^22.16.0 || >=24}
     hasBin: true
     peerDependencies:
       '@napi-rs/canvas': '>=0.1.69 <2'
-      '@wirecat/cli-base': '>=0.65.0 <0.66.0'
+      '@wirecat/cli-base': '>=0.67.0 <0.68.0'
       commander: '>=15'
     peerDependenciesMeta:
       '@napi-rs/canvas':
@@ -3531,7 +3531,7 @@ snapshots:
 
   '@wirecat/cli-core-sqlite@1.1.0': {}
 
-  '@wirecat/cli-core@0.497.0(@wirecat/cli-base@0.67.0(commander@15.0.0)(esbuild@0.28.2)(typescript@7.0.2)(vitest@5.0.5))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)':
+  '@wirecat/cli-core@0.503.0(@wirecat/cli-base@0.67.0(commander@15.0.0)(esbuild@0.28.2)(typescript@7.0.2)(vitest@5.0.5))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)':
     dependencies:
       '@anthropic-ai/sdk': 1.3.0(zod@4.6.7)
       '@bomb.sh/tab': 0.0.22(commander@15.0.0)
