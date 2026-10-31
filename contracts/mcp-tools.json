@@ -228,6 +228,21 @@
                     "next_page": {
                       "minimum": 2,
                       "type": "integer"
+                    },
+                    "total": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "relation": {
+                          "enum": ["eq", "gte"],
+                          "type": "string"
+                        },
+                        "value": {
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      },
+                      "required": ["value", "relation"],
+                      "type": "object"
                     }
                   },
                   "required": ["mode", "limit", "has_more"],
@@ -249,6 +264,21 @@
                     "next_cursor": {
                       "pattern": "\\S",
                       "type": "string"
+                    },
+                    "total": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "relation": {
+                          "enum": ["eq", "gte"],
+                          "type": "string"
+                        },
+                        "value": {
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      },
+                      "required": ["value", "relation"],
+                      "type": "object"
                     }
                   },
                   "required": ["mode", "limit", "has_more"],
@@ -702,6 +732,21 @@
                     "next_page": {
                       "minimum": 2,
                       "type": "integer"
+                    },
+                    "total": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "relation": {
+                          "enum": ["eq", "gte"],
+                          "type": "string"
+                        },
+                        "value": {
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      },
+                      "required": ["value", "relation"],
+                      "type": "object"
                     }
                   },
                   "required": ["mode", "limit", "has_more"],
@@ -723,6 +768,21 @@
                     "next_cursor": {
                       "pattern": "\\S",
                       "type": "string"
+                    },
+                    "total": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "relation": {
+                          "enum": ["eq", "gte"],
+                          "type": "string"
+                        },
+                        "value": {
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      },
+                      "required": ["value", "relation"],
+                      "type": "object"
                     }
                   },
                   "required": ["mode", "limit", "has_more"],
