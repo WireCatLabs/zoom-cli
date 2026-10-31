@@ -64,6 +64,7 @@ export const zoomRecordingSchedule = ({
                 account: `${job.capture.clientId}:${job.capture.profile}`,
                 keyring: deps.tokens.options.keyring,
                 service: `zoom-cli:${job.capture.configDir}`,
+                configDir: job.capture.configDir,
                 fetch: withSignal(deps.tokens.options.fetch),
                 now: deps.now,
                 signal: signal(),

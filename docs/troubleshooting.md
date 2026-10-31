@@ -44,12 +44,12 @@ outside its developer account. Ask the app owner or company administrator to app
 access; creating a second app does not bypass company policy. [Existing-app reuse](zoom-app.md#use-an-app-you-already-created)
 shows the settings to check. Authorized VTT files can still be imported without API login.
 
-### Login reports a keyring error
+### Login says it could not reach the OS keyring
 
-The system password store must be installed, running and accessible to this user. Log in from the
-same operating-system account/session where the keyring is available; a headless environment may
-lack it. The tool does not fall back to a plaintext token file. After repairing keyring access,
-run login again and check `zm personal session status --json`.
+The system password store is locked, not running, or not reachable from this session (a headless
+machine, an agent's shell, `ssh`). Login still works: it keeps the tokens in `credentials.json` in
+zm's config folder, readable by you only, and answers `credential_storage: "file"`. To move them back,
+unlock the keyring and run `session start` again from a desktop session.
 
 ### Commands stop with "Zoom token request failed"
 

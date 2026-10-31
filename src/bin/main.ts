@@ -59,6 +59,7 @@ await startCli({
         },
         keyring: systemKeyring,
         service: loginService(paths.config),
+        configDir: paths.config,
         fetch,
         log: tokenRun.log,
       })

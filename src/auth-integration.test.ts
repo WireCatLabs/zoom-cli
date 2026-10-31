@@ -68,7 +68,7 @@ describe("authentication termination", () => {
           return `code=example-code&state=${new URL(url).searchParams.get("state")}`
         },
       }),
-    ).toEqual({ loggedIn: true, scopes: [] })
+    ).toEqual({ loggedIn: true, scopes: [], credentialStorage: "keyring" })
   })
   it("closes the listener after paste cancellation or malformed paste", async () => {
     for (const readPaste of [

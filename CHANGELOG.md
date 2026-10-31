@@ -4,7 +4,7 @@
 
 ### Changed — may break callers
 
-- **`mcp` and `doctor` are cli-core's shared commands** (cli-core 0.497.0, was 0.491.0; cli-base stays 0.65.0), as in
+- **`mcp` and `doctor` are cli-core's shared commands** (cli-core 0.503.0, was 0.491.0; cli-base 0.67.0, was 0.65.0), as in
   `mail`, `gcal` and `drive`, so `zm` no longer differs from them on those paths.
   - `mcp serve` gains `--http`, `--port`, `--public-url` and `--permission <key=level>`, and `mcp` gains `revoke`,
     `server start|stop|status`, `config`, `add` and `check`. Over HTTP the server follows WC-MCP-12: it listens on
@@ -18,6 +18,16 @@
     `own`, or `zoom.client_id is not set`.
   - A refusal by a profile's permissions or by `ZM_READ_ONLY` names the command: `profile work denies meetings.list`,
     `this process is read-only (ZM_READ_ONLY) — it cannot run remote-meetings create`.
+
+## 0.60.1 — 31.10.2026
+
+### Fixed
+
+- **`session start` falls back to a private file when the keyring fails, and never asks** (WC-SECR-4). Login used to
+  fail with "could not save login to the system keyring". Now it keeps the tokens in `credentials.json` in zm's
+  config folder (mode 600), says so once on stderr and answers `credential_storage: "file"`; every later command
+  reads and refreshes them there. `--credential-storage file` chooses the file outright, not recommended; the next
+  `session start` that reaches the keyring moves them back. The keyring entry keeps its name, so nobody signs in again.
 
 ## 0.60.0 — 31.10.2026
 

@@ -1,5 +1,5 @@
 import type { KeyringStore, Logger } from "@wirecat/cli-base"
-import { CliError, isCliError } from "@wirecat/cli-base"
+import { CliError, Credentials, isCliError } from "@wirecat/cli-base"
 import { checkCancelled, object } from "./errors.js"
 
 export interface Tokens {
@@ -14,6 +14,16 @@ export interface TokenOptions {
   account?: string
   keyring: KeyringStore
   service: string
+  /**
+   * The folder of the private file the login falls back to when the keyring fails (WC-SECR-4). Unset, the login is
+   * kept in the keyring only.
+   */
+  configDir?: string
+  /**
+   * Where a new login goes, from `session start --credential-storage`. Unset, a refresh stays where the login is.
+   * `keyring` falls back to the file when the keyring fails and drops a file copy when it does not.
+   */
+  storage?: "keyring" | "file"
   fetch: typeof fetch
   now?: () => number
   signal?: AbortSignal
@@ -26,9 +36,34 @@ export const TOKEN_LOG_EVENT = "zoom.token.exchange"
 // parent abort, only the request's own 30 s limit can have fired.
 const abortReason = (parent?: AbortSignal): string =>
   !parent?.aborted ? "timeout" : isCliError(parent.reason) ? parent.reason.code : "cancelled"
+type Stores = { auto: Credentials; file: Credentials }
+
+const storesOf = ({ configDir, service, keyring }: TokenOptions): Stores | undefined =>
+  configDir === undefined
+    ? undefined
+    : {
+        auto: new Credentials({ configDir, service, keyring }),
+        file: new Credentials({ configDir, service, keyring, storage: "file" }),
+      }
+
 export class TokenManager {
   private refreshState = new Map<string, Promise<Tokens>>()
-  constructor(readonly options: TokenOptions) {}
+  // Shared by every scoped manager, so a failing keyring is reported once per run.
+  private stores: Stores | undefined
+  constructor(readonly options: TokenOptions) {
+    this.stores = storesOf(options)
+  }
+  /** Where this login is kept: the file once it holds it, the keyring otherwise. */
+  storageOf(account = this.accountOf()): "keyring" | "file" {
+    return this.stores?.file.read(account) ? "file" : "keyring"
+  }
+  /** The same login, saved where `session start --credential-storage` says. */
+  storedIn(storage: "keyring" | "file"): TokenManager {
+    const scoped = new TokenManager({ ...this.options, storage })
+    scoped.refreshState = this.refreshState
+    scoped.stores = this.stores
+    return scoped
+  }
   /** The login of one profile: `<client id>:<profile>` in the keyring. */
   forProfile(profile: string): TokenManager {
     const parent = this.options
@@ -41,12 +76,15 @@ export class TokenManager {
       },
       keyring: parent.keyring,
       service: parent.service,
+      ...(parent.configDir === undefined ? {} : { configDir: parent.configDir }),
+      ...(parent.storage === undefined ? {} : { storage: parent.storage }),
       fetch: parent.fetch,
       now: parent.now,
       log: parent.log,
       signal: parent.signal,
     })
     scoped.refreshState = this.refreshState
+    scoped.stores = this.stores
     return scoped
   }
   withSignal(signal?: AbortSignal, fetcher: typeof fetch = this.options.fetch): TokenManager {
@@ -63,18 +101,23 @@ export class TokenManager {
       },
       keyring: parent.keyring,
       service: parent.service,
+      ...(parent.configDir === undefined ? {} : { configDir: parent.configDir }),
+      ...(parent.storage === undefined ? {} : { storage: parent.storage }),
       fetch: fetcher,
       now: parent.now,
       log: parent.log,
       signal: signal && parent.signal ? AbortSignal.any([signal, parent.signal]) : (signal ?? parent.signal),
     })
     scoped.refreshState = this.refreshState
+    scoped.stores = this.stores
     return scoped
   }
   private accountOf(): string {
     return this.options.account ?? this.options.clientId
   }
   private read(account: string): string | null {
+    // The file first: once it holds the login, a locked keyring is never touched for it.
+    if (this.stores) return this.stores.file.read(account)?.secret ?? this.stores.auto.read(account)?.secret ?? null
     try {
       return this.options.keyring.get(this.options.service, account)
     } catch {
@@ -112,6 +155,14 @@ export class TokenManager {
     }
   }
   save(tokens: Tokens, account = this.accountOf()): void {
+    if (this.stores) {
+      const { auto, file } = this.stores
+      const storage = this.options.storage ?? this.storageOf(account)
+      const value = JSON.stringify(tokens)
+      if (storage === "file") file.write(account, value)
+      else if (auto.write(account, value) === "keyring" && this.options.storage === "keyring") file.remove(account)
+      return
+    }
     try {
       this.options.keyring.set(this.options.service, account, JSON.stringify(tokens))
     } catch {

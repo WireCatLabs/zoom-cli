@@ -40,7 +40,7 @@ zm personal meetings passage meeting:1/42/57/118 --format markdown  # the line a
 
 ## Quick start
 
-You need Node 22.16+ (22.x) or 24+, a system keyring and **a configured user-managed Zoom app**. Reuse one you already created or one your team
+You need Node 22.16+ (22.x) or 24+ and **a configured user-managed Zoom app**; a system keyring is best. Reuse one you already created or one your team
 has made available to your user; otherwise [create your own][docs/zoom-app.md]. Use its Public
 Client ID, not its regular Client ID or secret. The [installation guide][docs/installation.md]
 walks through app settings, browser approval and callback completion.
@@ -178,7 +178,8 @@ Follow the [app setup guide][docs/zoom-app.md]; no credentials file is downloade
 `zm personal session start` opens Zoom's consent page. Zoom redirects to the static page
 `https://wirecat.dev/zoom-callback`, which passes the answer to a listener on your machine; if it
 cannot, paste the `code=…&state=…` parameters it shows. Login checks the state and PKCE verifier and
-stores tokens only in the system keyring. Without a terminal, as in an agent's shell, login prints the URL
+stores tokens in the system keyring; where the keyring fails, in a private file, without asking
+(`--credential-storage file` chooses the file, not recommended). Without a terminal, as in an agent's shell, login prints the URL
 on stderr for the agent to pass on and waits for the callback; `--no-input` and CI refuse it. `zm personal session status` reads the cached state without refreshing it;
 `--check` asks Zoom.
 
@@ -327,7 +328,7 @@ More: [configuration][docs/configuration.md] · [Zoom on wirecat.dev][wirecat/en
 ## Security model
 
 - A configured Zoom public-client app with PKCE; no client secret is used.
-- Tokens only in the system keyring, never in a config file; a missing keyring is an error.
+- Tokens in the system keyring, never in a config file; where the keyring fails, an owner-only file, said once on stderr.
 - Network: Zoom's API, plus an embedding endpoint only when you name one. `--offline` refuses both.
 - Manifests and saved jobs never hold signed URLs, tokens or credentials; diagnostics omit raw
   provider error text.
