@@ -1334,7 +1334,7 @@ zm contacts list [query]
 |---|---|---|
 | `query` | optional | field:value terms that narrow the list — the fields are below. |
 
-**Returns:** contact — ref, id, name, username, description, last_messaged_at, alias, display_name, and 4 more; every field: zm commands info contacts list
+**Returns:** contact — ref, id, name, username, description, last_messaged_at, alias, display_name, and 15 more; every field: zm commands info contacts list
 
 **Next usually:** `zm meetings context <person>`
 
@@ -1352,7 +1352,7 @@ zm contacts show <contact>
 |---|---|---|
 | `contact` | required | their member id from `contacts list`, Zoom user id or email. |
 
-**Returns:** contact — ref, id, name, username, description, last_messaged_at, alias, display_name, and 4 more; every field: zm commands info contacts show
+**Returns:** contact — ref, id, name, username, description, last_messaged_at, alias, display_name, and 15 more; every field: zm commands info contacts show
 
 **Next usually:** `zm meetings context <person>`
 
@@ -1480,7 +1480,7 @@ zm search all <query> [options]
 | `--max-meetings <n>` | most meetings to look through, newest first, or all (default 100). |
 | `--exact` | request exact matching; unsupported meeting queries are reported as skipped. |
 
-**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 7 more; every field: zm commands info search all
+**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 8 more; every field: zm commands info search all
 
 **Example:** `zm personal search all "example plan" --json`
 
@@ -1543,7 +1543,7 @@ zm search recordings <directory> <query> [options]
 |---|---|
 | `--limit <n>` | how many hits, 1 through 1000 (default 100). |
 
-**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 7 more; every field: zm commands info search recordings
+**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 8 more; every field: zm commands info search recordings
 
 **Example:** `zm personal search recordings ./zoom-archive "example plan" --limit 100 --offline --json`
 

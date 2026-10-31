@@ -19,8 +19,8 @@ importers:
         specifier: 0.65.0
         version: 0.65.0(commander@15.0.0)(esbuild@0.28.2)(typescript@7.0.2)(vitest@5.0.5)
       '@wirecat/cli-core':
-        specifier: 0.473.0
-        version: 0.473.0(@wirecat/cli-base@0.65.0(commander@15.0.0)(esbuild@0.28.2)(typescript@7.0.2)(vitest@5.0.5))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)
+        specifier: 0.491.0
+        version: 0.491.0(@wirecat/cli-base@0.65.0(commander@15.0.0)(esbuild@0.28.2)(typescript@7.0.2)(vitest@5.0.5))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)
       commander:
         specifier: 15.0.0
         version: 15.0.0
@@ -1168,6 +1168,12 @@ packages:
   '@wasm-audio-decoders/common@9.0.7':
     resolution: {integrity: sha512-WRaUuWSKV7pkttBygml/a6dIEpatq2nnZGFIoPTc5yPLkxL6Wk4YaslPM98OPQvWacvNZ+Py9xROGDtrFBDzag==}
 
+  '@wasm-audio-decoders/flac@0.2.11':
+    resolution: {integrity: sha512-bbSGuDDxY89CrS7FYc2cBBfvtgk3EY9As8dVe8PFIgX7ECd/wefdi8UbGlvcdQZczRwE500KBt4cqf/+mMVsfw==}
+
+  '@wasm-audio-decoders/ogg-vorbis@0.1.20':
+    resolution: {integrity: sha512-zaQPasU5usRjUDXtXOHYED5tfkR4QMXd+EH3Nrz1+4+M5pCsdD+s9YxJqb0oqnTyRu/KUujOmu5Z/m/NT47vwg==}
+
   '@wasm-audio-decoders/opus-ml@0.0.3':
     resolution: {integrity: sha512-SEeTmk0eb3q5etJA/NHCRWW6BivTx9tqvNTmG0kg2ynuATEQRUZnwQE6Ibvl1BBvqIGHqI57+qyJMWmJBwb5XQ==}
 
@@ -1193,8 +1199,8 @@ packages:
   '@wirecat/cli-core-sqlite@1.1.0':
     resolution: {integrity: sha512-GpGlh/dAIX/nblBYCdT6DfWSLFxav9mxxeELQAfEuw+QZdT9unKxbi5xa02s/s4JS1P7n0PQx2sCABj4FlMRNw==}
 
-  '@wirecat/cli-core@0.473.0':
-    resolution: {integrity: sha512-ZJYzX/b87Qz75J7hLi0yUmXBxXNzskQh4/QYOZGBsHv10AUH7ugqZTyB+KnrN7IeHGy12fF5dHLFAWHyb1JuQQ==}
+  '@wirecat/cli-core@0.491.0':
+    resolution: {integrity: sha512-6YfDW0olrzGruDEItOMa2th/IzljRIqKqZtXN/CZp1i3S06z9d4zup6hwqf6uPGOrYreR64pTtYBthd1Dwniiw==}
     engines: {node: ^22.16.0 || >=24}
     hasBin: true
     peerDependencies:
@@ -2205,6 +2211,9 @@ packages:
   mime-types@3.0.2:
     resolution: {integrity: sha512-Lbgzdk0h4juoQ9fCKXW4by0UJqj+nOOrI9MJ1sSj4nI8aI2eo1qmvQEie4VD1glsS250n15LsWsYtCugiStS5A==}
     engines: {node: '>=18'}
+
+  mpg123-decoder@1.0.3:
+    resolution: {integrity: sha512-+fjxnWigodWJm3+4pndi+KUg9TBojgn31DPk85zEsim7C6s0X5Ztc/hQYdytXkwuGXH+aB0/aEkG40Emukv6oQ==}
 
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
@@ -3488,6 +3497,16 @@ snapshots:
       '@eshaz/web-worker': 1.2.2
       simple-yenc: 1.0.4
 
+  '@wasm-audio-decoders/flac@0.2.11':
+    dependencies:
+      '@wasm-audio-decoders/common': 9.0.7
+      codec-parser: 2.5.0
+
+  '@wasm-audio-decoders/ogg-vorbis@0.1.20':
+    dependencies:
+      '@wasm-audio-decoders/common': 9.0.7
+      codec-parser: 2.5.0
+
   '@wasm-audio-decoders/opus-ml@0.0.3':
     dependencies:
       '@wasm-audio-decoders/common': 9.0.7
@@ -3512,7 +3531,7 @@ snapshots:
 
   '@wirecat/cli-core-sqlite@1.1.0': {}
 
-  '@wirecat/cli-core@0.473.0(@wirecat/cli-base@0.65.0(commander@15.0.0)(esbuild@0.28.2)(typescript@7.0.2)(vitest@5.0.5))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)':
+  '@wirecat/cli-core@0.491.0(@wirecat/cli-base@0.65.0(commander@15.0.0)(esbuild@0.28.2)(typescript@7.0.2)(vitest@5.0.5))(commander@15.0.0)(typescript@7.0.2)(zod@4.6.7)':
     dependencies:
       '@anthropic-ai/sdk': 1.3.0(zod@4.6.7)
       '@bomb.sh/tab': 0.0.22(commander@15.0.0)
@@ -3520,6 +3539,8 @@ snapshots:
       '@modelcontextprotocol/server': 2.4.0
       '@resvg/resvg-js': 2.6.2
       '@valibot/to-json-schema': 1.8.0(valibot@1.5.0(typescript@7.0.2))
+      '@wasm-audio-decoders/flac': 0.2.11
+      '@wasm-audio-decoders/ogg-vorbis': 0.1.20
       '@wirecat/cli-base': 0.65.0(commander@15.0.0)(esbuild@0.28.2)(typescript@7.0.2)(vitest@5.0.5)
       '@wirecat/cli-core-onnx': 1.2.0
       '@wirecat/cli-core-sqlite': 1.1.0
@@ -3542,6 +3563,7 @@ snapshots:
       mdast-util-from-markdown: 2.1.0
       mdast-util-gfm: 3.1.0
       micromark-extension-gfm: 3.0.0
+      mpg123-decoder: 1.0.3
       ogg-opus-decoder: 1.7.5
       postal-mime: 4.1.4
       psl: 1.15.0
@@ -4816,6 +4838,10 @@ snapshots:
   mime-types@3.0.2:
     dependencies:
       mime-db: 1.54.0
+
+  mpg123-decoder@1.0.3:
+    dependencies:
+      '@wasm-audio-decoders/common': 9.0.7
 
   ms@2.1.3: {}
 

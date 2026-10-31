@@ -111,6 +111,7 @@ store or automatically accept a creation fingerprint. No tag write is part of Zo
 
 `meetings list` takes metadata queries such as `started_at:[2026-09-01 TO 2026-10-01]`.
 `search all` defaults to meetings; broader messages/mail/notes selection is explicit with `--only`.
+A notes search needs at least three characters; a shorter one is refused. Notes match by part of a word, any case.
 It answers a list of hits as tg's `search all` does; a meeting hit carries `scope` and the stored line
 `id`. Continue with `--page`; when `missing` says the meeting scan stopped, rerun with
 `--max-meetings all`. Unsupported queries or skipped sources leave completeness false (the reason is on

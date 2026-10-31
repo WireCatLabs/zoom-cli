@@ -131,7 +131,8 @@ zm personal meetings task-proposal meeting:3/15/20/0 --type promise --json
 
 Broader search requires explicit `--only messages,mail,notes,meetings`. Message reads use the
 selected local account; mail reads include stored email accounts; notes are global to the shared
-store. Meeting matching uses word prefixes; unsupported meeting syntax or exact queries are reported
+store. Notes are found by any part of a word in any letter case, titles included; a note search of one or
+two characters is refused with "search needs at least three characters". Meeting matching uses word prefixes; unsupported meeting syntax or exact queries are reported
 as skipped. Continue the hit list with `--page`. JSONL emits one item per hit and an end record.
 Skipped sources set `meta.complete` to false and appear in `issues`; search still exits zero.
 
