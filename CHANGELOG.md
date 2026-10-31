@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.61.0 — 31.10.2026
 
 ### Changed — may break callers
 
