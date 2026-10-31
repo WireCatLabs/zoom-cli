@@ -93,6 +93,7 @@ export const zoomDefinition = (deps: ProgramDeps, onFailure?: (error: unknown) =
     commands: () => [
       zoomRunsCommand(),
       appDoctorCommand(ZM, shared, {
+        packageName: "@wirecat/zoom-cli",
         oauthClient: () => {
           if (!configured(deps.configPath)?.clientId)
             throw new CliError("configuration_error", "zoom.client_id is not set")

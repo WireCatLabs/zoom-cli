@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **`zm doctor --online` also says whether a newer `@wirecat/zoom-cli` is published**, from one read of the npm
+  registry. Without `--online`, `doctor` connects to nothing.
+
 ## 0.62.0 — 31.10.2026
 
 ### Added
