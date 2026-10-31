@@ -24,6 +24,11 @@ export const UNTESTED: { command: string; option?: string; reason: string }[] = 
     reason: WRITES_CLIENT,
   })),
   {
+    command: "doctor",
+    option: "--online",
+    reason: "reaches the npm registry; cli-core's own tests drive the check, and this CLI only names its package",
+  },
+  {
     command: "",
     option: "--version",
     reason: "Installed-package acceptance checks the actual bin version; Commander exits before preAction tracing.",

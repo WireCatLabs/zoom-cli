@@ -160,7 +160,7 @@ export class TokenManager {
       const storage = this.options.storage ?? this.storageOf(account)
       const value = JSON.stringify(tokens)
       if (storage === "file") file.write(account, value)
-      else if (auto.write(account, value) === "keyring" && this.options.storage === "keyring") file.remove(account)
+      else auto.write(account, value, this.options.storage === "keyring" ? { signIn: true } : undefined)
       return
     }
     try {

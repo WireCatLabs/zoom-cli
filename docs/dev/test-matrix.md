@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**350 ✅ · 15 ⛔ · 0 ❌** — 89 commands, 276 options.
+**350 ✅ · 16 ⛔ · 0 ❌** — 89 commands, 277 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -18,6 +18,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `runs show` | `--problems` | ✅ |  |
 | `runs path` |  | ✅ |  |
 | `doctor` |  | ✅ |  |
+| `doctor` | `--online` | ⛔ | reaches the npm registry; cli-core's own tests drive the check, and this CLI only names its package |
 | `mcp serve` |  | ✅ |  |
 | `mcp serve` | `--permission` | ✅ |  |
 | `mcp serve` | `--profiles` | ✅ |  |

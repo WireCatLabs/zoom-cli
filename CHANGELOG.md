@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **`zm doctor --online` checks for a newer zm.** It reads the npm registry once and says whether a newer
+  `@wirecat/zoom-cli` is published; without `--online`, `doctor` still connects to nothing. Its summary is now "the
+  state this installation is in, without connecting unless --online", as in the other CLIs.
+
+### Changed — may break callers
+
+- **cli-core 0.507.0** (was 0.503.0) and **cli-base 0.68.1** (was 0.67.0). A login saved with
+  `session start --credential-storage keyring` now leaves the file copy removal to cli-base's `signIn` write; the
+  behaviour is the same.
+
 ## 0.61.0 — 31.10.2026
 
 ### Changed — may break callers
