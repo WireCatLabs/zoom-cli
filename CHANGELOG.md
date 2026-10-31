@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Changed — may break callers
+
+- **cli-core 0.491.0** (was 0.473.0; cli-base stays 0.65.0). Notes, documents and annotations in the shared store are
+  found by any part of a word, in any letter case, and the title is searched too (store version 40). `search all
+  --only notes` with a query of one or two characters is refused with "search needs at least three characters". A
+  store at version 40 needs every CLI on this cli-core, or new notes are not found by part of a word. `zm --help` lists
+  `gcal` under "Works with", and contact and search hits carry more fields (`zm commands info search all`).
+
 ## 0.59.1 — 30.10.2026
 
 ### Fixed

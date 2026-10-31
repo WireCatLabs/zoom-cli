@@ -19,6 +19,7 @@ Works with:
   max                                   MAX in the same local store: search, review and tasks offline
   wa                                    WhatsApp in the same local store: search, review and tasks offline
   drive                                 Google Drive and Docs as local text, searchable with your other WireCat data
+  gcal                                  Google Calendar events, searchable with your other WireCat data
   memo context <person>                 one person across messengers, mail, notes and meetings
   mail                                  IMAP mail in the same local store: search your mailbox offline, next to your other WireCat data
 
