@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **`zm doctor --online`**, from cli-core 0.507.0: also connects once and reads the account, sending nothing.
+  Without the flag `doctor` is as before and connects to nothing.
+
+### Fixed
+
+- **The keyring's file fallback now comes from cli-base 0.68.1 and cli-core 0.507.0**, with no glue of zoom's own. A
+  login in the private file is read from there and its refreshes stay there; the next `session start` that reaches the
+  keyring moves it back and removes the file copy. `session start --credential-storage file` also removes an older
+  keyring copy, so it cannot come back. Answers and `credential_storage` are as in 0.61.0, and the keyring warning still
+  comes once per run.
+
 ## 0.61.0 — 31.10.2026
 
 ### Changed — may break callers

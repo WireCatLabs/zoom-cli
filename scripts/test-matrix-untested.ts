@@ -5,6 +5,11 @@ const LONG_RUNNING = `starts an HTTP server or a background process that runs un
 const WRITES_CLIENT = `writes an agent client's own configuration or starts a child server; ${SHARED_MCP}`
 
 export const UNTESTED: { command: string; option?: string; reason: string }[] = [
+  {
+    command: "doctor",
+    option: "--online",
+    reason: "connects to Zoom and npm; cli-core's appDoctorCommand, whose app-mcp-command tests drive --online",
+  },
   ...[undefined, "--port", "--public-url", "--permission", "--profiles"].map((option) => ({
     command: "mcp server start",
     ...(option ? { option } : {}),
