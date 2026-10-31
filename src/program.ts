@@ -1,6 +1,5 @@
 import { CliError, type SleepLike } from "@wirecat/cli-base"
 import { type BaseEnvironment, createProgram as sharedProgram } from "@wirecat/cli-core/cli"
-import type { AllProfilesOptions } from "@wirecat/cli-core/mcp"
 import type { MeetingSource, MeetingStore } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
 import type {
@@ -11,7 +10,6 @@ import type {
 } from "./archive-commands.js"
 import type { ContactsService } from "./contacts-commands.js"
 import type { readDownloadedFiles } from "./files.js"
-import type { ZoomMcpOptions } from "./mcp.js"
 import type { RecordingScheduleService } from "./recording-schedule.js"
 import { runCommand, zoomDefinition } from "./run.js"
 import type { StoreConnection, StoreConnectRequest } from "./store-connection.js"
@@ -41,6 +39,8 @@ export interface ProgramDeps {
   readPaste?: (signal: AbortSignal) => Promise<string>
   /** Where `session start --answer-stdin` reads its answers; process.stdin when left out. */
   stdin?: NodeJS.ReadableStream
+  /** Where `mcp serve` writes the protocol; process.stdout when left out. */
+  stdout?: NodeJS.WritableStream
   /** A y/N question, default no; only at a terminal. */
   confirm?: (question: string) => Promise<boolean>
   /** The WireCat first-run questions, before a command; only the real binary passes it. */
@@ -54,8 +54,6 @@ export interface ProgramDeps {
   checkSession?: (options?: { signal?: AbortSignal }) => Promise<unknown>
   signal?: AbortSignal
   sleep?: SleepLike
-  serveMcp?: (options: ZoomMcpOptions) => Promise<void>
-  serveAllMcp?: (options: AllProfilesOptions) => Promise<void>
   streamData?: (text: string, signal: AbortSignal) => Promise<void>
 }
 export const run = runCommand

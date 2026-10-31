@@ -81,7 +81,7 @@ it("allow applies without --yes, and a flag never lifts readonly or deny", async
 
   const denied = await setup({ meetings: "deny" })
   expect(await run(["meetings", "list", "--json"], denied.deps)).toBe(5)
-  expect(denied.error().message).toContain("meetings is deny for profile work")
+  expect(denied.error().message).toContain("profile work denies meetings.list")
 })
 
 it('**the shared setup answer "read only" holds over a profile\'s allow**, and reads still run', async () => {

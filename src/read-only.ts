@@ -22,6 +22,8 @@ const usesEmbeddings = (command: Command, path: string): boolean => {
 export const refusalOf = (command: Command): string | undefined => {
   const effects = metaOf(command).effects
   const path = pathOf(command)
+  // The server only offers tools; each call is judged by the lock like the command line.
+  if (path === "mcp serve") return undefined
   if (isLogin(command)) return "log in or out"
   if (effects?.remote === "write") return "change Zoom"
   if (usesEmbeddings(command, path)) return "build meeting vectors or send text to an embedding service"

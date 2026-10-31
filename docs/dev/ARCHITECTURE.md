@@ -47,7 +47,7 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 | [meeting-semantic.ts](../../src/meeting-semantic.ts) | explicit model selection and public vector/model service adaptation |
 | [context-sources.ts](../../src/context-sources.ts), [meeting-communications-binding.ts](../../src/meeting-communications-binding.ts) | profile-local source grants and captured immutable identities over narrow metadata ports; Core owns querying, budgets and evidence assembly |
 | [store-connection.ts](../../src/store-connection.ts) | lazy public shared-store/account adapter and the selected-profile connect request, without SQL |
-| [mcp.ts](../../src/mcp.ts), [mcp-command.ts](../../src/mcp-command.ts) | `zm <profile> mcp serve`: cli-core's three shared tools over zm's own commands, run in-process (WC-MCP) |
+| [run.ts](../../src/run.ts) | the program definition; mounts cli-core's shared `doctor` and `mcp` (`appDoctorCommand`, `appMcpCommand`) over zm's own settings, so `zm <profile> mcp serve` offers cli-core's three tools over zm's commands, run in-process (WC-MCP) |
 | [answer-output.ts](../../src/answer-output.ts), [answers.ts](../../src/answers.ts) | commands answer with cli-core `itemOf`/`listOf` bodies printed by `renderAnswer`; `bodyOf` adapts the plain values cli-core meeting commands and MCP tools return; run metadata and MCP envelopes |
 | [answer-policy.ts](../../src/answer-policy.ts) | each command's declared effects ([WC-CMD-17](https://github.com/WireCatLabs/cli-base/blob/main/docs/standards/commands.md#wc-cmd-17--declare-effects-on-every-command)) bound to shared retry and next-step policies; failure rendering |
 | [streaming.ts](../../src/streaming.ts), [watch-commands.ts](../../src/watch-commands.ts), [watch-service.ts](../../src/watch-service.ts) | bounded receipts, writable completion and serial API or folder ingestion |
@@ -92,7 +92,7 @@ Installed-package acceptance tests exercise these boundaries through the actual 
 
 Command discovery uses cli-base's live Commander registry and completion helpers. Output uses the
 shared renderer and exit-code mapping. Discovery/completion avoid config and credentials; local
-doctor reads public config and probes a temporary keyring entry without opening the store or reading saved logins. Session status inspects cached
+doctor is cli-core's shared one: it reads public config and paths without opening the store or the keyring. Session status inspects cached
 OAuth state; an explicitly requested remote check uses the user profile endpoint or an injected adapter.
 The executable supplies terminal/CI context so unattended login fails before browser launch.
 

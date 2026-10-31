@@ -487,17 +487,15 @@ it("requires an explicit semantic model, preserves scan coverage, and previews g
   expect(search).toHaveBeenCalledOnce()
 })
 
-it("refuses remote semantic models offline before connecting, querying, generating or starting MCP", async () => {
+it("refuses remote semantic models offline before connecting, querying or generating", async () => {
   const { deps, output } = await setup()
   const search = vi.fn()
   const generate = vi.fn()
-  const serve = vi.fn()
   const connect = vi.fn(async () =>
     fakeConnection({ store: {} as never, accountId: 3, close: async () => {}, meetingSemantic: { search, generate } }),
   )
   useProfile(deps.configPath, "example")
   deps.connectStore = connect
-  deps.serveMcp = serve
   const remote = ["--model", "served-example", "--base-url", "https://example.invalid/v1", "--dims", "2"]
   for (const args of [
     ["search", "meetings", "example", ...remote],
@@ -508,7 +506,6 @@ it("refuses remote semantic models offline before connecting, querying, generati
   expect(connect).not.toHaveBeenCalled()
   expect(search).not.toHaveBeenCalled()
   expect(generate).not.toHaveBeenCalled()
-  expect(serve).not.toHaveBeenCalled()
   expect(output).toEqual([])
   search.mockResolvedValue(combinedPage())
   expect(
