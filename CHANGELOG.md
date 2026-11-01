@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **A `search all` meeting hit says where it is and who spoke**: a transcript hit gains `cue_ref`, the matched cue,
+  and `sender_name`, its speaker. `zm personal meetings passage <cue_ref> --before-n 3 --after-n 3 --json` opens the
+  lines around it. `ref` stays the meeting; chat and summary hits have no `cue_ref`. From cli-core 0.533.0 (was
+  0.507.0) and cli-base 0.71.0 (was 0.68.1).
+
 ## 0.63.0 — 31.10.2026
 
 ### Added

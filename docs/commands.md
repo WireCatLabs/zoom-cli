@@ -849,7 +849,7 @@ zm events list [query] [options]
 | `--json` | one JSON value. |
 | `--jsonl` | one JSON object per item. |
 
-**Returns:** event — id, event_series_id, title, description, location, starts_at, ends_at, timezone, and 12 more; every field: zm commands info events list
+**Returns:** event — id, event_series_id, title, description, location, starts_at, ends_at, timezone, and 13 more; every field: zm commands info events list
 
 **Example:** `zm personal events list --json`
 
@@ -1622,7 +1622,7 @@ zm search all <query> [options]
 | `--max-meetings <n>` | most meetings to look through, newest first, or all (default 100). |
 | `--exact` | request exact matching; unsupported meeting queries are reported as skipped. |
 
-**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 8 more; every field: zm commands info search all
+**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 10 more; every field: zm commands info search all
 
 **Example:** `zm personal search all "example plan" --json`
 
@@ -1685,7 +1685,7 @@ zm search recordings <directory> <query> [options]
 |---|---|
 | `--limit <n>` | how many hits, 1 through 1000 (default 100). |
 
-**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 8 more; every field: zm commands info search recordings
+**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 10 more; every field: zm commands info search recordings
 
 **Example:** `zm personal search recordings ./zoom-archive "example plan" --limit 100 --offline --json`
 

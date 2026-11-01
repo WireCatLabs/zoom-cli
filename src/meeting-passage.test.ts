@@ -158,3 +158,15 @@ it("answers a passage reference from another account as not found and still clos
   expect(f.close).toHaveBeenCalledOnce()
   expect(f.network).not.toHaveBeenCalled()
 })
+it("opens the place of a search all hit: its cue_ref, with the speaker on the hit", async () => {
+  const f = await setup()
+  expect(await run(["search", "all", "agreed", "--json"], f.deps)).toBe(0)
+  const [hit] = JSON.parse(f.output.join("")).items
+  expect(hit).toMatchObject({ kind: "meeting", cue_ref: f.reference, sender_name: "Alice Example" })
+  expect(hit.ref).toMatch(/^meeting:\d+\/\d+$/)
+  f.output.length = 0
+  expect(await run(["meetings", "passage", hit.cue_ref, "--before-n", "3", "--after-n", "3", "--json"], f.deps)).toBe(0)
+  const answer = JSON.parse(f.output.join(""))
+  expect(answer.item).toMatchObject({ target_ref: f.reference, coverage: { included: 3 } })
+  expect(f.network).not.toHaveBeenCalled()
+})

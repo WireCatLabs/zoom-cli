@@ -343,6 +343,13 @@ permalink is stored; a meeting join link is not an evidence link. Meeting detail
 `item`; transcripts and summaries use `items`. Details count current transcripts; use
 `meetings transcript <meeting> --history` to read retained older revisions.
 
+A `search all` meeting hit's `ref` is the meeting. A transcript hit also has `cue_ref`, the matched cue, and
+`sender_name`, who spoke it. Chat and summary hits have no `cue_ref`. Open the place of a hit with:
+
+```sh
+zm personal meetings passage CUE_REF --before-n 3 --after-n 3 --json
+```
+
 `--jsonl` emits typed records: each result is `{"type":"item","data":...}`, followed by an
 `{"type":"end","complete":true,"page":...}` record. Empty lists still emit the end record.
 Reports stay together inside one item record; each streaming acknowledgement has its own end record.
