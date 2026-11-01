@@ -360,6 +360,9 @@ Start with Zoom. Add more context when you need it. Your context. Any agent.
 
 More: [wirecat.dev](https://wirecat.dev) · [connect your AI agent][wirecat/en/docs/agents]
 
+Questions and setup help: join the [WireCat Discord](https://discord.gg/DebENqbRrJ). Bugs go to this
+repository's issues.
+
 ## Technical docs
 
 | Page | What it covers |
