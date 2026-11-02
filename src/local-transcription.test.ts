@@ -81,6 +81,15 @@ it("uses the published speech descriptor for preview and rejects absent explicit
   expect(media.recognition.version).toMatch(/^[a-f0-9]{64}$/)
   await expect(collect(source.segments(media, context))).rejects.toMatchObject({ code: "not_found" })
 })
+it("passes on the one language a speech model writes", async () => {
+  const { root, path } = await fixture()
+  const source = createWavTranscriptionSource(path, {
+    model: "gigaam-v3",
+    modelsDirectory: join(root, "empty-models"),
+    env: { HOME: root, XDG_CACHE_HOME: join(root, "cache") },
+  })
+  expect((await source.describe(context)).recognition.language).toBe("ru")
+})
 it("reuses an installed recognizer over bounded coarse windows and closes it after full verification", async () => {
   const { source, speech, model, root } = await fixture()
   const media = await source.describe(context)

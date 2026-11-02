@@ -162,6 +162,11 @@ export const ZOOM_ANSWER_ENTITIES = {
   "meetings embeddings": { name: "meeting_embedding", schema: MEETING_RESULT_ENTITIES.meeting_embedding, shared: true },
   "meetings sync": { name: "meeting_ingestion", schema: MEETING_RESULT_ENTITIES.meeting_ingestion, shared: true },
   "meetings import": { name: "meeting_ingestion", schema: MEETING_RESULT_ENTITIES.meeting_ingestion, shared: true },
+  "meetings repair": {
+    name: "meeting_repair",
+    schema: MEETING_RESULT_ENTITIES.meeting_repair,
+    shared: true,
+  },
   watch: { name: "meeting_ingestion", schema: MEETING_RESULT_ENTITIES.meeting_ingestion, shared: true },
   "meetings export": { name: "meeting_export", schema: MEETING_RESULT_ENTITIES.meeting_export, shared: true },
   "meetings update": { name: "meeting_association", schema: MEETING_RESULT_ENTITIES.meeting_association, shared: true },

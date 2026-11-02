@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**350 ✅ · 16 ⛔ · 0 ❌** — 89 commands, 277 options.
+**354 ✅ · 17 ⛔ · 0 ❌** — 90 commands, 281 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -83,6 +83,10 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings import` |  | ✅ |  |
 | `meetings import` | `--json` | ✅ |  |
 | `meetings import` | `--jsonl` | ✅ |  |
+| `meetings repair` |  | ✅ |  |
+| `meetings repair` | `--json` | ✅ |  |
+| `meetings repair` | `--jsonl` | ✅ |  |
+| `meetings repair` | `--yes` | ✅ |  |
 | `meetings scheduled` |  | ✅ |  |
 | `meetings scheduled` | `--since-time` | ✅ |  |
 | `meetings scheduled` | `--before-time` | ✅ |  |
@@ -372,6 +376,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | *global* | `--max-output-bytes` | ✅ |  |
 | *global* | `--brief` | ✅ |  |
 | *global* | `--full` | ✅ |  |
+| *global* | `--compact` | ⛔ | cli-core 0.550.0 src/cli/compact.test.ts covers the shared switch; zm adds no compact rows of its own. |
 | *global* | `--dry-run` | ✅ |  |
 | *global* | `--yes` | ✅ |  |
 | *global* | `--record` | ✅ |  |

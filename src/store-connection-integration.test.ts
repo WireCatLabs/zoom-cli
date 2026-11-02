@@ -356,3 +356,54 @@ it("lets the first import on a computer with no profile make that profile", asyn
   expect(await run(["FilesExample", "meetings", "import", transcripts, "--json"], deps)).toBe(0)
   expect(readConfig(configPath).profiles).toEqual(["FilesExample"])
 })
+
+it("meetings repair previews the language of stored transcripts that have none and stores it only with --yes", async () => {
+  const value = await fixture()
+  const store = await openStore({ path: value.path, env: value.env, now: () => 3000 })
+  try {
+    const input = sampleMeeting()
+    input.meeting.accountId = value.accountId
+    input.meeting.externalId = "example-russian-occurrence"
+    input.participants[0].identity.associatePerson = false
+    const [transcript] = input.transcripts
+    if (!transcript) throw new Error("missing invented transcript")
+    transcript.language = null
+    for (const row of transcript.rows) row.text = "Давайте обсудим план на следующую неделю."
+    await store.meetings.saveMeeting(input)
+  } finally {
+    await store.close()
+  }
+  const output: string[] = []
+  const denied = async () => {
+    throw new Error("unexpected external access")
+  }
+  const deps: ProgramDeps = {
+    configPath: join(value.directory, "config.json"),
+    tokens: new TokenManager({
+      clientId: "example-client",
+      service: "example",
+      keyring: memoryKeyring(),
+      fetch: denied,
+    }),
+    fetch: denied,
+    openBrowser: denied,
+    connectStore: createStoreConnector({ path: value.path, env: value.env }),
+    data: (text) => output.push(text),
+    diagnostic: () => {},
+  }
+  useProfile(deps.configPath, request.profile)
+  const fill = async (...extra: string[]) => {
+    expect(await run(["meetings", "repair", "--json", ...extra], deps)).toBe(0)
+    return JSON.parse(output.at(-1) ?? "{}").item
+  }
+  expect(await fill()).toMatchObject({
+    applied: false,
+    transcripts: 1,
+    languages: [{ language: "ru", transcripts: 1 }],
+  })
+  expect(await fill()).toMatchObject({ transcripts: 1 })
+  expect(await fill("--yes")).toMatchObject({ applied: true, transcripts: 1 })
+  expect(await fill()).toMatchObject({ applied: false, transcripts: 0 })
+  expect(await run(["meetings", "repair", "--jsonl"], deps)).toBe(0)
+  expect(output.at(-1)).toContain('"transcripts":0')
+})

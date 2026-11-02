@@ -128,6 +128,7 @@ export const createWavTranscriptionSource = (
           model: recognition.model,
           version: recognition.version,
           timing: "fixed-windows" as const,
+          ...(recognition.language === undefined ? {} : { language: recognition.language }),
         }),
       })
     },

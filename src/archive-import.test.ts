@@ -514,3 +514,13 @@ it("rejects a returned meeting from a different account or occurrence before ack
       ),
     ).rejects.toMatchObject({ code: "outcome_unknown" })
 })
+
+it("stores the language each imported transcript is in", async () => {
+  const { root } = await archiveFixture({ text: "Давайте обсудим план на следующую неделю и сроки." })
+  const store = memoryMeetingStore()
+  const original = await store.saveMeeting(sampleMeeting())
+  await collect(
+    applyArchiveImport(await preflightArchiveImport(root), memoryReceipts(store), { accountId: 1, now: 5000 }),
+  )
+  expect((await store.meeting(original.meeting.id))?.transcripts.at(-1)?.transcript.language).toBe("ru")
+})
