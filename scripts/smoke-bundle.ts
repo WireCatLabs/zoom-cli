@@ -47,6 +47,7 @@ const version = run(["--version"])
 check("--version prints a version and nothing else", /^\d+\.\d+\.\d+\n$/.test(version.stdout) && version.stderr === "")
 const recorded = run(["--version"], { [`${PREFIX}_TEST_ARGV_LOG`]: join(isolated, "argv.jsonl") })
 check("the loader's --version is the bundle's", recorded.stdout === version.stdout)
+check("--wcat-describe names the command", JSON.parse(run(["--wcat-describe"]).stdout || "{}").name === COMMAND)
 check("--help names the command", run(["--help"]).stdout.includes(`Usage: ${COMMAND}`))
 check("skill show prints the SKILL.md the package ships", run(["skill", "show"]).stdout.startsWith("---"))
 check(
