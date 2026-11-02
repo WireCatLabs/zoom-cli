@@ -14,7 +14,8 @@
     "url": "git+https://github.com/WireCatLabs/zoom-cli.git"
   },
   "bin": {
-    "zm": "dist/bin/zm.js"
+    "zm": "dist/bin/zm.js",
+    "wcat-zm": "dist/bin/zm.js"
   },
   "files": [
     "dist",

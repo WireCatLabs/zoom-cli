@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **`wcat zm` runs the tool, and `wcat --help` lists it.** The package installs `wcat-zm` beside `zm`, and
+  `wcat-zm --wcat-describe` prints the tool's name, version and description for `wcat`.
+
 ## 0.65.0 — 02.11.2026
 
 ### Added
