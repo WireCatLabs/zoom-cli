@@ -226,7 +226,12 @@ preparation can read it.
 ```sh
 zm personal stats meetings show --since-time 30d --json
 zm personal stats meetings top --project RES --limit 5 --json
+zm personal stats meetings history --by week --since-time 90d --json
 ```
+
+`stats meetings history` counts meetings, their minutes and the meetings with a transcript per day, week (its
+Monday) or series, from the meetings alone. A meeting with no end counts as a meeting but adds no minutes. Under
+`--by series` the busiest series comes first, and every meeting outside a series shares one `no-series` row.
 
 `show` gives the meetings, lines, words and talk time in the selection, by week (weeks start on Monday in
 `--timezone`, the computer's zone by default), with the ten speakers who talked most. `top` lists speakers by talk
@@ -323,6 +328,7 @@ does not import that transcript into the meeting database until you request arch
 | `remote-meetings create\|update\|cancel` | a simple Zoom meeting change, asked first; `--dry-run` previews |
 | `mcp serve [--profiles a,b\|all]` | serve zm's commands to an MCP agent over stdio, as the profile's permissions allow |
 | `stats meetings show\|top` | talk time, lines and words by speaker and by week |
+| `stats meetings history` | meetings, minutes and transcripts per day, week or series |
 | `skill show`, `skill install --for agents` | print or explicitly install the packaged agent guide |
 
 Stored `meetings` commands use local database ids; `remote-meetings` uses Zoom's numeric ids.

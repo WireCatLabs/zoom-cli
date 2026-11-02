@@ -1731,7 +1731,7 @@ numbers about the stored meetings
 
 ### `zm stats meetings`
 
-talk time, lines and words, by speaker and by week
+talk time, lines and words by speaker and week; meetings and minutes by day, week or series
 
 #### `zm stats meetings show`
 
@@ -1777,6 +1777,29 @@ zm stats meetings top [options]
 **Returns:** meeting speaker — key, name, person_id, identity_id, meetings, lines, words, talk_ms, and 1 more; every field: zm commands info stats meetings top
 
 **Example:** `zm personal stats meetings top --project RES --limit 5 --json`
+
+#### `zm stats meetings history`
+
+meetings, minutes and meetings with a transcript, per day, week or series; reads meetings only
+
+```sh
+zm stats meetings history [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--since-time <time>` | meetings starting at or after this date or time (ISO 8601, or 30d ago). |
+| `--until-time <time>` | meetings starting at or before this date or time; a date alone is that whole day. |
+| `--timezone <zone>` | the IANA zone dates and weeks are read in (default: this computer's). |
+| `--event-id <id>` | only meetings linked to this stored event. |
+| `--project <project>` | meetings confirmed in this project, by name, key or alias. |
+| `--topic-name <name>` | meetings with this topic label, by name or alias. |
+| `--by <grouping>` | one row per day, week, series. |
+| `--limit <n>` | the newest days or weeks, or the busiest series (default 100). |
+
+**Returns:** meeting counts — by, meetings, minutes, mean_minutes, transcripts, rows, has_more; every field: zm commands info stats meetings history
+
+**Example:** `zm personal stats meetings history --by week --since-time 90d --json`
 
 ## `zm review`
 
