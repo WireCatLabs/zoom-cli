@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **A meeting transcript records its language.** `meetings import` of a downloaded archive, `meetings sync` and
+  `meetings transcribe` store `ru`, `en`… instead of nothing: `gigaam-v3` writes Russian, any other transcript is
+  read from its letters, and a mixed or short one stays unknown. A meeting that is mostly Russian with a few English
+  lines is Russian. `meetings show` lists it per transcript.
+- **Meeting search hits say the language and the line**: `language`, `line` and `lines_total` on transcript hits of
+  `search meetings` and `search all` ("line 161 of 192").
+- **`zm personal meetings repair`** previews the language of stored transcripts that have none; `--yes` stores it.
+  From cli-core with WireCatLabs/cli-core#2389.
+
 ## 0.64.0 — 01.11.2026
 
 ### Added

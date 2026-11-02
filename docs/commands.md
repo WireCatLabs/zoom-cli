@@ -510,6 +510,26 @@ zm meetings import <folder> [options]
 
 **Example:** `zm personal meetings import ./downloaded-transcripts --json`
 
+### `zm meetings repair`
+
+preview filling in what older builds left out of stored transcripts (their language); --yes stores it
+
+**Changes local data.**
+
+```sh
+zm meetings repair [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--json` | one JSON value. |
+| `--jsonl` | one JSON object per item. |
+| `--yes` | store the detected languages; otherwise only preview. |
+
+**Returns:** meeting repair — account_id, applied, transcripts, languages; every field: zm commands info meetings repair
+
+**Example:** `zm personal meetings repair --json`
+
 ### `zm meetings scheduled`
 
 discover candidate meeting series from one bounded provider page
@@ -1622,7 +1642,7 @@ zm search all <query> [options]
 | `--max-meetings <n>` | most meetings to look through, newest first, or all (default 100). |
 | `--exact` | request exact matching; unsupported meeting queries are reported as skipped. |
 
-**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 10 more; every field: zm commands info search all
+**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 13 more; every field: zm commands info search all
 
 **Example:** `zm personal search all "example plan" --json`
 
@@ -1662,7 +1682,7 @@ zm search meetings <query> [options]
 | `--max-rows <n>` | by meaning: most transcript lines to read, 1 through 100000. |
 | `--max-text-bytes <bytes>` | by meaning: most transcript text to read (default 4 MiB). |
 
-**Returns:** meeting hit — ref, meeting, scope, id, excerpt, offset_ms, match, corrections, and 2 more; every field: zm commands info search meetings
+**Returns:** meeting hit — ref, meeting, scope, id, excerpt, offset_ms, language, line, and 5 more; every field: zm commands info search meetings
 
 **Next usually:** `zm meetings show <meeting>`, `zm meetings transcript <meeting>`, `zm meetings summary <meeting>`
 
@@ -1685,7 +1705,7 @@ zm search recordings <directory> <query> [options]
 |---|---|
 | `--limit <n>` | how many hits, 1 through 1000 (default 100). |
 
-**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 10 more; every field: zm commands info search recordings
+**Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 13 more; every field: zm commands info search recordings
 
 **Example:** `zm personal search recordings ./zoom-archive "example plan" --limit 100 --offline --json`
 
@@ -1844,7 +1864,7 @@ zm searches run <name>
 |---|---|---|
 | `name` | required | a saved search's name. |
 
-**Returns:** meeting hit — ref, meeting, scope, id, excerpt, offset_ms, match, corrections, and 2 more; every field: zm commands info searches run
+**Returns:** meeting hit — ref, meeting, scope, id, excerpt, offset_ms, language, line, and 5 more; every field: zm commands info searches run
 
 **Next usually:** `zm meetings show <meeting>`, `zm meetings transcript <meeting>`, `zm meetings summary <meeting>`
 

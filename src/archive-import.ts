@@ -1,6 +1,10 @@
 import { createHash } from "node:crypto"
 import { CliError, isCliError } from "@wirecat/cli-base"
-import type { MeetingTranscriptReceiptStore, TranscriptAppend } from "@wirecat/cli-core/meetings"
+import {
+  type MeetingTranscriptReceiptStore,
+  type TranscriptAppend,
+  transcriptLanguage,
+} from "@wirecat/cli-core/meetings"
 import { type ArchiveTranscriptOptions, readArchiveTranscripts } from "./archive-transcripts.js"
 import { checkCancelled } from "./errors.js"
 
@@ -78,7 +82,7 @@ export const preflightArchiveImport = async (
       source: `zoom-archive:vtt:${createHash("sha256").update(asset.id).digest("hex")}`,
       contentHash: asset.sha256,
       format: "vtt",
-      language: null,
+      language: transcriptLanguage(cues.map((cue) => cue.text)),
       externalCreatedAt: null,
       deletedAt: null,
       metadata: {
