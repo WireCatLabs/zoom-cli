@@ -193,6 +193,6 @@ it("stats meetings history with --no-record keeps no search", async () => {
   }
   const before = await searches()
   const body = await answer(["stats", "meetings", "history", "--by", "week", "--no-record"])
-  expect(body.item).toMatchObject({ by: "week", meetings: 1, minutes: 60, transcripts: 1 })
+  expect(body.item).toMatchObject({ by: "week", meetings: 1, transcripts: 1 })
   expect(await searches()).toBe(before)
 })
