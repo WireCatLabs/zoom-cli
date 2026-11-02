@@ -44,4 +44,9 @@ export const UNTESTED: { command: string; option?: string; reason: string }[] = 
     reason:
       "first-screen.test.ts and the installed-package acceptance check it; Commander exits before preAction tracing.",
   },
+  {
+    command: "",
+    option: "--compact",
+    reason: "cli-core 0.550.0 src/cli/compact.test.ts covers the shared switch; zm adds no compact rows of its own.",
+  },
 ]

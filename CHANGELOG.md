@@ -11,7 +11,13 @@
 - **Meeting search hits say the language and the line**: `language`, `line` and `lines_total` on transcript hits of
   `search meetings` and `search all` ("line 161 of 192").
 - **`zm personal meetings repair`** previews the language of stored transcripts that have none; `--yes` stores it.
-  From cli-core with WireCatLabs/cli-core#2389.
+  From cli-core 0.552.0 (was 0.533.0) and cli-base 0.75.0 (was 0.71.0).
+
+### Changed — may break callers
+
+- **A search that runs out of time fails with `timeout` and reason `query.time-limit`**, in about 2 s, instead of
+  `validation_error` / `query.too-large` after running far past the limit. The query was valid; narrow the dates or
+  the meeting to search less of the store. (cli-core 0.552.0)
 
 ## 0.64.0 — 01.11.2026
 
