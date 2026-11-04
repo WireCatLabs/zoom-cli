@@ -199,7 +199,9 @@ describe("portable CLI discovery and diagnostics", () => {
     for (const { fix } of config.issues) expect(await run((fix ?? "").split(" ").slice(1), deps)).toBe(0)
     expect(await run(["--json", "doctor"], deps)).toBe(0)
     expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({ config: { issues: [] }, profiles: ["work"] })
-    expect(JSON.parse(await readFile(deps.configPath, "utf8"))).toEqual({ source: "api", profiles: { work: {} } })
+    const fixed = JSON.parse(await readFile(deps.configPath, "utf8"))
+    expect(fixed.profiles).toEqual({ work: {} })
+    for (const gone of ["example_id", "example_setting", "files_timezone"]) expect(fixed).not.toHaveProperty(gone)
     expect([...stdout, ...stderr].join("")).not.toContain("example-secret-client")
   })
   it("reports where broken JSON stops parsing, with no fix, and still answers", async () => {

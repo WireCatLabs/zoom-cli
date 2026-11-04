@@ -1,6 +1,13 @@
 import { existsSync, readFileSync, statSync } from "node:fs"
 import { CliError, saveConfigFile } from "@wirecat/cli-base"
-import { issueMessage } from "@wirecat/cli-core/cli"
+import {
+  type DeclaredSetting,
+  issueMessage,
+  KEEP_RUNS_FOR_DAYS,
+  KEEP_SUCCESSFUL_RUNS_FOR_DAYS,
+  RUNS_SIZE_LIMIT_MB,
+  withSettingDefaults,
+} from "@wirecat/cli-core/cli"
 import { LEVELS, type Level } from "@wirecat/cli-core/sends"
 import * as v from "valibot"
 import {
@@ -88,6 +95,32 @@ const ConfigFile = v.strictObject({
 
 const DOCTOR = "zm doctor"
 
+/**
+ * Every setting written into the file with its default, so the owner sees and edits it there (WC-CMD-30); each default
+ * is the one the code applies when the key is missing. `client_id`, `files_folder` and `files_timezone` are left out:
+ * their absence means "none yet" or "this computer's zone", which no value says.
+ */
+export const ZOOM_SETTINGS: readonly DeclaredSetting[] = [
+  {
+    key: "source",
+    default: "api",
+    description: "api reads recordings from Zoom; files imports transcript files from files.folder",
+  },
+  { key: "record", default: true, description: "keep every run in zm runs list; false keeps failed runs only" },
+  {
+    key: "record_input",
+    default: true,
+    description: 'keep what was typed in a run\'s command line: true, false, or "failed" for failed runs only',
+  },
+  { key: "keep_runs_for_days", default: KEEP_RUNS_FOR_DAYS, description: "days a run is kept" },
+  {
+    key: "keep_successful_runs_for_days",
+    default: KEEP_SUCCESSFUL_RUNS_FOR_DAYS,
+    description: "days a successful run is kept",
+  },
+  { key: "runs_size_limit_mb", default: RUNS_SIZE_LIMIT_MB, description: "the most megabytes all runs may take" },
+]
+
 export interface ConfigInspection {
   found: boolean
   /** Every problem in the file; the config below is what loads without them. */
@@ -149,19 +182,39 @@ export const readConfig = (path: string, permissionKeys?: ReadonlySet<string>): 
   return config
 }
 
-/** Changes the file as written: whatever else it holds, problems included, stays as it was. */
+/**
+ * Changes the file as written: whatever else it holds, problems included, stays as it was, and each declared setting
+ * it lacks is added at its default. `change` returns the setting it removed, so the write does not put it back.
+ */
 const changeFile = (
   path: string,
   permissionKeys: ReadonlySet<string> | undefined,
-  change: (raw: Record<string, unknown>, inspection: ConfigInspection) => void,
+  change: (raw: Record<string, unknown>, inspection: ConfigInspection) => string | undefined,
 ): ZoomConfig => {
   const inspection = inspectConfig(path, permissionKeys)
   if (!inspection.raw)
     throw new CliError("configuration_error", issueMessage(inspection.issues.map(publicIssue), DOCTOR))
   const raw = structuredClone(inspection.raw)
-  change(raw, inspection)
-  saveConfigFile(path, raw)
+  const removed = change(raw, inspection)
+  saveConfigFile(
+    path,
+    withSettingDefaults(
+      raw,
+      ZOOM_SETTINGS.filter(({ key }) => key !== removed),
+    ).config,
+  )
   return inspectConfig(path, permissionKeys).config
+}
+
+/** Each declared setting the file lacks, written at its default; the keys added. No file yet: nothing to fill. */
+export const migrateConfig = (path: string): string[] => {
+  const inspection = inspectConfig(path)
+  if (!inspection.found) return []
+  if (!inspection.raw)
+    throw new CliError("configuration_error", issueMessage(inspection.issues.map(publicIssue), DOCTOR))
+  const { config, added } = withSettingDefaults(inspection.raw, ZOOM_SETTINGS)
+  if (added.length > 0) saveConfigFile(path, config)
+  return added
 }
 
 const profileEntry = (raw: Record<string, unknown>, profile: string): Record<string, unknown> => {
@@ -277,6 +330,7 @@ export const unsetConfig = (
     if (at[2] === "permissions" && isNode(entry) && isNode(entry.permissions)) {
       if (Object.keys(entry.permissions).length === 0) delete entry.permissions
     }
+    return at.join(".")
   })
 
 const profileSettingAt = (key: string, profile: string | undefined): string[] => {
@@ -291,9 +345,7 @@ const profileSettingAt = (key: string, profile: string | undefined): string[] =>
 /** A successful login makes a profile; the store account and the archive follow it by name. */
 export const addProfile = (path: string, profile: string): void => {
   if (readConfig(path).profiles.includes(profile)) return
-  changeFile(path, undefined, (raw) => {
-    profileEntry(raw, profile)
-  })
+  changeFile(path, undefined, (raw) => void profileEntry(raw, profile))
 }
 
 /** The zone a transcript file name's time is read in: `files.timezone`, else this computer's. */

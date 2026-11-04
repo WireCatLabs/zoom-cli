@@ -319,6 +319,20 @@ zm config unset <key>
 
 **Example:** `zm config unset files.folder`
 
+### `zm config migrate`
+
+write each setting the file lacks at its default, keeping yours
+
+**Changes local data.**
+
+```sh
+zm config migrate
+```
+
+**Returns:** write each setting the file lacks at its default, keeping yours
+
+**Example:** `zm config migrate`
+
 ## `zm meetings`
 
 stored meetings and their records

@@ -197,10 +197,20 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
     expect(saved.stderr).toBe("")
     expect(readAnswer(saved.stdout).client_id).toBe("invented-public-client")
     const read = invoke("--json", "config", "show")
-    expect(readAnswer(read.stdout)).toEqual(readAnswer(saved.stdout))
+    const { settings, ...shown } = readAnswer(read.stdout) as Record<string, unknown>
+    expect(shown).toEqual(readAnswer(saved.stdout))
+    expect(settings).toContainEqual(expect.objectContaining({ setting: "source", default: "api" }))
     expect(read.stderr).toBe("")
     const disk = JSON.parse(readFileSync(join(config, "config.json"), "utf8"))
-    expect(Object.keys(disk)).toEqual(["client_id"])
+    expect(Object.keys(disk)).toEqual([
+      "client_id",
+      "source",
+      "record",
+      "record_input",
+      "keep_runs_for_days",
+      "keep_successful_runs_for_days",
+      "runs_size_limit_mb",
+    ])
   })
 
   it("discovers the installed MCP tools for a named profile without config or database and exits on EOF", async () => {

@@ -2,11 +2,17 @@ import { mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "n
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, expect, it } from "vitest"
-import { filesZone, inspectConfig, readConfig, setConfig, unsetConfig } from "./config.js"
+import { filesZone, inspectConfig, readConfig, setConfig, unsetConfig, ZOOM_SETTINGS } from "./config.js"
 import { publicIssue } from "./config-issues.js"
 
 const configPath = () => join(mkdtempSync(join(tmpdir(), "zm-config-")), "config.json")
-const saved = (path: string) => JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>
+// Every write fills in the declared settings; these tests check what the owner wrote.
+const saved = (path: string) =>
+  Object.fromEntries(
+    Object.entries(JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>).filter(
+      ([key, value]) => ZOOM_SETTINGS.find((setting) => setting.key === key)?.default !== value,
+    ),
+  )
 describe("config names", () => {
   it("reads a snake_case file without rewriting it or changing its mode", () => {
     const path = configPath()
