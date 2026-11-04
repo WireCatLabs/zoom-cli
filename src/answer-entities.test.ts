@@ -20,6 +20,7 @@ const HOUSEKEEPING_ANSWERS = new Set([
   "commands",
   "commands info",
   "complete",
+  "config migrate",
   "config set",
   "config show",
   "config unset",

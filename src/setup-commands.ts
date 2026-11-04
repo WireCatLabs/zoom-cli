@@ -13,11 +13,20 @@ import {
   NO_EFFECTS,
   REMOTE_WRITE,
   refuseCommandName,
+  settingRows,
   signInSteps,
 } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { addStandardCommands } from "./commands.js"
-import { addProfile, inspectConfig, setConfig, unsetConfig, type ZoomConfig } from "./config.js"
+import {
+  addProfile,
+  inspectConfig,
+  migrateConfig,
+  setConfig,
+  unsetConfig,
+  ZOOM_SETTINGS,
+  type ZoomConfig,
+} from "./config.js"
 import { login } from "./login.js"
 import { addModelsCommands } from "./models-commands.js"
 import { permissionKeys } from "./permissions.js"
@@ -50,8 +59,8 @@ export const addConfigCommands = (
   annotate(cfg.command("show"), { effects: LOCAL_READ })
     .description("show local configuration")
     .action(() => {
-      const { config, issues } = inspectConfig(configPath, permissionKeys(program))
-      output(itemOf(config))
+      const { config, issues, raw } = inspectConfig(configPath, permissionKeys(program))
+      output(itemOf({ ...config, settings: settingRows(raw ?? {}, ZOOM_SETTINGS) }))
       for (const issue of issues)
         warn(`${issue.what}, so it is left out${issue.fix ? ` — \`${issue.fix}\` removes it` : ""}`)
     })
@@ -69,6 +78,13 @@ export const addConfigCommands = (
     .action(function (this: Command, key: string) {
       refuseAgentPermissions(this, key)
       output(itemOf(unsetConfig(configPath, key, named(), permissionKeys(program))))
+    })
+  grantsAuthority(annotate(cfg.command("migrate"), { effects: LOCAL_WRITE, examples: ["zm config migrate"] }))
+    .description("write each setting the file lacks at its default, keeping yours")
+    .action(() => {
+      const added = migrateConfig(configPath)
+      output(itemOf({ config_file: configPath, added }))
+      warn(added.length > 0 ? `added ${added.join(", ")} to ${configPath}` : `${configPath} already has every setting`)
     })
 }
 

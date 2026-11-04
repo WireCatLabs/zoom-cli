@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **`zm config migrate` writes each setting the file lacks at its default, and every write zm makes to the file adds
+  them too**: `source`, `record`, `record_input`, `keep_runs_for_days`, `keep_successful_runs_for_days` and
+  `runs_size_limit_mb`. You then find and edit them in `config.json` without the docs. Your values, their order and
+  keys zm does not know stay; `config unset` does not put back what it removed, and a plain read never rewrites the
+  file (cli-core 0.563.0).
+- **`zm config show` lists each of them under `settings`** with its value, its default, whether the file sets it and
+  what it does.
+
 ## 0.66.0 — 03.11.2026
 
 ### Added

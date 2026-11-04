@@ -7,7 +7,13 @@ system keyring. This reference gives the accepted keys and their defaults.
 ## Settings
 
 Set a value with `zm config set <key> <value>`, remove it with `zm config unset <key>`, and see them all with
-`zm config show`.
+`zm config show`. Under `settings` it lists `source`, `record`, `record_input`, `keep_runs_for_days`,
+`keep_successful_runs_for_days` and `runs_size_limit_mb` with the value, the default and whether the file sets it.
+
+`zm config migrate` writes each of those the file lacks at its default, so you see and edit them in the file. Your
+values, their order and keys zm does not know stay as they are. Every write zm makes to the file, `config set` and
+a first login included, adds them too; `config unset` does not put back the setting it removed. The client ID, the
+files folder and the time zone are not written: unset, they mean "none yet" and "this computer's zone".
 
 | Key | Meaning |
 |---|---|
