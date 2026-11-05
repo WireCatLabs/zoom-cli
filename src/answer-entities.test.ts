@@ -100,7 +100,7 @@ const fixture = async () => {
     expect(await run([...argv, ...json], deps), argv.join(" ")).toBe(0)
     return JSON.parse(stdout.join("")) as Record<string, unknown> & { items?: { ref: string }[] }
   }
-  return { deps, answer, meeting: String(saved.meeting.id), person: `person:${person?.uid}` }
+  return { deps, answer, path, env, meeting: String(saved.meeting.id), person: `person:${person?.uid}` }
 }
 
 const leaves = (command: Command): Command[] =>
@@ -136,6 +136,7 @@ it("answers every command that declares an entity with that entity's schema", as
     ["review", ["review", "--since-time", "2026-10-01"]],
     ["stats meetings show", ["stats", "meetings", "show", "--since-time", "2026-10-01"]],
     ["stats meetings top", ["stats", "meetings", "top", "--since-time", "2026-10-01"]],
+    ["stats meetings history", ["stats", "meetings", "history", "--by", "week", "--since-time", "2026-10-01"]],
     ["mentions list", ["mentions", "list", "started_at>=2026-10-01"]],
     ["store info", ["store", "info"]],
   ]
@@ -178,4 +179,20 @@ it("keeps search meetings fields asked of a saved search", async () => {
   await answer(["searches", "create", "weekly", "example plan"])
   const kept = await answer(["searches", "run", "weekly", "--json=scope,offset_ms"])
   expect(Object.keys(kept.items?.[0] ?? {}).sort()).toEqual(["offset_ms", "scope"])
+})
+
+it("stats meetings history with --no-record keeps no search", async () => {
+  const { answer, path, env } = await fixture()
+  const searches = async () => {
+    const store = await openStore({ path, env })
+    try {
+      return (await store.searches.searchHistory(1000)).length
+    } finally {
+      await store.close()
+    }
+  }
+  const before = await searches()
+  const body = await answer(["stats", "meetings", "history", "--by", "week", "--no-record"])
+  expect(body.item).toMatchObject({ by: "week", meetings: 1, transcripts: 1 })
+  expect(await searches()).toBe(before)
 })

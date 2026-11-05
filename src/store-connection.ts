@@ -18,7 +18,7 @@ import type { MeetingLinksRead, MeetingReviewRead } from "./meeting-review-comma
 import { type MeetingHitSearch, validateMeetingHitSearch } from "./meeting-search-commands.js"
 import { createMeetingSemanticCapabilities } from "./meeting-semantic.js"
 import type { MeetingSemanticCapabilities } from "./meeting-semantic-commands.js"
-import type { MeetingStatsRead } from "./meeting-stats-commands.js"
+import type { MeetingCountsRead, MeetingStatsRead } from "./meeting-stats-commands.js"
 import { profilePattern } from "./profile.js"
 import { type UnifiedSearch, validateUnifiedSearch } from "./unified-search.js"
 
@@ -38,6 +38,7 @@ export interface StoreConnection {
   meetingContext: MeetingContextCapabilities
   meetingSemantic: MeetingSemanticCapabilities
   meetingStats?: MeetingStatsRead
+  meetingCounts?: MeetingCountsRead
   meetingReview?: MeetingReviewRead
   meetingLinks?: MeetingLinksRead
   meetingSearches?: MeetingSearchesService
@@ -255,6 +256,10 @@ export const createStoreConnector =
         meetingStats: async (request) => {
           const { readMeetingStats } = await import("@wirecat/cli-core/services")
           return readMeetingStats(connected, { ...request, accountId })
+        },
+        meetingCounts: async (request) => {
+          const { readMeetingCounts } = await import("@wirecat/cli-core/services")
+          return readMeetingCounts(connected, { ...request, accountId })
         },
         meetingReview: async (request) => {
           const { readMeetingReview } = await import("@wirecat/cli-core/services")

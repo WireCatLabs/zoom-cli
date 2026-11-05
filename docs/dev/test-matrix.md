@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**356 ✅ · 17 ⛔ · 0 ❌** — 91 commands, 282 options.
+**365 ✅ · 17 ⛔ · 0 ❌** — 92 commands, 290 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -328,6 +328,15 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `stats meetings top` | `--topic-name` | ✅ |  |
 | `stats meetings top` | `--max-rows` | ✅ |  |
 | `stats meetings top` | `--limit` | ✅ |  |
+| `stats meetings history` |  | ✅ |  |
+| `stats meetings history` | `--since-time` | ✅ |  |
+| `stats meetings history` | `--until-time` | ✅ |  |
+| `stats meetings history` | `--timezone` | ✅ |  |
+| `stats meetings history` | `--event-id` | ✅ |  |
+| `stats meetings history` | `--project` | ✅ |  |
+| `stats meetings history` | `--topic-name` | ✅ |  |
+| `stats meetings history` | `--by` | ✅ |  |
+| `stats meetings history` | `--limit` | ✅ |  |
 | `review` |  | ✅ |  |
 | `review` | `--since-time` | ✅ |  |
 | `review` | `--until-time` | ✅ |  |

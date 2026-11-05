@@ -1,7 +1,16 @@
+import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
 import { type Body, itemOf, LOCAL_READ, listOf, NO_EFFECTS } from "@wirecat/cli-core/cli"
-import { type MeetingStats, meetingSpeakerItem, meetingStatsItem } from "@wirecat/cli-core/meetings"
-import type { MeetingStatsRequest } from "@wirecat/cli-core/services"
+import {
+  MEETING_COUNTS_GROUPINGS,
+  type MeetingCounts,
+  type MeetingCountsGrouping,
+  type MeetingStats,
+  meetingCountsItem,
+  meetingSpeakerItem,
+  meetingStatsItem,
+} from "@wirecat/cli-core/meetings"
+import type { MeetingCountsRequest, MeetingStatsRequest } from "@wirecat/cli-core/services"
 import type { Command } from "commander"
 import { bytes } from "./execution.js"
 import { type SelectionFlags, selectionOf, selectionOptions } from "./meeting-selection-options.js"
@@ -12,6 +21,13 @@ interface StatsFlags extends SelectionFlags {
 }
 
 export type MeetingStatsRead = (request: Omit<MeetingStatsRequest, "accountId">) => Promise<MeetingStats>
+export type MeetingCountsRead = (request: Omit<MeetingCountsRequest, "accountId">) => Promise<MeetingCounts>
+
+const groupingOf = (value: string): MeetingCountsGrouping => {
+  if (!(MEETING_COUNTS_GROUPINGS as readonly string[]).includes(value))
+    throw new CliError("validation_error", `--by takes ${MEETING_COUNTS_GROUPINGS.join(", ")}`)
+  return value as MeetingCountsGrouping
+}
 
 const filters = (command: Command): Command =>
   selectionOptions(command).option(
@@ -34,13 +50,18 @@ const requestOf = (flags: StatsFlags, signal?: AbortSignal) => {
  */
 export const addMeetingStatsCommands = (
   program: Command,
-  deps: { read: () => Promise<MeetingStatsRead>; signal: () => AbortSignal | undefined; output: (body: Body) => void },
+  deps: {
+    read: () => Promise<MeetingStatsRead>
+    counts: () => Promise<MeetingCountsRead>
+    signal: () => AbortSignal | undefined
+    output: (body: Body) => void
+  },
 ): void => {
   const stats =
     program.commands.find((command) => command.name() === "stats") ??
     annotate(program.command("stats"), { effects: NO_EFFECTS }).description("numbers about the stored meetings")
   const meetings = annotate(stats.command("meetings"), { effects: NO_EFFECTS }).description(
-    "talk time, lines and words, by speaker and by week",
+    "talk time by speaker and week; meetings and minutes by day, week or series",
   )
   annotate(filters(meetings.command("show")), {
     effects: LOCAL_READ,
@@ -72,5 +93,24 @@ export const addMeetingStatsCommands = (
           meta,
         }),
       )
+    })
+  annotate(selectionOptions(meetings.command("history")), {
+    effects: LOCAL_READ,
+    output: { entity: "meeting_counts" },
+    examples: ["zm personal stats meetings history --by week --since-time 90d --json"],
+  })
+    .summary("meetings, minutes and transcripts per day, week or series")
+    .description("meetings, minutes and meetings with a transcript, per day, week or series; reads meetings only")
+    .requiredOption("--by <group>", `one row per ${MEETING_COUNTS_GROUPINGS.join(", ")}`, groupingOf)
+    .option("--limit <n>", "the newest days or weeks, or the busiest series (default 100)", bytes)
+    .action(async (flags: SelectionFlags & { by: MeetingCountsGrouping; limit?: number }) => {
+      const { request, zone, meta } = selectionOf(flags, deps.signal())
+      const found = await (await deps.counts())({
+        ...request,
+        by: flags.by,
+        timeZone: zone,
+        ...(flags.limit === undefined ? {} : { limit: flags.limit }),
+      })
+      deps.output(itemOf(meetingCountsItem(found), { meta }))
     })
 }

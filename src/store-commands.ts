@@ -140,6 +140,11 @@ export const addStoreCommands = (program: Command, context: StoreCommandContext)
       if (!read) throw new CliError("configuration_error", "the selected store connector does not count meetings")
       return read
     },
+    counts: async () => {
+      const read = (await connected()).meetingCounts
+      if (!read) throw new CliError("configuration_error", "the selected store connector does not count meetings")
+      return read
+    },
   })
   const reader =
     <K extends "meetingReview" | "meetingLinks">(name: K, what: string) =>
