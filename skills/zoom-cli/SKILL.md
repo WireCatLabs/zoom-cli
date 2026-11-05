@@ -195,7 +195,10 @@ Tokens stay in the keyring. Missing scopes require app changes and a new login; 
 is local, while `--check` verifies remotely. To log in, run `zm personal session start` in the background, read the
 URL after `Open this URL to approve Zoom login:` and give it to the person as a link; their browser must be on
 this computer. The owner can also sign in from WireCat Desktop (Tools → Zoom → Manage). `--no-input` cannot approve
-it. `--timeout` bounds finite commands; watch/MCP are foreground lifetimes.
+it. WireCat has no Zoom app: the person brings their own Public Client ID (docs/zoom-app.md). zm takes, first match
+wins, `session start --client-id <id>` (saved as `zoom.client_id` on success), `ZM_ZOOM_CLIENT_ID`, then
+`zoom.client_id`; `zm doctor --json` names the source under `oauth_client`. `--timeout` bounds finite commands;
+watch/MCP are foreground lifetimes.
 
 ## Discover candidate scheduled series
 

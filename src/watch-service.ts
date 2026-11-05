@@ -13,9 +13,10 @@ import {
 } from "./store-connection.js"
 import type { TokenManager } from "./tokens.js"
 import type { WatchCommandDeps, WatchPlan } from "./watch-commands.js"
+import { SET_ZOOM_APP, zoomClientId } from "./zoom-app.js"
 
 export interface WatchServiceDeps {
-  deps: Pick<ProgramDeps, "source" | "store" | "accountId" | "readFiles" | "now" | "sleep">
+  deps: Pick<ProgramDeps, "source" | "store" | "accountId" | "readFiles" | "now" | "sleep" | "env">
   getConfig: () => ZoomConfig
   profile: () => string
   tokens: () => TokenManager
@@ -65,9 +66,9 @@ export const createWatchService = ({
         if (offline())
           throw new CliError("configuration_error", "API watching requires network access; remove --offline")
         if (!deps.source) {
-          if (!config.clientId)
-            throw new CliError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
-          if (tokens().options.clientId !== config.clientId)
+          const clientId = zoomClientId(config, deps.env ?? process.env)
+          if (!clientId) throw new CliError("configuration_error", SET_ZOOM_APP)
+          if (tokens().options.clientId !== clientId)
             throw new CliError(
               "configuration_error",
               "the OAuth client changed before watch started; retry with matching configuration",

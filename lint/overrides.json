@@ -5,5 +5,12 @@
     "reason": "zoom search reads Zoom's own live search across several resource kinds; no one vocabulary resource names that mix, and the shared search group is local-only.",
     "owner": "@leemour",
     "review_after": "2027-01-25"
+  },
+  {
+    "rule": "option-role",
+    "target": "session start --client-id",
+    "reason": "WC-SECR-25 names session start --client-id as the first way to pick the sign-in app; cli-base's flag vocabulary does not list it yet.",
+    "owner": "@leemour",
+    "review_after": "2027-02-05"
   }
 ]

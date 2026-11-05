@@ -11,6 +11,19 @@
   file (cli-core 0.563.0).
 - **`zm config show` lists each of them under `settings`** with its value, its default, whether the file sets it and
   what it does.
+- **`zm <profile> session start --client-id <id>` signs in with that Zoom app** and, once the sign-in succeeds, saves
+  it as `zoom.client_id`, so later commands find the login it made.
+- **`ZM_ZOOM_CLIENT_ID` names the Zoom app** and wins over `zoom.client_id`; `--client-id` wins over both
+  (WC-SECR-25). WireCat still has no Zoom app, so one of the three is needed for API login.
+
+### Changed — may break callers
+
+- **`zm doctor --json` reports `oauth_client` as `{ client, source }`**: `{ "client": "own", "source": "env" }` or
+  `"config"`, and with no app `{ "client": null, "source": null, "reason": "WireCat has no Zoom app yet; …" }`. It
+  was `{ "client": "own" }`, or `{ "client": null, "error": "zoom.client_id is not set" }`. From cli-core 0.566.0
+  (was 0.563.0) and cli-base 0.77.1 (was 0.75.0).
+- **The error codes include `conflict`, exit 15** (cli-base 0.76.0), in the commands reference and the MCP tools'
+  error list. zm raises none yet.
 
 ## 0.66.0 — 03.11.2026
 

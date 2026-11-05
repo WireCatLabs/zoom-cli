@@ -313,7 +313,7 @@ More: [usage][docs/usage.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
 
 | Setting | Meaning |
 |---|---|
-| `zoom.client_id` | your Zoom app's Public Client ID |
+| `zoom.client_id` | your Zoom app's Public Client ID; `ZM_ZOOM_CLIENT_ID` or `session start --client-id` win over it ([which app][docs/configuration.md#which-zoom-app-zm-uses]) |
 | `source` | `api` or `files` for `meetings sync` and `watch` |
 | `files.folder`, `files.timezone` | the transcript folder and the zone of its filenames |
 | `ZM_CONFIG_DIR` | another configuration directory (also changes the keyring entry) |
@@ -412,6 +412,7 @@ More: [development setup][docs/dev/development.md] · [test matrix][docs/dev/tes
 [docs/archive.md#where-meetings-are-stored]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/archive.md#where-meetings-are-stored
 [docs/commands.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/commands.md
 [docs/configuration.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/configuration.md
+[docs/configuration.md#which-zoom-app-zm-uses]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/configuration.md#which-zoom-app-zm-uses
 [docs/dev/architecture.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/dev/ARCHITECTURE.md
 [docs/dev/development.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/dev/DEVELOPMENT.md
 [docs/dev/releasing.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/dev/RELEASING.md

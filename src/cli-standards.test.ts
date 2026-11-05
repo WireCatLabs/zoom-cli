@@ -122,17 +122,28 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(await run(["--json", "doctor"], deps)).toBe(0)
     expect(readAnswer(stdout[0] ?? "{}")).toMatchObject({
       profiles: ["example"],
-      oauth_client: { client: "own" },
+      oauth_client: { client: "own", source: "config" },
       store: { exists: expect.any(Boolean) },
     })
     for (const spy of touched) expect(spy).not.toHaveBeenCalled()
   })
-  it("says in doctor when no client id is set", async () => {
+  it("says in doctor that WireCat has no Zoom app when nothing names one", async () => {
     const { deps, stdout } = await setup()
+    deps.env = {}
     expect(await run(["--json", "doctor"], deps)).toBe(0)
-    expect(readAnswer(stdout[0] ?? "{}")).toMatchObject({
-      oauth_client: { client: null, error: "zoom.client_id is not set" },
+    expect(readAnswer(stdout[0] ?? "{}").oauth_client).toEqual({
+      client: null,
+      source: null,
+      reason:
+        "WireCat has no Zoom app yet; make your own (docs/zoom-app.md) and set zoom.client_id or ZM_ZOOM_CLIENT_ID",
     })
+  })
+  it("reports ZM_ZOOM_CLIENT_ID in doctor over the configured client id", async () => {
+    const { deps, stdout } = await setup()
+    setConfig(deps.configPath, "zoom.client_id", "example-client")
+    deps.env = { ZM_ZOOM_CLIENT_ID: "example-env-client" }
+    expect(await run(["--json", "doctor"], deps)).toBe(0)
+    expect(readAnswer(stdout[0] ?? "{}").oauth_client).toEqual({ client: "own", source: "env" })
   })
   it("lists every config problem in doctor, without values, and doctor is clean once each fix has run", async () => {
     const { deps, stdout, stderr } = await setup()

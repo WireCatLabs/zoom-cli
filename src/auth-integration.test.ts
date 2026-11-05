@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest"
 import { readAnswer } from "../scripts/testing/answers.js"
 import { fakeConnection } from "../scripts/testing/connection.js"
 import { useProfile } from "../scripts/testing/profile.js"
-import { setConfig } from "./config.js"
+import { readConfig, setConfig } from "./config.js"
 import { login } from "./login.js"
 import { chooseProfile } from "./profile.js"
 import { type ProgramDeps, run } from "./program.js"
@@ -239,6 +239,25 @@ describe("CLI configuration isolation", () => {
     setConfig(deps.configPath, "zoom.client_id", "example-client")
     expect(await run(["--json", "--jsonl", "config", "show"], deps)).toBe(2)
     expect(await run(["--no-input", "example", "session", "start"], deps)).toBe(3)
+  })
+  it("signs in with --client-id over ZM_ZOOM_CLIENT_ID and saves it as zoom.client_id only once it succeeds", async () => {
+    const { deps } = await setup()
+    deps.env = { ZM_ZOOM_CLIENT_ID: "example-env-client" }
+    deps.tokens = manager()
+    deps.openBrowser = async () => {
+      throw new Error("no browser")
+    }
+    expect(await run(["example", "session", "start", "--client-id", "example-flag-client"], deps)).not.toBe(0)
+    expect(readConfig(deps.configPath).clientId).toBeNull()
+    let authorized = ""
+    deps.openBrowser = async (url) => {
+      authorized = new URL(url).searchParams.get("client_id") ?? ""
+      await fetch(callback(url, { code: "example-code" }))
+    }
+    expect(await run(["example", "session", "start", "--client-id", "example-flag-client"], deps)).toBe(0)
+    expect(authorized).toBe("example-flag-client")
+    expect(readConfig(deps.configPath).clientId).toBe("example-flag-client")
+    expect(deps.tokens.options.keyring.get("example", "example-flag-client:example")).toBeTruthy()
   })
   it("reports browser and token exchange failures with their structured exit codes", async () => {
     const { deps, stderr } = await setup()

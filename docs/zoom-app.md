@@ -34,7 +34,12 @@ it waiting, follow [finish the browser callback](sessions.md#finish-the-browser-
 
 zm has no built-in client ID. No WireCat app is available to other Zoom accounts: every user must
 bring their own General app until the owner's app passes Zoom Marketplace review. The owner's
-app is in Development and works only for its creator's Zoom account.
+app is in Development and works only for its creator's Zoom account. `zm doctor --json` says so under
+`oauth_client` until you configure one.
+
+Instead of the setting, you can pass the ID once with `zm personal session start --client-id <public-client-id>`
+(a successful sign-in saves it as `zoom.client_id`) or set `ZM_ZOOM_CLIENT_ID`, which wins over the setting. See
+[which app zm uses](configuration.md#which-zoom-app-zm-uses).
 
 <a id="use-a-wirecat-or-team-app"></a>
 

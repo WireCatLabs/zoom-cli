@@ -1,4 +1,3 @@
-import { CliError } from "@wirecat/cli-base"
 import {
   appDoctorCommand,
   appMcpCommand,
@@ -22,6 +21,7 @@ import { chooseProfile } from "./profile.js"
 import type { ProgramDeps } from "./program.js"
 import { bindZoomProgram } from "./program-bindings.js"
 import { ZM } from "./read-only.js"
+import { zoomClientReport } from "./zoom-app.js"
 
 export interface ZoomLifecycle {
   prepare?: () => Promise<void>
@@ -94,11 +94,7 @@ export const zoomDefinition = (deps: ProgramDeps, onFailure?: (error: unknown) =
       zoomRunsCommand(),
       appDoctorCommand(ZM, shared, {
         packageName: "@wirecat/zoom-cli",
-        oauthClient: () => {
-          if (!configured(deps.configPath)?.clientId)
-            throw new CliError("configuration_error", "zoom.client_id is not set")
-          return { client: "own" }
-        },
+        oauthClient: () => zoomClientReport(configured(deps.configPath), deps.env ?? process.env),
       }),
       appMcpCommand(ZM, shared, {
         name: "Zoom",

@@ -6,6 +6,7 @@ import type { ZoneAssumptions } from "./errors.js"
 import { FilesSource, readDownloadedFiles } from "./files.js"
 import type { ProgramDeps } from "./program.js"
 import type { TokenManager } from "./tokens.js"
+import { SET_ZOOM_APP } from "./zoom-app.js"
 
 /** The API or folder source the config names, built on first use; reset() drops it between parses. */
 export const configuredMeetingSource = ({
@@ -28,8 +29,7 @@ export const configuredMeetingSource = ({
       const config = getConfig()
       if (config.source === "api") {
         const manager = tokens()
-        if (!manager.options.clientId)
-          throw new CliError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
+        if (!manager.options.clientId) throw new CliError("configuration_error", SET_ZOOM_APP)
         return new ZoomApiSource(manager, fetch(), {}, zones)
       }
       if (!config.filesFolder) throw new CliError("configuration_error", "set files.folder before pulling from files")

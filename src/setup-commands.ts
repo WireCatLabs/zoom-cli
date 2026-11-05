@@ -32,8 +32,9 @@ import { addModelsCommands } from "./models-commands.js"
 import { permissionKeys } from "./permissions.js"
 import type { ProgramDeps } from "./program.js"
 import { getZoomProfile } from "./recordings.js"
-import type { TokenManager } from "./tokens.js"
+import { TokenManager } from "./tokens.js"
 import { addUpgradeCommand } from "./upgrade.js"
+import { SET_ZOOM_APP, zoomApp, zoomClientId } from "./zoom-app.js"
 
 const refuseAgentPermissions = (command: Command, key: string) => {
   if (environmentOf(command).agent && (key === "permissions" || key.startsWith("permissions.")))
@@ -123,7 +124,8 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
     sessionStatus: async (check) => {
       const config = getConfig()
       const selected = profile()
-      if (!config.clientId) return { configured: false, state: "not_configured", profile: selected, verified: false }
+      if (!zoomClientId(config, deps.env ?? process.env))
+        return { configured: false, state: "not_configured", profile: selected, verified: false }
       if (check) {
         if (program.opts().offline)
           throw new CliError("configuration_error", "session verification requires network access; remove --offline")
@@ -156,6 +158,7 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
     .command("start")
     .description("log in to Zoom through your browser")
     .option("--browser <program>", "browser program")
+    .option("--client-id <id>", "the Public Client ID of your Zoom app; saved as zoom.client_id once you sign in")
     .option(
       "--credential-storage <storage>",
       "where the login is kept: keyring (the default, which falls back to a private file by itself when no " +
@@ -163,15 +166,21 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
       "keyring",
     )
     .addOption(answerStdinOption())
-    .action(async (opts: { browser?: string; answerStdin?: boolean; credentialStorage: string }) => {
+    .action(async (opts: { browser?: string; clientId?: string; answerStdin?: boolean; credentialStorage: string }) => {
       if (opts.credentialStorage !== "keyring" && opts.credentialStorage !== "file")
         throw new CliError("validation_error", "--credential-storage takes keyring or file")
       const storage: "keyring" | "file" = opts.credentialStorage
       const config = getConfig()
       const selected = profile()
       refuseCommandName(selected, commandWords(program), "zm")
-      if (!config.clientId)
-        throw new CliError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
+      if (opts.clientId !== undefined && (!opts.clientId.trim() || /\s/.test(opts.clientId)))
+        throw new CliError("validation_error", "client id must not contain whitespace")
+      const clientId = zoomApp({
+        env: deps.env ?? process.env,
+        configClientId: config.clientId,
+        clientId: opts.clientId,
+      })?.client.clientId
+      if (!clientId) throw new CliError("configuration_error", SET_ZOOM_APP)
       const globals = program.opts()
       if (globals.offline) throw new CliError("configuration_error", "login requires network access; remove --offline")
       if (globals.input === false)
@@ -188,7 +197,10 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
         ...(deps.stdin ? { input: deps.stdin } : {}),
       })
       const done = await login({
-        tokens: tokens().storedIn(storage),
+        tokens: (opts.clientId
+          ? new TokenManager({ ...tokens().options, clientId, account: `${clientId}:${selected}` })
+          : tokens()
+        ).storedIn(storage),
         signal: signal(),
         openBrowser: (url) => deps.openBrowser(url, opts.browser),
         readPaste: steps.answers
@@ -204,6 +216,8 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
             : // Without a terminal this line is all an agent can pass on, so --quiet keeps it.
               deps.diagnostic(`Open this URL to approve Zoom login:\n${url}\n`),
       })
+      // Later commands find the login under `<client id>:<profile>`, so the app it used is kept with it (WC-SECR-25).
+      if (opts.clientId) setConfig(deps.configPath, "zoom.client_id", opts.clientId)
       addProfile(deps.configPath, selected)
       output(itemOf({ ...done, profile: selected }))
     })
