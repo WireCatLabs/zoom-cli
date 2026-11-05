@@ -85,3 +85,21 @@ it("takes every filter on both commands, and says when a project or topic name i
       expect(await run(["work", "stats", "meetings", command, name, "Absent example", "--json"], deps)).toBe(6)
   }
 })
+
+it("counts history over every filter, in a zone, and keeps --limit rows", async () => {
+  const { deps, stdout } = await setup()
+  const window = ["--since-time", "2026-10-01", "--until-time", "2026-10-31", "--timezone", "UTC"]
+  expect(
+    await run(["work", "stats", "meetings", "history", "--by", "day", ...window, "--limit", "1", "--json"], deps),
+  ).toBe(0)
+  const answer = JSON.parse(stdout.join(""))
+  expect(answer.item.rows).toHaveLength(1)
+  expect(answer.item.has_more).toBe(true)
+  stdout.length = 0
+  const history = ["work", "stats", "meetings", "history", "--by", "series"]
+  expect(await run([...history, ...window, "--event-id", "999", "--json"], deps)).toBe(0)
+  expect(JSON.parse(stdout.join("")).item).toMatchObject({ meetings: 0, rows: [] })
+  stdout.length = 0
+  for (const name of ["--project", "--topic-name"])
+    expect(await run([...history, name, "Absent example", "--json"], deps)).toBe(6)
+})

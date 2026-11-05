@@ -61,7 +61,7 @@ export const addMeetingStatsCommands = (
     program.commands.find((command) => command.name() === "stats") ??
     annotate(program.command("stats"), { effects: NO_EFFECTS }).description("numbers about the stored meetings")
   const meetings = annotate(stats.command("meetings"), { effects: NO_EFFECTS }).description(
-    "talk time, lines and words by speaker and week; meetings and minutes by day, week or series",
+    "talk time by speaker and week; meetings and minutes by day, week or series",
   )
   annotate(filters(meetings.command("show")), {
     effects: LOCAL_READ,
@@ -99,8 +99,9 @@ export const addMeetingStatsCommands = (
     output: { entity: "meeting_counts" },
     examples: ["zm personal stats meetings history --by week --since-time 90d --json"],
   })
+    .summary("meetings, minutes and transcripts per day, week or series")
     .description("meetings, minutes and meetings with a transcript, per day, week or series; reads meetings only")
-    .requiredOption("--by <grouping>", `one row per ${MEETING_COUNTS_GROUPINGS.join(", ")}`, groupingOf)
+    .requiredOption("--by <group>", `one row per ${MEETING_COUNTS_GROUPINGS.join(", ")}`, groupingOf)
     .option("--limit <n>", "the newest days or weeks, or the busiest series (default 100)", bytes)
     .action(async (flags: SelectionFlags & { by: MeetingCountsGrouping; limit?: number }) => {
       const { request, zone, meta } = selectionOf(flags, deps.signal())

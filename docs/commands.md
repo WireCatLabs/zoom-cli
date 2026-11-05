@@ -1731,7 +1731,7 @@ numbers about the stored meetings
 
 ### `zm stats meetings`
 
-talk time, lines and words by speaker and week; meetings and minutes by day, week or series
+talk time by speaker and week; meetings and minutes by day, week or series
 
 #### `zm stats meetings show`
 
@@ -1794,7 +1794,7 @@ zm stats meetings history [options]
 | `--event-id <id>` | only meetings linked to this stored event. |
 | `--project <project>` | meetings confirmed in this project, by name, key or alias. |
 | `--topic-name <name>` | meetings with this topic label, by name or alias. |
-| `--by <grouping>` | one row per day, week, series. |
+| `--by <group>` | one row per day, week, series. |
 | `--limit <n>` | the newest days or weeks, or the busiest series (default 100). |
 
 **Returns:** meeting counts — by, meetings, minutes, mean_minutes, transcripts, rows, has_more; every field: zm commands info stats meetings history
