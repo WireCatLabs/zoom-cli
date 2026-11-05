@@ -14,6 +14,7 @@ import { createSystemdRecordingArchiveScheduler } from "./recording-schedule-sys
 import { ZoomRecordings } from "./recordings.js"
 import type { RemoteOptions } from "./remote-http.js"
 import { TokenManager } from "./tokens.js"
+import { zoomClientId } from "./zoom-app.js"
 
 /** Saved jobs beside the config, Linux user timers, and per-job Zoom credentials checked against the selection. */
 export const zoomRecordingSchedule = ({
@@ -48,11 +49,10 @@ export const zoomRecordingSchedule = ({
             unitDirectory: join(env.XDG_CONFIG_HOME ?? join(env.HOME ?? homedir(), ".config"), "systemd", "user"),
           }),
           recordings: (job) => {
-            const selected = readConfig(deps.configPath)
             if (
               dirname(deps.configPath) !== job.capture.configDir ||
               profile() !== job.capture.profile ||
-              selected.clientId !== job.capture.clientId
+              zoomClientId(readConfig(deps.configPath), deps.env ?? process.env) !== job.capture.clientId
             )
               throw new CliError(
                 "configuration_error",
@@ -81,15 +81,14 @@ export const zoomRecordingSchedule = ({
       return recordingSchedule
     },
     capture: () => {
-      const selected = getConfig()
+      const clientId = zoomClientId(getConfig(), deps.env ?? process.env)
       const named = profile()
-      if (!selected.clientId)
-        throw new CliError("configuration_error", "archive schedules require a configured Zoom client id")
+      if (!clientId) throw new CliError("configuration_error", "archive schedules require a configured Zoom client id")
       if (!deps.recordingScheduleTarget)
         throw new CliError("configuration_error", "archive scheduler requires an explicit runtime and CLI path")
       return {
         profile: named,
-        clientId: selected.clientId,
+        clientId,
         configDir: dirname(deps.configPath),
         runtime: deps.recordingScheduleTarget.runtime,
         cliPath: deps.recordingScheduleTarget.cliPath,

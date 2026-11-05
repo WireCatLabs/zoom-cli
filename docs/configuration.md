@@ -17,7 +17,7 @@ files folder and the time zone are not written: unset, they mean "none yet" and 
 
 | Key | Meaning |
 |---|---|
-| `zoom.client_id` | Public Client ID of the [existing or new app](zoom-app.md); unset by default, required for API login |
+| `zoom.client_id` | Public Client ID of the [existing or new app](zoom-app.md); unset by default. API login needs it, `ZM_ZOOM_CLIENT_ID` or `--client-id` ([which app](#which-zoom-app-zm-uses)) |
 | `source` | Where `meetings sync` and `watch` read from: `api` (default) or `files` |
 | `files.folder` | Transcript folder for file-source pull/watch; unset by default |
 | `context.sources` | JSON array of explicitly selected message, mail or document accounts for this profile; empty by default ([setup below](#select-communications-for-preparation)) |
@@ -30,8 +30,23 @@ files folder and the time zone are not written: unset, they mean "none yet" and 
 
 Check `zm config show` after editing. The profile is not a setting: it is the first word of each
 command ([profiles](sessions.md#select-a-local-profile)). Changing the client ID selects a different keyring entry, so authorize that app before
-using its API. `ZOOM_CLIENT_ID` is not a runtime setting for the installed `zm` command; use
-`zm config set zoom.client_id` rather than an environment variable copied from a development probe.
+using its API.
+
+### Which Zoom app zm uses
+
+WireCat has no Zoom app yet, so you bring your own ([make one](zoom-app.md)). zm takes the first of these that
+names one:
+
+1. `zm <profile> session start --client-id <id>`. A successful sign-in saves the id as `zoom.client_id`, so later
+   commands find the login it made;
+2. the `ZM_ZOOM_CLIENT_ID` environment variable;
+3. the `zoom.client_id` setting;
+4. WireCat's app, which is empty for now.
+
+`zm doctor --json` shows the choice under `oauth_client`: `{ "client": "own", "source": "env" }` or `"config"`, and
+with none `{ "client": null, "source": null, "reason": "WireCat has no Zoom app yet; …" }`. The keyring entry is
+`<client id>:<profile>`, so an id in `ZM_ZOOM_CLIENT_ID` uses the login made with that id. A scheduled archive keeps
+the id it was saved with and refuses to run under another.
 
 The file stores these settings as `client_id`, `files_folder`, `files_timezone`, `source`, `context_sources`,
 `record`, `record_input`, `keep_runs_for_days`, `keep_successful_runs_for_days` and `runs_size_limit_mb`, and the

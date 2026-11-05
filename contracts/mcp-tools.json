@@ -73,6 +73,7 @@
                           "provider_unavailable",
                           "invalid_response",
                           "outcome_unknown",
+                          "conflict",
                           "cancelled"
                         ],
                         "type": "string"
@@ -339,6 +340,7 @@
                           "provider_unavailable",
                           "invalid_response",
                           "outcome_unknown",
+                          "conflict",
                           "cancelled"
                         ],
                         "type": "string"
@@ -595,6 +597,7 @@
                           "provider_unavailable",
                           "invalid_response",
                           "outcome_unknown",
+                          "conflict",
                           "cancelled"
                         ],
                         "type": "string"
@@ -861,6 +864,7 @@
                           "provider_unavailable",
                           "invalid_response",
                           "outcome_unknown",
+                          "conflict",
                           "cancelled"
                         ],
                         "type": "string"

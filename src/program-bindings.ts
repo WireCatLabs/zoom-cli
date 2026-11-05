@@ -61,6 +61,7 @@ import { meetingProgress } from "./sync-progress.js"
 import type { TokenManager } from "./tokens.js"
 import { addWatchCommand } from "./watch-commands.js"
 import { createWatchService } from "./watch-service.js"
+import { SET_ZOOM_APP, zoomClientId } from "./zoom-app.js"
 import { ZoomSearch } from "./zoom-search.js"
 import { addZoomSearchCommands } from "./zoom-search-commands.js"
 
@@ -205,8 +206,7 @@ export const bindZoomProgram = (program: Command, given: ProgramDeps, lifecycle:
   const api = () => {
     if (program.opts().offline)
       throw new CliError("configuration_error", "the command requires network access; remove --offline")
-    if (!getConfig().clientId)
-      throw new CliError("configuration_error", "run zm config set zoom.client_id <Public Client ID> first")
+    if (!zoomClientId(getConfig(), deps.env ?? process.env)) throw new CliError("configuration_error", SET_ZOOM_APP)
   }
   let activeAction = program
   program.hook("preAction", (_root, action) => {

@@ -973,6 +973,7 @@ zm session start [options]
 | Option | What it does |
 |---|---|
 | `--browser <program>` | browser program. |
+| `--client-id <id>` | the Public Client ID of your Zoom app; saved as zoom.client_id once you sign in. |
 | `--credential-storage <storage>` | where the login is kept: keyring (the default, which falls back to a private file by itself when no keyring works), or file, not recommended. Default: `keyring`. |
 | `--answer-stdin` | with --json and no terminal: print each question as a `needs` line on stderr and read its answer, one line, from stdin. |
 
@@ -1994,6 +1995,7 @@ Use the shared exit code rather than matching diagnostic text.
 | `12` | `provider_unavailable` |
 | `13` | `invalid_response` |
 | `14` | `outcome_unknown` |
+| `15` | `conflict` |
 | `130` | `cancelled` |
 | `1` | anything else |
 

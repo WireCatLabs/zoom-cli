@@ -32,6 +32,7 @@ await startCli({
       { createStoreConnector },
       { writeStream },
       { TOKEN_LOG_ALLOW, TokenManager },
+      { zoomClientId },
     ] = await Promise.all([
       import("@wirecat/cli-core/cli"),
       import("../config.js"),
@@ -42,6 +43,7 @@ await startCli({
       import("../store-connection.js"),
       import("../streaming.js"),
       import("../tokens.js"),
+      import("../zoom-app.js"),
     ])
     const paths = zmPaths()
     const configPath = join(paths.config, "config.json")
@@ -55,7 +57,7 @@ await startCli({
     try {
       const tokens = new TokenManager({
         get clientId() {
-          return readConfig(configPath).clientId ?? ""
+          return zoomClientId(readConfig(configPath), entry.env) ?? ""
         },
         keyring: systemKeyring,
         service: loginService(paths.config),
