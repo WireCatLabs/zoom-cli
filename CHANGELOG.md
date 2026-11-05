@@ -4,6 +4,10 @@
 
 ### Added
 
+- **`zm personal stats meetings history --by day|week|series`** counts meetings, minutes, mean minutes and meetings
+  with a transcript, in total and per day, week or series, over the same filters as `stats meetings show`. It reads
+  the meetings alone, so it has no transcript-line limit. A meeting with no end counts as a meeting, not in minutes.
+  From cli-core 0.570.0.
 - **`zm config migrate` writes each setting the file lacks at its default, and every write zm makes to the file adds
   them too**: `source`, `record`, `record_input`, `keep_runs_for_days`, `keep_successful_runs_for_days` and
   `runs_size_limit_mb`. You then find and edit them in `config.json` without the docs. Your values, their order and
@@ -31,10 +35,6 @@
 
 - **`wcat zm` runs the tool, and `wcat --help` lists it.** The package installs `wcat-zm` beside `zm`, and
   `wcat-zm --wcat-describe` prints the tool's name, version and description for `wcat`.
-- **`zm personal stats meetings history --by day|week|series`** counts meetings, minutes, mean minutes and meetings
-  with a transcript, in total and per day, week or series, over the same filters as `stats meetings show`. It reads
-  the meetings alone, so it has no transcript-line limit. A meeting with no end counts as a meeting, not in minutes.
-  Needs cli-core with `readMeetingCounts`.
 
 ## 0.65.0 — 02.11.2026
 
