@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **`zm meetings sync` stops before its `--timeout` and goes on next time.** It reads meetings oldest first; a run
+  that runs out of time keeps what it saved, answers `stopped` and `remaining`, and the next sync starts at the first
+  meeting it did not reach. From cli-core 0.601.0 (was 0.600.0).
+- **`zm meetings sync --rescan`** reads the last 30 days again instead of starting where the last sync stopped.
+- **`zm meetings export` works under `ZM_READ_ONLY` and over MCP's read tool.** Without `--output` it only prints;
+  with it, it only ever adds a new file and refuses one that exists.
+
+### Changed — may break callers
+
+- **Over MCP, `meetings export` no longer takes `--output`**: an agent gets the export in the answer and does not
+  choose where on your disk it goes.
+- **cli-core's name lookups take ё and е as one letter** (`Алена` finds `Алёна`). A name that matched one exactly
+  may now match two; that is refused with both.
+- **The store moves to schema 55.** Other WireCat CLIs that share it need a version that speaks it.
+
 ## 0.67.0 — 05.11.2026
 
 ### Added
