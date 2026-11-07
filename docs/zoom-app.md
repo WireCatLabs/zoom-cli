@@ -6,6 +6,8 @@ redirect settings and scopes needed for browser login. This registration does no
 inside meetings or make recordings for you. You do not download a credentials file or create a
 separate OAuth client outside the app: enable Public Client OAuth inside it and copy the displayed ID.
 
+`zm app` prints the values below as a short checklist (`zm app --json` for a program).
+
 Choose how to connect:
 
 - [Use an app you already created](#use-an-app-you-already-created)

@@ -10,6 +10,12 @@
 - **`zm meetings sync --rescan`** reads the last 30 days again instead of starting where the last sync stopped.
 - **`zm meetings export` works under `ZM_READ_ONLY` and over MCP's read tool.** Without `--output` it only prints;
   with it, it only ever adds a new file and refuses one that exists.
+- **`zm app` prints what to enter when you make the Zoom app**: the app type (General app, User-managed, Public
+  Client OAuth), the redirect URL and allow list, every scope zm asks for and the Marketplace page, as a numbered
+  checklist, or as JSON with `--json`.
+- **`zm <profile> session start --json --answer-stdin` asks for the Public Client ID when no Zoom app is set**: a
+  `needs` line with field `client_id`, answered on stdin. The sign-in goes on with it and, once it succeeds, saves it
+  as `zoom.client_id`, like `--client-id`.
 
 ### Changed — may break callers
 
@@ -18,6 +24,8 @@
 - **cli-core's name lookups take ё and е as one letter** (`Алена` finds `Алёна`). A name that matched one exactly
   may now match two; that is refused with both.
 - **The store moves to schema 55.** Other WireCat CLIs that share it need a version that speaks it.
+- **A sign-in with no Zoom app fails with reason `zoom.client-id-missing`** instead of the general configuration
+  reason, so a caller branches on the reason, not on the message.
 
 ## 0.67.0 — 05.11.2026
 

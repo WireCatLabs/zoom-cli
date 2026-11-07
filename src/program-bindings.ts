@@ -56,7 +56,7 @@ import type { RemoteOptions } from "./remote-http.js"
 import { ZoomRemoteMeetings } from "./remote-meetings.js"
 import { observedFetch } from "./request-events.js"
 import type { ZoomLifecycle } from "./run.js"
-import { addConfigCommands, addSessionCommands } from "./setup-commands.js"
+import { addAppCommand, addConfigCommands, addSessionCommands } from "./setup-commands.js"
 import { addStoreCommands } from "./store-commands.js"
 import {
   connectSelectedProfile,
@@ -281,6 +281,7 @@ export const bindZoomProgram = (program: Command, given: ProgramDeps, lifecycle:
     output(wholeList("list", items))
   }
   addConfigCommands(program, { configPath: deps.configPath, output, warn: deps.diagnostic, named })
+  addAppCommand(program, { output, buffer, pretty: () => formatOf() === "pretty" && !environmentOf(program).agent })
   const fetchApi = () => fetchWithSignal(deps.fetch)
   const configured = configuredMeetingSource({ deps, getConfig, tokens, fetch: fetchApi, zones })
   const source = configured.source

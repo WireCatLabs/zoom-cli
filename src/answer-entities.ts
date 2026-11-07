@@ -125,7 +125,19 @@ const searchHit = v.strictObject({
   container_id: nullableText,
   details: v.record(text, v.nullable(v.union([text, v.number(), flag]))),
 })
+const zoomAppSetup = v.strictObject({
+  marketplace_url: identifier,
+  guide_url: identifier,
+  app_type: identifier,
+  management: identifier,
+  oauth: identifier,
+  redirect_url: identifier,
+  allow_list: v.array(identifier),
+  scopes: v.array(v.strictObject({ scope: identifier, required: flag, use: identifier })),
+  config_key: identifier,
+})
 export const ZOOM_ANSWER_ENTITIES = {
+  app: { name: "zoom_app_setup", schema: zoomAppSetup },
   "recordings list": { name: "zoom_recording", schema: recording },
   "recordings show": { name: "zoom_recording", schema: recording },
   "recordings download": { name: "zoom_archive", schema: v.union([archive, archiveReceipt]) },

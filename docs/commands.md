@@ -333,6 +333,18 @@ zm config migrate
 
 **Example:** `zm config migrate`
 
+## `zm app`
+
+what to enter when you make the Zoom app zm signs in with
+
+```sh
+zm app
+```
+
+**Returns:** zoom app setup — marketplace_url, guide_url, app_type, management, oauth, redirect_url, allow_list, scopes, and 1 more; every field: zm commands info app
+
+**Example:** `zm app`, `zm app --json`
+
 ## `zm meetings`
 
 stored meetings and their records

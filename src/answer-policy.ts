@@ -3,10 +3,11 @@ import type { Effects } from "@wirecat/cli-base/standards"
 import { failureContext } from "@wirecat/cli-core"
 import { judgedEffects, judgedTargets } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
+import { ZM } from "./identity.js"
 import { VERSION } from "./version.js"
 
 export const hostFailureContext = (registry?: Command, effects?: Effects) => ({
-  ...failureContext(),
+  ...failureContext(ZM.errors),
   ...(effects ? { effects: judgedEffects(effects) } : {}),
   ...(registry ? { targets: judgedTargets(registry) } : {}),
 })
