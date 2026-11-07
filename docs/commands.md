@@ -1706,7 +1706,6 @@ zm search all <query> [options]
 | `--only <resources>` | comma-separated meetings,messages,mail,notes (default meetings). |
 | `--limit <n>` | how many results, 1 through 1000 (default 100). Default: `100`. |
 | `--page <n>` | which page, starting at 1. |
-| `--max-meetings <n>` | most meetings to look through, newest first, or all (default 100). |
 | `--exact` | request exact matching; unsupported meeting queries are reported as skipped. |
 
 **Returns:** hit — kind, ref, provider, account, title, timestamp, excerpt, url, and 15 more; every field: zm commands info search all

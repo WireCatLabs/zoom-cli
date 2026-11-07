@@ -203,12 +203,6 @@ export const SHELL_OVERRIDES: Readonly<{
           mandatory: false,
         },
         {
-          flags: "--max-meetings <n>",
-          description: "most meetings to look through, newest first, or all (default 100)",
-          takes_value: true,
-          mandatory: false,
-        },
-        {
           flags: "--exact",
           description: "request exact matching; unsupported meeting queries are reported as skipped",
           takes_value: false,

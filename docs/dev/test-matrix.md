@@ -294,7 +294,6 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `search all` | `--only` | ✅ |  |
 | `search all` | `--limit` | ✅ |  |
 | `search all` | `--page` | ✅ |  |
-| `search all` | `--max-meetings` | ✅ |  |
 | `search all` | `--exact` | ✅ |  |
 | `search meetings` |  | ✅ |  |
 | `search meetings` | `--meeting-id` | ✅ |  |
