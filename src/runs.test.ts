@@ -3,6 +3,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
 import type { RequestEvent } from "@wirecat/cli-core/cli"
+import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { expect, it } from "vitest"
 import { declaredAnswerIssue } from "../scripts/testing/answers.js"
 import { TEST_PROFILE, useProfile } from "../scripts/testing/profile.js"
@@ -323,4 +324,17 @@ it("opens the token run log without a profile", async () => {
   const recorded = JSON.parse(await readFile(join(runsDir, day ?? "", entry ?? "", "run.json"), "utf8"))
   expect(recorded).toMatchObject({ command: "oauth token", status: "success" })
   expect(recorded).not.toHaveProperty("profile")
+})
+
+it("keeps one run for a meetings sync", async () => {
+  const { deps, kept } = await setup()
+  deps.store = memoryMeetingStore()
+  deps.accountId = 1
+  setConfig(deps.configPath, "source", "files")
+  setConfig(deps.configPath, "files.folder", "example")
+  deps.readFiles = async () => {
+    throw new Error("example unreadable folder")
+  }
+  expect(await run(["meetings", "sync", "--since-time", "2026-10-01", "--json"], deps)).not.toBe(0)
+  expect(await kept()).toMatchObject([{ command: "meetings sync", status: "failed" }])
 })

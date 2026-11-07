@@ -292,6 +292,8 @@ export const bindZoomProgram = (program: Command, given: ProgramDeps, lifecycle:
     },
     now: deps.now,
     write: (value) => output(bodyOf(value)),
+    // inCommandRun would open a second run beside zm's own commandRuns, so a sync would be kept twice.
+    inRun: (_command, body) => body(),
     writeFile: deps.writeFile
       ? async (path, content) => {
           checkCancelled(signal())
