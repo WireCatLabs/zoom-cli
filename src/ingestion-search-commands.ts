@@ -9,7 +9,7 @@ import {
   NO_EFFECTS,
   sharedCommandTemplate,
 } from "@wirecat/cli-core/cli"
-import type { ResourceWithMeetings } from "@wirecat/cli-core/services"
+import type { SearchedResource } from "@wirecat/cli-core/services"
 import type { Command } from "commander"
 import type { ArchiveImportPlan, applyArchiveImport, preflightArchiveImport } from "./archive-import.js"
 import { SHELL_OVERRIDES } from "./contract-overrides.js"
@@ -26,12 +26,6 @@ interface Deps {
   receipt: (body: Body) => Promise<void>
   search: UnifiedSearch
   note: (text: string) => void
-}
-const meetingsOf = (value: string): number | "all" => {
-  if (value === "all") return "all"
-  if (!/^[1-9]\d*$/.test(value) || !Number.isSafeInteger(Number(value)))
-    throw new CliError("validation_error", "--max-meetings takes a whole number from 1, or all")
-  return Number(value)
 }
 const addIngestionSearchCommandsDefinition = (program: Command, deps: Deps): void => {
   const archive = program.commands
@@ -86,35 +80,27 @@ const addIngestionSearchCommandsDefinition = (program: Command, deps: Deps): voi
       .option("--only <resources>", "comma-separated meetings,messages,mail,notes (default meetings)")
       .option("--limit <n>", "how many results, 1 through 1000 (default 100)", bytes, 100)
       .option("--page <n>", "which page, starting at 1", bytes)
-      .option("--max-meetings <n>", "most meetings to look through, newest first, or all (default 100)", meetingsOf)
       .option("--exact", "request exact matching; unsupported meeting queries are reported as skipped")
-      .action(
-        async (
-          query: string,
-          options: { only?: string; limit: number; page?: number; maxMeetings?: number | "all"; exact?: boolean },
-        ) => {
-          const page = options.page ?? 1
-          const request = validateUnifiedSearch({
-            text: query,
-            limit: options.limit,
-            ...(page > 1 ? { offset: (page - 1) * options.limit } : {}),
-            ...(options.maxMeetings === undefined ? {} : { maxMeetings: options.maxMeetings }),
-            only: options.only?.split(",").map((value) => value.trim()) as ResourceWithMeetings[] | undefined,
-            exact: options.exact,
-            signal: deps.signal(),
-          })
-          const found = await deps.search(request)
-          for (const { resource, source, reason } of found.skipped)
-            deps.note(`${resource ?? source} not searched: ${reason}`)
-          const again = {
-            query,
-            ...(options.only === undefined ? {} : { only: options.only }),
-            ...(options.maxMeetings === undefined ? {} : { max_meetings: options.maxMeetings }),
-            ...(options.exact ? { exact: true } : {}),
-          }
-          deps.output(allAnswer("search all", found, { limit: options.limit, page, again }, options.exact === true))
-        },
-      ),
+      .action(async (query: string, options: { only?: string; limit: number; page?: number; exact?: boolean }) => {
+        const page = options.page ?? 1
+        const request = validateUnifiedSearch({
+          text: query,
+          limit: options.limit,
+          ...(page > 1 ? { offset: (page - 1) * options.limit } : {}),
+          only: options.only?.split(",").map((value) => value.trim()) as SearchedResource[] | undefined,
+          exact: options.exact,
+          signal: deps.signal(),
+        })
+        const found = await deps.search(request)
+        for (const { resource, source, reason } of found.skipped)
+          deps.note(`${resource ?? source} not searched: ${reason}`)
+        const again = {
+          query,
+          ...(options.only === undefined ? {} : { only: options.only }),
+          ...(options.exact ? { exact: true } : {}),
+        }
+        deps.output(allAnswer("search all", found, { limit: options.limit, page, again }, options.exact === true))
+      }),
     {
       origin: "handwritten",
       effects: LOCAL_READ,

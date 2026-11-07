@@ -6,7 +6,7 @@ import { openStore } from "@wirecat/cli-core/store"
 import { expect, it } from "vitest"
 import { createStoreConnector } from "./store-connection.js"
 
-it("native public unified service scopes meetings, reports unsupported phrases and continues bounded scans honestly", async () => {
+it("native public unified service reads only the profile's meeting account, through its index, and pages by offset", async () => {
   const root = await mkdtemp(join(tmpdir(), "zm-test-native-unified-"))
   const path = join(root, "wirecat.db")
   const store = await openStore({ path })
@@ -28,6 +28,11 @@ it("native public unified service scopes meetings, reports unsupported phrases a
       input.transcripts[0].rows[0].text = "Ship the example plan"
       await store.meetings.saveMeeting(input)
     }
+    for (const accountId of [selected, other]) {
+      let result: { remaining: number }
+      do result = await store.meetings.indexSearch({ accountId, limit: 50 })
+      while (result.remaining)
+    }
   } finally {
     await store.close()
   }
@@ -37,25 +42,19 @@ it("native public unified service scopes meetings, reports unsupported phrases a
     const search = connection.unifiedSearch
     expect(search).toBeDefined()
     if (!search) throw new Error("missing public search adapter")
-    const first = await search({ text: "Ship", limit: 10, maxMeetings: 1 })
+    const first = await search({ text: "Ship", limit: 1 })
     expect(first.items).toHaveLength(1)
     expect(first.items[0]).toMatchObject({ kind: "meeting", accountId: selected })
-    expect(first.hasMore).toBeNull()
-    expect(first.meetings?.complete).toBe(false)
-    const second = await search({ text: "Ship", limit: 10, maxMeetings: 1, meetingCursor: first.meetings?.nextCursor })
+    expect(first.hasMore).toBe(true)
+    expect(first.meetings).toMatchObject([{ provider: "zoom", account: "zm-profile:example", indexing: "ready" }])
+    const second = await search({ text: "Ship", limit: 1, offset: 1 })
     expect(second.items).toHaveLength(1)
+    expect(second.items[0]).toMatchObject({ kind: "meeting", accountId: selected })
     expect(second.items[0]).not.toEqual(first.items[0])
     expect(second.hasMore).toBe(false)
-    const unsupported = await search({ text: '"Ship the example"', limit: 10 })
-    expect(unsupported.items).toEqual([])
-    expect(unsupported.skipped).toMatchObject([{ resource: "meetings", reason: expect.stringContaining("phrases") }])
-    await expect(
-      search({
-        text: "Ship",
-        limit: 10,
-        meetingCursor: { accountId: 99, query: "Ship", meetingOffset: 1, hitOffset: 0 },
-      }),
-    ).rejects.toMatchObject({ code: "validation_error" })
+    const phrase = await search({ text: '"Ship the example"', limit: 10 })
+    expect(phrase.items).toHaveLength(2)
+    expect(phrase.skipped).toEqual([])
   } finally {
     await connection.close()
   }

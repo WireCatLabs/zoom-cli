@@ -13,17 +13,11 @@ import { runUnifiedSearch, type UnifiedSearchRequest, validateUnifiedSearch } fr
 const result = {
   query: "example",
   items: [],
-  hasMore: null,
+  hasMore: false,
   searched: ["meetings"] as const,
   skipped: [],
   accounts: [],
-  meetings: {
-    accountId: 3,
-    by: "word-prefixes" as const,
-    meetingsScanned: 100,
-    complete: false,
-    nextCursor: { accountId: 3, query: "example", meetingOffset: 100, hitOffset: 0 },
-  },
+  meetings: [{ provider: "zoom", account: "zm-profile:example", indexing: "pending" as const, hasMore: false }],
 }
 const setup = async () => {
   const root = await mkdtemp(join(tmpdir(), "zm-test-unified-cli-"))
@@ -57,15 +51,14 @@ const searchWith = (deps: ProgramDeps, unifiedSearch: StoreConnection["unifiedSe
 }
 const found = () => ({ ...result, searched: ["meetings"] as "meetings"[] })
 
-it("defaults to meetings and validates closed source-only cursors before the service", async () => {
+it("defaults to meetings and validates the request before the service", async () => {
   const search = vi.fn(async (_request: UnifiedSearchRequest) => found())
   expect(await runUnifiedSearch(search, { text: "example", limit: 100 })).toEqual(found())
-  expect(search.mock.calls[0]?.[0]).toMatchObject({ only: ["meetings"], maxMeetings: 100 })
+  expect(search.mock.calls[0]?.[0]).toMatchObject({ only: ["meetings"], limit: 100 })
   for (const change of [
     { text: " " },
     { limit: 0 },
     { limit: 1001 },
-    { maxMeetings: 0 },
     { only: [] },
     { only: ["unknown"] },
     { only: ["notes"] },
@@ -73,27 +66,9 @@ it("defaults to meetings and validates closed source-only cursors before the ser
     expect(() =>
       validateUnifiedSearch({ text: "example", limit: 100, ...change } as UnifiedSearchRequest, true),
     ).toThrow()
-  for (const cursor of [
-    null,
-    0,
-    [],
-    { ...result.meetings.nextCursor, extra: 1 },
-    { ...result.meetings.nextCursor, hitOffset: -1 },
-  ])
-    expect(() =>
-      validateUnifiedSearch({ text: "example", limit: 100, meetingCursor: cursor } as UnifiedSearchRequest),
-    ).toThrow()
-  expect(() =>
-    validateUnifiedSearch({
-      text: "example",
-      limit: 100,
-      only: ["notes", "meetings"],
-      meetingCursor: result.meetings.nextCursor,
-    }),
-  ).toThrow()
 })
 
-it("answers a list of hits, says where a bounded meeting scan stopped, and pages as tg does", async () => {
+it("answers a list of hits, names an account whose index is not built yet, and pages as tg does", async () => {
   const { deps, output } = await setup()
   const search = vi.fn(async (_request: UnifiedSearchRequest) => found())
   searchWith(deps, search)
@@ -102,27 +77,12 @@ it("answers a list of hits, says where a bounded meeting scan stopped, and pages
   expect(answer.items).toEqual([])
   expect(answer.page).toMatchObject({ has_more: false })
   expect(answer.missing).toEqual([
-    expect.objectContaining({ field: "items", why: "stopped after 100 meetings; more may match" }),
+    expect.objectContaining({ field: "items", why: expect.stringContaining("zoom:zm-profile:example") }),
   ])
-  expect(answer.next?.[0]?.args).toMatchObject({ query: "example", max_meetings: "all" })
   expect(search.mock.calls[0]?.[0]).toMatchObject({ only: ["meetings"] })
   expect(
     await run(
-      [
-        "search",
-        "all",
-        "example",
-        "--only",
-        "notes,meetings",
-        "--limit",
-        "2",
-        "--page",
-        "3",
-        "--max-meetings",
-        "all",
-        "--exact",
-        "--json",
-      ],
+      ["search", "all", "example", "--only", "notes,meetings", "--limit", "2", "--page", "3", "--exact", "--json"],
       deps,
     ),
   ).toBe(0)
@@ -130,9 +90,9 @@ it("answers a list of hits, says where a bounded meeting scan stopped, and pages
     only: ["notes", "meetings"],
     limit: 2,
     offset: 4,
-    maxMeetings: "all",
     exact: true,
   })
+  expect(await run(["search", "all", "example", "--max-meetings", "all", "--json"], deps)).toBe(2)
   output.length = 0
   expect(await run(["search", "all", "example", "--jsonl"], deps)).toBe(0)
   expect(output.join("").trim().split("\n")).toHaveLength(1)
@@ -145,7 +105,6 @@ it("resolves read intent only after validating query options and closes before f
   )
   deps.connectStore = connect
   expect(await run(["search", "all", "example", "--limit", "0", "--json"], deps)).toBe(2)
-  expect(await run(["search", "all", "example", "--max-meetings", "0", "--json"], deps)).toBe(2)
   expect(connect).not.toHaveBeenCalled()
   expect(await run(["search", "all", "example", "--json"], deps)).toBe(2)
   useProfile(deps.configPath, "example")

@@ -32,6 +32,11 @@
 
 ### Changed — may break callers
 
+- **`zm search all` has no `--max-meetings` any more.** It reads the profile's meetings through their search
+  index, ranked with messages, mail and notes, at most 3 hits per meeting, and pages with `--page`; it no longer
+  scans the 100 newest meetings. A transcript hit carries `cue_ref` for `meetings passage`. Search all never
+  builds the index: when `missing` names the account, `zm <profile> search meetings` builds it. From the cli-core
+  release with meetings in `searchAll`.
 - **Over MCP, `meetings export` no longer takes `--output`**: an agent gets the export in the answer and does not
   choose where on your disk it goes.
 - **cli-core's name lookups take ё and е as one letter** (`Алена` finds `Алёна`). A name that matched one exactly

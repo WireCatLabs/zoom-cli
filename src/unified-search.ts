@@ -1,16 +1,12 @@
 import { CliError } from "@wirecat/cli-base"
-import type { SearchAllIncludingMeetingsFound, SearchAllIncludingMeetingsRequest } from "@wirecat/cli-core/services"
+import type { SearchAllFound, SearchAllRequest } from "@wirecat/cli-core/services"
 import { checkCancelled } from "./errors.js"
 
-export type UnifiedSearchRequest = Pick<
-  SearchAllIncludingMeetingsRequest,
-  "text" | "limit" | "offset" | "only" | "exact" | "maxMeetings" | "meetingCursor" | "signal"
->
-export type UnifiedSearch = (request: UnifiedSearchRequest) => Promise<SearchAllIncludingMeetingsFound>
+export type UnifiedSearchRequest = Pick<SearchAllRequest, "text" | "limit" | "offset" | "only" | "exact" | "signal">
+export type UnifiedSearch = (request: UnifiedSearchRequest) => Promise<SearchAllFound>
 const resources = ["messages", "mail", "notes", "meetings"] as const
 export const validateUnifiedSearch = (input: UnifiedSearchRequest, meetingsOnly = false): UnifiedSearchRequest => {
   const limit = input.limit ?? 100
-  const maxMeetings = input.maxMeetings ?? 100
   const only = input.only ?? ["meetings"]
   if (
     typeof input.text !== "string" ||
@@ -18,50 +14,23 @@ export const validateUnifiedSearch = (input: UnifiedSearchRequest, meetingsOnly 
     !Number.isSafeInteger(limit) ||
     limit < 1 ||
     limit > 1000 ||
-    (maxMeetings !== "all" && (!Number.isSafeInteger(maxMeetings) || maxMeetings < 1)) ||
     (input.offset !== undefined && (!Number.isSafeInteger(input.offset) || input.offset < 0)) ||
     !Array.isArray(only) ||
     !only.length ||
-    only.some((resource) => !resources.includes(resource)) ||
+    only.some((resource) => !(resources as readonly string[]).includes(resource)) ||
     (meetingsOnly && (only.length !== 1 || only[0] !== "meetings")) ||
     (input.exact !== undefined && typeof input.exact !== "boolean")
   )
     throw new CliError(
       "validation_error",
-      "expected nonempty search text, supported resources, a limit from 1 through 1000 and a whole number of meetings, or all",
+      "expected nonempty search text, supported resources and a limit from 1 through 1000",
     )
-  if (input.meetingCursor !== undefined) {
-    const cursor = input.meetingCursor
-    if (
-      typeof cursor !== "object" ||
-      cursor === null ||
-      Array.isArray(cursor) ||
-      Object.keys(cursor).some((key) => !["accountId", "query", "meetingOffset", "hitOffset"].includes(key)) ||
-      only.length !== 1 ||
-      only[0] !== "meetings" ||
-      typeof cursor.query !== "string" ||
-      !cursor.query.trim() ||
-      !Number.isSafeInteger(cursor.accountId) ||
-      cursor.accountId < 1 ||
-      !Number.isSafeInteger(cursor.meetingOffset) ||
-      cursor.meetingOffset < 0 ||
-      cursor.meetingOffset > Number.MAX_SAFE_INTEGER - 2 ||
-      !Number.isSafeInteger(cursor.hitOffset) ||
-      cursor.hitOffset < 0
-    )
-      throw new CliError(
-        "validation_error",
-        "meeting continuation requires a source-only cursor bound to its account and query",
-      )
-  }
   return {
     text: input.text,
     limit,
-    maxMeetings,
     only: [...new Set(only)],
     ...(input.offset === undefined ? {} : { offset: input.offset }),
     exact: input.exact,
-    meetingCursor: input.meetingCursor,
     signal: input.signal,
   }
 }

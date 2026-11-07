@@ -74,7 +74,7 @@ export const SHELL_OVERRIDES: Readonly<{
     {
       command: ["search", "all"],
       field: "summary",
-      before: "search stored messages, notes, calendar events and selected meeting transcripts",
+      before: "search stored messages, notes, calendar events and meetings",
       after: null,
       reason:
         "Zoom searches explicit local meeting and archive sources, with opt-in unified store reads rather than a live messenger backend.",
@@ -83,7 +83,7 @@ export const SHELL_OVERRIDES: Readonly<{
       command: ["search", "all"],
       field: "description",
       before:
-        "search messenger messages and notes in the local store, calendar events when the store holds a calendar, and a meeting account's transcripts when --source names one — best match first; not mail (the separate memo CLI searches it: memo search mail), tasks, people, memories or projects. Use it when you do not know where something was written; search messages or notes reads one kind with all its fields",
+        "search messenger messages and notes in the local store, calendar events when the store holds a calendar, and meeting transcripts, chat and summaries when it holds a meeting account — best match first; not mail (the separate memo CLI searches it: memo search mail), tasks, people, memories or projects. Use it when you do not know where something was written; search messages or notes reads one kind with all its fields",
       after: "search meetings and, with --only, messages, mail and notes in the local store",
       reason:
         "Zoom searches explicit local meeting and archive sources, with opt-in unified store reads rather than a live messenger backend.",
@@ -138,22 +138,14 @@ export const SHELL_OVERRIDES: Readonly<{
       before: [
         {
           flags: "--only <resources>",
-          description:
-            "only these resources, separated by commas: messages, notes, events; meetings when --source names a meeting account",
+          description: "only these resources, separated by commas: messages, notes, events, meetings",
           takes_value: true,
           mandatory: false,
         },
         {
           flags: "--source <accounts>",
           description:
-            "only these accounts, separated by commas: provider:account as a hit shows it, a provider, a kind or group:<name>; each resource reads the ones of its kind, and meetings only when it names one",
-          takes_value: true,
-          mandatory: false,
-        },
-        {
-          flags: "--max-meetings <n>",
-          description:
-            "how many of the meeting account's meetings to look through, newest first, or all for every one (default 100)",
+            "only these accounts, separated by commas: provider:account as a hit shows it, a provider, a kind or group:<name>; each resource reads the ones of its kind",
           takes_value: true,
           mandatory: false,
         },
@@ -199,12 +191,6 @@ export const SHELL_OVERRIDES: Readonly<{
         {
           flags: "--page <n>",
           description: "which page, starting at 1",
-          takes_value: true,
-          mandatory: false,
-        },
-        {
-          flags: "--max-meetings <n>",
-          description: "most meetings to look through, newest first, or all (default 100)",
           takes_value: true,
           mandatory: false,
         },
