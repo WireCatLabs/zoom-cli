@@ -297,6 +297,76 @@ describe("CLI configuration isolation", () => {
     expect(stderr.join("")).not.toContain("Open this URL")
     expect(stdout.join("")).not.toContain("example-code")
   })
+  it("zm app prints what to enter in Zoom, as JSON for a window and as a checklist at a terminal", async () => {
+    const { deps, stdout } = await setup()
+    expect(await run(["app", "--json"], deps)).toBe(0)
+    const { item } = JSON.parse(stdout.join(""))
+    expect(item).toMatchObject({
+      marketplace_url: "https://marketplace.zoom.us/develop/create",
+      app_type: "General app",
+      management: "User-managed",
+      oauth: "Public Client OAuth",
+      redirect_url: "https://wirecat.dev/zoom-callback",
+      allow_list: ["https://wirecat.dev/zoom-callback"],
+      config_key: "zoom.client_id",
+    })
+    expect(item.scopes).toContainEqual({
+      scope: "meeting:read:list_meetings",
+      required: true,
+      use: "find your meetings and scheduled series",
+    })
+    stdout.length = 0
+    deps.outputIsTTY = true
+    expect(await run(["app"], deps)).toBe(0)
+    expect(stdout.join("")).toMatch(/^1\. Open /)
+  })
+  it("without a Zoom app, refuses with a reason a window can branch on", async () => {
+    const { deps, stderr } = await setup()
+    expect(await run(["example", "session", "start", "--json"], deps)).toBe(3)
+    expect(JSON.parse(stderr.at(-1) ?? "{}").error).toMatchObject({
+      code: "configuration_error",
+      reason: "zoom.client-id-missing",
+    })
+  })
+  it("with --answer-stdin and no Zoom app, asks for the Client ID and saves it once the sign-in succeeds", async () => {
+    const { deps, stderr } = await setup()
+    deps.tokens = manager()
+    let authorized = ""
+    deps.openBrowser = async (url) => {
+      authorized = new URL(url).searchParams.get("client_id") ?? ""
+      await fetch(callback(url, { code: "example-code" }))
+    }
+    const stdin = new PassThrough()
+    deps.stdin = stdin
+    stdin.write("example-asked-client\n")
+    expect(await run(["example", "session", "start", "--json", "--answer-stdin"], deps)).toBe(0)
+    const needs = stderr
+      .flatMap((text) => text.split("\n"))
+      .filter((line) => line.startsWith('{"event":"needs"'))
+      .map((line) => JSON.parse(line))
+    expect(needs[0]).toEqual({
+      event: "needs",
+      field: "client_id",
+      secret: false,
+      prompt: "Public Client ID of your Zoom app",
+      hint: expect.stringContaining("https://marketplace.zoom.us/develop/create"),
+    })
+    expect(authorized).toBe("example-asked-client")
+    expect(readConfig(deps.configPath).clientId).toBe("example-asked-client")
+    expect(deps.tokens.options.keyring.get("example", "example-asked-client:example")).toBeTruthy()
+  })
+  it("with --answer-stdin, keeps an answered Client ID out of the config when the sign-in fails", async () => {
+    const { deps } = await setup()
+    deps.tokens = manager()
+    deps.openBrowser = async (url) => {
+      await fetch(callback(url, { error: "access_denied" }))
+    }
+    const stdin = new PassThrough()
+    deps.stdin = stdin
+    stdin.write("example-asked-client\n")
+    expect(await run(["example", "session", "start", "--json", "--answer-stdin"], deps)).not.toBe(0)
+    expect(readConfig(deps.configPath).clientId).toBeNull()
+  })
   it("with --answer-stdin, withdraws the paste question when the browser's callback comes first", async () => {
     const { deps, stderr } = await setup()
     setConfig(deps.configPath, "zoom.client_id", "example-client")

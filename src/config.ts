@@ -23,6 +23,7 @@ import {
 import { type ConfiguredContextSource, contextSourcesSchema, replaceContextSources } from "./context-sources.js"
 import { parsePermissions } from "./permissions.js"
 import { profilePattern } from "./profile.js"
+import { checkedClientId } from "./zoom-app.js"
 
 export { profileAccountKey } from "./profile.js"
 
@@ -252,9 +253,7 @@ export const setConfig = (
         return
       }
       case "zoom.client_id":
-        if (!value.trim() || /\s/.test(value))
-          throw new CliError("validation_error", "client id must not contain whitespace")
-        raw.client_id = value
+        raw.client_id = checkedClientId(value)
         return
       case "source":
         if (value !== "api" && value !== "files") throw new CliError("validation_error", "source must be api or files")

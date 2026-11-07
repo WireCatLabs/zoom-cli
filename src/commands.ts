@@ -87,6 +87,7 @@ export const annotateMeetingCommands = (program: Command): void => {
 }
 /** The top-level commands that act for no account, so their examples carry no profile word. */
 export const PROFILE_FREE = new Set([
+  "app",
   "commands",
   "complete",
   "config",

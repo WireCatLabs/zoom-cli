@@ -27,6 +27,7 @@ import {
   ZOOM_SETTINGS,
   type ZoomConfig,
 } from "./config.js"
+import { CLIENT_ID_MISSING } from "./identity.js"
 import { login } from "./login.js"
 import { addModelsCommands } from "./models-commands.js"
 import { permissionKeys } from "./permissions.js"
@@ -34,7 +35,15 @@ import type { ProgramDeps } from "./program.js"
 import { getZoomProfile } from "./recordings.js"
 import { TokenManager } from "./tokens.js"
 import { addUpgradeCommand } from "./upgrade.js"
-import { SET_ZOOM_APP, zoomApp, zoomClientId } from "./zoom-app.js"
+import {
+  CLIENT_ID_NEED,
+  checkedClientId,
+  SET_ZOOM_APP,
+  zoomApp,
+  zoomAppChecklist,
+  zoomAppSetup,
+  zoomClientId,
+} from "./zoom-app.js"
 
 const refuseAgentPermissions = (command: Command, key: string) => {
   if (environmentOf(command).agent && (key === "permissions" || key.startsWith("permissions.")))
@@ -86,6 +95,19 @@ export const addConfigCommands = (
       const added = migrateConfig(configPath)
       output(itemOf({ config_file: configPath, added }))
       warn(added.length > 0 ? `added ${added.join(", ")} to ${configPath}` : `${configPath} already has every setting`)
+    })
+}
+
+/** What to enter when making the Zoom app: a checklist for a person, the same facts as JSON for a window. */
+export const addAppCommand = (
+  program: Command,
+  { output, buffer, pretty }: { output: (body: Body) => void; buffer: (text: string) => void; pretty: () => boolean },
+): void => {
+  annotate(program.command("app"), { effects: NO_EFFECTS, examples: ["zm app", "zm app --json"] })
+    .description("what to enter when you make the Zoom app zm signs in with")
+    .action(() => {
+      if (pretty()) buffer(`${zoomAppChecklist()}\n`)
+      else output(itemOf(zoomAppSetup()))
     })
 }
 
@@ -173,14 +195,14 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
       const config = getConfig()
       const selected = profile()
       refuseCommandName(selected, commandWords(program), "zm")
-      if (opts.clientId !== undefined && (!opts.clientId.trim() || /\s/.test(opts.clientId)))
-        throw new CliError("validation_error", "client id must not contain whitespace")
-      const clientId = zoomApp({
+      if (opts.clientId !== undefined) checkedClientId(opts.clientId)
+      const known = zoomApp({
         env: deps.env ?? process.env,
         configClientId: config.clientId,
         clientId: opts.clientId,
       })?.client.clientId
-      if (!clientId) throw new CliError("configuration_error", SET_ZOOM_APP)
+      if (!known && opts.answerStdin !== true)
+        throw new CliError("configuration_error", SET_ZOOM_APP, { reason: CLIENT_ID_MISSING })
       const globals = program.opts()
       if (globals.offline) throw new CliError("configuration_error", "login requires network access; remove --offline")
       if (globals.input === false)
@@ -196,8 +218,11 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
         answers: opts.answerStdin === true,
         ...(deps.stdin ? { input: deps.stdin } : {}),
       })
+      // An answered ID is kept like --client-id: saved only once the sign-in with it succeeds.
+      const clientId = known ?? checkedClientId(await steps.ask(CLIENT_ID_NEED, signal()))
+      const chosen = opts.clientId ?? (known ? undefined : clientId)
       const done = await login({
-        tokens: (opts.clientId
+        tokens: (chosen
           ? new TokenManager({ ...tokens().options, clientId, account: `${clientId}:${selected}` })
           : tokens()
         ).storedIn(storage),
@@ -217,7 +242,7 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
               deps.diagnostic(`Open this URL to approve Zoom login:\n${url}\n`),
       })
       // Later commands find the login under `<client id>:<profile>`, so the app it used is kept with it (WC-SECR-25).
-      if (opts.clientId) setConfig(deps.configPath, "zoom.client_id", opts.clientId)
+      if (chosen) setConfig(deps.configPath, "zoom.client_id", chosen)
       addProfile(deps.configPath, selected)
       output(itemOf({ ...done, profile: selected }))
     })
