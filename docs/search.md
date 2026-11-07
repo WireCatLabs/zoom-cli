@@ -116,14 +116,16 @@ JSON returns `items`, `page` and optional `next` steps. JSONL emits each meeting
 then an end record with the page and completeness. Use `--page` to continue.
 The date query replaces the former list-only `--since-time` and `--until-time` flags;
 those flags remain available on transcript search and ingestion commands. `search all` uses the shared search
-service and searches only meetings by default. It answers a list of hits, as tg's `search all` does: a
-meeting hit has `scope` (transcript, chat or summary) and the stored line `id`. Continue with `--page`;
-when `missing` says the scan stopped after `--max-meetings`, rerun with `--max-meetings all`.
+service and searches only meetings by default, those of the profile's own Zoom account. It reads them through
+the meeting search index and ranks them with the other sources. It answers a list of hits, as tg's `search all`
+does: a meeting hit has `scope` (transcript, chat or summary), the stored line `id`, and a transcript hit's
+`cue_ref`, which `meetings passage` opens. One meeting gives at most 3 hits. Continue with `--page`. Search all
+never builds the index; when `missing` names the account, `zm <profile> search meetings` builds it.
 `meetings evidence` and `meetings context` name each line by `ref`, its start by `offset_ms`, and ids as
 strings, as `meetings prepare` does:
 
 ```sh
-zm personal search all "example plan" --limit 100 --max-meetings 100 --json
+zm personal search all "example plan" --limit 100 --json
 zm personal meetings evidence meeting:3/15/20/0 --cues 100 --bytes 65536 --json
 zm personal meetings context person:7 --meetings 10 --scan-limit 1000 --json
 zm personal meetings task-proposal meeting:3/15/20/0 --type promise --json

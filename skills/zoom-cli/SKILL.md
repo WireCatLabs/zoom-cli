@@ -113,8 +113,8 @@ store or automatically accept a creation fingerprint. No tag write is part of Zo
 `search all` defaults to meetings; broader messages/mail/notes selection is explicit with `--only`.
 A notes search needs at least three characters; a shorter one is refused. Notes match by part of a word, any case.
 It answers a list of hits as tg's `search all` does; a meeting hit carries `scope` and the stored line
-`id`. Continue with `--page`; when `missing` says the meeting scan stopped, rerun with
-`--max-meetings all`. Unsupported queries or skipped sources leave completeness false (the reason is on
+`id`; meetings are the profile's own account, read through its search index. Continue with `--page`;
+when `missing` names the account, its index is not built yet: `search meetings` builds it. Unsupported queries or skipped sources leave completeness false (the reason is on
 stderr) even when the command exits successfully.
 
 ## Prepare with selected communications

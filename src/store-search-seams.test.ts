@@ -6,7 +6,7 @@ import { createStoreConnector } from "./store-connection.js"
 const mocked = vi.hoisted(() => ({ search: vi.fn() }))
 vi.mock("@wirecat/cli-core/services", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@wirecat/cli-core/services")>()),
-  searchAllIncludingMeetings: mocked.search,
+  searchAll: mocked.search,
 }))
 const setup = () => ({
   meetings: Object.assign(memoryMeetingStore(), {
@@ -40,14 +40,14 @@ it("binds native append and unified search to the selected account while keeping
     connection.appendTranscriptsWithReceipt({ accountId: 99, externalId: "example", now: 1, transcripts: [] }),
   ).toThrow(/account is selected/)
   expect(store.meetings.appendTranscriptsWithReceipt).not.toHaveBeenCalled()
-  mocked.search.mockResolvedValue({ items: [], hasMore: null, searched: ["meetings"], skipped: [] })
+  mocked.search.mockResolvedValue({ items: [], hasMore: false, searched: ["meetings"], skipped: [] })
   await connection.unifiedSearch({ text: "example", limit: 10 })
   expect(mocked.search).toHaveBeenCalledWith(
     store,
     { provider: "zoom", account: "zm-profile:example" },
     expect.objectContaining({
       only: ["meetings"],
-      meetingAccount: { provider: "zoom", account: "zm-profile:example" },
+      scope: { meetings: [{ provider: "zoom", account: "zm-profile:example" }] },
     }),
   )
   expect(connection).not.toHaveProperty("accounts")
