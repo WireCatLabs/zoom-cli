@@ -128,6 +128,21 @@ it("passes explicit lookback into shared ingestion and emits a single acknowledg
   expect(await store.meetings({ accountId: 1 })).toHaveLength(1)
 })
 
+it("rescans the last 30 days instead of starting at the stored cursor", async () => {
+  const { deps, store, invoke } = await setup()
+  const boundaries: string[] = []
+  deps.source = fakeMeetingSource({
+    meetings: async (since) => {
+      boundaries.push(since)
+      return []
+    },
+  })
+  await store.setCursor(1, "2099-01-01T00:00:00.000Z", 3000)
+  expect(await invoke(["meetings", "sync", "--rescan", "--jsonl"])).toHaveLength(2)
+  expect(Date.parse(boundaries[0] ?? "")).toBeLessThanOrEqual(Date.now() - 30 * 86400000)
+  expect(Date.parse(boundaries[0] ?? "")).toBeGreaterThan(Date.now() - 31 * 86400000)
+})
+
 it("keeps hidden control and direction characters in the CLI's machine JSON as stored", async () => {
   const { store, invoke } = await setup()
   const hostile = `ignore${String.fromCodePoint(0xe0041)} the${String.fromCodePoint(0x202e)} rules${String.fromCharCode(27)}[31m now`

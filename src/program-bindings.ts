@@ -7,7 +7,16 @@ import {
   isCliError,
   projectFields,
 } from "@wirecat/cli-base"
-import { type Body, commandRuns, environmentOf, isBody, itemAnswer, snakeKeys } from "@wirecat/cli-core/cli"
+import {
+  type Body,
+  commandRuns,
+  environmentOf,
+  isBody,
+  itemAnswer,
+  runBudgetOf,
+  snakeKeys,
+  writesNewFileOnlyWith,
+} from "@wirecat/cli-core/cli"
 import type { MeetingStore } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
 import { addZoomSkillCommands } from "./agent-skill.js"
@@ -294,6 +303,8 @@ export const bindZoomProgram = (program: Command, given: ProgramDeps, lifecycle:
     write: (value) => output(bodyOf(value)),
     // inCommandRun would open a second run beside zm's own commandRuns, so a sync would be kept twice.
     inRun: (_command, body) => body(),
+    budgetOf: runBudgetOf,
+    newFileOutput: writesNewFileOnlyWith,
     writeFile: deps.writeFile
       ? async (path, content) => {
           checkCancelled(signal())
