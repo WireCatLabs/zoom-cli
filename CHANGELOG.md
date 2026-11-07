@@ -27,6 +27,10 @@
 - **A sign-in with no Zoom app fails with reason `zoom.client-id-missing`** instead of the general configuration
   reason, so a caller branches on the reason, not on the message.
 
+### Changed
+
+- Updated cli-core to 0.604.0.
+
 ## 0.67.0 — 05.11.2026
 
 ### Added
