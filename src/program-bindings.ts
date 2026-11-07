@@ -7,7 +7,15 @@ import {
   isCliError,
   projectFields,
 } from "@wirecat/cli-base"
-import { type Body, commandRuns, environmentOf, isBody, itemAnswer, snakeKeys } from "@wirecat/cli-core/cli"
+import {
+  type Body,
+  commandRuns,
+  environmentOf,
+  inCommandRun,
+  isBody,
+  itemAnswer,
+  snakeKeys,
+} from "@wirecat/cli-core/cli"
 import type { MeetingStore } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
 import { addZoomSkillCommands } from "./agent-skill.js"
@@ -292,6 +300,7 @@ export const bindZoomProgram = (program: Command, given: ProgramDeps, lifecycle:
     },
     now: deps.now,
     write: (value) => output(bodyOf(value)),
+    inRun: inCommandRun,
     writeFile: deps.writeFile
       ? async (path, content) => {
           checkCancelled(signal())
