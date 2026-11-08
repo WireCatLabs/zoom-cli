@@ -1,4 +1,6 @@
 [
+  "account remove --delete-data",
+  "account remove --keep-data",
   "meetings embeddings --after-hash",
   "meetings embeddings --after-transcript-id",
   "meetings evidence --after-transcript-id",

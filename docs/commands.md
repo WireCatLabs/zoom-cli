@@ -994,6 +994,20 @@ zm session start [options]
 
 **Example:** `zm personal session start`
 
+### `zm session end`
+
+delete this profile's saved Zoom login; the stored meetings stay
+
+**Changes local data.**
+
+```sh
+zm session end
+```
+
+**Returns:** delete this profile's saved Zoom login; the stored meetings stay
+
+**Example:** `zm personal session end`
+
 ## `zm upgrade`
 
 upgrade zm with the package manager that installed it; --check only looks
@@ -1056,6 +1070,30 @@ zm models download <model> [options]
 **Returns:** model — id, kind, title, languages, size_bytes, downloaded, default, path, and 1 more; every field: zm commands info models download
 
 **Example:** `zm models download parakeet-v3`
+
+## `zm account`
+
+the profile's login and data on this computer
+
+### `zm account remove`
+
+sign the profile out, then forget it on this computer: its settings, its saved sign-in and its files; --keep-data leaves its messages in the store, where search still finds them, --delete-data deletes them; asks first, or --yes
+
+**Changes remote Zoom data.**
+
+```sh
+zm account remove [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--keep-data` | leave what the store holds of this account, still searchable. |
+| `--delete-data` | delete what the store and the tool's own files hold of this account. |
+| `--dry-run` | list what it would remove and keep, and change nothing. |
+
+**Returns:** account removal — profile, data, dry_run, account, revoked, config_file, removed, kept; every field: zm commands info account remove
+
+**Example:** `zm personal account remove --keep-data --dry-run`, `zm personal account remove --delete-data --yes`
 
 ## `zm watch`
 

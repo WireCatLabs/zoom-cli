@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**367 ✅ · 17 ⛔ · 0 ❌** — 93 commands, 291 options.
+**372 ✅ · 17 ⛔ · 0 ❌** — 95 commands, 294 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -189,12 +189,17 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `session start` | `--client-id` | ✅ |  |
 | `session start` | `--credential-storage` | ✅ |  |
 | `session start` | `--answer-stdin` | ✅ |  |
+| `session end` |  | ✅ |  |
 | `upgrade` |  | ✅ |  |
 | `upgrade` | `--check` | ✅ |  |
 | `models list` |  | ✅ |  |
 | `models download` |  | ✅ |  |
 | `models download` | `--offline` | ✅ |  |
 | `models download` | `--accept-terms` | ✅ |  |
+| `account remove` |  | ✅ |  |
+| `account remove` | `--keep-data` | ✅ |  |
+| `account remove` | `--delete-data` | ✅ |  |
+| `account remove` | `--dry-run` | ✅ |  |
 | `watch` |  | ✅ |  |
 | `watch` | `--since-time` | ✅ |  |
 | `watch` | `--lookback-days` | ✅ |  |

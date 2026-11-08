@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **`zm <profile> session end`** deletes the profile's saved Zoom login from the keyring and the private file.
+  The stored meetings stay.
+- **`zm <profile> account remove --keep-data|--delete-data`** removes a profile from this computer: it deletes
+  its login, forgets the profile in the settings and its sync checkpoints and, with `--delete-data`, deletes its
+  meetings from the store. `--keep-data` leaves them searchable. Other profiles stay as they are. An archive schedule
+  that still runs for the profile stops the removal: turn it off with `recordings schedule disable` first. zm does not
+  revoke the login at Zoom; it only forgets it here.
+
 ## 0.69.0 — 08.11.2026
 
 ### Changed — may break callers
