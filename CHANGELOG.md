@@ -6,6 +6,7 @@
 
 - **`--offline` on a command that needs Zoom may be refused with `offline.refused`, exit code 5**, before the command
   runs (cli-core 0.607.0). Branch on the reason, not on the exit code.
+- **The store moves to schema 57.** Other WireCat CLIs that share it need a version that speaks 56 or later.
 
 ### Fixed
 
