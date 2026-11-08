@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.69.0 — 08.11.2026
 
 ### Changed — may break callers
 
