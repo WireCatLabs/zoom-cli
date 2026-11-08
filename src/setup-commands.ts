@@ -17,6 +17,7 @@ import {
   signInSteps,
 } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
+import { zoomAccountRemoveCommand } from "./account-removal.js"
 import { addStandardCommands } from "./commands.js"
 import {
   addProfile,
@@ -247,4 +248,19 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
       output(itemOf({ ...done, profile: selected }))
     })
   logsInOrOut(annotate(start, { effects: REMOTE_WRITE, lifetime: "interactive" }))
+  logsInOrOut(
+    annotate(
+      session
+        .command("end")
+        .description("delete this profile's saved Zoom login; the stored meetings stay")
+        .action(() => {
+          const selected = profile()
+          output(itemOf({ profile: selected, ended: tokens().remove(), meetings: "retained" }))
+        }),
+      { effects: LOCAL_WRITE, mcp: false, examples: ["zm personal session end"] },
+    ),
+  )
+  annotate(program.command("account"), { effects: NO_EFFECTS })
+    .description("the profile's login and data on this computer")
+    .addCommand(zoomAccountRemoveCommand(deps))
 }

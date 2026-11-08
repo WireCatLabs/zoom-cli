@@ -31,7 +31,7 @@ export const discoveryLevels = (own: Readonly<Record<string, Level>>, env: NodeJ
 }
 
 /** Looking after the tool — its settings, its login, its help — is never gated (WC-PERM-5). */
-const HOUSEKEEPING = new Set([...PROFILE_FREE, "session", "mcp"])
+const HOUSEKEEPING = new Set([...PROFILE_FREE, "session", "account", "mcp"])
 
 export const pathOf = (command: Command): string[] => {
   const words: string[] = []

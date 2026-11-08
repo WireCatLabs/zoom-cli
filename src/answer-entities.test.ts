@@ -35,6 +35,7 @@ const HOUSEKEEPING_ANSWERS = new Set([
   "mcp server start",
   "mcp server status",
   "mcp server stop",
+  "session end",
   "session start",
   "session status",
   "skill install",
@@ -150,10 +151,11 @@ it("answers every command that declares an entity with that entity's schema", as
   const declared = [...commands.keys()].filter((path) => metaOf(commands.get(path) as Command).output)
   expect(declared.sort()).toEqual(
     [...runs.map(([path]) => path), "meetings projects evidence", "meetings projects scan", "meetings prepare"]
-      // checked where their own fixtures are: offline-archive-cli, meeting-project-evidence, contacts, runs and the
-      // preparation tests
+      // checked where their own fixtures are: account-removal, offline-archive-cli, meeting-project-evidence,
+      // contacts, runs and the preparation tests
       .concat(
         [
+          "account remove",
           "meetings scheduled",
           "search recordings",
           "models list",

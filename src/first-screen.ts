@@ -17,6 +17,7 @@ const SECTIONS: [string[], HelpSection][] = [
   [["meetings", "link"], "organise"],
   [["batch"], "read"],
   [["session"], "setup"],
+  [["account"], "setup"],
 ]
 
 const placeInSections = (program: Command): void => {

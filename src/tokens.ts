@@ -124,6 +124,15 @@ export class TokenManager {
       throw new CliError("configuration_error", "system keyring is unavailable")
     }
   }
+  /** Deletes this login from the keyring and from the private file; false when there was none. */
+  remove(account = this.accountOf()): boolean {
+    if (this.stores) return this.stores.auto.remove(account).length > 0
+    try {
+      return this.options.keyring.delete(this.options.service, account)
+    } catch {
+      throw new CliError("configuration_error", "system keyring is unavailable")
+    }
+  }
   load(account = this.accountOf()): Tokens | null {
     const saved = this.read(account)
     if (!saved) return null
