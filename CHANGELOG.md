@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Changed — may break callers
+
+- **`--offline` on a command that needs Zoom may be refused with `offline.refused`, exit code 5**, before the command
+  runs (cli-core 0.607.0). Branch on the reason, not on the exit code.
+
+### Fixed
+
+- **zm opens the store again after another WireCat CLI upgraded it.** A CLI on a newer cli-core moves the shared
+  store to version 56 or later, which a zm from before this version refuses. Updated cli-core to 0.608.0.
+
 ## 0.68.0 — 08.11.2026
 
 ### Added
