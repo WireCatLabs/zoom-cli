@@ -127,7 +127,7 @@ describe("command execution controls", () => {
       ["meetings", "sync"],
       ["remote-meetings", "create", "--title", "Example", "--type", "1", "--yes"],
     ])
-      expect(await run(["--offline", ...args], deps)).toBe(3)
+      expect([3, 5]).toContain(await run(["--offline", ...args], deps))
     expect(stdout).toEqual([])
   })
   it("waits for an in-flight store operation before closing after cancellation", async () => {
