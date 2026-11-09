@@ -1065,7 +1065,7 @@ zm models download <model> [options]
 | Option | What it does |
 |---|---|
 | `--offline` | refuse a download that needs the network. |
-| `--accept-terms` | accept the model's licence terms, for a model that has its own. |
+| `--accept-terms` | no longer needed; kept so older scripts still run. |
 
 **Returns:** model — id, kind, title, languages, size_bytes, downloaded, default, path, and 6 more; every field: zm commands info models download
 

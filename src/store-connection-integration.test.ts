@@ -104,12 +104,13 @@ it("connects actual published context services to an existing scoped account wit
     const linked = await integration.change(
       reference,
       { ...link, targetAccountIds: [value.foreignId] },
-      { apply: true },
+      { apply: true, author: "owner" },
     )
-    expect(linked).toMatchObject({ applied: true, result: { personUid: value.target.uid, previousPersonUid: null } })
-    const { changed, proposal } = linked.result as { changed: boolean; proposal?: string }
-    expect(changed).toBe(proposal === undefined)
-    linkedNow = changed
+    expect(linked).toMatchObject({
+      applied: true,
+      result: { personUid: value.target.uid, previousPersonUid: null, changed: true },
+    })
+    linkedNow = true
   } finally {
     await connection.close()
   }
@@ -411,4 +412,52 @@ it("meetings repair previews the language of stored transcripts that have none a
   expect(await fill()).toMatchObject({ applied: false, transcripts: 0 })
   expect(await run(["meetings", "repair", "--jsonl"], deps)).toBe(0)
   expect(output.at(-1)).toContain('"transcripts":0')
+})
+
+it.each([
+  ["the owner at a terminal links the person", {}, true],
+  ["an agent's terminal only proposes the link", { AI_AGENT: "codex" }, false],
+] as const)("meetings link --yes: %s", async (_, agentEnv, linked) => {
+  const value = await fixture()
+  const output: string[] = []
+  const denied = async () => {
+    throw new Error("unexpected external access")
+  }
+  const deps: ProgramDeps = {
+    configPath: join(value.directory, "config.json"),
+    tokens: new TokenManager({
+      clientId: "example-client",
+      service: "example",
+      keyring: memoryKeyring(),
+      fetch: denied,
+    }),
+    fetch: denied,
+    openBrowser: denied,
+    connectStore: createStoreConnector({ path: value.path, env: value.env }),
+    data: (text) => output.push(text),
+    diagnostic: (text) => output.push(text),
+    env: { ...value.env, ...agentEnv },
+  }
+  useProfile(deps.configPath, request.profile)
+  const participantId = value.meeting.participants[0]?.id
+  if (!participantId) throw new Error("missing invented guest")
+  const reference = `meeting:${value.accountId}/${value.meeting.meeting.id}`
+  const link = [
+    request.profile,
+    "meetings",
+    "link",
+    reference,
+    "--participant-id",
+    String(participantId),
+    "--person",
+    value.target.uid,
+  ]
+  expect(await run([...link, "--source", String(value.foreignId), "--yes", "--json"], deps)).toBe(0)
+  expect(output.at(-1)).toContain(linked ? '"changed":true' : '"proposal"')
+  const store = await openStore({ path: value.path, env: value.env })
+  try {
+    expect(await store.people.personSeenInAccounts(value.target.uid, [value.accountId])).toBe(linked)
+  } finally {
+    await store.close()
+  }
 })

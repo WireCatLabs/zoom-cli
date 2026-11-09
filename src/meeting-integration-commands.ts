@@ -1,6 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { type Body, itemOf, LOCAL_READ, LOCAL_WRITE } from "@wirecat/cli-core/cli"
+import { actorOf, type Body, itemOf, LOCAL_READ, LOCAL_WRITE } from "@wirecat/cli-core/cli"
 import { validateMeetingContextChange } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
 import { bytes } from "./execution.js"
@@ -29,7 +29,12 @@ export const addMeetingIntegrationCommands = (
     })
   const guards = (command: Command) =>
     command.option("--yes", "apply this local change once").option("--dry-run", "preview even when --yes is present")
-  const apply = async (reference: string, input: MeetingLinkChange, options: { yes?: boolean; dryRun?: boolean }) => {
+  const apply = async (
+    reference: string,
+    input: MeetingLinkChange,
+    options: { yes?: boolean; dryRun?: boolean },
+    command: Command,
+  ) => {
     const target = integrationReference(reference)
     const change = validateMeetingContextChange(input)
     if (change.action !== "event.link" && change.action !== "person.link")
@@ -38,6 +43,8 @@ export const addMeetingIntegrationCommands = (
       apply: options.yes,
       dryRun: options.dryRun,
       signal: deps.signal(),
+      // An agent's terminal or an MCP run links a person only as a proposal the owner confirms.
+      author: actorOf(command) === "owner" ? "owner" : "agent",
     })
     if (result.applied) await deps.receipt(itemOf(result))
     else deps.output(itemOf(result))
@@ -55,6 +62,7 @@ export const addMeetingIntegrationCommands = (
       async (
         reference: string,
         options: { eventId: number | "none"; expectedEventId?: number | "none"; yes?: boolean; dryRun?: boolean },
+        command: Command,
       ) =>
         apply(
           reference,
@@ -66,6 +74,7 @@ export const addMeetingIntegrationCommands = (
               : { expectedEventId: options.expectedEventId === "none" ? null : options.expectedEventId }),
           },
           options,
+          command,
         ),
     ),
     "zm personal meetings update meeting:1/1 --event-id 1 --json",
@@ -92,6 +101,7 @@ export const addMeetingIntegrationCommands = (
           yes?: boolean
           dryRun?: boolean
         },
+        command: Command,
       ) =>
         apply(
           reference,
@@ -107,6 +117,7 @@ export const addMeetingIntegrationCommands = (
               : { expectedPersonUid: options.expectedPerson === "none" ? null : options.expectedPerson }),
           },
           options,
+          command,
         ),
     ),
     "zm personal meetings link meeting:1/1 --participant-id 1 --person 1 --json",
