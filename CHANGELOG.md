@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.71.0 — 09.11.2026
+
+### Added
+
+- **A pull request adds its changelog entries as a fragment, `changes/<branch>.md`.** Open pull requests no longer
+  conflict under `## Unreleased`. `pnpm docs:check` checks each fragment, and `bin/release` collects them into the
+  version's section. An entry under `## Unreleased` still works during the move.
+
+### Changed — may break callers
+
+- **`zm search all` has no `--max-meetings` any more.** It reads the profile's meetings through their search
+  index, ranked with messages, mail and notes, at most 3 hits per meeting, and pages with `--page`; it no longer
+  scans the 100 newest meetings. A transcript hit carries `cue_ref` for `meetings passage`. Search all never
+  builds the index: when `missing` names the account, `zm <profile> search meetings` builds it.
+- **cli-core 0.619.0.** An agent's `meetings link` now opens a proposal for the owner instead of linking the person.
+
+### Fixed
+
+- **The owner's own `meetings link --yes` and `meetings update --yes` apply at once.** zm now tells cli-core who runs
+  the command: the owner at a terminal links the person right away, while an agent's terminal or an MCP run only
+  proposes it. Without this, cli-core 0.619.0 would treat every link as an agent's.
+
 ## 0.70.0 — 08.11.2026
 
 ### Added
