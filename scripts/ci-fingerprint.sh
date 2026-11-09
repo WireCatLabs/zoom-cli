@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Prints the git tree of <rev> without CHANGELOG.md and with the version set to 0.0.0 in package.json and
-# src/version.ts: two commits share it only when everything but the changelog and the version is byte for byte the
-# same.
+# Prints the git tree of <rev> without CHANGELOG.md and the changes/ fragments, and with the version set to 0.0.0 in
+# package.json and src/version.ts: two commits share it only when everything but the changelog and the version is
+# byte for byte the same.
 #
 #   scripts/ci-fingerprint.sh [rev]   (default HEAD)
 set -euo pipefail
@@ -28,6 +28,7 @@ neutral() {
 
 git read-tree "$rev"
 git update-index --force-remove CHANGELOG.md
+git ls-files -z -- changes | git update-index -z --force-remove --stdin
 # Only package.json's top-level field, found by its two-space indent; anything else in the file stays as it is.
 package=$(neutral package.json '^(  "version": ")[^"\n]*"')
 version=$(neutral src/version.ts '^(export const VERSION = ")[^"\n]*"')
