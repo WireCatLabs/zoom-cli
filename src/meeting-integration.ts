@@ -7,7 +7,7 @@ export interface MeetingIntegrationCapabilities {
   change(
     reference: string,
     change: MeetingLinkChange,
-    options?: MeetingMutationOptions,
+    options?: MeetingMutationOptions & { author?: "owner" | "agent" },
   ): Promise<MeetingContextReceipt<unknown>>
 }
 

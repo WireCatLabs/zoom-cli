@@ -228,6 +228,7 @@ export const createStoreConnector =
                 facts: connected.facts,
               },
               key,
+              mutation.author === undefined ? {} : { author: mutation.author },
             )
             if (
               service.accountId !== accountId ||
