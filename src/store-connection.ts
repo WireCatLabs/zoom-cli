@@ -245,8 +245,9 @@ export const createStoreConnector =
         },
         unifiedSearch: async (input) => {
           const request = validateUnifiedSearch(input)
-          const { searchAllIncludingMeetings } = await import("@wirecat/cli-core/services")
-          return searchAllIncludingMeetings(connected, key, { ...request, meetingAccount: key, env: options.env })
+          const { searchAll } = await import("@wirecat/cli-core/services")
+          // The profile names one Zoom account; another profile's meetings are not this run's to read.
+          return searchAll(connected, key, { ...request, scope: { meetings: [key] }, env: options.env })
         },
         meetingContext: createMeetingContextCapabilities(connected, meetings, accountId),
         meetingSemantic: createMeetingSemanticCapabilities(connected, accountId, { env: options.env }),
