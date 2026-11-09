@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Decides whether a pull request may skip the heavy checks: it changes nothing but CHANGELOG.md and the version
-# (scripts/ci-fingerprint.sh) against a commit on main that scripts/release-reuse.sh proves green on every required
+# Decides whether a pull request may skip the heavy checks: it changes nothing but CHANGELOG.md, the changes/
+# fragments and the version (scripts/ci-fingerprint.sh) against a commit on main that scripts/release-reuse.sh proves green on every required
 # check. bin/release's version pull requests are such. Any doubt prints reuse=false.
 #
 #   GH_TOKEN GITHUB_REPOSITORY   set by the workflow
@@ -24,7 +24,7 @@ base=$(git rev-parse --verify HEAD^1) || full "the checkout has no parent to com
 mine=$(bash "$here/ci-fingerprint.sh" HEAD) || full "could not fingerprint this pull request"
 theirs=$(bash "$here/ci-fingerprint.sh" "$base") || full "could not fingerprint ${base:0:10}"
 [ "$mine" = "$theirs" ] ||
-  full "changes more than CHANGELOG.md and the version against main ${base:0:10} (fingerprint $mine, not $theirs)"
+  full "changes more than the changelog and the version against main ${base:0:10} (fingerprint $mine, not $theirs)"
 
 echo "base=$base" >>"$out"
 echo "fingerprint=$mine" >>"$out"

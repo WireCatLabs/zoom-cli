@@ -10,7 +10,7 @@ zoom's own rules. Read [architecture](docs/dev/ARCHITECTURE.md) and [testing](do
 Token values stay in the keyring. A login listener closes on success, failure and timeout.
 No live check or real import before the owner authorizes it and the shared store adapter exists.
 
-Use a branch and a worktree. The pre-commit hook checks staged lint and secrets. Conventional commits; visible changes get an Unreleased changelog entry. Never clean up
+Use a branch and a worktree. The pre-commit hook checks staged lint and secrets. Conventional commits; visible changes get a changelog fragment, `changes/<branch>.md`, not an Unreleased entry. Never clean up
 files, branches or worktrees mid-task: record them in CLEANUP.md for the owner's confirmation.
 
 Security audits of this repository follow the shared

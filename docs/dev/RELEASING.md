@@ -1,7 +1,10 @@
 # Releasing
 
 Release from a clean main equal to origin/main after the implementation and release-preparation
-PRs have passed CI. Date the top changelog section with the package version and release day. The
+PRs have passed CI. Date the top changelog section with the package version and release day, and in the same pull
+request collect the `changes/` fragments into it with
+`node --experimental-strip-types scripts/changelog-fragments.ts --rules scripts/docs-rules.ts <version>`, which
+deletes them; `bin/release` refuses to publish while any are left. The
 release-preparation PR raises `version` in `package.json` and runs `pnpm version:sync`, which writes it into
 `src/version.ts`; `pnpm version:check` in full validation fails when the two disagree.
 `bin/release` takes the zoom-cli release lock (one per package, shared by every checkout) and normally dispatches the GitHub workflow. By default it refuses an occupied lock immediately. To wait in

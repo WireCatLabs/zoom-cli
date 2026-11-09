@@ -42,6 +42,10 @@ npm view "@wirecat/zoom-cli@$version" version --prefer-online >/dev/null 2>&1 ||
   folded=$(npx -y -p @wirecat/cli-base@0.36.0 cli-dev changelog fold --land --version "$version")
 [ -z "$folded" ] || echo "$folded"
 rerun_if_changed "$@"
+if [ -n "$(find changes -maxdepth 1 -type f -name '*.md' ! -name README.md 2>/dev/null)" ]; then
+  echo "changes/ has fragments: collect them into $version in a pull request first (docs/dev/RELEASING.md)" >&2
+  exit 1
+fi
 top=$(sed -n '/^## /{p;q;}' CHANGELOG.md)
 case "$top" in
   "## $version — "*) ;;
