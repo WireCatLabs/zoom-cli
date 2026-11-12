@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, renameSync, rmdirSync } from "node:fs"
+import { existsSync, lstatSync, mkdirSync, readdirSync, renameSync, rmdirSync, symlinkSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { isMovedRun, type Paths, resolvePaths } from "@wirecat/cli-base"
 
@@ -54,13 +54,24 @@ export const sameConfigFolder = (current: string, saved: string, options: Folder
   resolve(current) === resolve(saved) ||
   (resolve(saved) === legacyPaths(options).config && resolve(current) === zmPaths(options).config)
 
-/** Moves what the old `zm` folders hold into the `zoom-cli` ones. Anything already there wins; its old copy stays. */
+/**
+ * Moves what the old `zm` folders hold into the `zoom-cli` ones. Anything already there wins; its old copy stays. An
+ * old folder left empty becomes a link to the new one, so an older zm, or a tool reading the old path, still finds it.
+ */
+const isFolder = (path: string): boolean => {
+  try {
+    return lstatSync(path).isDirectory()
+  } catch {
+    return false
+  }
+}
+
 export const moveLegacyFolders = (options: FolderOptions = {}): void => {
   const env = ownEnv(options)
   const current = zmPaths(options)
   const legacy = legacyPaths(options)
   for (const kind of KINDS) {
-    if (env[overrideOf(kind)] !== undefined || current[kind] === legacy[kind] || !existsSync(legacy[kind])) continue
+    if (env[overrideOf(kind)] !== undefined || current[kind] === legacy[kind] || !isFolder(legacy[kind])) continue
     // A failed step leaves the entry where it was: another process moved it first, or the new folder has its own.
     const attempt = (step: () => void) => {
       try {
@@ -75,6 +86,9 @@ export const moveLegacyFolders = (options: FolderOptions = {}): void => {
     for (const name of names)
       if (!existsSync(join(current[kind], name)))
         attempt(() => renameSync(join(legacy[kind], name), join(current[kind], name)))
-    attempt(() => rmdirSync(legacy[kind]))
+    attempt(() => {
+      rmdirSync(legacy[kind])
+      symlinkSync(current[kind], legacy[kind], "junction")
+    })
   }
 }

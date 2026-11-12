@@ -85,7 +85,8 @@ actual path without checking the saved OAuth session.
 | Explicit override | `config.json` inside `ZM_CONFIG_DIR` |
 
 zm keeps its folders under `zoom-cli`, the name `zm doctor` and the run log use; older versions used `zm`. The first
-run of a newer version moves what the old folders hold; anything already in the new folder stays, and so does its old copy. Older macOS
+run of a newer version moves what the old folders hold; anything already in the new folder stays, and so does its old copy.
+An old folder left empty becomes a link to the new one, so an older zm still finds its settings. Older macOS
 layouts are not moved; doctor shows the path actually in use. Keep
 public app settings separate from keyring tokens and the shared meeting database.
 

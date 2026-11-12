@@ -15,7 +15,8 @@
 
 - **zm keeps its folders under `zoom-cli`, the name `zm doctor` and the run log already used.** Settings move from
   `~/.config/zm` to `~/.config/zoom-cli`, and state from `~/.local/share/zm` to `~/.local/share/zoom-cli`. The first
-  run moves them; a saved archive schedule keeps running ([configuration](../docs/configuration.md)).
+  run moves them and leaves a link at each old folder it emptied, so an older zm still works; a saved archive
+  schedule keeps running ([configuration](../docs/configuration.md)).
 - **A sign-in no longer depends on the client ID in its keyring name.** After changing `zoom.client_id`, run
   `zm <profile> session start` again.
 

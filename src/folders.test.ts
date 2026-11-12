@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, expect, it } from "vitest"
@@ -65,12 +65,18 @@ describe("zm folders", () => {
     moveLegacyFolders({ env })
     expect(readFileSync(join(paths.config, "config.json"), "utf8")).toBe('{"old":true}')
     expect(existsSync(join(paths.config, "recording-schedules"))).toBe(true)
-    expect(existsSync(oldConfig)).toBe(false)
+    expect(readlinkSync(oldConfig)).toBe(paths.config)
+    expect(readFileSync(join(oldConfig, "config.json"), "utf8")).toBe('{"old":true}')
+    expect(lstatSync(oldState).isSymbolicLink()).toBe(false)
     expect(existsSync(join(paths.state, "checkpoints"))).toBe(true)
     expect(existsSync(join(paths.state, "runs"))).toBe(true)
     expect(readFileSync(join(paths.state, "update-check.json"), "utf8")).toBe("new")
     expect(readFileSync(join(oldState, "update-check.json"), "utf8")).toBe("old")
+    writeFileSync(join(oldConfig, "written-by-an-older-zm.json"), "{}")
     moveLegacyFolders({ env })
+    expect(readlinkSync(oldConfig)).toBe(paths.config)
+    expect(existsSync(join(paths.config, "written-by-an-older-zm.json"))).toBe(true)
+    expect(readFileSync(join(paths.state, "update-check.json"), "utf8")).toBe("new")
   })
 
   it("moves nothing into a folder an override names", () => {
