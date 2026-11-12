@@ -25,6 +25,8 @@ const HOUSEKEEPING_ANSWERS = new Set([
   "config show",
   "config unset",
   "doctor",
+  "doctor reports create",
+  "doctor reports show",
   "guide",
   "help",
   "mcp add",
