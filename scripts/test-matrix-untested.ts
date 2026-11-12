@@ -1,10 +1,15 @@
 const SHARED_MCP =
   "cli-core's appMcpCommand; its own tests drive it, and src/mcp.test.ts runs zm's server, config, revoke, status and " +
   "refusals"
+const SHARED_REPORTS = "cli-core's appDoctorCommand; its app-mcp-command test creates and shows a report"
 const LONG_RUNNING = `starts an HTTP server or a background process that runs until stopped; ${SHARED_MCP}`
 const WRITES_CLIENT = `writes an agent client's own configuration or starts a child server; ${SHARED_MCP}`
 
 export const UNTESTED: { command: string; option?: string; reason: string }[] = [
+  { command: "doctor reports show", reason: SHARED_REPORTS },
+  { command: "doctor reports create", reason: SHARED_REPORTS },
+  { command: "doctor reports create", option: "--run", reason: SHARED_REPORTS },
+  { command: "doctor reports create", option: "--output", reason: SHARED_REPORTS },
   {
     command: "doctor",
     option: "--online",
