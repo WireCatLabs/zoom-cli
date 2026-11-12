@@ -32,6 +32,12 @@ const ownEnv = ({ env = process.env, platform }: FolderOptions = {}): NodeJS.Pro
   return kept
 }
 
+/** cli-core reads the `ZM_*_DIR` variables too, so one naming the owner's own folder goes before anything starts. */
+export const dropOwnFolderOverrides = (env: NodeJS.ProcessEnv = process.env): void => {
+  const own = ownEnv({ env })
+  for (const kind of KINDS) if (own[overrideOf(kind)] === undefined) delete env[overrideOf(kind)]
+}
+
 export const zmPaths = (options: FolderOptions = {}): Paths =>
   resolvePaths({ appName: APP, prefix: PREFIX, ...options, env: ownEnv(options) })
 

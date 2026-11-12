@@ -14,10 +14,12 @@ import {
 } from "@wirecat/cli-base"
 import { hostFetch } from "@wirecat/cli-base/http"
 import { startCli } from "@wirecat/cli-core/cli/start"
+import { dropOwnFolderOverrides } from "../folders.js"
 import { ZM, ZOOM_HOSTS } from "../identity.js"
 import { VERSION } from "../version.js"
 
 let answerPolicy: typeof import("../answer-policy.js") | undefined
+dropOwnFolderOverrides()
 await startCli({
   app: ZM,
   run: async (entry) => {

@@ -2,7 +2,14 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, expect, it } from "vitest"
-import { isMovedZmRun, legacyLoginService, moveLegacyFolders, sameConfigFolder, zmPaths } from "./folders.js"
+import {
+  dropOwnFolderOverrides,
+  isMovedZmRun,
+  legacyLoginService,
+  moveLegacyFolders,
+  sameConfigFolder,
+  zmPaths,
+} from "./folders.js"
 import { ZOOM_HOSTS } from "./identity.js"
 import { permissionKeyForPath } from "./permissions.js"
 import { WCAT } from "./wcat.js"
@@ -81,4 +88,11 @@ describe("zm folders", () => {
 it("tells WireCat Desktop the hosts zm's fetch is limited to, and each command's permission key", () => {
   expect(WCAT.hosts).toBe(ZOOM_HOSTS)
   expect(WCAT.permissionOf?.(["remote-meetings", "list"])).toBe(permissionKeyForPath(["remote-meetings", "list"]))
+})
+
+it("drops an override naming the owner's own folder before cli-core reads it, and keeps a real one", () => {
+  const { home, env } = sandbox()
+  const timer = { ...env, ZM_CONFIG_DIR: join(home, ".config", "zm"), ZM_STATE_DIR: join(home, "elsewhere") }
+  dropOwnFolderOverrides(timer)
+  expect(timer).toEqual({ ...env, ZM_STATE_DIR: join(home, "elsewhere") })
 })
