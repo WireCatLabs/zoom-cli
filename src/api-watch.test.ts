@@ -196,7 +196,7 @@ it("uses shared cursor lookback to discover a late API transcript with fresh sou
   expect(order).toEqual(["open", "close", "receipt", "open", "close", "receipt"])
   expect(output.map((line) => readReceipt(line).transcript_rows)).toEqual([0, 1])
   expect(await store.cursor(1)).toBe("2026-10-11T12:00:00.000Z")
-  expect(await store.search("Late transcript", { accountId: 1 })).toHaveLength(1)
+  expect((await store.search("Late transcript", { accountId: 1 })).items).toHaveLength(1)
 })
 
 it("delegates an injected source without requiring a real client and never overlaps ingestion or receipt writing", async () => {

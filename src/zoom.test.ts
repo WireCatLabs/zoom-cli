@@ -394,7 +394,7 @@ describe("API source", () => {
     })
     expect(result.meetings).toBe(2)
     expect(result.warnings).toEqual([])
-    expect((await store.search("Example plan")).length).toBe(2)
+    expect((await store.search("Example plan")).items.length).toBe(2)
     const [saved] = await store.meetings()
     expect((await store.meeting(saved?.id ?? 0))?.summaries[0]).toMatchObject({
       source: "zoom-ai",
