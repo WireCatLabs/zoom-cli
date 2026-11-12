@@ -292,8 +292,8 @@ it("permits startless append to an existing target and never reactivates a histo
   await collect(applyArchiveImport(await preflightArchiveImport(first.root), receipts, { accountId: 1, now: 6000 }))
   await collect(applyArchiveImport(old, receipts, { accountId: 1, now: 7000 }))
   expect((await store.meeting(initial.meeting.id))?.transcripts).toHaveLength(3)
-  expect(await store.search("Original")).toEqual([])
-  expect(await store.search("Corrected")).toHaveLength(1)
+  expect((await store.search("Original")).items).toEqual([])
+  expect((await store.search("Corrected")).items).toHaveLength(1)
 })
 
 it("rejects corrupted later assets and aggregate oversize before producing a writable plan", async () => {

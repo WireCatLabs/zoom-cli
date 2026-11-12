@@ -25,6 +25,8 @@ const HOUSEKEEPING_ANSWERS = new Set([
   "config show",
   "config unset",
   "doctor",
+  "doctor reports create",
+  "doctor reports show",
   "guide",
   "help",
   "mcp add",
@@ -188,7 +190,7 @@ it("stats meetings history with --no-record keeps no search", async () => {
   const searches = async () => {
     const store = await openStore({ path, env })
     try {
-      return (await store.searches.searchHistory(1000)).length
+      return (await store.searches.searchHistory(1000)).items.length
     } finally {
       await store.close()
     }

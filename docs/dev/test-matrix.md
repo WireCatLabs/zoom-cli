@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**371 ✅ · 17 ⛔ · 0 ❌** — 95 commands, 293 options.
+**371 ✅ · 21 ⛔ · 0 ❌** — 97 commands, 295 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -19,6 +19,10 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `runs path` |  | ✅ |  |
 | `doctor` |  | ✅ |  |
 | `doctor` | `--online` | ⛔ | connects to Zoom and npm; cli-core's appDoctorCommand, whose app-mcp-command tests drive --online |
+| `doctor reports show` |  | ⛔ | cli-core's appDoctorCommand; its app-mcp-command test creates and shows a report |
+| `doctor reports create` |  | ⛔ | cli-core's appDoctorCommand; its app-mcp-command test creates and shows a report |
+| `doctor reports create` | `--run` | ⛔ | cli-core's appDoctorCommand; its app-mcp-command test creates and shows a report |
+| `doctor reports create` | `--output` | ⛔ | cli-core's appDoctorCommand; its app-mcp-command test creates and shows a report |
 | `mcp serve` |  | ✅ |  |
 | `mcp serve` | `--permission` | ✅ |  |
 | `mcp serve` | `--profiles` | ✅ |  |

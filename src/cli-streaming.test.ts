@@ -359,8 +359,8 @@ it("rescans real downloaded files so corrections replace current search while pr
   }
   expect(await run(["watch", "files", folder, "--jsonl"], deps)).toBe(130)
   expect(receipts).toBe(2)
-  expect(await store.search("Original", { accountId: 1 })).toEqual([])
-  expect(await store.search("Corrected", { accountId: 1 })).toHaveLength(1)
+  expect((await store.search("Original", { accountId: 1 })).items).toEqual([])
+  expect((await store.search("Corrected", { accountId: 1 })).items).toHaveLength(1)
   const meetings = await store.meetings({ accountId: 1 })
   expect(meetings).toHaveLength(1)
   expect((await store.meeting(meetings[0]?.id ?? 0))?.transcripts).toHaveLength(2)

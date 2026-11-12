@@ -117,6 +117,19 @@ export const zoomRunsCommand = (): Command => {
   )
   return runs
 }
+/** cli-core's `doctor`, its `reports` group declared effect-free: zoom declares effects on every group. */
+export const zoomDoctorCommand = (doctor: Command): Command => {
+  const reports = doctor.commands.find((command) => command.name() === "reports")
+  if (reports)
+    overrideSharedContract(
+      reports,
+      "Zoom declares effects on every command group, the shared doctor reports' included.",
+      (group) => {
+        annotate(group, { effects: NO_EFFECTS })
+      },
+    )
+  return doctor
+}
 const exampleFor = (path: string): string => {
   const profile = PROFILE_FREE.has(path.split(" ")[0] ?? "") ? "" : "personal "
   if (path === "mcp serve") return "zm personal mcp serve"
