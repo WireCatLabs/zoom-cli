@@ -12,7 +12,7 @@ import {
 } from "@wirecat/cli-core/cli"
 import { assertOverridesTighten, COMMAND_PATH_KEY, permissionOverrides } from "@wirecat/cli-core/sends"
 import type { Command } from "commander"
-import { zoomDoctorCommand, zoomRunsCommand } from "./commands.js"
+import { zoomRunsCommand } from "./commands.js"
 import { inspectConfig, readConfig } from "./config.js"
 import { publicIssue } from "./config-issues.js"
 import { ZOOM_FIRST_SCREEN } from "./first-screen.js"
@@ -92,12 +92,10 @@ export const zoomDefinition = (deps: ProgramDeps, onFailure?: (error: unknown) =
     app: ZM,
     commands: () => [
       zoomRunsCommand(),
-      zoomDoctorCommand(
-        appDoctorCommand(ZM, shared, {
-          packageName: "@wirecat/zoom-cli",
-          oauthClient: () => zoomClientReport(configured(deps.configPath), deps.env ?? process.env),
-        }),
-      ),
+      appDoctorCommand(ZM, shared, {
+        packageName: "@wirecat/zoom-cli",
+        oauthClient: () => zoomClientReport(configured(deps.configPath), deps.env ?? process.env),
+      }),
       appMcpCommand(ZM, shared, {
         name: "Zoom",
         untrusted: ["transcripts", "summaries", "chat messages", "participant names", "meeting titles", "file names"],

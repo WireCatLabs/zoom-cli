@@ -103,6 +103,10 @@ zm doctor [options]
 |---|---|
 | `--online` | also connect once and read the account; sends nothing. |
 
+**Returns:** the state this installation is in, without connecting unless --online
+
+**Example:** `zm doctor`, `zm doctor --json`
+
 ### `zm doctor reports`
 
 problem reports
@@ -115,7 +119,7 @@ what a problem report holds; writes nothing
 zm doctor reports show
 ```
 
-**Returns:** what a problem report holds; writes nothing
+**Returns:** what a report holds and never holds, and where to send it; writes nothing
 
 **Example:** `zm doctor reports show`
 
@@ -134,7 +138,7 @@ zm doctor reports create [options]
 | `--run <id>` | the run the report is about; the newest failed one if not given. |
 | `--output <file>` | where to write it; a new file in this directory if not given. |
 
-**Returns:** write a problem report to a file, and say where to send it
+**Returns:** the report file written: its path, the run it is about, and where to send it
 
 **Example:** `zm doctor reports create --output ./problem-report.json`
 
