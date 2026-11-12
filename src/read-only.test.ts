@@ -8,6 +8,10 @@ import { describe, expect, it, vi } from "vitest"
 import { createProgram, type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
 
+// A locked run writes files only inside the work folder its schedule named.
+const WORK = join(tmpdir(), "zm-test-read-only-work")
+const ARCHIVE = join(WORK, "archive")
+
 const setup = async (env: NodeJS.ProcessEnv) => {
   const directory = await mkdtemp(join(tmpdir(), "zm-test-read-only-"))
   const network = vi.fn(async (): Promise<Response> => {
@@ -31,7 +35,7 @@ const setup = async (env: NodeJS.ProcessEnv) => {
     },
     data: () => {},
     diagnostic: (text) => stderr.push(text),
-    env: { ...env, HOME: directory },
+    env: { ZM_WORK_FOLDER: WORK, ...env, HOME: directory },
   }
   return { deps, network, stderr }
 }
@@ -48,7 +52,7 @@ describe("ZM_READ_ONLY", () => {
     [["skill", "install"], "outside a sync"],
     [
       [
-        ...["recordings", "schedule", "create", "--name", "daily", "--output-dir", "/tmp/zm-archive"],
+        ...["recordings", "schedule", "create", "--name", "daily", "--output-dir", ARCHIVE],
         ...["--since-time", "2026-01-01", "--at", "03:00", "--timezone", "Europe/Madrid", "--yes"],
       ],
       "outside a sync",
@@ -66,13 +70,22 @@ describe("ZM_READ_ONLY", () => {
 
   it.each([
     [["meetings", "sync", "--json"]],
-    [["recordings", "download", "123456789", "--output-dir", "/tmp/zm-archive", "--json"]],
-    [["recordings", "download", "--since-time", "2026-01-01", "--output-dir", "/tmp/zm-archive", "--json"]],
+    [["recordings", "download", "123456789", "--output-dir", ARCHIVE, "--json"]],
+    [["recordings", "download", "--since-time", "2026-01-01", "--output-dir", ARCHIVE, "--json"]],
     [["watch", "api", "--jsonl"]],
   ])("lets the mirroring sync %j run", async (args) => {
     const { deps, stderr } = await setup({ ZM_READ_ONLY: "1" })
     expect(await run(args, deps)).not.toBe(5)
     expect(stderr.join("")).not.toContain("read-only")
+  })
+
+  it("refuses a download outside the run's work folder before any network or store call", async () => {
+    const { deps, network, stderr } = await setup({ ZM_READ_ONLY: "1" })
+    const args = ["recordings", "download", "123456789", "--output-dir", "/tmp/zm-archive", "--json"]
+    expect(await run(args, deps)).toBe(5)
+    expect(stderr.join("")).toContain("read-only.output-outside")
+    expect(network).not.toHaveBeenCalled()
+    expect(deps.connectStore).not.toHaveBeenCalled()
   })
 
   it("lets reads through, word search and its index included", async () => {
