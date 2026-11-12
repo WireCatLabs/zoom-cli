@@ -193,10 +193,9 @@ Once that works, [search a topic and read its surrounding evidence](search.md).
 
 | What | Linux and macOS | Windows |
 |---|---|---|
-| settings (`config.json`) | `~/.config/zm/` | `%APPDATA%\zm\Config\` |
-| state | `~/.local/share/zm/` | `%LOCALAPPDATA%\zm\Data\` |
-| recorded runs (`runs/`) | `~/.local/share/zoom-cli/` | `%LOCALAPPDATA%\zoom-cli\Data\` |
-| cache | `~/.cache/zm/` | `%LOCALAPPDATA%\zm\Cache\` |
+| settings (`config.json`) | `~/.config/zoom-cli/` | `%APPDATA%\zoom-cli\Config\` |
+| state and recorded runs (`runs/`) | `~/.local/share/zoom-cli/` | `%LOCALAPPDATA%\zoom-cli\Data\` |
+| cache | `~/.cache/zoom-cli/` | `%LOCALAPPDATA%\zoom-cli\Cache\` |
 | the local store | `~/.local/share/WireCat/wirecat.db` | `%LOCALAPPDATA%\WireCat\Data\wirecat.db` |
 
 `config.json` holds public settings; it is not a downloaded credentials file. `zm doctor --json`
@@ -221,9 +220,9 @@ npm uninstall -g @wirecat/zoom-cli
 
 Uninstalling removes only the package. To remove everything else, delete:
 
-- the settings, state, recorded runs and cache directories: `~/.config/zm`, `~/.local/share/zm`,
-  `~/.local/share/zoom-cli` and `~/.cache/zm` on Linux and macOS; `%APPDATA%\zm`, `%LOCALAPPDATA%\zm` and
-  `%LOCALAPPDATA%\zoom-cli` on Windows;
+- the settings, state, recorded runs and cache directories: `~/.config/zoom-cli`, `~/.local/share/zoom-cli` and
+  `~/.cache/zoom-cli` on Linux and macOS; `%APPDATA%\zoom-cli` and `%LOCALAPPDATA%\zoom-cli` on Windows (older
+  versions used `zm` in place of `zoom-cli`);
 - the agent skill folders, if you installed the skill: `~/.claude/skills/zoom-cli` and
   `~/.agents/skills/zoom-cli` (`%USERPROFILE%\.claude\skills\zoom-cli` and
   `%USERPROFILE%\.agents\skills\zoom-cli` on Windows);

@@ -6,9 +6,10 @@ on:
   push:
     branches: [main]
 
+# Each merge keeps its own validation: cancelling it would leave that commit unchecked (WC-CI-7).
 concurrency:
   group: main-validation-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read

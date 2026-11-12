@@ -1,15 +1,12 @@
 import { randomUUID } from "node:crypto"
-import type { Tool } from "@modelcontextprotocol/server"
 import { CliError } from "@wirecat/cli-base"
-import { errorObjectSchema, jsonSchemaOf, type Meta } from "@wirecat/cli-base/standards"
+import type { Meta } from "@wirecat/cli-base/standards"
 import { metaNow, runnable, answerSchema as sharedAnswerSchema } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import * as v from "valibot"
 import { bodyOf } from "./answer-output.js"
 
 export const answerSchema = sharedAnswerSchema()
-const outputSchema: Record<string, unknown> = { ...jsonSchemaOf(v.union([answerSchema, errorObjectSchema])) }
-export const toolAnswerSchema: NonNullable<Tool["outputSchema"]> = { ...outputSchema, type: "object" }
 
 export const readMetadata = (now: () => number = Date.now, runId: string = randomUUID()): (() => Meta) => {
   const started = now()

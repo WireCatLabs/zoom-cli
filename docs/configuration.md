@@ -29,8 +29,8 @@ files folder and the time zone are not written: unset, they mean "none yet" and 
 | `runs_size_limit_mb` | the most the run log may hold; the oldest successful runs go first; 200 by default |
 
 Check `zm config show` after editing. The profile is not a setting: it is the first word of each
-command ([profiles](sessions.md#select-a-local-profile)). Changing the client ID selects a different keyring entry, so authorize that app before
-using its API.
+command ([profiles](sessions.md#select-a-local-profile)). A sign-in keeps working only with the app it was made
+with, so after changing the client ID run `zm <profile> session start` again.
 
 ### Which Zoom app zm uses
 
@@ -45,8 +45,8 @@ names one:
 
 `zm doctor --json` shows the choice under `oauth_client`: `{ "client": "own", "source": "env" }` or `"config"`, and
 with none `{ "client": null, "source": null, "reason": "WireCat has no Zoom app yet; …" }`. The keyring entry is
-`<client id>:<profile>`, so an id in `ZM_ZOOM_CLIENT_ID` uses the login made with that id. A scheduled archive keeps
-the id it was saved with and refuses to run under another.
+`oauth:zoom:<profile>` under the service `zoom-cli`, one per profile whichever app signed it in. A scheduled archive
+keeps the id it was saved with and refuses to run under another.
 
 The file stores these settings as `client_id`, `files_folder`, `files_timezone`, `source`, `context_sources`,
 `record`, `record_input`, `keep_runs_for_days`, `keep_successful_runs_for_days` and `runs_size_limit_mb`, and the
@@ -60,7 +60,7 @@ the first problem, names how to remove it, and says how many more there are. `zm
 under `config.issues`:
 
 ```json
-{ "kind": "unknown_setting", "file": "/home/you/.config/zm/config.json", "key": "example_setting",
+{ "kind": "unknown_setting", "file": "/home/you/.config/zoom-cli/config.json", "key": "example_setting",
   "what": "setting example_setting is not a setting of zm", "fix": "zm config unset example_setting" }
 ```
 
@@ -80,11 +80,13 @@ actual path without checking the saved OAuth session.
 
 | Platform | Default public configuration |
 |---|---|
-| Linux and macOS | `~/.config/zm/config.json`, or the `zm` directory under `XDG_CONFIG_HOME` |
-| Windows | `%APPDATA%\zm\Config\config.json` |
+| Linux and macOS | `~/.config/zoom-cli/config.json`, or the `zoom-cli` directory under `XDG_CONFIG_HOME` |
+| Windows | `%APPDATA%\zoom-cli\Config\config.json` |
 | Explicit override | `config.json` inside `ZM_CONFIG_DIR` |
 
-Older macOS layouts are no longer moved automatically; doctor shows the path actually in use. Keep
+zm keeps its folders under `zoom-cli`, the name `zm doctor` and the run log use; older versions used `zm`. The first
+run of a newer version moves what the old folders hold; anything already in the new folder stays, and so does its old copy. Older macOS
+layouts are not moved; doctor shows the path actually in use. Keep
 public app settings separate from keyring tokens and the shared meeting database.
 
 `zm config set` saves the file so only you can read it (`0600`). `zm doctor --json` lists the file and its folder
@@ -130,7 +132,7 @@ log without a profile; an answer's `meta.run_id` is the id `runs show` takes.
 
 | Variable | Effect |
 |---|---|
-| `ZM_CONFIG_DIR` | overrides the configuration directory; changing it also changes the keyring service used for login |
+| `ZM_CONFIG_DIR` | overrides the configuration directory; such a run reads your sign-in but keeps its own changes to it apart ([security](security.md)) |
 | `ZM_STATE_DIR` | overrides the directory for recorded runs (`runs/`) |
 | `ZM_CACHE_DIR` | overrides the cache directory |
 | `ZM_READ_ONLY` | `1` refuses changes to Zoom, the login, settings and what you added, with exit 5; reads and syncs from Zoom still run ([security](security.md#what-agents-can-do)) |

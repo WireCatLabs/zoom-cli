@@ -6,19 +6,16 @@
       "readOnlyHint": true
     },
     "inputSchema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
         "arguments": {
           "additionalProperties": {},
-          "description": "that command's arguments",
           "propertyNames": {
             "type": "string"
           },
           "type": "object"
         },
         "command": {
-          "description": "a command zm_tools_search returned: \"runs list\"",
           "minLength": 1,
           "type": "string"
         }
@@ -26,58 +23,7 @@
       "required": ["command"],
       "type": "object"
     },
-    "name": "zm_read",
-    "outputSchema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "properties": {
-        "item": {},
-        "items": {
-          "items": {},
-          "type": "array"
-        },
-        "meta": {
-          "description": "run facts; zm_tools_search shows the full answer",
-          "properties": {},
-          "required": [],
-          "type": "object"
-        },
-        "missing": {
-          "items": {
-            "properties": {
-              "field": {
-                "type": "string"
-              },
-              "why": {
-                "type": "string"
-              }
-            },
-            "required": ["field", "why"],
-            "type": "object"
-          },
-          "type": "array"
-        },
-        "next": {
-          "description": "steps to run next: command and args",
-          "items": {
-            "properties": {},
-            "required": [],
-            "type": "object"
-          },
-          "type": "array"
-        },
-        "page": {
-          "properties": {
-            "has_more": {
-              "type": "boolean"
-            }
-          },
-          "required": ["has_more"],
-          "type": "object"
-        }
-      },
-      "required": ["meta"],
-      "type": "object"
-    }
+    "name": "zm_read"
   },
   {
     "annotations": {
@@ -87,24 +33,16 @@
       "readOnlyHint": true
     },
     "inputSchema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
         "query": {
-          "description": "words that describe the task",
           "type": "string"
         }
       },
       "required": [],
       "type": "object"
     },
-    "name": "zm_tools_search",
-    "outputSchema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "properties": {},
-      "required": [],
-      "type": "object"
-    }
+    "name": "zm_tools_search"
   },
   {
     "annotations": {
@@ -114,19 +52,16 @@
       "readOnlyHint": false
     },
     "inputSchema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
         "arguments": {
           "additionalProperties": {},
-          "description": "that command's arguments",
           "propertyNames": {
             "type": "string"
           },
           "type": "object"
         },
         "command": {
-          "description": "a command zm_tools_search returned: \"runs list\"",
           "minLength": 1,
           "type": "string"
         }
@@ -134,29 +69,6 @@
       "required": ["command"],
       "type": "object"
     },
-    "name": "zm_write",
-    "outputSchema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "properties": {
-        "item": {},
-        "meta": {
-          "description": "run facts; zm_tools_search shows the full answer",
-          "properties": {},
-          "required": [],
-          "type": "object"
-        },
-        "next": {
-          "description": "steps to run next: command and args",
-          "items": {
-            "properties": {},
-            "required": [],
-            "type": "object"
-          },
-          "type": "array"
-        }
-      },
-      "required": ["meta"],
-      "type": "object"
-    }
+    "name": "zm_write"
   }
 ]

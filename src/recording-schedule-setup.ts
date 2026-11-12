@@ -3,6 +3,7 @@ import { dirname, join } from "node:path"
 import { CliError } from "@wirecat/cli-base"
 import { readConfig, type ZoomConfig } from "./config.js"
 import type { ZoneAssumptions } from "./errors.js"
+import { sameConfigFolder } from "./folders.js"
 import type { ProgramDeps } from "./program.js"
 import {
   createRecordingScheduleService,
@@ -50,7 +51,7 @@ export const zoomRecordingSchedule = ({
           }),
           recordings: (job) => {
             if (
-              dirname(deps.configPath) !== job.capture.configDir ||
+              !sameConfigFolder(dirname(deps.configPath), job.capture.configDir, { env }) ||
               profile() !== job.capture.profile ||
               zoomClientId(readConfig(deps.configPath), deps.env ?? process.env) !== job.capture.clientId
             )
@@ -60,16 +61,12 @@ export const zoomRecordingSchedule = ({
               )
             return new ZoomRecordings(
               new TokenManager({
+                ...deps.tokens.options,
                 clientId: job.capture.clientId,
-                account: `${job.capture.clientId}:${job.capture.profile}`,
-                keyring: deps.tokens.options.keyring,
-                service: `zoom-cli:${job.capture.configDir}`,
-                configDir: job.capture.configDir,
                 fetch: withSignal(deps.tokens.options.fetch),
                 now: deps.now,
                 signal: signal(),
-                log: deps.tokens.options.log,
-              }),
+              }).forProfile(job.capture.profile),
               withSignal(deps.fetch),
               remoteOptions,
               zones,

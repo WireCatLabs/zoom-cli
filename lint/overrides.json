@@ -7,10 +7,17 @@
     "review_after": "2027-01-25"
   },
   {
-    "rule": "option-role",
-    "target": "session start --client-id",
-    "reason": "WC-SECR-25 names session start --client-id as the first way to pick the sign-in app; cli-base's flag vocabulary does not list it yet.",
-    "owner": "@leemour",
-    "review_after": "2027-02-05"
+    "rule": "undeclared-host",
+    "target": "github.com",
+    "reason": "Links in src/bin/zm.ts and src/zoom-app.ts, printed for the person to open; zm never sends a request there, and hostFetch would refuse one.",
+    "owner": "@WireCatLabs",
+    "review_after": "2027-05-13"
+  },
+  {
+    "rule": "undeclared-host",
+    "target": "127.0.0.1",
+    "reason": "The loopback address of zm's own sign-in listener, where the browser returns after Zoom's consent; zm listens there and never fetches it.",
+    "owner": "@WireCatLabs",
+    "review_after": "2027-05-13"
   }
 ]

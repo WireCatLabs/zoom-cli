@@ -223,10 +223,7 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
       const clientId = known ?? checkedClientId(await steps.ask(CLIENT_ID_NEED, signal()))
       const chosen = opts.clientId ?? (known ? undefined : clientId)
       const done = await login({
-        tokens: (chosen
-          ? new TokenManager({ ...tokens().options, clientId, account: `${clientId}:${selected}` })
-          : tokens()
-        ).storedIn(storage),
+        tokens: (chosen ? new TokenManager({ ...tokens().options, clientId }) : tokens()).storedIn(storage),
         signal: signal(),
         openBrowser: (url) => deps.openBrowser(url, opts.browser),
         readPaste: steps.answers
@@ -242,7 +239,7 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
             : // Without a terminal this line is all an agent can pass on, so --quiet keeps it.
               deps.diagnostic(`Open this URL to approve Zoom login:\n${url}\n`),
       })
-      // Later commands find the login under `<client id>:<profile>`, so the app it used is kept with it (WC-SECR-25).
+      // A refresh uses the configured app, so the app this sign-in used is kept with it (WC-SECR-25).
       if (chosen) setConfig(deps.configPath, "zoom.client_id", chosen)
       addProfile(deps.configPath, selected)
       output(itemOf({ ...done, profile: selected }))

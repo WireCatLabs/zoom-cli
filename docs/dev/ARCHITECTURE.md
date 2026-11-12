@@ -7,7 +7,7 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 
 | Module | Responsibility |
 |---|---|
-| [tokens.ts](../../src/tokens.ts) | keyring-only token storage, public-client exchange and refresh, outcome records without token material |
+| [tokens.ts](../../src/tokens.ts) | keyring token storage with a private-file fallback, the move from the old per-folder entry, public-client exchange, refresh under a lock shared by every process, outcome records without token material |
 | [run-log.ts](../../src/run-log.ts) | a cli-core run under `<state>/runs`, opened on its first record |
 | [login.ts](../../src/login.ts) | PKCE, loopback callback, paste fallback and listener cleanup |
 | [api.ts](../../src/api.ts) | pagination, occurrence UUIDs, participant sessions and downloads |

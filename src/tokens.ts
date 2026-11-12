@@ -1,5 +1,10 @@
+import { createHash } from "node:crypto"
+import { join } from "node:path"
+import { setTimeout as delay } from "node:timers/promises"
 import type { KeyringStore, Logger } from "@wirecat/cli-base"
 import { CliError, Credentials, isCliError } from "@wirecat/cli-base"
+import { acquireLock } from "@wirecat/cli-core/files"
+import { oauthAccount } from "@wirecat/cli-core/oauth"
 import { checkCancelled, object } from "./errors.js"
 
 export interface Tokens {
@@ -24,6 +29,13 @@ export interface TokenOptions {
    * `keyring` falls back to the file when the keyring fails and drops a file copy when it does not.
    */
   storage?: "keyring" | "file"
+  /** A run with moved folders (`isMovedZmRun`): it reads the owner's sign-in, but never replaces or deletes it. */
+  isolated?: boolean
+  /** Where an older version kept this login; read once when the account is empty, then copied to it. */
+  legacyService?: string
+  legacyAccount?: string
+  /** How long a refresh waits for another process's refresh of the same login. */
+  lockWaitMs?: number
   fetch: typeof fetch
   now?: () => number
   signal?: AbortSignal
@@ -36,16 +48,34 @@ export const TOKEN_LOG_EVENT = "zoom.token.exchange"
 // parent abort, only the request's own 30 s limit can have fired.
 const abortReason = (parent?: AbortSignal): string =>
   !parent?.aborted ? "timeout" : isCliError(parent.reason) ? parent.reason.code : "cancelled"
-type Stores = { auto: Credentials; file: Credentials; keyring: Credentials }
+type Stores = { auto: Credentials; file: Credentials; keyring: Credentials; legacy?: Credentials }
 
-const storesOf = ({ configDir, service, keyring }: TokenOptions): Stores | undefined =>
-  configDir === undefined
-    ? undefined
-    : {
-        auto: new Credentials({ configDir, service, keyring }),
-        file: new Credentials({ configDir, service, keyring, storage: "file" }),
-        keyring: new Credentials({ configDir, service, keyring, storage: "keyring" }),
-      }
+const storesOf = ({ configDir, service, keyring, isolated, legacyService }: TokenOptions): Stores | undefined => {
+  if (configDir === undefined) return undefined
+  const common = { configDir, keyring, ...(isolated ? { isolated } : {}) }
+  return {
+    auto: new Credentials({ ...common, service }),
+    file: new Credentials({ ...common, service, storage: "file" }),
+    keyring: new Credentials({ ...common, service, storage: "keyring" }),
+    ...(legacyService === undefined ? {} : { legacy: new Credentials({ ...common, service: legacyService }) }),
+  }
+}
+const shared = (options: TokenOptions) => ({
+  keyring: options.keyring,
+  service: options.service,
+  ...(options.configDir === undefined ? {} : { configDir: options.configDir }),
+  ...(options.storage === undefined ? {} : { storage: options.storage }),
+  ...(options.isolated === undefined ? {} : { isolated: options.isolated }),
+  ...(options.legacyService === undefined ? {} : { legacyService: options.legacyService }),
+  ...(options.lockWaitMs === undefined ? {} : { lockWaitMs: options.lockWaitMs }),
+  now: options.now,
+  log: options.log,
+})
+const notSignedIn = () =>
+  new CliError(
+    "authentication_error",
+    "run zm <profile> session start first, or sign in from WireCat Desktop (Tools → Zoom → Manage)",
+  )
 
 export class TokenManager {
   private refreshState = new Map<string, Promise<Tokens>>()
@@ -65,23 +95,19 @@ export class TokenManager {
     scoped.stores = this.stores
     return scoped
   }
-  /** The login of one profile: `<client id>:<profile>` in the keyring. */
+  /** The login of one profile: `oauth:zoom:<profile>` in the keyring (WC-SECR-24). */
   forProfile(profile: string): TokenManager {
     const parent = this.options
     const scoped = new TokenManager({
+      ...shared(parent),
       get clientId() {
         return parent.clientId
       },
-      get account() {
+      account: oauthAccount("zoom", profile),
+      get legacyAccount() {
         return `${parent.clientId}:${profile}`
       },
-      keyring: parent.keyring,
-      service: parent.service,
-      ...(parent.configDir === undefined ? {} : { configDir: parent.configDir }),
-      ...(parent.storage === undefined ? {} : { storage: parent.storage }),
       fetch: parent.fetch,
-      now: parent.now,
-      log: parent.log,
       signal: parent.signal,
     })
     scoped.refreshState = this.refreshState
@@ -90,23 +116,22 @@ export class TokenManager {
   }
   withSignal(signal?: AbortSignal, fetcher: typeof fetch = this.options.fetch): TokenManager {
     const parent = this.options
-    // The account is built from the client id, so both are fixed together on first use.
-    let login: Pick<TokenOptions, "clientId" | "account"> | undefined
-    const pinned = () => (login ??= { clientId: parent.clientId, account: parent.account })
+    // The old account name is built from the client id, so they are fixed together on first use.
+    let login: Pick<TokenOptions, "clientId" | "account" | "legacyAccount"> | undefined
+    const pinned = () =>
+      (login ??= { clientId: parent.clientId, account: parent.account, legacyAccount: parent.legacyAccount })
     const scoped = new TokenManager({
+      ...shared(parent),
       get clientId() {
         return pinned().clientId
       },
       get account() {
         return pinned().account
       },
-      keyring: parent.keyring,
-      service: parent.service,
-      ...(parent.configDir === undefined ? {} : { configDir: parent.configDir }),
-      ...(parent.storage === undefined ? {} : { storage: parent.storage }),
+      get legacyAccount() {
+        return pinned().legacyAccount
+      },
       fetch: fetcher,
-      now: parent.now,
-      log: parent.log,
       signal: signal && parent.signal ? AbortSignal.any([signal, parent.signal]) : (signal ?? parent.signal),
     })
     scoped.refreshState = this.refreshState
@@ -117,16 +142,39 @@ export class TokenManager {
     return this.options.account ?? this.options.clientId
   }
   private read(account: string): string | null {
-    if (this.stores) return this.stores.auto.read(account)?.secret ?? null
+    if (this.stores) return this.stores.auto.read(account)?.secret ?? this.migrated(account)
     try {
       return this.options.keyring.get(this.options.service, account)
     } catch {
       throw new CliError("configuration_error", "system keyring is unavailable")
     }
   }
-  /** Deletes this login from the keyring and from the private file; false when there was none. */
+  /** The login under the name an older version used, copied to the new one; a moved run only reads it. */
+  private migrated(account: string): string | null {
+    const legacy = this.legacyOf(account)
+    const secret = legacy && this.stores?.legacy?.read(legacy)?.secret
+    if (!secret) return null
+    if (!this.options.isolated)
+      try {
+        this.stores?.auto.write(account, secret)
+      } catch {
+        // The next run tries again; this one can still use the login it read.
+      }
+    return secret
+  }
+  private legacyOf(account: string): string | undefined {
+    return account === this.accountOf() ? this.options.legacyAccount : undefined
+  }
+  /**
+   * Deletes this login from the keyring and from the private file; false when there was none. The old entry goes
+   * too, or the next run would copy it back; a moved run leaves the owner's alone.
+   */
   remove(account = this.accountOf()): boolean {
-    if (this.stores) return this.stores.auto.remove(account).length > 0
+    if (this.stores) {
+      const legacy = this.legacyOf(account)
+      const old = legacy && !this.options.isolated ? (this.stores.legacy?.remove(legacy) ?? []) : []
+      return this.stores.auto.remove(account).length + old.length > 0
+    }
     try {
       return this.options.keyring.delete(this.options.service, account)
     } catch {
@@ -280,20 +328,23 @@ export class TokenManager {
     const clientId = this.options.clientId
     const account = this.options.account ?? clientId
     const saved = this.load(account)
-    if (!saved)
-      throw new CliError(
-        "authentication_error",
-        "run zm <profile> session start first, or sign in from WireCat Desktop (Tools → Zoom → Manage)",
-      )
-    if (saved.expiresAt > (this.options.now?.() ?? Date.now()) + 30000) return saved
+    if (!saved) throw notSignedIn()
+    const fresh = (tokens: Tokens) => tokens.expiresAt > (this.options.now?.() ?? Date.now()) + 30000
+    if (fresh(saved)) return saved
     let refreshing = this.refreshState.get(account)
     if (!refreshing) {
-      refreshing = this.exchange(
-        { grant_type: "refresh_token", refresh_token: saved.refreshToken },
-        saved,
-        clientId,
-        account,
-      ).finally(() => {
+      refreshing = this.locked(account, async () => {
+        const current = this.load(account)
+        if (!current) throw notSignedIn()
+        // Another process refreshed while this one waited: Zoom has already replaced the refresh token it read.
+        if (current.refreshToken !== saved.refreshToken || fresh(current)) return current
+        return this.exchange(
+          { grant_type: "refresh_token", refresh_token: current.refreshToken },
+          current,
+          clientId,
+          account,
+        )
+      }).finally(() => {
         this.refreshState.delete(account)
       })
       this.refreshState.set(account, refreshing)
@@ -301,5 +352,33 @@ export class TokenManager {
     const refreshed = await refreshing
     checkCancelled(this.options.signal)
     return refreshed
+  }
+  /** WC-SECR-22: one refresh of a login at a time across processes, under the lock cli-core's token keeper uses. */
+  private async locked<T>(account: string, work: () => Promise<T>): Promise<T> {
+    const { configDir, service, signal } = this.options
+    if (configDir === undefined) return work()
+    const key = createHash("sha256").update(`${service}\u0000${account}`).digest("hex").slice(0, 16)
+    const path = join(configDir, `oauth-${key}.lock`)
+    const started = performance.now()
+    for (;;) {
+      checkCancelled(signal)
+      let lock: Awaited<ReturnType<typeof acquireLock>>
+      try {
+        lock = await acquireLock(path, signal ? { signal } : {})
+      } catch (error) {
+        if (!isCliError(error) || error.details.reason !== "file.locked") throw error
+        if (performance.now() - started > (this.options.lockWaitMs ?? 45000))
+          throw new CliError("provider_unavailable", "another zm process is refreshing this Zoom sign-in; retry", {
+            retryable: true,
+          })
+        await delay(50, undefined, signal ? { signal } : {}).catch(() => checkCancelled(signal))
+        continue
+      }
+      try {
+        return await work()
+      } finally {
+        await lock.release().catch(() => {})
+      }
+    }
   }
 }

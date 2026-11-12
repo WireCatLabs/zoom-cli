@@ -288,8 +288,8 @@ it("refuses saved backup jobs after profile or client changes before keyring or 
   useProfile(deps.configPath, "AliceExample")
   setConfig(deps.configPath, "zoom.client_id", "example-client")
   deps.tokens.options.keyring.set(
-    `zoom-cli:${directory}`,
-    "example-client:AliceExample",
+    deps.tokens.options.service,
+    "oauth:zoom:AliceExample",
     JSON.stringify({
       accessToken: "example-scheduled-access",
       refreshToken: "example-scheduled-refresh",
@@ -299,7 +299,7 @@ it("refuses saved backup jobs after profile or client changes before keyring or 
   )
   network.mockImplementation(async () => new Response(JSON.stringify({ meetings: [], next_page_token: "" })))
   expect(await run(["recordings", "schedule", "run", schedule.id, "--jsonl"], deps)).toBe(0)
-  expect(keyring).toHaveBeenCalledWith(`zoom-cli:${directory}`, "example-client:AliceExample")
+  expect(keyring).toHaveBeenCalledWith(deps.tokens.options.service, "oauth:zoom:AliceExample")
   expect(network).toHaveBeenCalledTimes(1)
   const saved = JSON.parse(await readFile(join(schedule.destination, ".zoom-archive-sync.json"), "utf8"))
   expect(saved.scope).toEqual({ provider: "zoom", account: profileAccountKey("AliceExample") })
