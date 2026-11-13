@@ -86,7 +86,9 @@ that only imports files. Read commands only look a profile up: pull or import on
 `meetings list` to find it.
 
 For another Zoom user, start a second profile — `zm work session start` — and choose that user in
-the browser. Each profile's login is its own keyring entry, `<client id>:<profile>`.
+the browser. Each profile's login is its own keyring entry, `oauth:zoom:<profile>` under the service `zoom-cli`.
+Older versions kept logins under `zoom-cli:<configuration directory>` as `<client id>:<profile>`; the
+first run copies one to the new entry and leaves the old one until `session end`.
 
 `ZM_PROFILE_LOCK=personal` pins a process to one profile: a first word or `ZM_PROFILE` naming any
 other is refused with `permission_error`. Set it where an agent runs.
@@ -97,10 +99,9 @@ the pull cursor; when switching ingestion sources, an older explicit `--since-ti
 
 ## Remove access
 
-There is no logout command. To withdraw the app's account access, remove/revoke the app in Zoom
-App Marketplace's app management. To remove the local token, open your operating system's password store and delete the entry
-whose service is `zoom-cli:<configuration directory>` (for example `zoom-cli:/home/you/.config/zm`;
-`zm doctor --json` shows the directory) and whose account is `<Public Client ID>:<profile>`. Uninstalling `zm` does not revoke Zoom authorization or erase saved meetings. See
+`zm <profile> session end` deletes that profile's login from this computer, the entry an older version made included, and
+keeps its meetings. It does not withdraw the app's access in Zoom: remove or revoke the app in Zoom App Marketplace's
+app management for that. Uninstalling `zm` does not revoke Zoom authorization or erase saved meetings. See
 [security](security.md) before sharing data with an agent.
 
 Several Zoom users on one computer are several profiles: each has its own keyring entry and its own meetings.

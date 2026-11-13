@@ -4,7 +4,7 @@ import { join } from "node:path"
 import { type KeyringStore, memoryKeyring } from "@wirecat/cli-base"
 import { describe, expect, it } from "vitest"
 import { addProfile, readConfig, setConfig } from "./config.js"
-import { loginService, zmPaths } from "./folders.js"
+import { legacyLoginService, zmPaths } from "./folders.js"
 import { type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
 
@@ -20,8 +20,9 @@ const setup = () => {
   const tokens = new TokenManager({
     clientId: CLIENT,
     keyring,
-    service: loginService(paths.config),
+    service: "zoom-cli",
     configDir: paths.config,
+    legacyService: legacyLoginService({ env }),
     fetch: async () => new Response("{}"),
   })
   setConfig(configPath, "zoom.client_id", CLIENT)
@@ -39,7 +40,7 @@ const setup = () => {
   const signIn = (profile: string) => {
     addProfile(configPath, profile)
     keyring.set(
-      loginService(paths.config),
+      legacyLoginService({ env }),
       `${CLIENT}:${profile}`,
       JSON.stringify({ accessToken: "a", refreshToken: "r", expiresAt: 1, scopes: [] }),
     )
@@ -60,7 +61,8 @@ const setup = () => {
     }
   }
   const loggedIn = (store: KeyringStore, profile: string) =>
-    store.get(loginService(paths.config), `${CLIENT}:${profile}`) !== null
+    store.get("zoom-cli", `oauth:zoom:${profile}`) !== null ||
+    store.get(legacyLoginService({ env }), `${CLIENT}:${profile}`) !== null
   const checkpoints = (profile: string) => existsSync(join(paths.state, "checkpoints", profile))
   return { paths, configPath, keyring, call, loggedIn: (profile: string) => loggedIn(keyring, profile), checkpoints }
 }

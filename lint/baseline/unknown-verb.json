@@ -1,10 +1,4 @@
 [
-  "meetings embeddings",
   "meetings people",
-  "meetings summary",
-  "meetings task-proposal",
-  "recordings archive locks",
-  "recordings archive recover",
-  "recordings schedule disable",
-  "remote-meetings invitation"
+  "meetings summary"
 ]

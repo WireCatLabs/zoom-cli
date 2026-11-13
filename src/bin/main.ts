@@ -12,11 +12,14 @@ import {
   renderError,
   systemKeyring,
 } from "@wirecat/cli-base"
+import { hostFetch } from "@wirecat/cli-base/http"
 import { startCli } from "@wirecat/cli-core/cli/start"
-import { ZM } from "../identity.js"
+import { dropOwnFolderOverrides } from "../folders.js"
+import { ZM, ZOOM_HOSTS } from "../identity.js"
 import { VERSION } from "../version.js"
 
 let answerPolicy: typeof import("../answer-policy.js") | undefined
+dropOwnFolderOverrides()
 await startCli({
   app: ZM,
   run: async (entry) => {
@@ -25,7 +28,7 @@ await startCli({
     const [
       { runsDirFor },
       { readConfig },
-      { loginService, zmPaths },
+      { isMovedZmRun, legacyLoginService, moveLegacyFolders, zmPaths },
       { writeExportFile },
       { run },
       { lazyRunLog },
@@ -45,6 +48,7 @@ await startCli({
       import("../tokens.js"),
       import("../zoom-app.js"),
     ])
+    moveLegacyFolders()
     const paths = zmPaths()
     const configPath = join(paths.config, "config.json")
     const tokenRun = lazyRunLog({
@@ -53,6 +57,8 @@ await startCli({
       version: VERSION,
       allow: TOKEN_LOG_ALLOW,
     })
+    // A recording download streams for as long as the archive timer allows (TimeoutStartSec=6h).
+    const zoomFetch = hostFetch({ hosts: ZOOM_HOSTS, timeoutMs: 6 * 3600_000 })
     let failed = true
     try {
       const tokens = new TokenManager({
@@ -60,9 +66,11 @@ await startCli({
           return zoomClientId(readConfig(configPath), entry.env) ?? ""
         },
         keyring: systemKeyring,
-        service: loginService(paths.config),
+        service: ZM.appName,
         configDir: paths.config,
-        fetch,
+        isolated: isMovedZmRun(),
+        legacyService: legacyLoginService(),
+        fetch: zoomFetch,
         log: tokenRun.log,
       })
       const code = await run(entry.args, {
@@ -70,7 +78,7 @@ await startCli({
         recordingScheduleTarget: { runtime: process.execPath, cliPath: fileURLToPath(import.meta.url) },
         tokens,
         connectStore: createStoreConnector({ env: entry.env }),
-        fetch,
+        fetch: zoomFetch,
         outputIsTTY: entry.tty,
         env: entry.env,
         signal: entry.signal,

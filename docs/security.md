@@ -11,8 +11,14 @@ a transcript to an AI service. This guide explains those boundaries before you c
 - Login uses PKCE and checks the returned state. The callback page at
   [wirecat.dev/zoom-callback](https://wirecat.dev/zoom-callback) is static and only passes the answer
   on to `zm`; the answer is useless without the verifier that stays on your machine.
-- Tokens are stored only in the system keyring and are never written to a config file. A missing
-  keyring is an error.
+- Tokens are stored in the system keyring, one entry per profile: service `zoom-cli`, account
+  `oauth:zoom:<profile>`. When the keyring is unavailable, or with `session start --credential-storage file`, they go to
+  `credentials.json` in zm's config folder, readable by you only, and zm says so once on stderr. They are never
+  written to `config.json`.
+- A run with moved folders (`ZM_CONFIG_DIR`, a throwaway `HOME`) reads your sign-in but never replaces or deletes it;
+  its own sign-in goes to a temporary entry that its `session end` removes.
+- One refresh of a sign-in runs at a time across every zm process, so the archive timer and an agent never use the
+  same refresh token twice.
 - The login listener closes on success, failure and timeout.
 
 ## What reaches the network

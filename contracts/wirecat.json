@@ -1,0 +1,1472 @@
+{
+  "wcat_manifest": 2,
+  "name": "zm",
+  "description": "Zoom meeting transcripts and summaries",
+  "docs_url": "https://wirecat.dev/en/docs/zm",
+  "package": "@wirecat/zoom-cli",
+  "bin": "wcat-zm",
+  "commands": [
+    {
+      "path": [
+        "runs",
+        "list"
+      ],
+      "summary": "recorded runs, newest first",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "entity": "run"
+    },
+    {
+      "path": [
+        "runs",
+        "show"
+      ],
+      "summary": "one run: what it was, how it ended, and every event it logged",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "entity": "run"
+    },
+    {
+      "path": [
+        "runs",
+        "path"
+      ],
+      "summary": "the directory holding one run",
+      "effects": {
+        "remote": "none",
+        "local": "none"
+      },
+      "entity": "run_location"
+    },
+    {
+      "path": [
+        "doctor"
+      ],
+      "summary": "the state this installation is in, without connecting unless --online",
+      "effects": {
+        "remote": "read",
+        "local": "read"
+      }
+    },
+    {
+      "path": [
+        "doctor",
+        "reports",
+        "show"
+      ],
+      "summary": "what a report holds and never holds, and where to send it; writes nothing",
+      "effects": {
+        "remote": "none",
+        "local": "none"
+      }
+    },
+    {
+      "path": [
+        "doctor",
+        "reports",
+        "create"
+      ],
+      "summary": "the report file written: its path, the run it is about, and where to send it",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      },
+      "permission": "doctor.reports.create"
+    },
+    {
+      "path": [
+        "mcp",
+        "serve"
+      ],
+      "summary": "serve this profile's commands to an AI agent",
+      "effects": {
+        "remote": "write",
+        "local": "write"
+      }
+    },
+    {
+      "path": [
+        "mcp",
+        "revoke"
+      ],
+      "summary": "forget every login given to a browser app",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      }
+    },
+    {
+      "path": [
+        "mcp",
+        "server",
+        "start"
+      ],
+      "summary": "start the HTTP MCP server in the background",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      }
+    },
+    {
+      "path": [
+        "mcp",
+        "server",
+        "stop"
+      ],
+      "summary": "stop the background HTTP MCP server",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      }
+    },
+    {
+      "path": [
+        "mcp",
+        "server",
+        "status"
+      ],
+      "summary": "whether the HTTP MCP server runs, its login code and the apps logged in",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      }
+    },
+    {
+      "path": [
+        "mcp",
+        "config"
+      ],
+      "summary": "print the local MCP configuration of this profile, or of those --profiles names",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      }
+    },
+    {
+      "path": [
+        "mcp",
+        "add"
+      ],
+      "summary": "add this profile's local MCP server to Codex or Claude Code",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      }
+    },
+    {
+      "path": [
+        "mcp",
+        "check"
+      ],
+      "summary": "check this profile's local MCP handshake and tool list",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      }
+    },
+    {
+      "path": [
+        "config",
+        "show"
+      ],
+      "summary": "show local configuration",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      }
+    },
+    {
+      "path": [
+        "config",
+        "set"
+      ],
+      "summary": "set a configuration value",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      }
+    },
+    {
+      "path": [
+        "config",
+        "unset"
+      ],
+      "summary": "remove a setting, or a part of the file doctor reports a problem in",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      }
+    },
+    {
+      "path": [
+        "config",
+        "migrate"
+      ],
+      "summary": "write each setting the file lacks at its default, keeping yours",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      }
+    },
+    {
+      "path": [
+        "app"
+      ],
+      "summary": "what to enter when you make the Zoom app zm signs in with",
+      "effects": {
+        "remote": "none",
+        "local": "none"
+      },
+      "permission": "app",
+      "entity": "zoom_app_setup"
+    },
+    {
+      "path": [
+        "meetings",
+        "list"
+      ],
+      "summary": "stored meetings, newest first",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "meetings.list",
+      "entity": "meeting"
+    },
+    {
+      "path": [
+        "meetings",
+        "show"
+      ],
+      "summary": "show a stored meeting",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "meetings.show",
+      "entity": "meeting_details"
+    },
+    {
+      "path": [
+        "meetings",
+        "transcript"
+      ],
+      "summary": "show current meeting transcripts",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "meetings.transcript",
+      "entity": "meeting_transcript"
+    },
+    {
+      "path": [
+        "meetings",
+        "summary"
+      ],
+      "summary": "show stored meeting summaries",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "meetings.summary",
+      "entity": "meeting_summary"
+    },
+    {
+      "path": [
+        "meetings",
+        "export"
+      ],
+      "summary": "export a meeting as Markdown or one transcript as WebVTT",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      },
+      "permission": "meetings.export",
+      "entity": "meeting_export"
+    },
+    {
+      "path": [
+        "meetings",
+        "people"
+      ],
+      "summary": "find meeting participants by name or email",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "meetings.people",
+      "entity": "meeting_participants"
+    },
+    {
+      "path": [
+        "meetings",
+        "sync"
+      ],
+      "summary": "bring the stored meetings up to date from the connected account, oldest…",
+      "effects": {
+        "remote": "read",
+        "local": "write"
+      },
+      "permission": "meetings.sync",
+      "entity": "meeting_ingestion"
+    },
+    {
+      "path": [
+        "meetings",
+        "import"
+      ],
+      "summary": "import downloaded meeting transcripts",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      },
+      "permission": "meetings.import",
+      "entity": "meeting_ingestion"
+    },
+    {
+      "path": [
+        "meetings",
+        "repair"
+      ],
+      "summary": "preview filling in what older builds left out of stored transcripts (their…",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      },
+      "permission": "meetings.repair",
+      "entity": "meeting_repair"
+    },
+    {
+      "path": [
+        "meetings",
+        "scheduled"
+      ],
+      "summary": "discover candidate meeting series from one bounded provider page",
+      "effects": {
+        "remote": "read",
+        "local": "read"
+      },
+      "permission": "meetings.scheduled",
+      "entity": "meeting_series_inventory"
+    },
+    {
+      "path": [
+        "meetings",
+        "projects",
+        "evidence"
+      ],
+      "summary": "find cited project-name and alias evidence in the local meeting index; does…",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "meetings.projects.evidence",
+      "entity": "meeting_project_evidence"
+    },
+    {
+      "path": [
+        "meetings",
+        "projects",
+        "scan"
+      ],
+      "summary": "suggest existing projects from one bounded page of stored meeting evidence",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "meetings.projects.scan",
+      "entity": "meeting_project_candidates"
+    },
+    {
+      "path": [
+        "meetings",
+        "prepare"
+      ],
+      "summary": "prepare cited context for one upcoming series",
+      "effects": {
+        "remote": "read",
+        "local": "read"
+      },
+      "permission": "meetings.prepare",
+      "entity": "meeting_preparation"
+    },
+    {
+      "path": [
+        "meetings",
+        "update"
+      ],
+      "summary": "preview linking a stored meeting to an event; --yes applies it",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      },
+      "permission": "meetings.update",
+      "entity": "meeting_association"
+    },
+    {
+      "path": [
+        "meetings",
+        "link"
+      ],
+      "summary": "preview linking a meeting participant to a stored person; --yes applies it",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      },
+      "permission": "meetings.link",
+      "entity": "meeting_association"
+    },
+    {
+      "path": [
+        "meetings",
+        "transcribe"
+      ],
+      "summary": "preview transcribing a recording on this machine; --yes adds the transcript",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      },
+      "permission": "meetings.transcribe",
+      "entity": "meeting_transcription"
+    },
+    {
+      "path": [
+        "meetings",
+        "evidence"
+      ],
+      "summary": "read the stored transcript lines, chat or summary behind a meeting reference",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "meetings.evidence",
+      "entity": "meeting_evidence"
+    },
+    {
+      "path": [
+        "meetings",
+        "context"
+      ],
+      "summary": "what the stored meetings say about a person, through linked identities",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "meetings.context",
+      "entity": "meeting_person_context"
+    },
+    {
+      "path": [
+        "meetings",
+        "task-proposal"
+      ],
+      "summary": "preview the task a meeting line would become, without creating it",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "meetings.task-proposal",
+      "entity": "meeting_task_proposal"
+    },
+    {
+      "path": [
+        "meetings",
+        "passage"
+      ],
+      "summary": "read a cited cue with bounded context before and after it",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "meetings.passage",
+      "entity": "meeting_passage"
+    },
+    {
+      "path": [
+        "meetings",
+        "embeddings"
+      ],
+      "summary": "preview building meeting vectors; --yes builds one batch",
+      "effects": {
+        "remote": "read",
+        "local": "write"
+      },
+      "permission": "meetings.embeddings",
+      "entity": "meeting_embedding"
+    },
+    {
+      "path": [
+        "meetings",
+        "status"
+      ],
+      "summary": "the last meeting ingestion pass: confirmed count, completion and checkpoint age",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "meetings.status",
+      "entity": "sync_progress"
+    },
+    {
+      "path": [
+        "events",
+        "list"
+      ],
+      "summary": "list stored events",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "events.list",
+      "entity": "event"
+    },
+    {
+      "path": [
+        "commands"
+      ],
+      "summary": "every command by section; --json prints its contract, one path per call",
+      "effects": {
+        "remote": "none",
+        "local": "none"
+      }
+    },
+    {
+      "path": [
+        "commands",
+        "info"
+      ],
+      "summary": "one command contract, or all schemas, error reasons and explicit overrides",
+      "effects": {
+        "remote": "none",
+        "local": "none"
+      }
+    },
+    {
+      "path": [
+        "store",
+        "info"
+      ],
+      "summary": "the shared store's format, size and contents, and whether this tool can read it",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "store.info",
+      "entity": "store_info"
+    },
+    {
+      "path": [
+        "complete"
+      ],
+      "summary": "answer shell completion requests",
+      "effects": {
+        "remote": "none",
+        "local": "none"
+      }
+    },
+    {
+      "path": [
+        "session",
+        "status"
+      ],
+      "summary": "show cached login state; remote verification is explicit",
+      "effects": {
+        "remote": "read",
+        "local": "read"
+      }
+    },
+    {
+      "path": [
+        "session",
+        "start"
+      ],
+      "summary": "log in to Zoom through your browser",
+      "effects": {
+        "remote": "write",
+        "local": "write"
+      }
+    },
+    {
+      "path": [
+        "session",
+        "end"
+      ],
+      "summary": "delete this profile's saved Zoom login; the stored meetings stay",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      }
+    },
+    {
+      "path": [
+        "upgrade"
+      ],
+      "summary": "upgrade zm with the package manager that installed it; --check only looks",
+      "effects": {
+        "remote": "read",
+        "local": "write"
+      }
+    },
+    {
+      "path": [
+        "models",
+        "list"
+      ],
+      "summary": "speech and embedding models, their download status and the default of each kind",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "entity": "model"
+    },
+    {
+      "path": [
+        "models",
+        "download"
+      ],
+      "summary": "download and verify one speech or embedding model",
+      "effects": {
+        "remote": "read",
+        "local": "write"
+      },
+      "permission": "models.download",
+      "entity": "model"
+    },
+    {
+      "path": [
+        "account",
+        "remove"
+      ],
+      "summary": "sign this profile out and forget it, keeping or deleting its data",
+      "effects": {
+        "remote": "write",
+        "local": "write"
+      },
+      "permission": "account.remove",
+      "entity": "account_removal"
+    },
+    {
+      "path": [
+        "watch"
+      ],
+      "summary": "keep fetching new meetings from Zoom, or rescanning a folder, until stopped",
+      "effects": {
+        "remote": "read",
+        "local": "write"
+      },
+      "permission": "watch",
+      "entity": "meeting_ingestion"
+    },
+    {
+      "path": [
+        "recordings",
+        "list"
+      ],
+      "summary": "list cloud recording occurrences (last 30 days by default)",
+      "effects": {
+        "remote": "read",
+        "local": "read"
+      },
+      "permission": "recordings.list",
+      "entity": "zoom_recording"
+    },
+    {
+      "path": [
+        "recordings",
+        "show"
+      ],
+      "summary": "show downloadable asset metadata without signed URLs",
+      "effects": {
+        "remote": "read",
+        "local": "read"
+      },
+      "permission": "recordings.show",
+      "entity": "zoom_recording"
+    },
+    {
+      "path": [
+        "recordings",
+        "download"
+      ],
+      "summary": "download one recording or a date range into a verified, resumable archive",
+      "effects": {
+        "remote": "read",
+        "local": "write"
+      },
+      "permission": "recordings.download",
+      "entity": "zoom_archive"
+    },
+    {
+      "path": [
+        "recordings",
+        "archive",
+        "transcript"
+      ],
+      "summary": "read the transcripts of a local archive, checking each file first",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "recordings.archive.transcript",
+      "entity": "zoom_archive_transcript"
+    },
+    {
+      "path": [
+        "recordings",
+        "archive",
+        "show"
+      ],
+      "summary": "show what a local archive holds, from its transfer records",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "recordings.archive.show",
+      "entity": "zoom_archive_manifest"
+    },
+    {
+      "path": [
+        "recordings",
+        "archive",
+        "check"
+      ],
+      "summary": "check the size and checksum of every file in a local archive",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "recordings.archive.check",
+      "entity": "zoom_archive_check"
+    },
+    {
+      "path": [
+        "recordings",
+        "archive",
+        "locks"
+      ],
+      "summary": "list the locks on a local archive: active, stale or another machine's",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "recordings.archive.locks",
+      "entity": "zoom_archive_lock"
+    },
+    {
+      "path": [
+        "recordings",
+        "archive",
+        "recover"
+      ],
+      "summary": "preview removing stale locks; --yes removes them",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      },
+      "permission": "recordings.archive.recover",
+      "entity": "zoom_archive_recovery"
+    },
+    {
+      "path": [
+        "recordings",
+        "archive",
+        "import"
+      ],
+      "summary": "check an archive's transcripts, then add them to the stored meetings",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      },
+      "permission": "recordings.archive.import",
+      "entity": "zoom_archive_import"
+    },
+    {
+      "path": [
+        "recordings",
+        "schedule",
+        "create"
+      ],
+      "summary": "preview a daily archive job; --yes installs its timer",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      },
+      "permission": "recordings.schedule.create",
+      "entity": "zoom_archive_schedule_change"
+    },
+    {
+      "path": [
+        "recordings",
+        "schedule",
+        "list"
+      ],
+      "summary": "list saved local jobs; live timer state is not checked",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "recordings.schedule.list",
+      "entity": "zoom_archive_job"
+    },
+    {
+      "path": [
+        "recordings",
+        "schedule",
+        "show"
+      ],
+      "summary": "show one saved local job and its captured settings",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "recordings.schedule.show",
+      "entity": "zoom_archive_job"
+    },
+    {
+      "path": [
+        "recordings",
+        "schedule",
+        "run"
+      ],
+      "summary": "run the captured job once with durable archive progress",
+      "effects": {
+        "remote": "read",
+        "local": "write"
+      },
+      "permission": "recordings.schedule.run",
+      "entity": "zoom_archive_receipt"
+    },
+    {
+      "path": [
+        "recordings",
+        "schedule",
+        "disable"
+      ],
+      "summary": "preview disabling a saved timer; --yes disables it without deleting files",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      },
+      "permission": "recordings.schedule.disable",
+      "entity": "zoom_archive_schedule_change"
+    },
+    {
+      "path": [
+        "recordings",
+        "status"
+      ],
+      "summary": "confirmed archived assets and pending discovery in one archive checkpoint",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "recordings.status",
+      "entity": "sync_progress"
+    },
+    {
+      "path": [
+        "remote-meetings",
+        "list"
+      ],
+      "summary": "list upcoming meetings",
+      "effects": {
+        "remote": "read",
+        "local": "read"
+      },
+      "permission": "remote-meetings.list",
+      "entity": "zoom_remote_meeting"
+    },
+    {
+      "path": [
+        "remote-meetings",
+        "show"
+      ],
+      "summary": "show an upcoming meeting",
+      "effects": {
+        "remote": "read",
+        "local": "read"
+      },
+      "permission": "remote-meetings.show",
+      "entity": "zoom_remote_meeting"
+    },
+    {
+      "path": [
+        "remote-meetings",
+        "invitation"
+      ],
+      "summary": "read invitation text",
+      "effects": {
+        "remote": "read",
+        "local": "read"
+      },
+      "permission": "remote-meetings.invitation",
+      "entity": "zoom_remote_invitation"
+    },
+    {
+      "path": [
+        "remote-meetings",
+        "create"
+      ],
+      "summary": "create a Zoom meeting; asks first, --dry-run previews",
+      "effects": {
+        "remote": "write",
+        "local": "write"
+      },
+      "permission": "remote-meetings.create",
+      "entity": "zoom_remote_change"
+    },
+    {
+      "path": [
+        "remote-meetings",
+        "update"
+      ],
+      "summary": "change a Zoom meeting; asks first, --dry-run previews",
+      "effects": {
+        "remote": "write",
+        "local": "write"
+      },
+      "permission": "remote-meetings.update",
+      "entity": "zoom_remote_change"
+    },
+    {
+      "path": [
+        "remote-meetings",
+        "cancel"
+      ],
+      "summary": "cancel a Zoom meeting; asks first, --dry-run previews",
+      "effects": {
+        "remote": "write",
+        "local": "write"
+      },
+      "permission": "remote-meetings.cancel",
+      "entity": "zoom_remote_change"
+    },
+    {
+      "path": [
+        "contacts",
+        "list"
+      ],
+      "summary": "list your company and external Zoom contacts",
+      "effects": {
+        "remote": "read",
+        "local": "read"
+      },
+      "permission": "contacts.list",
+      "entity": "contact"
+    },
+    {
+      "path": [
+        "contacts",
+        "show"
+      ],
+      "summary": "one contact with their phone numbers",
+      "effects": {
+        "remote": "read",
+        "local": "read"
+      },
+      "permission": "contacts.show",
+      "entity": "contact"
+    },
+    {
+      "path": [
+        "zoom",
+        "search"
+      ],
+      "summary": "search your Zoom workspace live; without words, list recent records",
+      "effects": {
+        "remote": "read",
+        "local": "read"
+      },
+      "permission": "zoom.search",
+      "entity": "zoom_search_hit"
+    },
+    {
+      "path": [
+        "skill",
+        "show"
+      ],
+      "summary": "print the tool's instructions for AI agents",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      }
+    },
+    {
+      "path": [
+        "skill",
+        "install"
+      ],
+      "summary": "install the tool's instructions for AI agents",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      }
+    },
+    {
+      "path": [
+        "skill",
+        "status"
+      ],
+      "summary": "whether the installed instructions for AI agents match this version",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      }
+    },
+    {
+      "path": [
+        "search",
+        "all"
+      ],
+      "summary": "search meetings and, with --only, messages, mail and notes in the local store",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "search.all",
+      "entity": "hit"
+    },
+    {
+      "path": [
+        "search",
+        "meetings"
+      ],
+      "summary": "find words in stored meetings, or by meaning with --model",
+      "effects": {
+        "remote": "read",
+        "local": "write"
+      },
+      "permission": "search.meetings",
+      "entity": "meeting_hit"
+    },
+    {
+      "path": [
+        "search",
+        "recordings"
+      ],
+      "summary": "find words in the transcripts of a downloaded archive folder, before any import",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "search.recordings",
+      "entity": "hit"
+    },
+    {
+      "path": [
+        "stats",
+        "meetings",
+        "show"
+      ],
+      "summary": "meetings, lines, words and talk time by week, with the top speakers",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "stats.meetings.show",
+      "entity": "meeting_stats"
+    },
+    {
+      "path": [
+        "stats",
+        "meetings",
+        "top"
+      ],
+      "summary": "speakers by talk time: lines, words, meetings and their share of the talk",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "stats.meetings.top",
+      "entity": "meeting_speaker"
+    },
+    {
+      "path": [
+        "stats",
+        "meetings",
+        "history"
+      ],
+      "summary": "meetings, minutes and transcripts per day, week or series",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "stats.meetings.history",
+      "entity": "meeting_counts"
+    },
+    {
+      "path": [
+        "review"
+      ],
+      "summary": "meetings since a point: summary, next steps and who talked how long",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "review",
+      "entity": "meeting_review"
+    },
+    {
+      "path": [
+        "mentions",
+        "list"
+      ],
+      "summary": "links shared in meeting chat, most shared first, by whom and where",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "mentions.list",
+      "entity": "meeting_link"
+    },
+    {
+      "path": [
+        "searches",
+        "create"
+      ],
+      "summary": "save a search meetings query and its options without running it",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      },
+      "permission": "searches.create",
+      "entity": "saved_search"
+    },
+    {
+      "path": [
+        "searches",
+        "run"
+      ],
+      "summary": "run a saved search; answers as search meetings does",
+      "effects": {
+        "remote": "read",
+        "local": "write"
+      },
+      "permission": "searches.run",
+      "entity": "meeting_hit"
+    },
+    {
+      "path": [
+        "searches",
+        "list"
+      ],
+      "summary": "the saved meeting searches, by name",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "searches.list",
+      "entity": "saved_search"
+    },
+    {
+      "path": [
+        "searches",
+        "show"
+      ],
+      "summary": "one saved search: its query, options and how often it ran",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      },
+      "permission": "searches.show",
+      "entity": "saved_search"
+    },
+    {
+      "path": [
+        "searches",
+        "delete"
+      ],
+      "summary": "delete a saved search",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      },
+      "permission": "searches.delete",
+      "entity": "saved_search"
+    },
+    {
+      "path": [
+        "batch"
+      ],
+      "summary": "run bounded stored meeting reads: search meetings and meetings passage",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      },
+      "permission": "batch",
+      "entity": "meeting_batch_result"
+    },
+    {
+      "path": [
+        "guide"
+      ],
+      "summary": "scenarios: the commands for a common task, in order, and why each",
+      "effects": {
+        "remote": "none",
+        "local": "none"
+      }
+    }
+  ],
+  "entities": {
+    "run": {
+      "fields": [
+        "run_id",
+        "command",
+        "profile",
+        "started_at",
+        "completed_at",
+        "status",
+        "requests",
+        "duration_ms",
+        "cli_version",
+        "runtime",
+        "platform",
+        "arch",
+        "error_code",
+        "provider_error",
+        "kept_because_failed",
+        "operations",
+        "codes",
+        "trace_id",
+        "cli_command",
+        "argv",
+        "unknown_command",
+        "via",
+        "events_dropped",
+        "directory",
+        "event_count",
+        "events_truncated"
+      ]
+    },
+    "meeting": {
+      "fields": [
+        "id",
+        "title",
+        "started_at",
+        "ended_at",
+        "duration_ms",
+        "participants_count",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "event": {
+      "fields": [
+        "id",
+        "origin",
+        "starts_at",
+        "ends_at",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "model": {
+      "fields": [
+        "kind",
+        "id",
+        "downloaded"
+      ]
+    },
+    "zoom_recording": {
+      "fields": [
+        "id",
+        "uuid",
+        "title",
+        "started_at"
+      ]
+    },
+    "zoom_archive_job": {
+      "fields": [
+        "state"
+      ]
+    },
+    "zoom_remote_meeting": {
+      "fields": [
+        "id",
+        "uuid",
+        "title",
+        "type",
+        "started_at",
+        "duration_minutes",
+        "timezone",
+        "agenda",
+        "join_url"
+      ]
+    },
+    "contact": {
+      "fields": [
+        "name",
+        "email",
+        "type"
+      ]
+    },
+    "meeting_link": {
+      "fields": [
+        "url",
+        "domain",
+        "document_id",
+        "count",
+        "first_at",
+        "last_at",
+        "senders"
+      ]
+    },
+    "saved_search": {
+      "fields": [
+        "id",
+        "name",
+        "command",
+        "language",
+        "version",
+        "fields_version",
+        "created_at",
+        "last_run_at",
+        "runs"
+      ]
+    }
+  },
+  "network": {
+    "hosts": [
+      "zoom.us",
+      "*.zoom.us",
+      "zoom.com",
+      "*.zoom.com"
+    ]
+  },
+  "desktop": {
+    "tagline": "Zoom transcripts and recordings, searchable",
+    "profiles": null,
+    "doctor": [
+      "doctor",
+      "--record",
+      "--json"
+    ],
+    "runs": {
+      "list": [
+        "runs",
+        "list",
+        "{query}",
+        "--limit",
+        "{limit}",
+        "--page",
+        "{page}",
+        "--no-record",
+        "--json"
+      ],
+      "show": [
+        "runs",
+        "show",
+        "{run}",
+        "--no-record",
+        "--json"
+      ]
+    },
+    "search": null,
+    "setup": [
+      "session",
+      "start"
+    ],
+    "signIn": {
+      "gives": "Lets your agent find your Zoom meetings and read their transcripts and summaries.",
+      "asks": "Your browser opens Zoom to approve access. Zoom first needs an app of your own, made once in the Zoom App Marketplace."
+    },
+    "skill": {
+      "status": [
+        "skill",
+        "status",
+        "--no-record",
+        "--json"
+      ],
+      "install": [
+        "skill",
+        "install",
+        "--for",
+        "{target}",
+        "--json"
+      ],
+      "show": [
+        "skill",
+        "show",
+        "--no-record",
+        "--json"
+      ]
+    },
+    "mcpServer": {
+      "start": [
+        "mcp",
+        "server",
+        "start",
+        "--port",
+        "{port}",
+        "--public-url",
+        "{url}",
+        "--profiles",
+        "all",
+        "--json"
+      ],
+      "stop": [
+        "mcp",
+        "server",
+        "stop",
+        "--profiles",
+        "all",
+        "--json"
+      ],
+      "status": [
+        "mcp",
+        "server",
+        "status",
+        "--profiles",
+        "all",
+        "--no-record",
+        "--json"
+      ],
+      "revoke": [
+        "mcp",
+        "revoke",
+        "--profiles",
+        "all",
+        "--json"
+      ],
+      "config": [
+        "mcp",
+        "config",
+        "--profiles",
+        "all",
+        "--no-record",
+        "--json"
+      ]
+    },
+    "tasks": null,
+    "sync": {
+      "run": [
+        "meetings",
+        "sync",
+        "--record",
+        "--json"
+      ],
+      "last": null,
+      "lastShape": "runs",
+      "what": "meetings and transcripts",
+      "note": null
+    },
+    "storeInfo": null,
+    "storeTables": null,
+    "storeTableSizes": null,
+    "storeCheck": null,
+    "storeBackup": null,
+    "storeBackupEncrypted": null,
+    "storeResetPreview": null,
+    "storeReset": null,
+    "storage": {
+      "app": "zoom-cli",
+      "env": "ZM"
+    },
+    "settings": null
+  }
+}

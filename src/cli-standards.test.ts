@@ -5,6 +5,7 @@ import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { CliError, memoryKeyring } from "@wirecat/cli-base"
 import { describeProgram, flatten, parseCommandsDocument } from "@wirecat/cli-base/commands"
+import { ownCatalogue } from "@wirecat/cli-core/testing"
 import { describe, expect, it, vi } from "vitest"
 import { readAnswer } from "../scripts/testing/answers.js"
 import { useProfile } from "../scripts/testing/profile.js"
@@ -416,4 +417,11 @@ it("declares source-owned lists honestly and refuses unsupported filters before 
     expect(error.message).toContain("id")
     expect(stdout).toEqual([])
   }
+})
+
+it("pins only zm's own commands as MCP reads and writes; cli-core pins what it mounts (IDEA-288)", async () => {
+  const { deps } = await setup()
+  await expect(`${JSON.stringify(ownCatalogue(createProgram(deps)), null, 2)}\n`).toMatchFileSnapshot(
+    "../contracts/own-catalogue.json",
+  )
 })

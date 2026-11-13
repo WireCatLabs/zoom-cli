@@ -257,7 +257,7 @@ describe("CLI configuration isolation", () => {
     expect(await run(["example", "session", "start", "--client-id", "example-flag-client"], deps)).toBe(0)
     expect(authorized).toBe("example-flag-client")
     expect(readConfig(deps.configPath).clientId).toBe("example-flag-client")
-    expect(deps.tokens.options.keyring.get("example", "example-flag-client:example")).toBeTruthy()
+    expect(deps.tokens.options.keyring.get("example", "oauth:zoom:example")).toBeTruthy()
   })
   it("reports browser and token exchange failures with their structured exit codes", async () => {
     const { deps, stderr } = await setup()
@@ -353,7 +353,7 @@ describe("CLI configuration isolation", () => {
     })
     expect(authorized).toBe("example-asked-client")
     expect(readConfig(deps.configPath).clientId).toBe("example-asked-client")
-    expect(deps.tokens.options.keyring.get("example", "example-asked-client:example")).toBeTruthy()
+    expect(deps.tokens.options.keyring.get("example", "oauth:zoom:example")).toBeTruthy()
   })
   it("with --answer-stdin, keeps an answered Client ID out of the config when the sign-in fails", async () => {
     const { deps } = await setup()

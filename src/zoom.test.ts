@@ -744,7 +744,7 @@ describe("zm", () => {
     expect(await run([...start, "--credential-storage", "file"], setup.deps)).toBe(0)
     expect(readAnswer(setup.stdout[0] ?? "{}")).toMatchObject({ credential_storage: "file" })
     expect(JSON.parse(await readFile(join(configDir, "credentials.json"), "utf8"))).toHaveProperty([
-      "example-client:example",
+      "oauth:zoom:example",
     ])
     expect(await run([...start, "--credential-storage", "cloud"], setup.deps)).toBe(2)
   })
