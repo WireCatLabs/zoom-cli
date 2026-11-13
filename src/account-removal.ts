@@ -34,7 +34,6 @@ export const zoomRemoval = ({ configPath, tokens }: Pick<ProgramDeps, "configPat
     removed: tokens.forProfile(profile).remove() ? ["the Zoom login"] : [],
   }),
   account: (profile) => ({ provider: "zoom", account: profileAccountKey(profile) }),
-  ownFolders: ({ env }) => [dirname(configPath), zmPaths({ env }).state],
   stateFiles: (profile, { env }) => [join(zmPaths({ env }).state, "checkpoints", profile)],
   busy: (profile) => {
     const file = activeSchedule(configPath, profile)

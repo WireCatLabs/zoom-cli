@@ -9,4 +9,4 @@ permissions:
 
 jobs:
   changelog:
-    uses: WireCatLabs/cli-base/.github/workflows/changelog-guard.yml@fe3430bae73bc7ccb5854124343fcb4549c26243 # cli-base main at #555: the guard accepts changes/ fragments
+    uses: WireCatLabs/cli-base/.github/workflows/changelog-guard.yml@32ebca3ddb987ceaf6c5d76073baad5dd3753503 # v0.99.0
