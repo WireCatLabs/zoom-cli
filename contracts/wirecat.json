@@ -1335,7 +1335,13 @@
       "zoom.us",
       "*.zoom.us",
       "zoom.com",
-      "*.zoom.com"
+      "*.zoom.com",
+      "registry.npmjs.org",
+      "huggingface.co",
+      "*.huggingface.co",
+      "*.hf.co",
+      "github.com",
+      "*.githubusercontent.com"
     ]
   },
   "desktop": {

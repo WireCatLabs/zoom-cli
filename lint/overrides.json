@@ -8,13 +8,6 @@
   },
   {
     "rule": "undeclared-host",
-    "target": "github.com",
-    "reason": "Links in src/bin/zm.ts and src/zoom-app.ts, printed for the person to open; zm never sends a request there, and hostFetch would refuse one.",
-    "owner": "@WireCatLabs",
-    "review_after": "2027-05-13"
-  },
-  {
-    "rule": "undeclared-host",
     "target": "127.0.0.1",
     "reason": "The loopback address of zm's own sign-in listener, where the browser returns after Zoom's consent; zm listens there and never fetches it.",
     "owner": "@WireCatLabs",
