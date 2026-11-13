@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.72.0 — 13.11.2026
+
+### Changed — may break callers
+
+- **Built on cli-core 0.647.0** (was 0.620.0). The store moves to version 66 on first open (people ties, person kinds
+  and name order; additive). `doctor reports show` and `doctor reports create` write a problem report to send, and
+  `doctor --help` shows its Returns and Example. What changed in between is in
+  [cli-core's changelog](https://github.com/WireCatLabs/cli-core/blob/main/CHANGELOG.md).
+- **Model calls stay on this computer when you ask.** With the local-only switch on (`memo models local-only set on`),
+  every model call cli-core makes for zm refuses an address that is not this computer before anything
+  is sent. Plain `http://` is now accepted only to this computer, so meeting text never crosses the network
+  unencrypted; use https or run the model locally.
+- **`schedule pause <name>` and `schedule resume <name>`** take a schedule off its timer and keep it; `schedule run`
+  still runs it. `--at` repeats: `--at 08:30 --at 18:00` runs twice a day.
+
 ## 0.71.0 — 09.11.2026
 
 ### Added
