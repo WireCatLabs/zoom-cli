@@ -103,8 +103,6 @@ zm doctor [options]
 |---|---|
 | `--online` | also connect once and read the account; sends nothing. |
 
-**Returns:** the state this installation is in, without connecting unless --online
-
 **Example:** `zm doctor`, `zm doctor --json`
 
 ### `zm doctor reports`
@@ -118,8 +116,6 @@ what a problem report holds; writes nothing
 ```sh
 zm doctor reports show
 ```
-
-**Returns:** what a report holds and never holds, and where to send it; writes nothing
 
 **Example:** `zm doctor reports show`
 
@@ -137,8 +133,6 @@ zm doctor reports create [options]
 |---|---|
 | `--run <id>` | the run the report is about; the newest failed one if not given. |
 | `--output <file>` | where to write it; a new file in this directory if not given. |
-
-**Returns:** the report file written: its path, the run it is about, and where to send it
 
 **Example:** `zm doctor reports create --output ./problem-report.json`
 
@@ -164,8 +158,6 @@ zm mcp serve [options]
 | `--port <port>` | the local port for --http (default 8765). |
 | `--public-url <url>` | the tunnel's https address the browser apps use, e.g. https://<name>.ts.net or https://<name>.ts.net/tg. |
 
-**Returns:** serve this profile's commands to an AI agent
-
 **Example:** `zm personal mcp serve`, `zm personal mcp serve --profiles work,personal`, `zm personal mcp serve --http --public-url https://laptop.example.ts.net`
 
 ### `zm mcp revoke`
@@ -181,8 +173,6 @@ zm mcp revoke [options]
 | Option | What it does |
 |---|---|
 | `--profiles <names\|all>` | serve several profiles from one server instead of one: names, comma-separated, or all for every profile. |
-
-**Returns:** forget every login given to a browser app
 
 **Example:** `zm personal mcp revoke`, `zm personal mcp revoke --profiles all`
 
@@ -207,8 +197,6 @@ zm mcp server start [options]
 | `--permission <key=level>` | make a permission stricter for this server only; repeat for more keys. |
 | `--profiles <names\|all>` | the server of several profiles that `mcp serve --profiles` serves: names, comma-separated, or all. |
 
-**Returns:** start the HTTP MCP server in the background
-
 **Example:** `zm personal mcp server start --public-url https://laptop.example.ts.net`
 
 #### `zm mcp server stop`
@@ -225,8 +213,6 @@ zm mcp server stop [options]
 |---|---|
 | `--profiles <names\|all>` | the server of several profiles that `mcp serve --profiles` serves: names, comma-separated, or all. |
 
-**Returns:** stop the background HTTP MCP server
-
 **Example:** `zm personal mcp server stop`
 
 #### `zm mcp server status`
@@ -240,8 +226,6 @@ zm mcp server status [options]
 | Option | What it does |
 |---|---|
 | `--profiles <names\|all>` | the server of several profiles that `mcp serve --profiles` serves: names, comma-separated, or all. |
-
-**Returns:** whether the HTTP MCP server runs, its login code and the apps logged in
 
 **Example:** `zm personal mcp server status --json`
 
@@ -257,8 +241,6 @@ zm mcp config [options]
 |---|---|
 | `--permission <key=level>` | make a permission stricter for this server only, like remote-meetings=deny; it never loosens the profile; repeat for more keys. |
 | `--profiles <names\|all>` | serve several profiles from one server instead of one: names, comma-separated, or all for every profile. |
-
-**Returns:** print the local MCP configuration of this profile, or of those --profiles names
 
 **Example:** `zm personal mcp config`, `zm personal mcp config --profiles all`
 
@@ -281,8 +263,6 @@ zm mcp add <client> [options]
 | `--allow-writes` | acknowledge that this profile offers writing tools. |
 | `--permission <key=level>` | make a permission stricter for this server only, like remote-meetings=deny; it never loosens the profile; repeat for more keys. |
 
-**Returns:** add this profile's local MCP server to Codex or Claude Code
-
 **Example:** `zm personal mcp add codex --allow-writes`
 
 ### `zm mcp check`
@@ -297,8 +277,6 @@ zm mcp check [options]
 |---|---|
 | `--permission <key=level>` | make a permission stricter for this server only, like remote-meetings=deny; it never loosens the profile; repeat for more keys. |
 
-**Returns:** check this profile's local MCP handshake and tool list
-
 **Example:** `zm personal mcp check`
 
 ## `zm config`
@@ -312,8 +290,6 @@ show local configuration
 ```sh
 zm config show
 ```
-
-**Returns:** show local configuration
 
 **Example:** `zm config show --json`
 
@@ -332,8 +308,6 @@ zm config set <key> <value>
 | `key` | required | setting name, such as zoom.client_id. |
 | `value` | required | new value. |
 
-**Returns:** set a configuration value
-
 **Example:** `zm config set files.timezone Europe/Madrid --json`
 
 ### `zm config unset`
@@ -350,8 +324,6 @@ zm config unset <key>
 |---|---|---|
 | `key` | required | setting name, such as files.folder, or the key a doctor fix names. |
 
-**Returns:** remove a setting, or a part of the file doctor reports a problem in
-
 **Example:** `zm config unset files.folder`
 
 ### `zm config migrate`
@@ -363,8 +335,6 @@ write each setting the file lacks at its default, keeping yours
 ```sh
 zm config migrate
 ```
-
-**Returns:** write each setting the file lacks at its default, keeping yours
 
 **Example:** `zm config migrate`
 
@@ -952,8 +922,6 @@ zm commands info [path]
 |---|---|---|
 | `path` | optional | one command path; without one, export schemas, error reasons and explicit overrides. |
 
-**Returns:** one command contract, or all schemas, error reasons and explicit overrides
-
 **Example:** `zm commands info commands`
 
 ## `zm store`
@@ -984,8 +952,6 @@ zm complete [words]
 |---|---|---|
 | `words` | optional | shell words ending in the partial word. |
 
-**Returns:** answer shell completion requests
-
 **Example:** `zm complete -- meetings s`
 
 ## `zm session`
@@ -1003,8 +969,6 @@ zm session status [options]
 | Option | What it does |
 |---|---|
 | `--check` | verify the session with Zoom. |
-
-**Returns:** show cached login state; remote verification is explicit
 
 **Example:** `zm personal session status --json`, `zm personal session status --check --dry-run --json`
 
@@ -1025,8 +989,6 @@ zm session start [options]
 | `--credential-storage <storage>` | where the login is kept: keyring (the default, which falls back to a private file by itself when no keyring works), or file, not recommended. Default: `keyring`. |
 | `--answer-stdin` | with --json and no terminal: print each question as a `needs` line on stderr and read its answer, one line, from stdin. |
 
-**Returns:** log in to Zoom through your browser
-
 **Example:** `zm personal session start`
 
 ### `zm session end`
@@ -1038,8 +1000,6 @@ delete this profile's saved Zoom login; the stored meetings stay
 ```sh
 zm session end
 ```
-
-**Returns:** delete this profile's saved Zoom login; the stored meetings stay
 
 **Example:** `zm personal session end`
 
@@ -1056,8 +1016,6 @@ zm upgrade [options]
 | Option | What it does |
 |---|---|
 | `--check` | say whether a newer version exists, and install nothing. |
-
-**Returns:** upgrade zm with the package manager that installed it; --check only looks
 
 **Example:** `zm upgrade --check`
 
@@ -1686,8 +1644,6 @@ zm skill show [options]
 |---|---|
 | `--for <agents>` | print the copy installed for these agents instead of this version's. One of: `claude`, `agents`. |
 
-**Returns:** print the tool's instructions for AI agents
-
 **Example:** `zm skill show --json`
 
 ### `zm skill install`
@@ -1704,8 +1660,6 @@ zm skill install [options]
 |---|---|
 | `--for <agents>` | which agents to install for. One of: `claude`, `agents`, `hermes`, `all`. Default: `all`. |
 
-**Returns:** install the tool's instructions for AI agents
-
 **Example:** `zm skill install --for agents --json`
 
 ### `zm skill status`
@@ -1715,8 +1669,6 @@ for each place `zm skill install` writes to, and for the copy Hermes reads: the 
 ```sh
 zm skill status
 ```
-
-**Returns:** whether the installed instructions for AI agents match this version
 
 **Example:** `zm skill status`, `zm skill status --json`
 
@@ -2078,8 +2030,6 @@ zm guide [name]
 | Argument | | What it is |
 |---|---|---|
 | `name` | optional | one scenario; without it, the list. |
-
-**Returns:** scenarios: the commands for a common task, in order, and why each
 
 **Example:** `zm guide`, `zm guide archive-recordings --json`
 

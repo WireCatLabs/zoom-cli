@@ -17,6 +17,10 @@
   `~/.config/zm` to `~/.config/zoom-cli`, and state from `~/.local/share/zm` to `~/.local/share/zoom-cli`. The first
   run moves them and leaves a link at each old folder it emptied, so an older zm still works; a saved archive
   schedule keeps running ([configuration](../docs/configuration.md)).
+- **Built on cli-core 0.648.0.** A mistyped profile now answers `not_found` with reason `profile.unknown` and the
+  profiles on this computer, not "not signed in". Unknown commands and options carry a `usage.*` reason, and
+  `doctor reports create --output` refuses to overwrite a file. What else changed is in
+  [cli-core's changelog](https://github.com/WireCatLabs/cli-core/blob/main/CHANGELOG.md).
 - **A sign-in no longer depends on the client ID in its keyring name.** After changing `zoom.client_id`, run
   `zm <profile> session start` again.
 

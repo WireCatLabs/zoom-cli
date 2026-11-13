@@ -19,5 +19,82 @@
     "reason": "The loopback address of zm's own sign-in listener, where the browser returns after Zoom's consent; zm listens there and never fetches it.",
     "owner": "@WireCatLabs",
     "review_after": "2027-05-13"
+  },
+  {
+    "rule": "option-role",
+    "target": "meetings embeddings --after-hash",
+    "reason": "Resumes building vectors after the last passage it embedded; no shared role names a resume point inside one command's own batch, and paging flags would promise a list it does not return.",
+    "owner": "@WireCatLabs",
+    "review_after": "2027-05-13"
+  },
+  {
+    "rule": "option-role",
+    "target": "meetings embeddings --after-transcript-id",
+    "reason": "Resumes splitting transcripts after the last one it split, the same resume point as --after-hash one step earlier; no shared role names it.",
+    "owner": "@WireCatLabs",
+    "review_after": "2027-05-13"
+  },
+  {
+    "rule": "option-role",
+    "target": "meetings evidence --after-transcript-id",
+    "reason": "Resumes the scan of root-reference revisions after one transcript; the scan is a resume point, not a page of a list, so no paging role fits.",
+    "owner": "@WireCatLabs",
+    "review_after": "2027-05-13"
+  },
+  {
+    "rule": "unknown-resource",
+    "target": "recordings archive",
+    "reason": "A local folder of downloaded Zoom recordings that zm inspects without Zoom or the database; the vocabulary has no resource for a provider's on-disk archive.",
+    "owner": "@WireCatLabs",
+    "review_after": "2027-05-13"
+  },
+  {
+    "rule": "unknown-resource",
+    "target": "remote-meetings",
+    "reason": "Upcoming meetings read live from Zoom, kept apart from the stored meetings under meetings so an agent never confuses the two; the vocabulary has no word for a provider's live calendar.",
+    "owner": "@WireCatLabs",
+    "review_after": "2027-05-13"
+  },
+  {
+    "rule": "unknown-verb",
+    "target": "meetings embeddings",
+    "reason": "Previews building meeting vectors and builds one batch with --yes; no shared verb names building a search index for one resource.",
+    "owner": "@WireCatLabs",
+    "review_after": "2027-05-13"
+  },
+  {
+    "rule": "unknown-verb",
+    "target": "meetings task-proposal",
+    "reason": "Shows the task a meeting line would become without creating it; no shared verb names a preview of another tool's write.",
+    "owner": "@WireCatLabs",
+    "review_after": "2027-05-13"
+  },
+  {
+    "rule": "unknown-verb",
+    "target": "recordings archive locks",
+    "reason": "Lists the locks on a local archive; locks are a sub-noun read as a list, and the vocabulary has no verb for it.",
+    "owner": "@WireCatLabs",
+    "review_after": "2027-05-13"
+  },
+  {
+    "rule": "unknown-verb",
+    "target": "recordings archive recover",
+    "reason": "Previews and, with --yes, removes stale archive locks; the shared recover verb belongs to the store and means a different file.",
+    "owner": "@WireCatLabs",
+    "review_after": "2027-05-13"
+  },
+  {
+    "rule": "unknown-verb",
+    "target": "recordings schedule disable",
+    "reason": "Turns off a saved archive timer without deleting its files; the vocabulary has no verb for pausing a schedule.",
+    "owner": "@WireCatLabs",
+    "review_after": "2027-05-13"
+  },
+  {
+    "rule": "unknown-verb",
+    "target": "remote-meetings invitation",
+    "reason": "Reads one meeting's invitation text from Zoom; the invitation is the thing read, and no shared verb names it.",
+    "owner": "@WireCatLabs",
+    "review_after": "2027-05-13"
   }
 ]

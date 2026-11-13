@@ -55,7 +55,7 @@
     "zoom:generate": "node scripts/zoom-api/generate.ts",
     "zoom:generate:check": "node scripts/zoom-api/generate.ts --check",
     "test:matrix": "pnpm test --maxWorkers 2 && pnpm build && pnpm test:matrix:check",
-    "lint:commands": "node scripts/sandboxed.ts cli-dev lint --cli dist/bin/zm.js",
+    "lint:commands": "node scripts/sandboxed.ts cli-dev lint --cli dist/bin/zm.js --budget 14",
     "test:matrix:check": "cli-dev test-matrix --program scripts/command-program.ts --untested scripts/test-matrix-untested.ts --name zm --check && git diff --exit-code -- docs/dev/test-matrix.md",
     "contracts:upgrade": "pnpm --dir contracts/previous install --frozen-lockfile --ignore-scripts && cli-contract contracts/upgrade.json",
     "security:no-leak": "cli-testing security no-leak . contracts/no-leak.json",
@@ -65,7 +65,7 @@
   },
   "dependencies": {
     "@wirecat/cli-base": "0.98.0",
-    "@wirecat/cli-core": "0.647.0",
+    "@wirecat/cli-core": "0.648.0",
     "commander": "15.0.0",
     "valibot": "1.5.0"
   },
