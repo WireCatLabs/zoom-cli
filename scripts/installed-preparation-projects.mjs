@@ -82,8 +82,8 @@ export const checkPreparationProjects = async ({
     const page = await connection.meetingProjectEvidence(next.project, prepared.options)
     assert.equal(page.term.name, "ПРИ")
     assert.equal(page.hasMore, false)
-    assert.equal(page.hits.length, 1)
-    assert.ok(page.hits[0].ref.startsWith(`${candidateReference}/`))
+    assert.equal(page.items.length, 1)
+    assert.ok(page.items[0].ref.startsWith(`${candidateReference}/`))
   } finally {
     await connection.close()
   }
@@ -92,7 +92,7 @@ export const checkPreparationProjects = async ({
   try {
     assert.equal((await reopened.knowledge.vocabulary({ kind: "project" })).fingerprint, fingerprint)
     assert.equal((await reopened.knowledge.meetingProjects(key, { projectId: project.id })).items.length, 2)
-    assert.equal((await reopened.facts.list()).length, 2)
+    assert.equal((await reopened.facts.list()).items.length, 2)
   } finally {
     await reopened.close()
   }

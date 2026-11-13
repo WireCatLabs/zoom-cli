@@ -161,7 +161,7 @@ assert.deepEqual(selectedNotes.item.notes.coverage, answer.item.notes.coverage)
 assert.ok(Buffer.byteLength(JSON.stringify(answer.item)) <= 16384)
 const reopened = await openStore({ path })
 try {
-  assert.equal((await reopened.facts.list()).length, 2)
+  assert.equal((await reopened.facts.list()).items.length, 2)
   assert.equal((await reopened.notes.notes({ source: "internal" })).items.length, 2)
   assert.equal((await reopened.notes.note(projectNote.ref)).revision, 2)
   assert.equal((await reopened.knowledge.meetingProjects(key)).items.length, 2)
