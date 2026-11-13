@@ -1,5 +1,50 @@
 # Changelog
 
+## 0.73.0 — 13.11.2026
+
+### Changed — may break callers
+
+- **Built on cli-core 0.651.0 and cli-base 0.99.0** (were 0.648.0 and 0.98.0). A stale meeting project fingerprint
+  answers `conflict` (reason `meeting-project.stale`), not `configuration_error`. cli-core's reasons `oauth.missing`
+  and `ai.address-refused` are now `session.missing` and `model.address-refused`. `contracts/wirecat.json` lists the
+  hosts the shared packages reach (npm's registry, Hugging Face and GitHub downloads), so WireCat Desktop shows them.
+  What else changed is in [cli-core's changelog](https://github.com/WireCatLabs/cli-core/blob/main/CHANGELOG.md).
+- **zm keeps its folders under `zoom-cli`, the name `zm doctor` and the run log already used.** Settings move from
+  `~/.config/zm` to `~/.config/zoom-cli`, and state from `~/.local/share/zm` to `~/.local/share/zoom-cli`. The first
+  run moves them and leaves a link at each old folder it emptied, so an older zm still works; a saved archive
+  schedule keeps running ([configuration](docs/configuration.md)).
+- **Built on cli-core 0.648.0.** A mistyped profile now answers `not_found` with reason `profile.unknown` and the
+  profiles on this computer, not "not signed in". Unknown commands and options carry a `usage.*` reason, and
+  `doctor reports create --output` refuses to overwrite a file. What else changed is in
+  [cli-core's changelog](https://github.com/WireCatLabs/cli-core/blob/main/CHANGELOG.md).
+- **A sign-in no longer depends on the client ID in its keyring name.** After changing `zoom.client_id`, run
+  `zm <profile> session start` again.
+- **Built on cli-core 0.656.0** (was 0.651.0). See the
+  [cli-core changelog](https://github.com/WireCatLabs/cli-core/blob/main/CHANGELOG.md).
+
+### Fixed
+
+- **Zoom requests retry through cli-base's shared retry**, with the same two retries and Zoom's `Retry-After`.
+- **The docs say where the login really is:** the keyring, or a private file when the keyring is unavailable, and
+  `session end` removes it.
+- **Sync runs on a fresh install.** A shared WireCat config (`~/.config/WireCat/config.json`) that could not be
+  read (a byte-order mark, broken JSON, a folder in its place, an older `setup` shape) made every WireCat tool
+  read-only and refused `sync`. Now only the owner's own "read only" answer limits a tool, and even then a sync runs:
+  it only reads the service into the local store (cli-core 0.656.0).
+
+### Security
+
+- **One keyring entry per profile, shared by every run.** A sign-in is kept under the service `zoom-cli`, account
+  `oauth:zoom:<profile>`, not under one service per config folder. The first run copies an older entry there and
+  leaves the old one until `session end`, which now deletes both. A run with moved folders (`ZM_CONFIG_DIR`, a
+  throwaway `HOME`) reads the owner's sign-in but never replaces or deletes it
+  ([sessions](docs/sessions.md#remove-access)).
+- **One token refresh at a time across processes.** The archive timer, an MCP server and a command in a terminal no
+  longer refresh the same sign-in at once. Zoom replaces the refresh token on each refresh, so the loser of that race
+  could sign the owner out.
+- **zm reaches only Zoom's hosts.** Every request goes through cli-base's `hostFetch`, limited to `zoom.us`,
+  `zoom.com` and their subdomains. `contracts/wirecat.json` lists them for WireCat Desktop.
+
 ## 0.72.0 — 13.11.2026
 
 ### Changed — may break callers
