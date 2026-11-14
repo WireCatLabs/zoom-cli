@@ -13,6 +13,7 @@ import {
   typedQuery,
   unfilteredQuery,
   withQuery,
+  writesOwnerFiles,
 } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { ZOOM_ANSWER_ENTITIES } from "./answer-entities.js"
@@ -119,7 +120,7 @@ export const addRecordingScheduleCommands = (
     LOCAL_READ,
   )
   label(
-    runsLong(schedule.command("run"))
+    writesOwnerFiles(runsLong(schedule.command("run")))
       .description("run the captured job once with durable archive progress")
       .argument("<job>", "saved job id")
       .action(async (id: string) => {

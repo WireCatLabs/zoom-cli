@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**371 ✅ · 21 ⛔ · 0 ❌** — 97 commands, 295 options.
+**371 ✅ · 23 ⛔ · 0 ❌** — 97 commands, 297 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -56,11 +56,13 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings list` |  | ✅ |  |
 | `meetings list` | `--json` | ✅ |  |
 | `meetings list` | `--jsonl` | ✅ |  |
+| `meetings list` | `--backend` | ⛔ | cli-core 0.660.0 src/store/meetings-read-through.test.ts drives archive, server and both on a shared source |
 | `meetings list` | `--limit` | ✅ |  |
 | `meetings list` | `--page` | ✅ |  |
 | `meetings show` |  | ✅ |  |
 | `meetings show` | `--json` | ✅ |  |
 | `meetings show` | `--jsonl` | ✅ |  |
+| `meetings show` | `--backend` | ⛔ | cli-core 0.660.0 src/store/meetings-read-through.test.ts drives archive, server and both on a shared source |
 | `meetings transcript` |  | ✅ |  |
 | `meetings transcript` | `--history` | ✅ |  |
 | `meetings transcript` | `--json` | ✅ |  |

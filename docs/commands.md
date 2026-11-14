@@ -356,7 +356,7 @@ stored meetings and their records
 
 ### `zm meetings list`
 
-stored meetings, newest first
+meetings, newest first: the service's and the stored ones, kept in the store
 
 ```sh
 zm meetings list [query] [options]
@@ -370,10 +370,11 @@ zm meetings list [query] [options]
 |---|---|
 | `--json` | one JSON value. |
 | `--jsonl` | one JSON object per item. |
+| `--backend <archive\|server\|both>` | where to read: the store (archive), the service (server), or both, kept in the store (default: both). |
 | `--limit <n>` | meetings per page. Default: `100`. |
 | `--page <n>` | page number. Default: `1`. |
 
-**Returns:** meeting — ref, id, provider, account, title, url, started_at, ended_at, and 8 more; every field: zm commands info meetings list
+**Returns:** meeting — ref, id, provider_id, provider, account, title, url, started_at, and 11 more; every field: zm commands info meetings list
 
 **Next usually:** `zm meetings show <meeting>`, `zm meetings transcript <meeting>`, `zm meetings summary <meeting>`
 
@@ -381,7 +382,7 @@ zm meetings list [query] [options]
 
 ### `zm meetings show`
 
-show a stored meeting
+show a meeting, read again from the service with its people, transcript and documents
 
 ```sh
 zm meetings show <meeting> [options]
@@ -389,14 +390,15 @@ zm meetings show <meeting> [options]
 
 | Argument | | What it is |
 |---|---|---|
-| `meeting` | required | stored meeting id. |
+| `meeting` | required | the stored meeting's number, its meeting: ref, or the service's id (provider_id). |
 
 | Option | What it does |
 |---|---|
 | `--json` | one JSON value. |
 | `--jsonl` | one JSON object per item. |
+| `--backend <archive\|server\|both>` | where to read: the store (archive), the service (server), or both, kept in the store (default: both). |
 
-**Returns:** meeting details — ref, id, provider, account, title, url, started_at, ended_at, and 17 more; every field: zm commands info meetings show
+**Returns:** meeting details — ref, id, provider_id, provider, account, title, url, started_at, and 20 more; every field: zm commands info meetings show
 
 **Next usually:** `zm meetings transcript <meeting>`, `zm meetings summary <meeting>`, `zm recordings show <meeting>`
 
@@ -1723,7 +1725,7 @@ zm search meetings <query> [options]
 | `--project <project>` | meetings confirmed in this project, by name, key or alias. |
 | `--tag <name>` | meetings with this tag, by name or alias. |
 | `--topic-name <name>` | meetings with this topic, by name or alias. |
-| `--since-time <time>` | meetings starting at or after this ISO 8601 date or time. |
+| `--since-time <time>` | meetings starting at or after this ISO 8601 date or time, or 30m, 2h, 7d ago. |
 | `--until-time <time>` | meetings starting at or before this ISO 8601 date or time; a date alone covers that whole local day. |
 | `--limit <n>` | how many hits, 1 through 1000 (default 100). |
 | `--cursor <cursor>` | continue from the previous page's page.next_cursor, with the same query and filters. |
@@ -1911,7 +1913,7 @@ zm searches create <name> <query> [options]
 | `--event-id <id>` | only meetings linked to this stored event. |
 | `--project <project>` | meetings confirmed in this project, by name, key or alias. |
 | `--topic-name <name>` | meetings with this topic, by name or alias. |
-| `--since-time <time>` | meetings starting at or after this ISO 8601 date or time. |
+| `--since-time <time>` | meetings starting at or after this ISO 8601 date or time, or 30m, 2h, 7d ago. |
 | `--until-time <time>` | meetings starting at or before this ISO 8601 date or time; a date alone covers that whole local day. |
 | `--limit <n>` | how many hits, 1 through 1000 (default 100). |
 | `--max-read-bytes <bytes>` | most stored bytes to read, 1 through 67108864 (default 4194304). |
