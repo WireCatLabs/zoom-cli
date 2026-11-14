@@ -64,7 +64,7 @@
     "package:check": "node scripts/package-check.ts"
   },
   "dependencies": {
-    "@wirecat/cli-base": "0.99.0",
+    "@wirecat/cli-base": "0.100.0",
     "@wirecat/cli-core": "0.662.0",
     "commander": "15.0.0",
     "valibot": "1.5.0"

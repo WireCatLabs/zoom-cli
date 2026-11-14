@@ -3,6 +3,7 @@ import {
   appMcpCommand,
   type Configuration,
   commandPermissions,
+  DEFAULT_CONFIG,
   type GlobalFlags,
   NONE_NAMED,
   type ProgramDefinition,
@@ -67,6 +68,8 @@ const zoomConfiguration = (deps: ProgramDeps, program: () => Command | undefined
       keepSuccessfulRunsForDays,
       ...(saved?.recordInput === undefined ? {} : { recordInput: saved.recordInput }),
       skillHint: false,
+      limit: flags?.limit ?? DEFAULT_CONFIG.defaults.limit,
+      page: flags?.page ?? 1,
       permissions: profile ? { ...levels, ...overrides } : {},
       permissionSources: Object.fromEntries([
         ...Object.keys(own).map((key) => [key, "config file"]),

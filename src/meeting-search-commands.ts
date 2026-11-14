@@ -1,6 +1,14 @@
 import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
-import { type Body, FETCH, LOCAL_READ, listOf, NO_EFFECTS, overrideSharedContract } from "@wirecat/cli-core/cli"
+import {
+  type Body,
+  FETCH,
+  LOCAL_READ,
+  listOf,
+  NO_EFFECTS,
+  overrideSharedContract,
+  pagingOf,
+} from "@wirecat/cli-core/cli"
 import { meetingHitsList } from "@wirecat/cli-core/meetings"
 import {
   createMeetingSearchCommand,
@@ -150,15 +158,16 @@ export const addMeetingSearchCommands = (
   },
 ): MeetingSearchRun => {
   const execute = async (query: string, options: SearchOptions): Promise<Body> => {
-    const request = meetingHitSearchRequest(query, options, deps.signal())
+    const limit = options.limit ?? pagingOf(command).limit
+    const request = meetingHitSearchRequest(query, options, limit, deps.signal())
     if (options.model !== undefined) {
       refuse(options, ["maxReadBytes"], "to a search by meaning")
-      const { limit, after, maxReadBytes: _bytes, signal, ...selection } = request
+      const { limit: _limit, after, maxReadBytes: _bytes, signal, ...selection } = request
       const meaning = {
         model: options.model,
         baseUrl: options.baseUrl,
         dims: options.dims,
-        limit: limit ?? 20,
+        limit,
         maxChunks: options.maxChunks,
         after,
         selection,
@@ -179,7 +188,7 @@ export const addMeetingSearchCommands = (
     refuse(options, ["baseUrl", "dims", "maxChunks", "maxRows", "maxTextBytes"], "without --model")
     return meetingHitsList(
       await (await deps.words())(query, request),
-      request.limit ?? 100,
+      limit,
       "search meetings",
       meetingSearchArguments(query, options),
       meetingSearchMeta(options),
