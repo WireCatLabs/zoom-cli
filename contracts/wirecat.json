@@ -229,9 +229,9 @@
         "meetings",
         "list"
       ],
-      "summary": "stored meetings, newest first",
+      "summary": "meetings, newest first: the service's and the stored ones, kept in the store",
       "effects": {
-        "remote": "none",
+        "remote": "read",
         "local": "read"
       },
       "permission": "meetings.list",
@@ -242,9 +242,9 @@
         "meetings",
         "show"
       ],
-      "summary": "show a stored meeting",
+      "summary": "show a meeting, read again from the service with its people, transcript and…",
       "effects": {
-        "remote": "none",
+        "remote": "read",
         "local": "read"
       },
       "permission": "meetings.show",
@@ -1246,6 +1246,7 @@
     "meeting": {
       "fields": [
         "id",
+        "provider_id",
         "title",
         "started_at",
         "ended_at",

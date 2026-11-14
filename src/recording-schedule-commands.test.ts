@@ -101,6 +101,18 @@ it("list/show and disable previews work offline without current configuration, k
   expect(fixture.fail).not.toHaveBeenCalled()
   expect(fixture.tokenAccess).not.toHaveBeenCalled()
 })
+it("readonly and deny refuse a run, which downloads recordings into the job's saved folder", async () => {
+  for (const level of ["readonly", "deny"]) {
+    const fixture = await setup()
+    setConfig(fixture.deps.configPath, "zoom.client_id", "example-client")
+    useProfile(fixture.deps.configPath, "AliceExample")
+    const permissions = JSON.stringify({ recordings: level })
+    setConfig(fixture.deps.configPath, "permissions", permissions, () => "AliceExample", new Set(["recordings"]))
+    expect(await run(["recordings", "schedule", "run", fixture.job.schedule.id, "--jsonl"], fixture.deps)).toBe(5)
+    expect(JSON.parse(fixture.errors.at(-1) ?? "{}").error).toMatchObject({ code: "permission_error" })
+    expect(fixture.service.run).not.toHaveBeenCalled()
+  }
+})
 it("headless run requires receipt output before obtaining a scheduler service", async () => {
   const fixture = await setup()
   expect(await run(["recordings", "schedule", "run", fixture.job.schedule.id, "--json"], fixture.deps)).toBe(2)
