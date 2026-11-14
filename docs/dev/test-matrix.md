@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**371 ✅ · 23 ⛔ · 0 ❌** — 97 commands, 297 options.
+**351 ✅ · 23 ⛔ · 0 ❌** — 97 commands, 277 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -54,47 +54,29 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `config migrate` |  | ✅ |  |
 | `app` |  | ✅ |  |
 | `meetings list` |  | ✅ |  |
-| `meetings list` | `--json` | ✅ |  |
-| `meetings list` | `--jsonl` | ✅ |  |
 | `meetings list` | `--backend` | ⛔ | cli-core 0.660.0 src/store/meetings-read-through.test.ts drives archive, server and both on a shared source |
 | `meetings list` | `--limit` | ✅ |  |
 | `meetings list` | `--page` | ✅ |  |
 | `meetings show` |  | ✅ |  |
-| `meetings show` | `--json` | ✅ |  |
-| `meetings show` | `--jsonl` | ✅ |  |
 | `meetings show` | `--backend` | ⛔ | cli-core 0.660.0 src/store/meetings-read-through.test.ts drives archive, server and both on a shared source |
 | `meetings transcript` |  | ✅ |  |
 | `meetings transcript` | `--history` | ✅ |  |
-| `meetings transcript` | `--json` | ✅ |  |
-| `meetings transcript` | `--jsonl` | ✅ |  |
 | `meetings summary` |  | ✅ |  |
-| `meetings summary` | `--json` | ✅ |  |
-| `meetings summary` | `--jsonl` | ✅ |  |
 | `meetings export` |  | ✅ |  |
 | `meetings export` | `--format` | ✅ |  |
 | `meetings export` | `--transcript-id` | ✅ |  |
 | `meetings export` | `--output` | ✅ |  |
-| `meetings export` | `--json` | ✅ |  |
-| `meetings export` | `--jsonl` | ✅ |  |
 | `meetings people` |  | ✅ |  |
-| `meetings people` | `--json` | ✅ |  |
-| `meetings people` | `--jsonl` | ✅ |  |
 | `meetings people` | `--limit` | ✅ |  |
 | `meetings people` | `--scan-limit` | ✅ |  |
 | `meetings people` | `--max-read-bytes` | ✅ |  |
 | `meetings people` | `--cursor` | ✅ |  |
 | `meetings sync` |  | ✅ |  |
-| `meetings sync` | `--json` | ✅ |  |
-| `meetings sync` | `--jsonl` | ✅ |  |
 | `meetings sync` | `--since-time` | ✅ |  |
 | `meetings sync` | `--lookback-days` | ✅ |  |
 | `meetings sync` | `--rescan` | ✅ |  |
 | `meetings import` |  | ✅ |  |
-| `meetings import` | `--json` | ✅ |  |
-| `meetings import` | `--jsonl` | ✅ |  |
 | `meetings repair` |  | ✅ |  |
-| `meetings repair` | `--json` | ✅ |  |
-| `meetings repair` | `--jsonl` | ✅ |  |
 | `meetings repair` | `--yes` | ✅ |  |
 | `meetings scheduled` |  | ✅ |  |
 | `meetings scheduled` | `--since-time` | ✅ |  |
@@ -182,8 +164,6 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings embeddings` | `--yes` | ✅ |  |
 | `meetings status` |  | ✅ |  |
 | `events list` |  | ✅ |  |
-| `events list` | `--json` | ✅ |  |
-| `events list` | `--jsonl` | ✅ |  |
 | `commands` |  | ✅ |  |
 | `commands info` |  | ✅ |  |
 | `store info` |  | ✅ |  |

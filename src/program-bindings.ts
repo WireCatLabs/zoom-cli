@@ -13,6 +13,7 @@ import {
   environmentOf,
   isBody,
   itemAnswer,
+  pagingOf,
   runBudgetOf,
   snakeKeys,
   writesNewFileOnlyWith,
@@ -305,6 +306,7 @@ export const bindZoomProgram = (program: Command, given: ProgramDeps, lifecycle:
     // inCommandRun would open a second run beside zm's own commandRuns, so a sync would be kept twice.
     inRun: (_command, body) => body(),
     budgetOf: runBudgetOf,
+    pagingOf,
     newFileOutput: writesNewFileOnlyWith,
     writeFile: deps.writeFile
       ? async (path, content) => {
