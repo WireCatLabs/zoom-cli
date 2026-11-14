@@ -48,8 +48,8 @@ zm runs list [query] [options]
 
 | Option | What it does |
 |---|---|
-| `--limit <n>` | how many to show. Default: `20`. |
-| `--page <n>` | which page, starting at 1. Default: `1`. |
+| `--limit <n>` | how many to show. |
+| `--page <n>` | which page, starting at 1. |
 
 **Returns:** run — run_id, command, started_at, status, cli_version, profile, completed_at, requests, and 23 more; every field: zm commands info runs list
 
@@ -368,11 +368,9 @@ zm meetings list [query] [options]
 
 | Option | What it does |
 |---|---|
-| `--json` | one JSON value. |
-| `--jsonl` | one JSON object per item. |
 | `--backend <archive\|server\|both>` | where to read: the store (archive), the service (server), or both, kept in the store (default: both). |
-| `--limit <n>` | meetings per page. Default: `100`. |
-| `--page <n>` | page number. Default: `1`. |
+| `--limit <n>` | meetings per page; the profile's defaults.limit when absent. |
+| `--page <n>` | which page, starting at 1. |
 
 **Returns:** meeting — ref, id, provider_id, provider, account, title, url, started_at, and 11 more; every field: zm commands info meetings list
 
@@ -394,8 +392,6 @@ zm meetings show <meeting> [options]
 
 | Option | What it does |
 |---|---|
-| `--json` | one JSON value. |
-| `--jsonl` | one JSON object per item. |
 | `--backend <archive\|server\|both>` | where to read: the store (archive), the service (server), or both, kept in the store (default: both). |
 
 **Returns:** meeting details — ref, id, provider_id, provider, account, title, url, started_at, and 20 more; every field: zm commands info meetings show
@@ -419,8 +415,6 @@ zm meetings transcript <meeting> [options]
 | Option | What it does |
 |---|---|
 | `--history` | include superseded transcript versions. |
-| `--json` | one JSON value. |
-| `--jsonl` | one JSON object per item. |
 
 **Returns:** meeting transcript — ref, meeting, source, language, superseded_at, created_at, lines; every field: zm commands info meetings transcript
 
@@ -431,17 +425,12 @@ zm meetings transcript <meeting> [options]
 show stored meeting summaries
 
 ```sh
-zm meetings summary <meeting> [options]
+zm meetings summary <meeting>
 ```
 
 | Argument | | What it is |
 |---|---|---|
 | `meeting` | required | stored meeting id. |
-
-| Option | What it does |
-|---|---|
-| `--json` | one JSON value. |
-| `--jsonl` | one JSON object per item. |
 
 **Returns:** meeting summary — id, meeting, source, title, overview, sections, next_steps, content, and 3 more; every field: zm commands info meetings summary
 
@@ -468,8 +457,6 @@ zm meetings export <meeting> [options]
 | `--format <format>` | export format. One of: `markdown`, `vtt`. Default: `markdown`. |
 | `--transcript-id <id>` | export a specific transcript version. |
 | `--output <file>` | write content to a new file through the host's writer. |
-| `--json` | one JSON value. |
-| `--jsonl` | one JSON object per item. |
 
 **Returns:** meeting export — meeting_id, format, filename, content, output; every field: zm commands info meetings export
 
@@ -489,8 +476,6 @@ zm meetings people <query> [options]
 
 | Option | What it does |
 |---|---|
-| `--json` | one JSON value. |
-| `--jsonl` | one JSON object per item. |
 | `--limit <n>` | most matching observations per page, 1–1000 (default 50). |
 | `--scan-limit <n>` | most participant observations to inspect, 1–10000 (default 1000). |
 | `--max-read-bytes <bytes>` | most stored name and email bytes to read (default 1048576). |
@@ -512,9 +497,7 @@ zm meetings sync [options]
 
 | Option | What it does |
 |---|---|
-| `--json` | one JSON value. |
-| `--jsonl` | one JSON object per item. |
-| `--since-time <time>` | fetch meetings starting at or after this ISO 8601 date or time. |
+| `--since-time <time>` | fetch meetings starting at or after this ISO 8601 date or time, or 30m, 2h, 7d ago. |
 | `--lookback-days <days>` | revisit recent occurrences for late transcripts (0–31). |
 | `--rescan` | read the last 30 days again, not only what came after the last sync. |
 
@@ -529,17 +512,12 @@ import downloaded meeting transcripts
 **Changes local data.**
 
 ```sh
-zm meetings import <folder> [options]
+zm meetings import <folder>
 ```
 
 | Argument | | What it is |
 |---|---|---|
 | `folder` | required | folder of transcripts downloaded from the provider. |
-
-| Option | What it does |
-|---|---|
-| `--json` | one JSON value. |
-| `--jsonl` | one JSON object per item. |
 
 **Returns:** meeting ingestion — meetings, participants, transcript_rows, summaries, warnings, timezone; every field: zm commands info meetings import
 
@@ -557,8 +535,6 @@ zm meetings repair [options]
 
 | Option | What it does |
 |---|---|
-| `--json` | one JSON value. |
-| `--jsonl` | one JSON object per item. |
 | `--yes` | store the detected languages; otherwise only preview. |
 
 **Returns:** meeting repair — account_id, applied, transcripts, languages; every field: zm commands info meetings repair
@@ -575,8 +551,8 @@ zm meetings scheduled [options]
 
 | Option | What it does |
 |---|---|
-| `--since-time <time>` | absolute window start as ISO timestamp with zone (default now). |
-| `--before-time <time>` | exclusive ISO window end (default seven days after start). |
+| `--since-time <time>` | window start, an ISO date or time, local without a zone (default now). |
+| `--before-time <time>` | exclusive window end, an ISO date or time; a date alone covers that day (default seven days after start). |
 | `--limit <n>` | series candidates in one provider page, 1–100 (default 100). |
 | `--max-read-bytes <bytes>` | normalized provider-page bytes, at most 1048576 (default 65536). |
 | `--bytes <bytes>` | answer item UTF-8 JSON bytes, 2048–1048576 (default 65536). |
@@ -653,12 +629,12 @@ zm meetings prepare <series-id> [options]
 |---|---|
 | `--context-source <id=cursor>` | authorized communications selection ID, optionally ID=cursor; repeat. Default: ``. |
 | `--context-query <words>` | literal words to find within the selected communications. |
-| `--context-since-time <time>` | communications window start as zoned ISO timestamp (default fourteen days before end). |
-| `--context-before-time <time>` | exclusive communications end as zoned ISO timestamp (default preparation start). |
+| `--context-since-time <time>` | communications window start, an ISO date or time or 7d ago (default fourteen days before end). |
+| `--context-before-time <time>` | exclusive communications end, an ISO date or time (default preparation start). |
 | `--project <project>` | include unconfirmed word evidence for one existing project name, key or alias. |
-| `--since-time <time>` | window start as ISO timestamp with zone (default now). |
-| `--before-time <time>` | exclusive window end as ISO timestamp (default seven days after start). |
-| `--history-since-time <time>` | history start as ISO timestamp (default thirty days before start). |
+| `--since-time <time>` | window start, an ISO date or time, local without a zone (default now). |
+| `--before-time <time>` | exclusive window end, an ISO date or time; a date alone covers that day (default seven days after start). |
+| `--history-since-time <time>` | history start, an ISO date or time or 30d ago (default thirty days before start). |
 | `--meetings <n>` | prior occurrences and separate related-meeting limit, 1–20 (default 5). |
 | `--cues <n>` | cues per occurrence, 1–100 (default 10). |
 | `--context-limit <n>` | entries per context category, 1–100 (default 20). |
@@ -892,17 +868,12 @@ the owner's stored events
 list stored events
 
 ```sh
-zm events list [query] [options]
+zm events list [query]
 ```
 
 | Argument | | What it is |
 |---|---|---|
 | `query` | optional | event id, origin or time fields that narrow the list. |
-
-| Option | What it does |
-|---|---|
-| `--json` | one JSON value. |
-| `--jsonl` | one JSON object per item. |
 
 **Returns:** event — id, event_series_id, title, description, location, starts_at, ends_at, timezone, and 13 more; every field: zm commands info events list
 
@@ -1727,7 +1698,7 @@ zm search meetings <query> [options]
 | `--topic-name <name>` | meetings with this topic, by name or alias. |
 | `--since-time <time>` | meetings starting at or after this ISO 8601 date or time, or 30m, 2h, 7d ago. |
 | `--until-time <time>` | meetings starting at or before this ISO 8601 date or time; a date alone covers that whole local day. |
-| `--limit <n>` | how many hits, 1 through 1000 (default 100). |
+| `--limit <n>` | how many hits, 1 through 1000; the profile's defaults.limit when absent. |
 | `--cursor <cursor>` | continue from the previous page's page.next_cursor, with the same query and filters. |
 | `--max-read-bytes <bytes>` | most stored bytes to read, 1 through 67108864 (default 4194304). |
 | `--model <model>` | rank words and meaning together with this embedding model, building missing vectors first. |
@@ -1915,7 +1886,7 @@ zm searches create <name> <query> [options]
 | `--topic-name <name>` | meetings with this topic, by name or alias. |
 | `--since-time <time>` | meetings starting at or after this ISO 8601 date or time, or 30m, 2h, 7d ago. |
 | `--until-time <time>` | meetings starting at or before this ISO 8601 date or time; a date alone covers that whole local day. |
-| `--limit <n>` | how many hits, 1 through 1000 (default 100). |
+| `--limit <n>` | how many hits, 1 through 1000; the profile's defaults.limit when absent. |
 | `--max-read-bytes <bytes>` | most stored bytes to read, 1 through 67108864 (default 4194304). |
 | `--model <model>` | rank words and meaning together with this embedding model, building missing vectors first. |
 | `--base-url <url>` | remote embedding service for --model; OpenAI reads OPENAI_API_KEY. |
