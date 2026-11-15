@@ -22,7 +22,7 @@ moves there when it becomes P2.
 ## Standards and tooling
 
 - **ZM-21** · P3 · Command words outside the shared vocabulary: 26 lint baseline entries (`lint/baseline/`), e.g.
-  `remote-meetings`, `recordings archive`, `task-proposal`, `--project`/`--topic` with two meanings.
+  `recordings archive`, `task-proposal`, `--project`/`--topic` with two meanings.
 - **ZM-22** · P3 · Flags that differ from tg/drive on the same path (`cli-dev audit`): `search all` has no
   `--page`/`--source`/`--timezone` and no answer entity, `doctor` has no `--online`.
 - **ZM-23** · P3 · Login depends on the wirecat.dev callback page; Zoom supports loopback redirects for public

@@ -161,7 +161,7 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
     expect(help.stderr).toBe("")
     const full = invoke("--help-all")
     expect(full.status).toBe(0)
-    expect(full.stdout).toContain("remote-meetings")
+    expect(full.stdout).toContain("the owner's stored events")
     const guide = invoke("guide", "find-quote")
     expect(guide.status).toBe(0)
     expect(guide.stdout).toContain("zm personal search meetings")
@@ -290,13 +290,15 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
       expect(imported.status, imported.stderr).toBe(0)
       expect(imported.stderr).toBe("")
     }
-    const listed = invoke("personal", "--json", "meetings", "list")
+    const listed = invoke("personal", "--json", "meetings", "list", "--backend", "archive")
     expect(listed.status, listed.stderr).toBe(0)
     const meetings = JSON.parse(listed.stdout).items
     expect(meetings).toHaveLength(1)
     const id = String(meetings[0].id)
     importedMeetingId = id
-    expect(readAnswer(invoke("personal", "--json", "meetings", "show", id).stdout).transcripts).toHaveLength(1)
+    expect(
+      readAnswer(invoke("personal", "--json", "meetings", "show", id, "--backend", "archive").stdout).transcripts,
+    ).toHaveLength(1)
   })
 
   it("retains the original revision when importing corrected transcript bytes", () => {
@@ -307,7 +309,9 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
     const corrected = invoke("personal", "--json", "meetings", "import", files)
     expect(corrected.status, corrected.stderr).toBe(0)
     const id = importedMeetingId
-    expect(readAnswer(invoke("personal", "--json", "meetings", "show", id).stdout).transcripts).toHaveLength(1)
+    expect(
+      readAnswer(invoke("personal", "--json", "meetings", "show", id, "--backend", "archive").stdout).transcripts,
+    ).toHaveLength(1)
     expect(
       JSON.parse(invoke("personal", "--json", "meetings", "transcript", id, "--history").stdout).items,
     ).toHaveLength(2)

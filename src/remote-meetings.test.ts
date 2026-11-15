@@ -256,7 +256,9 @@ it("adapts Zoom management to provider-neutral SDK capabilities with preview and
   })
   const sdk = createZoomMeetingManagement(remote, "Alice Example profile")
   expect(sdk.scope).toEqual({ provider: "zoom", account: "Alice Example profile" })
-  expect(await sdk.create({ title: "Example", kind: "instant" })).toMatchObject({ applied: false })
+  await expect(sdk.create({ title: "Example", kind: "instant" })).rejects.toMatchObject({ code: "validation_error" })
+  await expect(sdk.create({ title: "Example" })).rejects.toMatchObject({ code: "validation_error" })
+  expect(await sdk.create({ title: "Example", startTime: "2026-10-11T12:00:00Z" })).toMatchObject({ applied: false })
   expect(await sdk.update("123456", { agenda: "Bob Sample agenda" })).toMatchObject({ applied: false })
   expect(await sdk.cancel("123456", { apply: true, dryRun: true })).toMatchObject({ applied: false })
   expect(requests).toEqual([])
@@ -267,7 +269,6 @@ it("adapts Zoom management to provider-neutral SDK capabilities with preview and
     await sdk.create(
       {
         title: "Example",
-        kind: "scheduled",
         startTime: "2026-10-11T12:00:00+02:00",
         durationMinutes: 30,
         timezone: "Europe/Madrid",
@@ -276,7 +277,7 @@ it("adapts Zoom management to provider-neutral SDK capabilities with preview and
       { apply: true },
     ),
   ).toMatchObject({ applied: true, meeting: { id: "123456" } })
-  expect(await sdk.update("123456", { title: "Edited", kind: "instant" }, { apply: true })).toMatchObject({
+  expect(await sdk.update("123456", { title: "Edited" }, { apply: true })).toMatchObject({
     applied: true,
   })
   expect(await sdk.cancel("123456", { apply: true, occurrenceId: "example occurrence" })).toMatchObject({
@@ -313,7 +314,9 @@ it("keeps unknown Zoom kinds explicit and rejects unacknowledged adapter writes"
     .spyOn(remote, "create")
     .mockResolvedValue({ action: "create", applied: true, request: { method: "POST", path: "/users/me/meetings" } })
   const sdk = createZoomMeetingManagement(remote, "Alice Example profile")
-  await expect(sdk.create({ title: "Example", kind: "instant" }, { apply: true })).rejects.toMatchObject({
+  await expect(
+    sdk.create({ title: "Example", startTime: "2026-10-11T12:00:00Z" }, { apply: true }),
+  ).rejects.toMatchObject({
     code: "outcome_unknown",
   })
   expect(write).toHaveBeenCalledTimes(1)

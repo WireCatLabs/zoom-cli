@@ -4,8 +4,10 @@ import {
   dispatchMeetingMutation,
   type ManagedMeeting,
   type ManagedMeetingChange,
+  type MeetingManagement,
   validateMeetingChange,
 } from "@wirecat/cli-core/meetings"
+import type { Command } from "commander"
 import { object, string } from "./errors.js"
 import { required } from "./recordings.js"
 import { operationSignal, type RemoteOptions, type RemoteRequest, ZoomRemote } from "./remote-http.js"
@@ -195,16 +197,25 @@ const zoomChange = (change: Readonly<ManagedMeetingChange>): MeetingChange => ({
   ...(change.agenda !== undefined ? { agenda: change.agenda } : {}),
 })
 
+export type RemoteMeetingsService = Pick<
+  ZoomRemoteMeetings,
+  "list" | "show" | "invitation" | "create" | "update" | "cancel"
+>
+
+// Zoom schedules, so a create names its start; there is no instant meeting to start from here.
+const ZOOM_FIELDS = { fields: ["title", "startTime", "durationMinutes", "timezone", "agenda"] } as const
+
 /** The remote client must already be bound to the selected account's token manager. */
-export const createZoomMeetingManagement = (remote: ZoomRemoteMeetings, account: string) =>
+export const createZoomMeetingManagement = (remote: RemoteMeetingsService, account: string) =>
   createMeetingManagement(
     { provider: "zoom", account },
     {
+      fields: { create: ZOOM_FIELDS, update: ZOOM_FIELDS },
       list: async ({ signal }) => (await remote.list({ signal })).map(managedMeeting),
       get: async (id, { signal }) => managedMeeting(await remote.show(id, { signal })),
       invitation: (id, { signal }) => remote.invitation(id, { signal }),
       create: async (change, { signal }) => {
-        const receipt = await remote.create(zoomChange(change), { apply: true, signal })
+        const receipt = await remote.create({ ...zoomChange(change), type: 2 }, { apply: true, signal })
         if (!receipt.meeting) throw new CliError("outcome_unknown", "Zoom did not acknowledge the created meeting")
         return managedMeeting(receipt.meeting)
       },
@@ -216,3 +227,67 @@ export const createZoomMeetingManagement = (remote: ZoomRemoteMeetings, account:
       },
     },
   )
+
+/**
+ * The management `meetings create|update|cancel|invitation` mount with: its declaration is the same for every profile,
+ * and each call opens the selected profile's account only when it runs.
+ */
+export const zoomMeetingManagement = (open: () => MeetingManagement): MeetingManagement => {
+  const declared = createZoomMeetingManagement(
+    {
+      list: unbound,
+      show: unbound,
+      invitation: unbound,
+      create: unbound,
+      update: unbound,
+      cancel: unbound,
+    },
+    "unbound",
+  )
+  return {
+    ...declared,
+    list: (options) => open().list(options),
+    get: (id, options) => open().get(id, options),
+    invitation: (id, options) => open().invitation(id, options),
+    create: (change, options) => open().create(change, options),
+    update: (id, change, options) => open().update(id, change, options),
+    cancel: (id, options) => open().cancel(id, options),
+  }
+}
+/**
+ * The selected profile's management: a preview names the account and reaches no Zoom app, so only a real send
+ * builds the client (`make`).
+ */
+export const profileMeetingManagement = (make: () => RemoteMeetingsService, account: () => string) =>
+  zoomMeetingManagement(() => createZoomMeetingManagement(lazyRemote(make), account()))
+
+/** A remote client built on its first call, so a port that is never called needs no Zoom app or token. */
+export const lazyRemote = (make: () => RemoteMeetingsService): RemoteMeetingsService => {
+  let made: RemoteMeetingsService | undefined
+  const remote = () => (made ??= make())
+  return {
+    list: (options) => remote().list(options),
+    show: (id, options) => remote().show(id, options),
+    invitation: (id, options) => remote().invitation(id, options),
+    create: (change, options) => remote().create(change, options),
+    update: (id, change, options) => remote().update(id, change, options),
+    cancel: (id, options) => remote().cancel(id, options),
+  }
+}
+const unbound = (): never => {
+  throw new CliError("configuration_error", "no Zoom account is open for this command")
+}
+
+const leaves = (command: Command): Command[] => (command.commands.length ? command.commands.flatMap(leaves) : [command])
+/** The leaves of the groups added since `before` that read the store; a management call reaches only Zoom. */
+export const storeLeaves = (program: Command, before: Set<Command>, management?: MeetingManagement): Set<Command> => {
+  const managed = new Set<string>(
+    (management?.capabilities ?? []).filter((name) => ["create", "update", "cancel", "invitation"].includes(name)),
+  )
+  return new Set(
+    program.commands
+      .filter((group) => !before.has(group))
+      .flatMap(leaves)
+      .filter((leaf) => !(leaf.parent?.name() === "meetings" && managed.has(leaf.name()))),
+  )
+}

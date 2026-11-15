@@ -1,12 +1,14 @@
 import { CliError } from "@wirecat/cli-base"
 import type { MeetingSource } from "@wirecat/cli-core/meetings"
-import { ZoomApiSource } from "./api.js"
+import { ZOOM_FINDS, ZoomApiSource } from "./api.js"
 import { filesZone, type ZoomConfig } from "./config.js"
 import type { ZoneAssumptions } from "./errors.js"
 import { FilesSource, readDownloadedFiles } from "./files.js"
 import type { ProgramDeps } from "./program.js"
 import type { TokenManager } from "./tokens.js"
 import { SET_ZOOM_APP } from "./zoom-app.js"
+
+const unread = () => Promise.reject(new CliError("configuration_error", "this Zoom source cannot read meetings live"))
 
 /** The API or folder source the config names, built on first use; reset() drops it between parses. */
 export const configuredMeetingSource = ({
@@ -37,6 +39,14 @@ export const configuredMeetingSource = ({
     })()
     return activeSource
   }
+  const live = (): Pick<MeetingSource, "finds" | "find" | "get"> | undefined =>
+    deps.source ?? (getConfig().source === "api" ? { finds: ZOOM_FINDS, find: unread, get: unread } : undefined)
+  const sourceWith = async <K extends "find" | "get">(name: K) => {
+    const active = await getSource()
+    const port = active[name]
+    if (!port) throw new CliError("configuration_error", "this Zoom source cannot read meetings live")
+    return port.bind(active) as NonNullable<MeetingSource[K]>
+  }
   const source: MeetingSource = {
     get provider() {
       return deps.source?.provider ?? "zoom"
@@ -64,6 +74,16 @@ export const configuredMeetingSource = ({
     },
     async files(id) {
       return (await getSource()).files(id)
+    },
+    // Only the API reads Zoom live; a folder of downloaded files has no meeting that is not in it.
+    get finds() {
+      return live()?.finds
+    },
+    get find(): MeetingSource["find"] {
+      return live()?.find && (async (window, terms, cursor) => (await sourceWith("find"))(window, terms, cursor))
+    },
+    get get(): MeetingSource["get"] {
+      return live()?.get && (async (id) => (await sourceWith("get"))(id))
     },
   }
   return {

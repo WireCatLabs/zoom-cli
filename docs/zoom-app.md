@@ -131,6 +131,7 @@ with `zm personal session status --json`.
 | `user:read:user` | Verify the remote session with `zm personal session status --check` |
 | `meeting:read:meeting` | Show remote details and prepare a selected upcoming series with stored context |
 | `meeting:read:invitation` | Retrieve its invitation text |
+| `meeting:read:past_meeting` | Read a meeting that ran again from Zoom with `meetings show` |
 | `meeting:write:meeting` | Create a remote meeting |
 | `meeting:update:meeting` | Update a remote meeting |
 | `meeting:delete:meeting` | Cancel a remote meeting |
@@ -140,7 +141,7 @@ with `zm personal session status --json`.
 
 Archiving does not require meeting write permissions. Changes preview by default; `--yes` applies
 one request. See [recording archives](archive.md#archive-cloud-recordings) or
-[meeting management](remote-meetings.md) after granting the corresponding permissions.
+[meeting management](meeting-management.md) after granting the corresponding permissions.
 
 <a id="before-your-first-zm-pull" />
 

@@ -38,7 +38,7 @@ import { type ContextCapture, captureContextSources } from "./meeting-communicat
 import { addZoomInventoryCommand } from "./meeting-inventory.js"
 import type { ZoomPreparationOptions } from "./meeting-preparation.js"
 import { configuredMeetingSource } from "./meeting-source.js"
-import { guardCommand, permissionKeys } from "./permissions.js"
+import { askBeforeWrite, guardCommand, permissionKeys } from "./permissions.js"
 import { chooseProfile } from "./profile.js"
 import { PROFILE_HELP, recordProfile } from "./profile-word.js"
 import type { ProgramDeps } from "./program.js"
@@ -54,7 +54,7 @@ import {
   ZoomRecordings,
 } from "./recordings.js"
 import type { RemoteOptions } from "./remote-http.js"
-import { ZoomRemoteMeetings } from "./remote-meetings.js"
+import { profileMeetingManagement, storeLeaves, ZoomRemoteMeetings } from "./remote-meetings.js"
 import { observedFetch } from "./request-events.js"
 import type { ZoomLifecycle } from "./run.js"
 import { addAppCommand, addConfigCommands, addSessionCommands } from "./setup-commands.js"
@@ -302,6 +302,14 @@ export const bindZoomProgram = (program: Command, given: ProgramDeps, lifecycle:
       )
     },
     now: deps.now,
+    management: profileMeetingManagement(
+      () => {
+        api()
+        return deps.remoteMeetings ?? new ZoomRemoteMeetings(tokens(), fetchWithSignal(deps.fetch), remoteOptions)
+      },
+      () => profileAccountKey(profile()),
+    ),
+    askFirst: (command) => askBeforeWrite(command, { profile: named, config: getConfig, confirm: ask() }),
     write: (value) => output(bodyOf(value)),
     // inCommandRun would open a second run beside zm's own commandRuns, so a sync would be kept twice.
     inRun: (_command, body) => body(),
@@ -318,10 +326,8 @@ export const bindZoomProgram = (program: Command, given: ProgramDeps, lifecycle:
   }
   const before = new Set(program.commands)
   addZoomMeetingCommands(program, meetingCommands)
-  const leaves = (command: Command): Command[] =>
-    command.commands.length ? command.commands.flatMap(leaves) : [command]
   // The meeting reads cli-core mounts read the store opened before their action; zoom's own commands open it lazily.
-  const storeCommands = new Set(program.commands.filter((group) => !before.has(group)).flatMap(leaves))
+  const storeCommands = storeLeaves(program, before, meetingCommands.management)
   addSessionCommands(program, {
     deps,
     getConfig,
@@ -387,8 +393,6 @@ export const bindZoomProgram = (program: Command, given: ProgramDeps, lifecycle:
     now: deps.now ?? Date.now,
     recordings: () =>
       deps.recordings ?? new ZoomRecordings(tokens(), fetchWithSignal(deps.fetch), remoteOptions, zones),
-    remoteMeetings: () =>
-      deps.remoteMeetings ?? new ZoomRemoteMeetings(tokens(), fetchWithSignal(deps.fetch), remoteOptions),
     archive: deps.archive ?? {
       inspect: inspectArchive,
       verify: verifyArchive,

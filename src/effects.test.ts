@@ -46,15 +46,15 @@ describe("command effects", () => {
     expect(writers.sort()).toEqual([
       "account remove",
       "mcp serve",
-      "remote-meetings cancel",
-      "remote-meetings create",
-      "remote-meetings update",
+      "meetings cancel",
+      "meetings create",
+      "meetings update",
       "session start",
     ])
   })
 
   it("read Zoom for commands that call it", () => {
-    for (const path of ["recordings list", "remote-meetings show", "session status"])
+    for (const path of ["recordings list", "meetings invitation", "session status"])
       expect(effectsOf(path)?.remote, path).toBe("read")
     for (const path of ["watch", "recordings download", "recordings schedule run", "search meetings"])
       expect(effectsOf(path), path).toEqual({ remote: "read", local: "write" })

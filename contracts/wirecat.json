@@ -344,6 +344,58 @@
     {
       "path": [
         "meetings",
+        "create"
+      ],
+      "summary": "create a meeting on the service",
+      "effects": {
+        "remote": "write",
+        "local": "write"
+      },
+      "permission": "meetings.create",
+      "entity": "meeting_change"
+    },
+    {
+      "path": [
+        "meetings",
+        "update"
+      ],
+      "summary": "change a meeting on the service",
+      "effects": {
+        "remote": "write",
+        "local": "write"
+      },
+      "permission": "meetings.update",
+      "entity": "meeting_change"
+    },
+    {
+      "path": [
+        "meetings",
+        "cancel"
+      ],
+      "summary": "cancel a meeting on the service",
+      "effects": {
+        "remote": "write",
+        "local": "write"
+      },
+      "permission": "meetings.cancel",
+      "entity": "meeting_change"
+    },
+    {
+      "path": [
+        "meetings",
+        "invitation"
+      ],
+      "summary": "the invitation text the service writes for a meeting",
+      "effects": {
+        "remote": "read",
+        "local": "read"
+      },
+      "permission": "meetings.invitation",
+      "entity": "meeting_invitation"
+    },
+    {
+      "path": [
+        "meetings",
         "scheduled"
       ],
       "summary": "discover candidate meeting series from one bounded provider page",
@@ -398,22 +450,9 @@
     {
       "path": [
         "meetings",
-        "update"
-      ],
-      "summary": "preview linking a stored meeting to an event; --yes applies it",
-      "effects": {
-        "remote": "none",
-        "local": "write"
-      },
-      "permission": "meetings.update",
-      "entity": "meeting_association"
-    },
-    {
-      "path": [
-        "meetings",
         "link"
       ],
-      "summary": "preview linking a meeting participant to a stored person; --yes applies it",
+      "summary": "preview linking a stored meeting to an event, or a participant to a stored person; --yes applies it",
       "effects": {
         "remote": "none",
         "local": "write"
@@ -870,84 +909,6 @@
     },
     {
       "path": [
-        "remote-meetings",
-        "list"
-      ],
-      "summary": "list upcoming meetings",
-      "effects": {
-        "remote": "read",
-        "local": "read"
-      },
-      "permission": "remote-meetings.list",
-      "entity": "zoom_remote_meeting"
-    },
-    {
-      "path": [
-        "remote-meetings",
-        "show"
-      ],
-      "summary": "show an upcoming meeting",
-      "effects": {
-        "remote": "read",
-        "local": "read"
-      },
-      "permission": "remote-meetings.show",
-      "entity": "zoom_remote_meeting"
-    },
-    {
-      "path": [
-        "remote-meetings",
-        "invitation"
-      ],
-      "summary": "read invitation text",
-      "effects": {
-        "remote": "read",
-        "local": "read"
-      },
-      "permission": "remote-meetings.invitation",
-      "entity": "zoom_remote_invitation"
-    },
-    {
-      "path": [
-        "remote-meetings",
-        "create"
-      ],
-      "summary": "create a Zoom meeting; asks first, --dry-run previews",
-      "effects": {
-        "remote": "write",
-        "local": "write"
-      },
-      "permission": "remote-meetings.create",
-      "entity": "zoom_remote_change"
-    },
-    {
-      "path": [
-        "remote-meetings",
-        "update"
-      ],
-      "summary": "change a Zoom meeting; asks first, --dry-run previews",
-      "effects": {
-        "remote": "write",
-        "local": "write"
-      },
-      "permission": "remote-meetings.update",
-      "entity": "zoom_remote_change"
-    },
-    {
-      "path": [
-        "remote-meetings",
-        "cancel"
-      ],
-      "summary": "cancel a Zoom meeting; asks first, --dry-run previews",
-      "effects": {
-        "remote": "write",
-        "local": "write"
-      },
-      "permission": "remote-meetings.cancel",
-      "entity": "zoom_remote_change"
-    },
-    {
-      "path": [
         "contacts",
         "list"
       ],
@@ -1284,19 +1245,6 @@
     "zoom_archive_job": {
       "fields": [
         "state"
-      ]
-    },
-    "zoom_remote_meeting": {
-      "fields": [
-        "id",
-        "uuid",
-        "title",
-        "type",
-        "started_at",
-        "duration_minutes",
-        "timezone",
-        "agenda",
-        "join_url"
       ]
     },
     "contact": {

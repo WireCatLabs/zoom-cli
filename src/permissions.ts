@@ -14,11 +14,8 @@ import { PROFILE_FREE } from "./commands.js"
 import type { ZoomConfig } from "./config.js"
 import { refusalOf, refuseChangeWhenReadOnly, ZM } from "./read-only.js"
 
-/** A change to Zoom asks first. A built-in default only tightens what the owner set (WC-PERM-7). */
-export const DEFAULT_PERMISSIONS: Readonly<Record<string, Level>> = {
-  ...SHARED_DEFAULT_PERMISSIONS,
-  "remote-meetings": "ask",
-}
+/** A change to Zoom asks first (`meetings.create`…, shared). A built-in default only tightens what the owner set (WC-PERM-7). */
+export const DEFAULT_PERMISSIONS: Readonly<Record<string, Level>> = SHARED_DEFAULT_PERMISSIONS
 
 export const discoveryLevels = (own: Readonly<Record<string, Level>>, env: NodeJS.ProcessEnv) => {
   const ceiling = setupPermissionCeiling(env)
@@ -39,7 +36,7 @@ export const pathOf = (command: Command): string[] => {
   return words
 }
 
-/** The command's path, dotted — `remote-meetings.cancel` — or null for housekeeping. */
+/** The command's path, dotted — `meetings.cancel` — or null for housekeeping. */
 export const permissionKeyForPath = (path: readonly string[]): string | null =>
   path.length === 0 || (HOUSEKEEPING.has(path[0] as string) && keyForCommand(path) === null) ? null : path.join(".")
 export const permissionKeyOf = (command: Command): string | null => permissionKeyForPath(pathOf(command))
@@ -64,10 +61,10 @@ export const parsePermissions = (value: string, known: ReadonlySet<string>): Rec
   try {
     parsed = JSON.parse(value)
   } catch {
-    throw new CliError("validation_error", 'permissions must be a JSON object: {"remote-meetings": "allow"}')
+    throw new CliError("validation_error", 'permissions must be a JSON object: {"meetings.create": "allow"}')
   }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
-    throw new CliError("validation_error", 'permissions must be a JSON object: {"remote-meetings": "allow"}')
+    throw new CliError("validation_error", 'permissions must be a JSON object: {"meetings.create": "allow"}')
   for (const [key, level] of Object.entries(parsed)) {
     if (!known.has(key))
       throw new CliError("validation_error", `no command is called ${key}; a key is a command path, dotted`, {
@@ -127,16 +124,34 @@ export const checkPermission = (command: Command, context: PermissionContext): P
     command.setOptionValue("yes", true)
     return
   }
-  if (!context.confirm)
+  return askOwner(command, at, profile, context.confirm).then(() => {
+    command.setOptionValue("yes", true)
+  })
+}
+
+const askOwner = async (command: Command, at: string, profile: string, confirm: PermissionContext["confirm"]) => {
+  if (!confirm)
     throw new CliError(
       "confirmation_required",
       `${at} asks first for profile ${profile}: add --yes to apply, or --dry-run to preview`,
       { key: at },
     )
-  return context.confirm(`zm: ${pathOf(command).join(" ")} changes Zoom for profile ${profile}. Apply?`).then((yes) => {
-    if (!yes) throw new CliError("cancelled", "not applied")
-    command.setOptionValue("yes", true)
-  })
+  if (!(await confirm(`zm: ${pathOf(command).join(" ")} changes Zoom for profile ${profile}. Apply?`)))
+    throw new CliError("cancelled", "not applied")
+}
+
+/**
+ * cli-core's meeting writes ask through this after they validate the change, so a change Zoom cannot take asks
+ * nothing. `deny` and `readonly` were refused before the command ran (`guardCommand`); `--yes` answers `ask`.
+ */
+export const askBeforeWrite = async (command: Command, context: PermissionContext): Promise<void> => {
+  const key = permissionKeyOf(command)
+  if (!key) return
+  const named = context.profile()
+  const own = named === undefined ? {} : (context.config().permissions[named] ?? {})
+  const { level, key: by } = levelFor(own, key, DEFAULT_PERMISSIONS)
+  if (level !== "ask" || command.optsWithGlobals<{ yes?: boolean }>().yes) return
+  await askOwner(command, by ?? key, named ?? "<profile>", context.confirm)
 }
 
 /** `ZM_READ_ONLY` first, then the profile's permissions; a promise only while a y/N question is open. */

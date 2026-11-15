@@ -56,6 +56,7 @@ export const ZOOM_APP_SCOPES: readonly { scope: string; required: boolean; use: 
   { scope: "cloud_recording:read:list_recording_files", required: false, use: "download recordings and meeting chat" },
   { scope: "user:read:user", required: false, use: "session status --check" },
   { scope: "meeting:read:meeting", required: false, use: "show one meeting, prepare a series" },
+  { scope: "meeting:read:past_meeting", required: false, use: "meetings show reads a meeting that ran from Zoom" },
   { scope: "meeting:read:invitation", required: false, use: "show a meeting's invitation" },
   { scope: "meeting:write:meeting", required: false, use: "create a meeting" },
   { scope: "meeting:update:meeting", required: false, use: "change a meeting" },

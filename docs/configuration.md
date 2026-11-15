@@ -99,7 +99,7 @@ under `files.problems` when other users can read them, each as `path`, `mode` (f
 Each profile says what it may do in `permissions`: a command path, dotted, to a level.
 
 ```sh
-zm personal config set permissions '{"remote-meetings": "allow", "recordings": "readonly"}'
+zm personal config set permissions '{"meetings.create": "allow", "recordings": "readonly"}'
 ```
 
 | Level | Effect |
@@ -109,7 +109,8 @@ zm personal config set permissions '{"remote-meetings": "allow", "recordings": "
 | `ask` | a change to Zoom asks y/N at a terminal; without one it needs `--yes` (exit 7 otherwise) |
 | `allow` | it runs; a change to Zoom applies without `--yes` |
 
-The most specific key wins (`remote-meetings.cancel` over `remote-meetings`). Built in, `remote-meetings` is `ask`;
+The most specific key wins (`recordings.download` over `recordings`). Built in, `meetings.create`, `meetings.update`
+and `meetings.cancel` are `ask`;
 a broader key the owner sets never loosens it, a key as deep does. `--yes` only answers `ask`: it never lifts
 `deny` or `readonly`. In a terminal, settings, login, help and the MCP server are never gated. A key that names no command, or
 a level that is not one of the four, is refused when set; one already saved stops every command until

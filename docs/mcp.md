@@ -31,7 +31,7 @@ serves:
 |---|---|
 | `zm_tools_search` | finds the command for a task — "meetings list", "search", "prepare" — with its arguments |
 | `zm_read` | runs a command that changes nothing: `{ "command": "meetings list", "arguments": {} }` |
-| `zm_write` | runs a command that changes something, such as `remote-meetings create` |
+| `zm_write` | runs a command that changes something, such as `meetings create` |
 
 A call runs the command line itself, so it answers and fails exactly as `zm personal <command> --json` does. The
 server speaks for the profile named in its `args`; a caller cannot change it. `watch` and the server itself are not
@@ -45,8 +45,9 @@ the app if needed. This replaces the profile's permission map, so include any ex
 Denied commands remain in full listings and searches with `availability.available: false`, a reason and
 the permission key. `readonly` marks writes unavailable. Named-profile CLI help and discovery show the
 same current permission information. Calls recheck permissions before running. A command at level `ask` runs without a question, since no one is at a terminal: the built-in `ask` on
-`remote-meetings` lets an agent create, change and cancel Zoom meetings. To keep an agent from doing that, give the
-profile it serves `{"remote-meetings": "readonly"}`.
+`meetings create`, `meetings update` and `meetings cancel` lets an agent change Zoom meetings. To keep an agent from
+doing that, give the profile it serves `{"meetings.create": "readonly", "meetings.update": "readonly",
+"meetings.cancel": "readonly"}`.
 
 In the `mcpServers` format of
 [Claude Desktop's configuration](https://modelcontextprotocol.io/docs/develop/connect-local-servers):

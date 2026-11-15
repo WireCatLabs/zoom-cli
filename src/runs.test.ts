@@ -33,7 +33,7 @@ const setup = async () => {
     }),
     fetch: async (input) => {
       requests.push(String(input))
-      return new Response(JSON.stringify({ meetings: [], next_page_token: "" }))
+      return new Response(JSON.stringify({ meetings: [], next_page_token: "", invitation: "Example invitation" }))
     },
     openBrowser: async () => {
       throw new Error("unexpected browser")
@@ -124,25 +124,25 @@ it("logs each Zoom request's masked operation, status and duration, and the answ
     accessToken: "example-access",
     refreshToken: "example-refresh",
     expiresAt: Number.MAX_SAFE_INTEGER,
-    scopes: ["meeting:read:list_meetings"],
+    scopes: ["meeting:read:invitation"],
   })
-  expect(await run(["--record", "--json", "remote-meetings", "list"], deps)).toBe(0)
+  expect(await run(["--record", "--json", "meetings", "invitation", "123456789"], deps)).toBe(0)
   expect(requests).toHaveLength(1)
   const answerRun = JSON.parse(stdout.join("")).meta.run_id
   const [recorded] = await kept()
-  expect(recorded).toMatchObject({ command: "remote-meetings list", status: "success", profile: TEST_PROFILE })
+  expect(recorded).toMatchObject({ command: "meetings invitation", status: "success", profile: TEST_PROFILE })
   const events = (await readFile(join(recorded?.dir ?? "", "events.jsonl"), "utf8"))
     .trim()
     .split("\n")
     .map((line) => JSON.parse(line))
   expect(events.map((event) => [event.body, event.attributes.operation, event.attributes.status])).toEqual([
-    ["provider.request", "GET /v2/users/me/meetings", undefined],
-    ["provider.response", "GET /v2/users/me/meetings", 200],
+    ["provider.request", "GET /v2/meetings/:id/invitation", undefined],
+    ["provider.response", "GET /v2/meetings/:id/invitation", 200],
   ])
   expect(events[1].attributes).toMatchObject({
     level: "wire",
     method: "GET",
-    endpoint_template: "/v2/users/me/meetings",
+    endpoint_template: "/v2/meetings/:id/invitation",
     transport: "http",
     attempt: 1,
   })
@@ -153,7 +153,7 @@ it("logs each Zoom request's masked operation, status and duration, and the answ
   stdout.length = 0
   expect(await run(["runs", "show", answerRun, "--json"], deps)).toBe(0)
   const shown = JSON.parse(stdout.join(""))
-  expect(shown.item).toMatchObject({ command: "remote-meetings list", event_count: 2 })
+  expect(shown.item).toMatchObject({ command: "meetings invitation", event_count: 2 })
   expect(declaredAnswerIssue(createProgram(deps), "runs show", shown)).toBeUndefined()
 
   stdout.length = 0
@@ -172,14 +172,14 @@ it("keeps a request that never got an answer as an error response in the failed 
     accessToken: "example-access",
     refreshToken: "example-refresh",
     expiresAt: Number.MAX_SAFE_INTEGER,
-    scopes: ["meeting:read:list_meetings"],
+    scopes: ["meeting:read:invitation"],
   })
   deps.fetch = async () => {
     throw new TypeError("fetch failed")
   }
-  expect(await run(["--json", "remote-meetings", "list"], deps)).not.toBe(0)
+  expect(await run(["--json", "meetings", "invitation", "123456789"], deps)).not.toBe(0)
   const [failed] = await kept()
-  expect(failed).toMatchObject({ command: "remote-meetings list", status: "failed" })
+  expect(failed).toMatchObject({ command: "meetings invitation", status: "failed" })
   const events = (await readFile(join(failed?.dir ?? "", "events.jsonl"), "utf8"))
     .trim()
     .split("\n")

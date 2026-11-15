@@ -11,7 +11,6 @@ import {
   listQuery,
   NO_EFFECTS,
   REMOTE_READ,
-  REMOTE_WRITE,
   typedQuery,
   unfilteredQuery,
   withQuery,
@@ -27,13 +26,8 @@ import { validateDownloadOptions } from "./recording-archive.js"
 import type { inspectArchive, verifyArchive } from "./recording-manifest.js"
 import { syncRecordingArchive } from "./recording-sync.js"
 import type { ZoomRecordings } from "./recordings.js"
-import type { MeetingChange, MutationOptions, ZoomRemoteMeetings } from "./remote-meetings.js"
 
 export type RecordingsService = Pick<ZoomRecordings, "list" | "show" | "download" | "catalog">
-export type RemoteMeetingsService = Pick<
-  ZoomRemoteMeetings,
-  "list" | "show" | "invitation" | "create" | "update" | "cancel"
->
 export interface ArchiveService {
   inspect: typeof inspectArchive
   verify: typeof verifyArchive
@@ -46,7 +40,6 @@ export interface ArchiveTranscriptService {
 }
 export interface ArchiveCommandsDeps {
   recordings: () => RecordingsService
-  remoteMeetings: () => RemoteMeetingsService
   archive: ArchiveService
   transcripts: ArchiveTranscriptService
   signal: () => AbortSignal | undefined
@@ -85,28 +78,6 @@ const resumable = (command: Command): Command =>
   command
     .option("--resume", "resume verified partial downloads and archive progress; requires a local profile")
     .option("--no-resume", "disable persistent resume state for this invocation")
-type ChangeOptions = Omit<MeetingChange, "topic"> & { title?: string }
-const change = ({ title, ...options }: ChangeOptions): MeetingChange =>
-  Object.fromEntries(
-    Object.entries({ topic: title, ...options }).filter(
-      ([key, value]) =>
-        value !== undefined && ["topic", "startTime", "durationMinutes", "timezone", "agenda", "type"].includes(key),
-    ),
-  )
-const changes = (command: Command): Command =>
-  command
-    .option("--title <title>", "meeting title")
-    .option("--start-time <time>", "ISO start time with timezone")
-    .option("--duration-minutes <minutes>", "positive meeting duration in minutes", positive)
-    .option("--timezone <zone>", "IANA timezone")
-    .option("--agenda <text>", "meeting agenda")
-    .option("--type <type>", "instant (1) or scheduled (2)", positive)
-    .option("--yes", "apply the change without asking first")
-    .option("--dry-run", "preview only, including when --yes is present")
-const mutation = (options: MutationOptions & { yes?: boolean }, deps: ArchiveCommandsDeps): MutationOptions => {
-  if (options.yes && !options.dryRun) deps.api()
-  return { apply: options.yes, dryRun: options.dryRun, signal: deps.signal(), occurrenceId: options.occurrenceId }
-}
 const localZone = (given?: string): string => {
   try {
     return timezoneOf(given)
@@ -332,79 +303,5 @@ export const addArchiveCommands = (program: Command, deps: ArchiveCommandsDeps):
       ),
     "zm personal recordings archive recover ./zoom-archive --dry-run --json",
     LOCAL_WRITE,
-  )
-
-  const remote = annotate(program.command("remote-meetings"), { effects: NO_EFFECTS }).description(
-    "upcoming Zoom meetings; stored meeting reads remain under meetings",
-  )
-  const remoteQuery = unfilteredQuery("zoom_remote_meeting", ZOOM_ANSWER_ENTITIES["remote-meetings list"].schema)
-  label(
-    withQuery(remote.command("list"), remoteQuery)
-      .description("list upcoming meetings")
-      .action(async (words: string[]) => {
-        listQuery(typedQuery(words), remoteQuery, "remote-meetings list")
-        deps.api()
-        deps.output(wholeList("remote-meetings list", await deps.remoteMeetings().list({ signal: deps.signal() })))
-      }),
-    "zm personal remote-meetings list --dry-run --json",
-    REMOTE_READ,
-  )
-  label(
-    remote
-      .command("show")
-      .description("show an upcoming meeting")
-      .argument("<meeting>", "positive numeric Zoom meeting id")
-      .action(async (id: string) => {
-        deps.api()
-        deps.output(itemOf(await deps.remoteMeetings().show(id, { signal: deps.signal() })))
-      }),
-    "zm personal remote-meetings show 123456789 --dry-run --json",
-    REMOTE_READ,
-  )
-  label(
-    remote
-      .command("invitation")
-      .description("read invitation text")
-      .argument("<meeting>", "positive numeric Zoom meeting id")
-      .action(async (id: string) => {
-        deps.api()
-        deps.output(itemOf(await deps.remoteMeetings().invitation(id, { signal: deps.signal() })))
-      }),
-    "zm personal remote-meetings invitation 123456789 --dry-run --json",
-    REMOTE_READ,
-  )
-  label(
-    changes(remote.command("create").description("create a Zoom meeting; asks first, --dry-run previews")).action(
-      async (options: ChangeOptions & MutationOptions & { yes?: boolean }) =>
-        deps.output(itemOf(await deps.remoteMeetings().create(change(options), mutation(options, deps)))),
-    ),
-    'zm personal remote-meetings create --title "Example planning" --start-time 2026-10-10T15:30:00Z --dry-run --json',
-    REMOTE_WRITE,
-  )
-  label(
-    changes(
-      remote
-        .command("update")
-        .description("change a Zoom meeting; asks first, --dry-run previews")
-        .argument("<meeting>", "positive numeric Zoom meeting id"),
-    ).action(async (id: string, options: ChangeOptions & MutationOptions & { yes?: boolean }) =>
-      deps.output(itemOf(await deps.remoteMeetings().update(id, change(options), mutation(options, deps)))),
-    ),
-    'zm personal remote-meetings update 123456789 --title "Example planning" --dry-run --json',
-    REMOTE_WRITE,
-  )
-  label(
-    remote
-      .command("cancel")
-      .description("cancel a Zoom meeting; asks first, --dry-run previews")
-      .argument("<meeting>", "positive numeric Zoom meeting id")
-      .option("--occurrence-id <id>", "cancel one recurring occurrence")
-      .option("--yes", "cancel without asking first")
-      .option("--dry-run", "preview only, including when --yes is present")
-      .action(async (id: string, options: MutationOptions & { yes?: boolean }) =>
-        deps.output(itemOf(await deps.remoteMeetings().cancel(id, mutation(options, deps)))),
-      ),
-    "zm personal remote-meetings cancel 123456789 --dry-run --json",
-    REMOTE_WRITE,
   )
 }

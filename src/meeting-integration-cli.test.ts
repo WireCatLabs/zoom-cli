@@ -76,7 +76,7 @@ const latest = (rows: string[]) => {
 it("previews links and applies owner-selected event and participant links once", async () => {
   const { deps, output, writes } = await setup()
   expect(
-    await run(["meetings", "update", "meeting:1/1", "--event-id", "2", "--expected-event-id", "none", "--json"], deps),
+    await run(["meetings", "link", "meeting:1/1", "--event-id", "2", "--expected-event-id", "none", "--json"], deps),
   ).toBe(0)
   expect(latest(output)).toMatchObject({ applied: false, change: { event_id: "2", expected_event_id: null } })
   expect(writes).not.toHaveBeenCalled()
@@ -92,7 +92,7 @@ it("previews links and applies owner-selected event and participant links once",
     await run(
       [
         "meetings",
-        "update",
+        "link",
         "meeting:1/1",
         "--event-id",
         "none",
@@ -106,7 +106,7 @@ it("previews links and applies owner-selected event and participant links once",
     ),
   ).toBe(0)
   expect(writes).not.toHaveBeenCalled()
-  expect(await run(["meetings", "update", "meeting:1/1", "--event-id", "none", "--yes", "--json"], deps)).toBe(0)
+  expect(await run(["meetings", "link", "meeting:1/1", "--event-id", "none", "--yes", "--json"], deps)).toBe(0)
   expect(writes).toHaveBeenCalledTimes(1)
   expect(latest(output)).toMatchObject({ applied: true, change: { event_id: null } })
   expect(
@@ -149,7 +149,7 @@ it("rejects malformed links before connecting and refuses foreign meeting scope"
   ])
     expect(await run(["meetings", ...args, "--yes", "--json"], deps)).toBe(2)
   expect(connect).not.toHaveBeenCalled()
-  expect(await run(["meetings", "update", "meeting:2/1", "--event-id", "1", "--yes", "--json"], deps)).toBe(6)
+  expect(await run(["meetings", "link", "meeting:2/1", "--event-id", "1", "--yes", "--json"], deps)).toBe(6)
   expect(writes).not.toHaveBeenCalled()
 })
 
@@ -323,7 +323,7 @@ it("retains memo as the shared note, tag and memory interface in command discove
   expect(await run(["commands", "meetings", "--json"], deps)).toBe(0)
   const paths = latest(output).commands[0].commands.map((command: { path: string[] }) => command.path.join(" "))
   expect(paths.some((path: string) => /^meetings (notes|tags|memories)(?: |$)/.test(path))).toBe(false)
-  expect(paths).toContain("meetings update")
+  expect(paths).toContain("meetings link")
   expect(paths).not.toContain("meetings search-page")
   expect(connect).not.toHaveBeenCalled()
 })

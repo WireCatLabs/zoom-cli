@@ -2,15 +2,11 @@ import { CliError, type SleepLike } from "@wirecat/cli-base"
 import { type BaseEnvironment, createProgram as sharedProgram } from "@wirecat/cli-core/cli"
 import type { MeetingSource, MeetingStore } from "@wirecat/cli-core/meetings"
 import type { Command } from "commander"
-import type {
-  ArchiveService,
-  ArchiveTranscriptService,
-  RecordingsService,
-  RemoteMeetingsService,
-} from "./archive-commands.js"
+import type { ArchiveService, ArchiveTranscriptService, RecordingsService } from "./archive-commands.js"
 import type { ContactsService } from "./contacts-commands.js"
 import type { readDownloadedFiles } from "./files.js"
 import type { RecordingScheduleService } from "./recording-schedule.js"
+import type { RemoteMeetingsService } from "./remote-meetings.js"
 import { runCommand, zoomDefinition } from "./run.js"
 import type { StoreConnection, StoreConnectRequest } from "./store-connection.js"
 import type { TokenManager } from "./tokens.js"

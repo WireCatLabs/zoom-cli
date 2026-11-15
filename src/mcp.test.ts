@@ -5,10 +5,11 @@ import { memoryKeyring } from "@wirecat/cli-base"
 import { afterEach, expect, it, vi } from "vitest"
 import { mcpClient } from "../scripts/testing/mcp.js"
 import { useProfile } from "../scripts/testing/profile.js"
-import type { RecordingsService, RemoteMeetingsService } from "./archive-commands.js"
+import type { RecordingsService } from "./archive-commands.js"
 import { setConfig } from "./config.js"
 import type { ProgramDeps } from "./program.js"
 import { run } from "./program.js"
+import type { RemoteMeetingsService } from "./remote-meetings.js"
 import { createStoreConnector } from "./store-connection.js"
 import { TokenManager } from "./tokens.js"
 
@@ -38,6 +39,7 @@ const setup = async (
     action: "create",
     applied: options?.apply === true,
     request: { method: "POST", path: "/users/me/meetings" },
+    meeting: { id: "900", uuid: null, title: "Example", type: 2, startedAt: null, durationMinutes: null },
   }))
   const deps: ProgramDeps = {
     configPath: join(directory, "config.json"),
@@ -93,7 +95,7 @@ it("offers finite commands and reserves authority changes for an explicit grant"
   const { call } = await setup()
   const all = (await call("zm_tools_search", {})).structuredContent.items.map((item) => item.command)
   for (const offered of [
-    "remote-meetings create",
+    "meetings create",
     "guide",
     "session status",
     "config show",
@@ -130,25 +132,25 @@ it("offers finite commands and reserves authority changes for an explicit grant"
 it("takes ask as yes, since no one is at a terminal, and marks denied commands unavailable", async () => {
   const asked = await setup()
   const created = await asked.call("zm_write", {
-    command: "remote-meetings create",
-    arguments: { title: "Example", type: "1" },
+    command: "meetings create",
+    arguments: { title: "Example", start_time: "2026-11-20T10:00:00Z" },
   })
   expect(created.isError).toBeFalsy()
   expect(asked.created).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ apply: true }))
 
-  const denied = await setup({ "remote-meetings": "readonly" })
+  const denied = await setup({ "meetings.create": "readonly" })
   const all = (await denied.call("zm_tools_search", {})).structuredContent.items.map(
     (item: { command: string }) => item.command,
   )
-  expect(all).toContain("remote-meetings list")
-  expect(all).toContain("remote-meetings create")
-  const found = (
-    await denied.call("zm_tools_search", { query: "remote-meetings create" })
-  ).structuredContent.items.find((item) => item.command === "remote-meetings create")
-  expect(found).toMatchObject({ availability: { available: false, permission: "remote-meetings.create" } })
+  expect(all).toContain("meetings list")
+  expect(all).toContain("meetings create")
+  const found = (await denied.call("zm_tools_search", { query: "meetings create" })).structuredContent.items.find(
+    (item) => item.command === "meetings create",
+  )
+  expect(found).toMatchObject({ availability: { available: false, permission: "meetings.create" } })
   const refused = await denied.call("zm_write", {
-    command: "remote-meetings create",
-    arguments: { title: "Example", type: "1" },
+    command: "meetings create",
+    arguments: { title: "Example", start_time: "2026-11-20T10:00:00Z" },
   })
   expect(refused.isError).toBe(true)
   expect(denied.created).not.toHaveBeenCalled()
@@ -156,7 +158,10 @@ it("takes ask as yes, since no one is at a terminal, and marks denied commands u
 
 it("answers a command's own failure as its error object", async () => {
   const { call } = await setup()
-  const missing = await call("zm_read", { command: "meetings show", arguments: { meeting: "999999" } })
+  const missing = await call("zm_read", {
+    command: "meetings show",
+    arguments: { meeting: "999999", backend: "archive" },
+  })
   expect(missing.isError).toBe(true)
   expect(missing.structuredContent.error.code).toBe("not_found")
 })
@@ -235,8 +240,8 @@ it("serves under ZM_READ_ONLY, reads still answer and Zoom changes are refused",
   const { call } = await setup(undefined, undefined, { env: { ...base.deps.env, ZM_READ_ONLY: "1" } })
   expect((await call("zm_read", { command: "meetings list", arguments: {} })).isError).toBeFalsy()
   const refused = await call("zm_write", {
-    command: "remote-meetings create",
-    arguments: { title: "Example", type: "1" },
+    command: "meetings create",
+    arguments: { title: "Example", start_time: "2026-11-20T10:00:00Z" },
   })
   expect(refused.isError).toBe(true)
   expect(refused.structuredContent.error.code).toBe("permission_error")
@@ -251,7 +256,7 @@ it("makes a permission stricter for one server with --permission, and refuses on
 
   const err: string[] = []
   expect(
-    await run(["work", "mcp", "serve", "--permission", "remote-meetings=allow"], {
+    await run(["work", "mcp", "serve", "--permission", "meetings.create=allow"], {
       ...deps,
       diagnostic: (text) => err.push(text),
     }),

@@ -602,7 +602,7 @@ it("closes after command failures and preserves the primary error if close also 
         throw new Error("private close detail")
       },
     })
-  expect(await run(["meetings", "show", "999"], deps)).toBe(6)
+  expect(await run(["meetings", "show", "999", "--backend", "archive"], deps)).toBe(6)
   expect(stderr).toHaveLength(1)
   expect(JSON.parse(stderr[0] ?? "{}").error.code).toBe("not_found")
   expect(closes).toBe(1)

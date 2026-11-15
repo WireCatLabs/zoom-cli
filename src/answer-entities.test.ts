@@ -154,9 +154,13 @@ it("answers every command that declares an entity with that entity's schema", as
   expect(declared.sort()).toEqual(
     [...runs.map(([path]) => path), "meetings projects evidence", "meetings projects scan", "meetings prepare"]
       // checked where their own fixtures are: account-removal, offline-archive-cli, meeting-project-evidence,
-      // contacts, runs and the preparation tests
+      // contacts, runs and the preparation tests; the management writes in cli-execution and permissions
       .concat(
         [
+          "meetings create",
+          "meetings update",
+          "meetings cancel",
+          "meetings invitation",
           "account remove",
           "meetings scheduled",
           "search recordings",
@@ -182,7 +186,7 @@ it("keeps search meetings fields asked of a saved search", async () => {
   const { answer } = await fixture()
   await answer(["searches", "create", "weekly", "example plan"])
   const kept = await answer(["searches", "run", "weekly", "--json=scope,offset_ms"])
-  expect(Object.keys(kept.items?.[0] ?? {}).sort()).toEqual(["offset_ms", "scope"])
+  expect(Object.keys(kept.items?.[0] ?? {}).sort()).toEqual(["offset_ms", "scope", "untrusted"])
 })
 
 it("stats meetings history with --no-record keeps no search", async () => {

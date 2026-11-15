@@ -71,7 +71,7 @@ notes about earlier calls and linked people/projects, and directly sourced follo
 series fit. Tell me what is missing or uncertain. Do not change anything.
 ```
 
-Use the provider series ID from [the Zoom schedule](remote-meetings.md), with digits and no spaces,
+Use the provider series ID from [the Zoom schedule](#find-a-scheduled-meeting-series), with digits and no spaces,
 rather than the internal ID printed by `meetings list`. In a terminal:
 
 ```sh
@@ -278,7 +278,7 @@ chat to read.
 | Import transcript files | `meetings import`, folder `watch` | Local files to database |
 | Back up available recording assets | `recordings` | Zoom to the destination you name |
 | Prepare one upcoming series with saved context | `meetings prepare` | Zoom schedule plus local database |
-| Read the Zoom schedule or change a meeting | `remote-meetings` | Zoom account |
+| Change a Zoom meeting or read its invitation | `meetings create\|update\|cancel\|invitation` | Zoom account |
 
 A successful local read does not prove Zoom still has the same content. A successful cloud download
 does not import that transcript into the meeting database until you request archive import.
@@ -305,7 +305,7 @@ does not import that transcript into the meeting database until you request arch
 | `meetings prepare <series-id>` | gather upcoming proof and cited stored context for one selected series |
 | `meetings projects scan <ref>` | suggest existing projects from a bounded stored meeting evidence page; no links saved |
 | `meetings projects evidence <project> [query...]` | read bounded canonical-name/key/alias evidence for an existing project |
-| `meetings update <reference>`, `meetings link <reference>` | preview or apply owner-selected stored links |
+| `meetings link <reference>` | preview or apply owner-selected stored event and person links |
 | `meetings transcribe <meeting> <file> --model <model>` | preview or locally recognize a recording (MP4, M4A, WAV) into an independent transcript |
 | `models list\|download` | the speech models for transcription; download or repair one |
 | `meetings passage <reference>`, `meetings evidence <reference>`, `meetings context <person>` | read bounded evidence or identity-linked person context |
@@ -324,15 +324,15 @@ does not import that transcript into the meeting database until you request arch
 | `recordings archive transcript <directory>` | read verified archived WebVTT cues without a database |
 | `search recordings <directory> <query>` | search verified archived cue text without a database |
 | `recordings archive import <directory>` | verify archived VTT assets and append them to stored occurrences |
-| `remote-meetings list\|show\|invitation` | read upcoming Zoom meetings and invitations |
-| `remote-meetings create\|update\|cancel` | a simple Zoom meeting change, asked first; `--dry-run` previews |
+| `meetings invitation <meeting>` | read a Zoom meeting's invitation |
+| `meetings create\|update\|cancel` | a simple Zoom meeting change, asked first; `--dry-run` previews |
 | `mcp serve [--profiles a,b\|all]` | serve zm's commands to an MCP agent over stdio, as the profile's permissions allow |
 | `stats meetings show\|top` | talk time, lines and words by speaker and by week |
 | `stats meetings history` | meetings, minutes and transcripts per day, week or series |
 | `skill show`, `skill install --for agents` | print or explicitly install the packaged agent guide |
 
-Stored `meetings` commands use local database ids; `remote-meetings` uses Zoom's numeric ids.
-[Managing Zoom meetings](remote-meetings.md) covers the write commands.
+Stored meeting reads take references or local ids; `meetings create|update|cancel|invitation` take Zoom's meeting
+number. [Managing Zoom meetings](meeting-management.md) covers the write commands.
 
 ## Output for scripts and agents
 

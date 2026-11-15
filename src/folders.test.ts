@@ -93,7 +93,7 @@ describe("zm folders", () => {
 
 it("tells WireCat Desktop the hosts zm's fetch is limited to, and each command's permission key", () => {
   expect(WCAT.hosts).toBe(ZOOM_HOSTS)
-  expect(WCAT.permissionOf?.(["remote-meetings", "list"])).toBe(permissionKeyForPath(["remote-meetings", "list"]))
+  expect(WCAT.permissionOf?.(["meetings", "create"])).toBe(permissionKeyForPath(["meetings", "create"]))
 })
 
 it("drops an override naming the owner's own folder before cli-core reads it, and keeps a real one", () => {

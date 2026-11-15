@@ -55,27 +55,6 @@ const archiveReceipt = v.strictObject({
   availability: v.optional(v.literal("unknown")),
   checkpoint_revision: v.optional(v.nullable(count)),
 })
-const remote = v.strictObject({
-  id: text,
-  uuid: nullableText,
-  title: nullableText,
-  type: v.nullable(v.number()),
-  started_at: nullableText,
-  duration_minutes: v.nullable(v.number()),
-  timezone: nullableText,
-  agenda: nullableText,
-  join_url: nullableText,
-})
-const remoteChange = v.strictObject({
-  action: v.picklist(["create", "update", "cancel"]),
-  applied: flag,
-  request: v.strictObject({
-    method: v.picklist(["POST", "PATCH", "DELETE"]),
-    path: text,
-    body: v.optional(v.record(text, v.union([text, v.number()]))),
-  }),
-  meeting: v.optional(remote),
-})
 const schedule = v.strictObject({
   version: v.literal(1),
   id: text,
@@ -161,15 +140,6 @@ export const ZOOM_ANSWER_ENTITIES = {
   "recordings schedule create": { name: "zoom_archive_schedule_change", schema: scheduleReceipt },
   "recordings schedule disable": { name: "zoom_archive_schedule_change", schema: scheduleReceipt },
   "recordings schedule run": { name: "zoom_archive_receipt", schema: archiveReceipt },
-  "remote-meetings list": { name: "zoom_remote_meeting", schema: remote },
-  "remote-meetings show": { name: "zoom_remote_meeting", schema: remote },
-  "remote-meetings invitation": {
-    name: "zoom_remote_invitation",
-    schema: v.strictObject({ id: text, invitation: text }),
-  },
-  "remote-meetings create": { name: "zoom_remote_change", schema: remoteChange },
-  "remote-meetings update": { name: "zoom_remote_change", schema: remoteChange },
-  "remote-meetings cancel": { name: "zoom_remote_change", schema: remoteChange },
   "zoom search": { name: "zoom_search_hit", schema: searchHit },
   "meetings embeddings": { name: "meeting_embedding", schema: MEETING_RESULT_ENTITIES.meeting_embedding, shared: true },
   "meetings sync": { name: "meeting_ingestion", schema: MEETING_RESULT_ENTITIES.meeting_ingestion, shared: true },
@@ -181,7 +151,6 @@ export const ZOOM_ANSWER_ENTITIES = {
   },
   watch: { name: "meeting_ingestion", schema: MEETING_RESULT_ENTITIES.meeting_ingestion, shared: true },
   "meetings export": { name: "meeting_export", schema: MEETING_RESULT_ENTITIES.meeting_export, shared: true },
-  "meetings update": { name: "meeting_association", schema: MEETING_RESULT_ENTITIES.meeting_association, shared: true },
   "meetings link": { name: "meeting_association", schema: MEETING_RESULT_ENTITIES.meeting_association, shared: true },
   "meetings transcribe": {
     name: "meeting_transcription",

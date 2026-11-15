@@ -125,7 +125,7 @@ describe("command execution controls", () => {
       ["session", "status", "--check"],
       ["recordings", "list"],
       ["meetings", "sync"],
-      ["remote-meetings", "create", "--title", "Example", "--type", "1", "--yes"],
+      ["meetings", "create", "--title", "Example", "--start-time", "2026-10-10T15:30:00Z", "--yes"],
     ])
       expect([3, 5]).toContain(await run(["--offline", ...args], deps))
     expect(stdout).toEqual([])
@@ -196,7 +196,18 @@ describe("command execution controls", () => {
     }
     expect(
       await run(
-        ["example", "--timeout", "1s", "remote-meetings", "create", "--title", "Example", "--type", "1", "--yes"],
+        [
+          "example",
+          "--timeout",
+          "1s",
+          "meetings",
+          "create",
+          "--title",
+          "Example",
+          "--start-time",
+          "2026-10-10T15:30:00Z",
+          "--yes",
+        ],
         deps,
       ),
     ).toBe(14)
@@ -383,102 +394,45 @@ describe("archive and explicit remote command wiring", () => {
     expect(await run(["recordings", "archive", "recover", "invented", "--yes", "--dry-run"], deps)).toBe(0)
     expect(recover).toHaveBeenLastCalledWith("invented", expect.objectContaining({ apply: false }))
   })
-  it("previews remote mutations without login, and --dry-run wins over --yes", async () => {
+  it("previews meeting changes without login, and --dry-run wins over --yes", async () => {
     const { deps, stdout } = await setup()
     useProfile(deps.configPath)
     vi.spyOn(deps.tokens.options.keyring, "get").mockImplementation(() => {
       throw new Error("unexpected keyring")
     })
-    expect(
-      await run(
-        [
-          "--offline",
-          "--json",
-          "remote-meetings",
-          "create",
-          "--title",
-          "Example planning",
-          "--start-time",
-          "2026-10-10T15:30:00Z",
-          "--duration-minutes",
-          "30",
-          "--timezone",
-          "UTC",
-          "--agenda",
-          "Example agenda",
-          "--dry-run",
-        ],
-        deps,
-      ),
-    ).toBe(0)
-    expect(value(stdout)).toMatchObject({
-      action: "create",
-      applied: false,
-      request: { method: "POST", body: { topic: "Example planning", duration: 30 } },
-    })
-    expect(
-      await run(
-        [
-          "--json",
-          "remote-meetings",
-          "update",
-          "123456789",
-          "--title",
-          "Example",
-          "--start-time",
-          "2026-10-10T15:30:00Z",
-          "--duration-minutes",
-          "45",
-          "--timezone",
-          "UTC",
-          "--agenda",
-          "Invented agenda",
-          "--type",
-          "2",
-          "--yes",
-          "--dry-run",
-        ],
-        deps,
-      ),
-    ).toBe(0)
-    expect(value(stdout)).toMatchObject({
-      action: "update",
-      applied: false,
-      request: {
-        body: {
-          start_time: "2026-10-10T15:30:00.000Z",
-          duration: 45,
-          timezone: "UTC",
-          agenda: "Invented agenda",
-          type: 2,
-        },
-      },
-    })
-    expect(
-      await run(
-        [
-          "--json",
-          "remote-meetings",
-          "cancel",
-          "123456789",
-          "--occurrence-id",
-          "example-occurrence",
-          "--yes",
-          "--dry-run",
-        ],
-        deps,
-      ),
-    ).toBe(0)
-    expect(value(stdout)).toMatchObject({
-      action: "cancel",
-      applied: false,
-      request: { path: "/meetings/123456789?occurrence_id=example-occurrence" },
-    })
+    deps.fetch = async () => {
+      throw new Error("unexpected network")
+    }
+    for (const args of [
+      ["create", "--title", "Example planning", "--start-time", "2026-10-10T15:30:00Z", "--duration-minutes", "30"],
+      ["update", "123456789", "--title", "Example", "--agenda", "Invented agenda", "--yes"],
+      ["cancel", "123456789", "--occurrence-id", "example-occurrence", "--yes"],
+    ]) {
+      expect(await run(["--json", "meetings", ...args, "--dry-run"], deps)).toBe(0)
+      expect(value(stdout)).toMatchObject({
+        preview: true,
+        path: ["meetings", args[0]],
+        permission: { key: `meetings.${args[0]}` },
+        effects: { action_invoked: false, service_contacted: false },
+      })
+    }
   })
-  it("dispatches explicit mutations once and keeps remote reads separate from stored reads", async () => {
-    const { deps, stdout } = await setup()
+  it("dispatches each management call once to the selected account", async () => {
+    const { deps, stdout, stderr } = await setup()
     setConfig(deps.configPath, "zoom.client_id", "example-client")
+    useProfile(deps.configPath, "example")
     const calls: string[] = []
+    const shown = {
+      id: meeting.id,
+      uuid: meeting.uuid,
+      title: meeting.title,
+      startedAt: meeting.startedAt,
+      type: 2,
+      durationMinutes: 30,
+      timezone: "UTC",
+      agenda: null,
+      joinUrl: null,
+    }
     deps.remoteMeetings = {
       list: async () => {
         calls.push("list")
@@ -505,7 +459,12 @@ describe("archive and explicit remote command wiring", () => {
       create: async (_change, options) => {
         expect(options?.apply).toBe(true)
         calls.push("create")
-        return { action: "create", applied: true, request: { method: "POST", path: "/users/me/meetings" } }
+        return {
+          action: "create",
+          applied: true,
+          request: { method: "POST", path: "/users/me/meetings" },
+          meeting: { ...shown },
+        }
       },
       update: async () => {
         calls.push("update")
@@ -517,15 +476,34 @@ describe("archive and explicit remote command wiring", () => {
       },
     }
     for (const args of [
-      ["list"],
-      ["show", "123456789"],
       ["invitation", "123456789"],
-      ["create", "--title", "Example", "--type", "1", "--yes"],
-      ["update", "123456789", "--title", "Example", "--yes"],
+      [
+        "create",
+        "--title",
+        "Example",
+        "--start-time",
+        "2026-10-10T15:30:00Z",
+        "--timezone",
+        "UTC",
+        "--agenda",
+        "A",
+        "--yes",
+      ],
+      [
+        "update",
+        "123456789",
+        "--start-time",
+        "2026-10-10T16:00:00Z",
+        "--duration-minutes",
+        "45",
+        "--timezone",
+        "UTC",
+        "--yes",
+      ],
       ["cancel", "123456789", "--yes"],
     ])
-      expect(await run(["--json", "remote-meetings", ...args], deps)).toBe(0)
-    expect(calls).toEqual(["list", "show", "invitation", "create", "update", "cancel"])
+      expect(await run(["--json", "meetings", ...args], deps), stderr.join("")).toBe(0)
+    expect(calls).toEqual(["invitation", "create", "update", "cancel"])
     expect(value(stdout).applied).toBe(true)
   })
 })
@@ -764,19 +742,19 @@ it("closes a connection that arrives after cancellation and never exposes its da
   expect(stdout).toEqual([])
 })
 
-it("refuses malformed provider answers and preserves uncertainty for acknowledged changes", async () => {
+it("preserves uncertainty when Zoom acknowledges a change without its details", async () => {
   const { deps, stdout, stderr } = await setup()
   setConfig(deps.configPath, "zoom.client_id", "example-client")
   useProfile(deps.configPath, "example")
   deps.remoteMeetings = {
-    show: async () => ({ private: "fixture hidden provider data" }),
     create: async () => ({ applied: true, private: "fixture hidden provider data" }),
   } as unknown as NonNullable<ProgramDeps["remoteMeetings"]>
-  expect(await run(["remote-meetings", "show", "123456789", "--json"], deps)).toBe(13)
-  expect(value(stderr).error.code).toBe("invalid_response")
-  expect(await run(["remote-meetings", "create", "--title", "Example", "--type", "1", "--yes", "--json"], deps)).toBe(
-    14,
-  )
+  expect(
+    await run(
+      ["meetings", "create", "--title", "Example", "--start-time", "2026-10-10T15:30:00Z", "--yes", "--json"],
+      deps,
+    ),
+  ).toBe(14)
   expect(value(stderr).error.code).toBe("outcome_unknown")
   expect(stdout).toEqual([])
   expect(stderr.join("")).not.toContain("fixture hidden provider data")

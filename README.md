@@ -27,7 +27,7 @@ what you promised in yesterday's call, and get the answer with a reference to th
 > **You:** I have a call with Bob Sample at three. What did we agree last time, and what do I owe him?
 
 ```sh
-zm personal remote-meetings list --json                      # your upcoming meetings
+zm personal meetings scheduled --json                        # your scheduled series
 zm personal meetings people "Bob Sample" --json              # him among past participants
 zm personal search meetings "quote" --since-time 2026-09-01 --json
 zm personal meetings passage meeting:1/42/57/118 --format markdown  # the line and its context
@@ -147,13 +147,13 @@ More: [compared with other tools](https://github.com/WireCatLabs/zoom-cli/blob/m
 | Bring meetings in | `meetings sync [--since-time <time>] [--lookback-days <days>]`, `meetings import <folder>`, `watch [api\|files] [folder] --jsonl` |
 | Read stored meetings | `meetings list`, `meetings show <meeting>`, `meetings transcript <meeting>`, `meetings summary <meeting>`, `meetings export <meeting> --format markdown\|vtt`, `events list` |
 | Search | `search meetings <query>`, `meetings people <query>`, `search all <query>` |
-| Evidence and people | `meetings passage <reference>`, `meetings evidence <reference>`, `meetings context <person>`, `meetings link <reference>`, `meetings update <reference>`, `meetings task-proposal <reference> --type <type>` |
+| Evidence and people | `meetings passage <reference>`, `meetings evidence <reference>`, `meetings context <person>`, `meetings link <reference>`, `meetings task-proposal <reference> --type <type>` |
 | Several reads at once | `batch <file>` runs bounded `search meetings` and `meetings passage` requests from a JSON file |
 | Search by meaning | `search meetings <query> --model <model>`, `meetings embeddings --model <model>` |
 | Local transcription | `meetings transcribe <meeting> <file> --model <model>` |
 | Cloud recordings | `recordings list`, `recordings show <meeting>`, `recordings download <meeting> --output-dir <dir>`, `recordings download --since-time <date> --until-time <date> --output-dir <dir> --jsonl`, `recordings schedule create\|list\|show\|run\|disable` |
 | Local archive | `recordings archive show\|check\|locks\|recover <directory>`, `recordings archive transcript\|import <directory>`, `search recordings <directory> <query>` |
-| Zoom meetings | `remote-meetings list\|show\|invitation`, `remote-meetings create\|update\|cancel` |
+| Zoom meetings | `meetings invitation <meeting>`, `meetings create\|update\|cancel` |
 | Zoom contacts | `contacts list [name:… email:… type:company\|external]`, `contacts show <member id\|email>` |
 | What zm did | `runs list [query]`, `runs show <run-id> [--problems]`, `runs path <run-id>`; `--record` keeps a successful run too |
 | Zoom's own search | `zoom search`: chat, docs and meetings zm does not archive, read live |
@@ -278,7 +278,8 @@ with the profile it speaks for:
 
 The server offers zm's commands as the three tools every WireCat CLI serves — `zm_tools_search`, `zm_read`,
 `zm_write` — and runs each call as the command line would. The profile's [permissions][docs/configuration.md]
-decide what it offers: `{"remote-meetings": "readonly"}` keeps an agent from changing Zoom meetings. A desktop app
+decide what it offers: `{"meetings.create": "readonly", "meetings.update": "readonly", "meetings.cancel": "readonly"}` keeps an agent
+from changing Zoom meetings. A desktop app
 may need the full path from `command -v zm` (Linux/macOS) or `where.exe zm` (Windows), and the same `ZM_CONFIG_DIR`
 or `MESSAGING_STORE` in the entry's `env`.
 
@@ -288,15 +289,15 @@ More: [MCP and skills][docs/mcp.md] · [MCP and skills on wirecat.dev][wirecat/e
 ## Manage Zoom meetings
 
 ```sh
-zm personal remote-meetings create --title "Example planning" --start-time 2026-10-20T10:00:00Z --duration-minutes 30 --dry-run --json
-zm personal remote-meetings cancel 123456789 --dry-run --json
+zm personal meetings create --title "Example planning" --start-time 2026-10-20T10:00:00Z --duration-minutes 30 --dry-run --json
+zm personal meetings cancel 123456789 --dry-run --json
 ```
 
 Creation, updates and cancellation preview until you add `--yes`, and are never retried
-automatically. An uncertain outcome exits with code 14: check Zoom before repeating. Remote ids are
-Zoom's numeric ids; stored `meetings` commands use local ids.
+automatically. An uncertain outcome exits with code 14: check Zoom before repeating. These take Zoom's meeting
+number.
 
-More: [managing Zoom meetings][docs/remote-meetings.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
+More: [managing Zoom meetings][docs/meeting-management.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
 
 ## Output, limits and deadlines
 
@@ -376,7 +377,7 @@ repository's issues.
 | [Search and evidence][docs/search.md] | word search, evidence, people, links, memo |
 | [Topic search][docs/topic-search.md] | search by meaning with a model you choose |
 | [MCP and skills][docs/mcp.md] | the skill, the MCP server, optional tools |
-| [Managing Zoom meetings][docs/remote-meetings.md] | upcoming meetings, create, update, cancel |
+| [Managing Zoom meetings][docs/meeting-management.md] | invitation, create, update, cancel |
 | [Commands][docs/commands.md] | every command, option and exit code (generated) |
 | [Configuration][docs/configuration.md] | settings and environment variables |
 | [Troubleshooting][docs/troubleshooting.md] | by symptom |
@@ -421,7 +422,7 @@ More: [development setup][docs/dev/development.md] · [test matrix][docs/dev/tes
 [docs/index.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/index.md
 [docs/installation.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/installation.md
 [docs/mcp.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/mcp.md
-[docs/remote-meetings.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/remote-meetings.md
+[docs/meeting-management.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/meeting-management.md
 [docs/search.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/search.md
 [docs/security.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/security.md
 [docs/sessions.md]: https://github.com/WireCatLabs/zoom-cli/blob/main/docs/sessions.md
