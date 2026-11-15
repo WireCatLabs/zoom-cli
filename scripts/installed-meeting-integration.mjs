@@ -142,15 +142,7 @@ export const installedMeetingIntegration = async ({
   assert.equal(before.present, false)
   assert.equal(before.involvement, false)
   assert.deepEqual(before.audit, [])
-  const eventArgs = [
-    "meetings",
-    "update",
-    reference,
-    "--event-id",
-    String(target.eventId),
-    "--expected-event-id",
-    "none",
-  ]
+  const eventArgs = ["meetings", "link", reference, "--event-id", String(target.eventId), "--expected-event-id", "none"]
   assert.equal(json(...eventArgs).applied, false)
   assert.equal(json(...eventArgs, "--yes", "--dry-run").applied, false)
   assert.equal(native("audit", target).eventId, null)
@@ -161,7 +153,7 @@ export const installedMeetingIntegration = async ({
   invoke(["--json", ...eventArgs, "--yes"], 3)
   const unlinked = json(
     "meetings",
-    "update",
+    "link",
     reference,
     "--event-id",
     "none",
