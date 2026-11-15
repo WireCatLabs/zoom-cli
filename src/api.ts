@@ -58,6 +58,42 @@ const requiredString = (value: unknown): string => {
  */
 const PAST_MEETING = "meeting:read:past_meeting"
 
+const DAY = 86_400_000
+// Zoom recommends a month or less for past instances, lists 6 months of past meetings, and takes 300 per page.
+const FIND_SPAN = 30 * DAY
+const FIND_REACH = 183 * DAY
+const FIND_PAGE = 300
+const FIND_SERIES = 20
+interface FindCursor {
+  floor: number
+  end: number
+  token: string | null
+  skip: number
+}
+const findCursorOf = (cursor: string): FindCursor => {
+  let value: unknown
+  try {
+    value = JSON.parse(cursor)
+  } catch {
+    throw new CliError("validation_error", "this Zoom page cursor is not one zm gave")
+  }
+  const row = object(value)
+  const whole = [row.floor, row.end, row.skip].every((value) => Number.isSafeInteger(value))
+  if (!whole || (row.token !== null && !string(row.token)))
+    throw new CliError("validation_error", "this Zoom page cursor is not one zm gave")
+  return {
+    floor: row.floor as number,
+    end: row.end as number,
+    token: (row.token as string | null) ?? null,
+    skip: row.skip as number,
+  }
+}
+/** Zoom's `from`/`to` are whole days, read in `timezone`; the exact window is applied to each occurrence. */
+const zoomRange = (start: number, end: number) => ({
+  from: new Date(start).toISOString().slice(0, 10),
+  to: new Date(end).toISOString().slice(0, 10),
+  timezone: "UTC",
+})
 export const ZOOM_FINDS: MeetingFinds = Object.freeze({ fields: {}, upcoming: false })
 
 export class ZoomApiSource implements MeetingSource {
@@ -106,11 +142,11 @@ export class ZoomApiSource implements MeetingSource {
   // A listed row's uuid is the meeting's, not the instance that ran, for every type: participants,
   // transcript and summary answer only for the instance uuid. This runs before the pull loop's
   // per-meeting guard, so a series Zoom no longer knows must not fail the whole sync.
-  private async instances(seriesId: string): Promise<Record<string, unknown>[]> {
+  private async instances(seriesId: string, range?: URLSearchParams): Promise<Record<string, unknown>[]> {
     let body: Record<string, unknown> | null
     try {
       body = await this.request(
-        `/past_meetings/${encodeURIComponent(seriesId)}/instances`,
+        `/past_meetings/${encodeURIComponent(seriesId)}/instances${range ? `?${range}` : ""}`,
         "meeting:read:list_past_instances",
       )
     } catch (error) {
@@ -197,22 +233,44 @@ export class ZoomApiSource implements MeetingSource {
     return meetings
   }
   readonly finds = ZOOM_FINDS
-  /** One page of past series and the instances of each that ran in `window`: 1 + one request per series. */
+  /**
+   * One stretch of at most `FIND_SPAN` of `window`, newest first, and the instances of at most `FIND_SERIES` of its
+   * series: 1 + `FIND_SERIES` requests. The cursor carries on in the same stretch, then the one before it; without a
+   * lower bound, back as far as Zoom lists (`FIND_REACH`). cli-core's page cap then says the answer is not complete.
+   */
   async find(window: MeetingWindow, _terms: readonly MeetingTerm[], cursor: string | null): Promise<FoundMeetings> {
-    const query = new URLSearchParams({ type: "previous_meetings", page_size: "100" })
-    if (cursor) query.set("next_page_token", cursor)
+    const at = cursor === null ? undefined : findCursorOf(cursor)
+    const end = at?.end ?? window.to ?? Date.now()
+    const floor = at?.floor ?? window.from ?? end - FIND_REACH
+    const start = Math.max(floor, end - FIND_SPAN)
+    const range = zoomRange(start, end)
+    const query = new URLSearchParams({ type: "previous_meetings", page_size: String(FIND_PAGE), ...range })
+    if (at?.token) query.set("next_page_token", at.token)
     const body = await this.request(`/users/me/meetings?${query}`, "meeting:read:list_meetings")
     if (!body || !Array.isArray(body.meetings)) throw new CliError("invalid_response", "Zoom returned an invalid list")
-    const inWindow = (at: number) =>
-      (window.from === undefined || at >= window.from) && (window.to === undefined || at <= window.to)
+    const rows = body.meetings.map(object)
+    const skip = at?.skip ?? 0
+    const taken = rows.slice(skip, skip + FIND_SERIES)
+    const inWindow = (time: number) =>
+      (window.from === undefined || time >= window.from) && (window.to === undefined || time <= window.to)
     const seen = new Set<string>()
     const meetings: FoundMeeting[] = []
-    for (const row of body.meetings.map(object))
-      for (const meeting of this.occurrences(row, await this.instances(seriesIdOf(row)), inWindow, seen))
+    const ranges = new URLSearchParams({ from: range.from, to: range.to })
+    for (const row of taken)
+      for (const meeting of this.occurrences(row, await this.instances(seriesIdOf(row), ranges), inWindow, seen))
         meetings.push({ meeting })
-    const next = string(body.next_page_token)
-    if (next !== null && next === cursor) throw new CliError("invalid_response", "Zoom repeated a pagination token")
-    return { meetings, next: next || null }
+    const token = string(body.next_page_token) || null
+    if (token !== null && token === at?.token)
+      throw new CliError("invalid_response", "Zoom repeated a pagination token")
+    const next: FindCursor | null =
+      skip + taken.length < rows.length
+        ? { floor, end, token: at?.token ?? null, skip: skip + taken.length }
+        : token !== null
+          ? { floor, end, token, skip: 0 }
+          : start > floor
+            ? { floor, end: start - 1, token: null, skip: 0 }
+            : null
+    return { meetings, next: next && JSON.stringify(next) }
   }
   /**
    * One meeting that ran, by its instance uuid or by its meeting number (then its latest instance): always answered

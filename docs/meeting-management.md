@@ -37,6 +37,11 @@ meeting in Zoom. Use [stored search and evidence](search.md) for the preparation
 
 ## Meetings that ran
 
+`meetings list` also asks Zoom for meetings that ran and are not stored yet. It reads one month of the `started_at`
+window at a time, newest first, at most 20 meetings' runs a request; without `started_at` it starts at today. When
+it stops before the window's end, the answer says it is not complete and asks for a narrower `started_at`.
+`--backend archive` reads only the stored meetings.
+
 `meetings show <id>` reads a meeting that ran again from Zoom, with its people and transcript. The id is the
 instance uuid that `meetings sync` stores, or a meeting number, which answers with its latest instance. This needs
 the optional `meeting:read:past_meeting` scope.

@@ -36,6 +36,7 @@ it("reads Zoom live through the configured API source, not a detached method", a
     },
     zones: new ZoneAssumptions(),
   })
-  expect(await source.find?.({}, [], null)).toEqual({ meetings: [], next: null })
+  const window = { from: Date.parse("2026-10-01T00:00:00Z"), to: Date.parse("2026-10-20T00:00:00Z") }
+  expect(await source.find?.(window, [], null)).toEqual({ meetings: [], next: null })
   expect(requests).toEqual(["/v2/users/me/meetings"])
 })

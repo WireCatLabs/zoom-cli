@@ -4,8 +4,11 @@
   that `meetings sync` stores or by its meeting number (then its latest instance). It needs the optional
   `meeting:read:past_meeting` scope: add it to the Zoom app and run `zm <profile> session start` again. Without it,
   `meetings show` says the scope is missing.
-- **`meetings list` finds meetings that ran in Zoom and are not stored yet.** Each page reads one page of meetings
-  and the occurrences of each of them.
+- **`meetings list` finds meetings that ran in Zoom and are not stored yet.** It asks Zoom one month of the
+  `started_at` window at a time, newest first, and reads the runs of at most 20 meetings a request, so one list sends
+  at most 126 requests. Without `started_at` it starts at today and reaches back as far as Zoom lists past meetings,
+  6 months. When it stops before the end, the answer says it is not complete (`meetings.server-capped`) and asks for a
+  narrower `started_at`. Meetings that have not run yet are not in it: `meetings scheduled` lists those.
 - **`meetings create|update|cancel|invitation`** change a Zoom meeting or read its invitation, through cli-core's
   shared meeting management. A create needs `--start-time`; zm does not start an instant meeting. A change zm cannot
   send is refused before the question.
