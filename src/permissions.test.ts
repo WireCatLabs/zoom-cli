@@ -6,9 +6,9 @@ import { memoryKeyring } from "@wirecat/cli-base"
 import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { expect, it, vi } from "vitest"
 import { useProfile } from "../scripts/testing/profile.js"
-import type { RemoteMeetingsService } from "./archive-commands.js"
 import { readConfig, setConfig } from "./config.js"
 import { type ProgramDeps, run } from "./program.js"
+import type { RemoteMeetingsService } from "./remote-meetings.js"
 import { TokenManager } from "./tokens.js"
 
 const setup = async (permissions?: Record<string, string>) => {
@@ -30,7 +30,12 @@ const setup = async (permissions?: Record<string, string>) => {
     remoteMeetings: {
       create: async (_change: unknown, options?: { apply?: boolean }) => {
         applied.push(options?.apply)
-        return { action: "create", applied: options?.apply === true, request: { method: "POST", path: "/x" } }
+        return {
+          action: "create",
+          applied: options?.apply === true,
+          request: { method: "POST", path: "/x" },
+          meeting: { id: "900", uuid: null, title: "Example", type: 2, startedAt: null, durationMinutes: null },
+        }
       },
     } as unknown as RemoteMeetingsService,
   }
@@ -40,19 +45,19 @@ const setup = async (permissions?: Record<string, string>) => {
   const error = () => JSON.parse(stderr.at(-1) ?? "{}").error
   return { deps, applied, error, stdout }
 }
-const keys = new Set(["remote-meetings", "remote-meetings.create", "meetings", "meetings.list", "meetings.update"])
-const create = ["remote-meetings", "create", "--title", "Example", "--type", "1", "--json"]
+const keys = new Set(["meetings", "meetings.create", "meetings.list", "meetings.update"])
+const create = ["meetings", "create", "--title", "Example", "--start-time", "2026-11-20T10:00:00Z", "--json"]
 
 it("asks before a change to Zoom: --yes applies, no terminal and no --yes refuses, --dry-run previews", async () => {
   const { deps, applied, error } = await setup()
   expect(await run(create, deps)).toBe(7)
   expect(error()).toMatchObject({
     code: "confirmation_required",
-    message: expect.stringContaining("remote-meetings asks first"),
+    message: expect.stringContaining("meetings.create asks first"),
   })
   expect(await run([...create, "--dry-run"], deps)).toBe(0)
   expect(await run([...create, "--yes"], deps)).toBe(0)
-  expect(applied).toEqual([undefined, true])
+  expect(applied).toEqual([true])
 })
 
 it("asks a y/N question at a terminal and applies only on yes", async () => {
@@ -62,21 +67,21 @@ it("asks a y/N question at a terminal and applies only on yes", async () => {
   expect(error()).toMatchObject({ code: "cancelled" })
   deps.confirm = vi.fn(async () => true)
   expect(await run(create, deps)).toBe(0)
-  expect(deps.confirm).toHaveBeenCalledWith(expect.stringContaining("remote-meetings create"))
+  expect(deps.confirm).toHaveBeenCalledWith(expect.stringContaining("meetings create"))
   expect(await run(["--no-input", ...create], deps)).toBe(7)
   expect(applied).toEqual([true])
 })
 
 it("allow applies without --yes, and a flag never lifts readonly or deny", async () => {
-  const allowed = await setup({ "remote-meetings": "allow" })
+  const allowed = await setup({ "meetings.create": "allow" })
   expect(await run(create, allowed.deps)).toBe(0)
   expect(allowed.applied).toEqual([true])
 
-  const readonly = await setup({ "remote-meetings": "readonly" })
+  const readonly = await setup({ meetings: "readonly" })
   expect(await run([...create, "--yes"], readonly.deps)).toBe(5)
   expect(readonly.error()).toMatchObject({
     code: "permission_error",
-    message: expect.stringContaining("remote-meetings is readonly"),
+    message: expect.stringContaining("meetings is readonly"),
   })
 
   const denied = await setup({ meetings: "deny" })
@@ -85,7 +90,7 @@ it("allow applies without --yes, and a flag never lifts readonly or deny", async
 })
 
 it('**the shared setup answer "read only" holds over a profile\'s allow**, and reads still run', async () => {
-  const capped = await setup({ "remote-meetings": "allow" })
+  const capped = await setup({ "meetings.create": "allow" })
   const shared = await mkdtemp(join(tmpdir(), "zm-test-setup-"))
   writeFileSync(join(shared, "config.json"), JSON.stringify({ setup: { permissions: "readonly" } }))
   capped.deps.env = { WIRECAT_CONFIG_DIR: shared }
@@ -97,7 +102,7 @@ it('**the shared setup answer "read only" holds over a profile\'s allow**, and r
 
 it("a built-in ask is not loosened by a broader allow, and is by a key as deep", async () => {
   expect(await run(create, (await setup({ meetings: "allow" })).deps)).toBe(7)
-  const deep = await setup({ "remote-meetings.create": "allow" })
+  const deep = await setup({ "meetings.create": "allow" })
   expect(await run(create, deep.deps)).toBe(0)
 })
 
@@ -150,4 +155,38 @@ it("refuses a saved permission key that names no command until it is removed", a
   expect(await run(args, deps)).toBe(5)
   expect(catalog).not.toHaveBeenCalled()
   expect(download).not.toHaveBeenCalled()
+})
+
+it("refuses an instant meeting and a create without a start before asking or reaching Zoom", async () => {
+  const { deps, applied, error } = await setup()
+  deps.confirm = vi.fn(async () => true)
+  expect(await run([...create, "--kind", "instant"], deps)).toBe(2)
+  expect(await run(["meetings", "create", "--title", "Example", "--json"], deps)).toBe(2)
+  expect(await run([...create, "--setting", "waiting_room=true"], deps)).toBe(2)
+  expect(await run(["meetings", "update", "123456789", "--kind", "scheduled", "--json"], deps)).toBe(2)
+  expect(await run(["meetings", "update", "123456789", "--setting", "waiting_room=true", "--json"], deps)).toBe(2)
+  expect(error()).toMatchObject({ code: "validation_error" })
+  expect(deps.confirm).not.toHaveBeenCalled()
+  expect(applied).toEqual([])
+})
+
+it("names a saved remote-meetings key as one that no longer names a command", async () => {
+  const { deps, error } = await setup()
+  setConfig(deps.configPath, "permissions", '{"remote-meetings":"allow"}', () => "work", new Set(["remote-meetings"]))
+  expect(await run(create, deps)).toBe(3)
+  expect(error().message).toContain("permissions.remote-meetings names no command")
+})
+
+it("keeps the untrusted marks of a locked run when --json selects fields", async () => {
+  const { deps, stdout } = await setup()
+  const mark = "0123456789abcdef"
+  deps.env = { ...process.env, ZM_READ_ONLY: "1", ZM_UNTRUSTED_MARK: mark }
+  ;(deps.remoteMeetings as unknown as Record<string, unknown>).invitation = async (id: string) => ({
+    id,
+    invitation: "Example invitation",
+  })
+  expect(await run(["meetings", "invitation", "123456789", "--json=invitation"], deps)).toBe(0)
+  expect(JSON.parse(stdout.join("")).item.invitation).toBe(
+    `⟦untrusted:${mark} source=invitation⟧Example invitation⟦/untrusted:${mark}⟧`,
+  )
 })

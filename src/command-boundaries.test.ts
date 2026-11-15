@@ -58,6 +58,8 @@ it("keeps CLI paging, calendar filters and participant reads scoped to the selec
       "meetings",
       "list",
       "started_at:[1970-01-01 TO 1970-01-02]",
+      "--backend",
+      "archive",
       "--limit",
       "1",
       "--page",

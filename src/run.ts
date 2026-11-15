@@ -102,7 +102,7 @@ export const zoomDefinition = (deps: ProgramDeps, onFailure?: (error: unknown) =
       appMcpCommand(ZM, shared, {
         name: "Zoom",
         untrusted: ["transcripts", "summaries", "chat messages", "participant names", "meeting titles", "file names"],
-        permissionExample: "remote-meetings=deny",
+        permissionExample: "meetings.cancel=deny",
         skill: SKILL,
       }),
     ],

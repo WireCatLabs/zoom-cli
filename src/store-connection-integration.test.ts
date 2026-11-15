@@ -189,7 +189,7 @@ it("mounts real durable connector capabilities and rejects absent local profiles
     diagnostic: (text) => errors.push(text),
   }
   const reference = `meeting:${value.accountId}/${value.meeting.meeting.id}`
-  const links = ["meetings", "update", reference, "--event-id", String(value.event.id)]
+  const links = ["meetings", "link", reference, "--event-id", String(value.event.id)]
   const search = ["search", "meetings", "example"]
   const transcribe = ["meetings", "transcribe", reference, audio, "--model", "parakeet-v3", "--models-dir", models]
   expect(await run([...search, "--json"], deps)).toBe(2)

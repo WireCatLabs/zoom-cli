@@ -388,7 +388,7 @@ export const installedMeetingIntegration = async ({
     ],
     2,
   )
-  invoke(["--json", "meetings", "update", reference, "--event-id", "none", "--yes"], 6)
+  invoke(["--json", "meetings", "link", reference, "--event-id", "none", "--yes"], 6)
   environment.ZM_PROFILE = "invented-platform"
   const audio = join(sandbox, "AliceExample-transcription.wav")
   const dataSize = 32000
@@ -422,7 +422,7 @@ export const installedMeetingIntegration = async ({
     commands.some((command) => /^meetings (notes|tags|memories)(?: |$)/.test(command)),
     false,
   )
-  assert.ok(commands.includes("meetings update"))
+  assert.ok(commands.includes("meetings link"))
   const searches = json("commands", "search").commands[0].commands.map((command) => command.path.join(" "))
   assert.ok(searches.includes("search meetings"))
   return {

@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**351 ✅ · 23 ⛔ · 0 ❌** — 97 commands, 277 options.
+**344 ✅ · 21 ⛔ · 0 ❌** — 94 commands, 271 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -54,11 +54,11 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `config migrate` |  | ✅ |  |
 | `app` |  | ✅ |  |
 | `meetings list` |  | ✅ |  |
-| `meetings list` | `--backend` | ⛔ | cli-core 0.660.0 src/store/meetings-read-through.test.ts drives archive, server and both on a shared source |
+| `meetings list` | `--backend` | ✅ |  |
 | `meetings list` | `--limit` | ✅ |  |
 | `meetings list` | `--page` | ✅ |  |
 | `meetings show` |  | ✅ |  |
-| `meetings show` | `--backend` | ⛔ | cli-core 0.660.0 src/store/meetings-read-through.test.ts drives archive, server and both on a shared source |
+| `meetings show` | `--backend` | ✅ |  |
 | `meetings transcript` |  | ✅ |  |
 | `meetings transcript` | `--history` | ✅ |  |
 | `meetings summary` |  | ✅ |  |
@@ -78,6 +78,25 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings import` |  | ✅ |  |
 | `meetings repair` |  | ✅ |  |
 | `meetings repair` | `--yes` | ✅ |  |
+| `meetings create` |  | ✅ |  |
+| `meetings create` | `--title` | ✅ |  |
+| `meetings create` | `--kind` | ✅ |  |
+| `meetings create` | `--start-time` | ✅ |  |
+| `meetings create` | `--duration-minutes` | ✅ |  |
+| `meetings create` | `--timezone` | ✅ |  |
+| `meetings create` | `--agenda` | ✅ |  |
+| `meetings create` | `--setting` | ✅ |  |
+| `meetings update` |  | ✅ |  |
+| `meetings update` | `--title` | ✅ |  |
+| `meetings update` | `--kind` | ✅ |  |
+| `meetings update` | `--start-time` | ✅ |  |
+| `meetings update` | `--duration-minutes` | ✅ |  |
+| `meetings update` | `--timezone` | ✅ |  |
+| `meetings update` | `--agenda` | ✅ |  |
+| `meetings update` | `--setting` | ✅ |  |
+| `meetings cancel` |  | ✅ |  |
+| `meetings cancel` | `--occurrence-id` | ✅ |  |
+| `meetings invitation` |  | ✅ |  |
 | `meetings scheduled` |  | ✅ |  |
 | `meetings scheduled` | `--since-time` | ✅ |  |
 | `meetings scheduled` | `--before-time` | ✅ |  |
@@ -109,12 +128,9 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `meetings prepare` | `--context-limit` | ✅ |  |
 | `meetings prepare` | `--max-read-bytes` | ✅ |  |
 | `meetings prepare` | `--bytes` | ✅ |  |
-| `meetings update` |  | ✅ |  |
-| `meetings update` | `--event-id` | ✅ |  |
-| `meetings update` | `--expected-event-id` | ✅ |  |
-| `meetings update` | `--yes` | ✅ |  |
-| `meetings update` | `--dry-run` | ✅ |  |
 | `meetings link` |  | ✅ |  |
+| `meetings link` | `--event-id` | ✅ |  |
+| `meetings link` | `--expected-event-id` | ✅ |  |
 | `meetings link` | `--participant-id` | ✅ |  |
 | `meetings link` | `--person` | ✅ |  |
 | `meetings link` | `--source` | ✅ |  |
@@ -240,31 +256,6 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `recordings schedule disable` | `--dry-run` | ✅ |  |
 | `recordings status` |  | ✅ |  |
 | `recordings status` | `--checkpoint` | ✅ |  |
-| `remote-meetings list` |  | ✅ |  |
-| `remote-meetings show` |  | ✅ |  |
-| `remote-meetings invitation` |  | ✅ |  |
-| `remote-meetings create` |  | ✅ |  |
-| `remote-meetings create` | `--title` | ✅ |  |
-| `remote-meetings create` | `--start-time` | ✅ |  |
-| `remote-meetings create` | `--duration-minutes` | ✅ |  |
-| `remote-meetings create` | `--timezone` | ✅ |  |
-| `remote-meetings create` | `--agenda` | ✅ |  |
-| `remote-meetings create` | `--type` | ✅ |  |
-| `remote-meetings create` | `--yes` | ✅ |  |
-| `remote-meetings create` | `--dry-run` | ✅ |  |
-| `remote-meetings update` |  | ✅ |  |
-| `remote-meetings update` | `--title` | ✅ |  |
-| `remote-meetings update` | `--start-time` | ✅ |  |
-| `remote-meetings update` | `--duration-minutes` | ✅ |  |
-| `remote-meetings update` | `--timezone` | ✅ |  |
-| `remote-meetings update` | `--agenda` | ✅ |  |
-| `remote-meetings update` | `--type` | ✅ |  |
-| `remote-meetings update` | `--yes` | ✅ |  |
-| `remote-meetings update` | `--dry-run` | ✅ |  |
-| `remote-meetings cancel` |  | ✅ |  |
-| `remote-meetings cancel` | `--occurrence-id` | ✅ |  |
-| `remote-meetings cancel` | `--yes` | ✅ |  |
-| `remote-meetings cancel` | `--dry-run` | ✅ |  |
 | `contacts list` |  | ✅ |  |
 | `contacts show` |  | ✅ |  |
 | `zoom search` |  | ✅ |  |

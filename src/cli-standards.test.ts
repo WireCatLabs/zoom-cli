@@ -408,7 +408,6 @@ it("declares source-owned lists honestly and refuses unsupported filters before 
   const { deps, stdout, stderr } = await setup()
   for (const path of [
     ["recordings", "list"],
-    ["remote-meetings", "list"],
     ["recordings", "schedule", "list"],
   ]) {
     expect(await run([...path, "id:fixture", "--json"], deps)).toBe(2)

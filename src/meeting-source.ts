@@ -1,6 +1,6 @@
 import { CliError } from "@wirecat/cli-base"
 import type { MeetingSource } from "@wirecat/cli-core/meetings"
-import { ZoomApiSource } from "./api.js"
+import { ZOOM_FINDS, ZoomApiSource } from "./api.js"
 import { filesZone, type ZoomConfig } from "./config.js"
 import type { ZoneAssumptions } from "./errors.js"
 import { FilesSource, readDownloadedFiles } from "./files.js"
@@ -37,6 +37,10 @@ export const configuredMeetingSource = ({
     })()
     return activeSource
   }
+  // Declared before the source is built, so a list knows what Zoom reads without a login.
+  const live = (name: "find" | "get") => (deps.source ? deps.source[name] !== undefined : getConfig().source === "api")
+  // A getter answered that the source has the port, so the built one does.
+  const ported = async () => (await getSource()) as Required<MeetingSource>
   const source: MeetingSource = {
     get provider() {
       return deps.source?.provider ?? "zoom"
@@ -64,6 +68,16 @@ export const configuredMeetingSource = ({
     },
     async files(id) {
       return (await getSource()).files(id)
+    },
+    // Only the API reads Zoom live; a folder of downloaded files has no meeting that is not in it.
+    get finds() {
+      return deps.source ? deps.source.finds : getConfig().source === "api" ? ZOOM_FINDS : undefined
+    },
+    get find(): MeetingSource["find"] {
+      return live("find") ? async (window, terms, cursor) => (await ported()).find(window, terms, cursor) : undefined
+    },
+    get get(): MeetingSource["get"] {
+      return live("get") ? async (id) => (await ported()).get(id) : undefined
     },
   }
   return {

@@ -42,13 +42,6 @@
     "review_after": "2027-05-13"
   },
   {
-    "rule": "unknown-resource",
-    "target": "remote-meetings",
-    "reason": "Upcoming meetings read live from Zoom, kept apart from the stored meetings under meetings so an agent never confuses the two; the vocabulary has no word for a provider's live calendar.",
-    "owner": "@WireCatLabs",
-    "review_after": "2027-05-13"
-  },
-  {
     "rule": "unknown-verb",
     "target": "meetings embeddings",
     "reason": "Previews building meeting vectors and builds one batch with --yes; no shared verb names building a search index for one resource.",
@@ -80,13 +73,6 @@
     "rule": "unknown-verb",
     "target": "recordings schedule disable",
     "reason": "Turns off a saved archive timer without deleting its files; the vocabulary has no verb for pausing a schedule.",
-    "owner": "@WireCatLabs",
-    "review_after": "2027-05-13"
-  },
-  {
-    "rule": "unknown-verb",
-    "target": "remote-meetings invitation",
-    "reason": "Reads one meeting's invitation text from Zoom; the invitation is the thing read, and no shared verb names it.",
     "owner": "@WireCatLabs",
     "review_after": "2027-05-13"
   }

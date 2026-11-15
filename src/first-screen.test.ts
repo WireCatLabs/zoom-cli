@@ -35,10 +35,10 @@ it("shows the first screen on --help and the full help on --help-all", async () 
   const { deps, stdout } = setup()
   expect(await run(["--help"], deps)).toBe(0)
   expect(stdout.join("")).toContain('search meetings "quote"')
-  expect(stdout.join("")).not.toContain("remote-meetings")
+  expect(stdout.join("")).not.toContain("the owner's stored events")
   stdout.length = 0
   expect(await run(["--help-all"], deps)).toBe(0)
-  expect(stdout.join("")).toContain("remote-meetings")
+  expect(stdout.join("")).toContain("the owner's stored events")
 })
 
 it("prints the options for every command", async () => {
@@ -71,7 +71,7 @@ it("lists commands as text by section, and as JSON with --json", async () => {
   const { deps, stdout } = setup()
   expect(await run(["commands"], deps)).toBe(0)
   const text = stdout.join("")
-  expect(text).toMatch(/\nWrite\n {2}zm meetings transcribe/)
+  expect(text).toMatch(/\nWrite\n {2}zm meetings create(?:.*\n)(?: {2}zm .*\n)* {2}zm meetings transcribe/)
   expect(text).toMatch(/\nAutomate\n(?: {2}zm .*\n)* {2}zm recordings schedule create/)
   expect(text).toContain("zm session start [options]")
   stdout.length = 0

@@ -1,8 +1,14 @@
 import { CliError, isCliError } from "@wirecat/cli-base"
 import { statusToCode } from "@wirecat/cli-base/http"
 import {
+  type FoundMeeting,
+  type FoundMeetings,
+  type FullMeeting,
   type JsonValue,
+  type MeetingFinds,
   type MeetingSource,
+  type MeetingTerm,
+  type MeetingWindow,
   parseVtt,
   type SourceChatLine,
   type SourceMeeting,
@@ -36,11 +42,62 @@ export const encodeUuid = (uuid: string): string =>
 interface Doubt {
   zoneless: boolean
 }
+const seriesIdOf = (row: Record<string, unknown>): string => {
+  if (!(string(row.id) !== null || (typeof row.id === "number" && Number.isSafeInteger(row.id) && row.id > 0)))
+    throw new CliError("invalid_response", "Zoom meeting is missing its series id")
+  return String(row.id)
+}
 const requiredString = (value: unknown): string => {
   const text = string(value)
   if (text === null) throw new CliError("invalid_response", "Zoom response is missing a required field")
   return text
 }
+/**
+ * Zoom gives a meeting that has not run no instance uuid, and its next run gets a new one, so an upcoming meeting
+ * listed live would be a second row beside the one sync writes. `meetings scheduled` lists those.
+ */
+const PAST_MEETING = "meeting:read:past_meeting"
+
+const DAY = 86_400_000
+// Zoom recommends a month or less for past instances, lists 6 months of past meetings, and takes 300 per page.
+const FIND_SPAN = 30 * DAY
+const FIND_REACH = 183 * DAY
+const FIND_PAGE = 300
+const FIND_SERIES = 20
+interface FindCursor {
+  floor: number
+  end: number
+  token: string | null
+  skip: number
+}
+const findCursorOf = (cursor: string): FindCursor => {
+  let value: unknown
+  try {
+    value = JSON.parse(cursor)
+  } catch {
+    throw new CliError("validation_error", "this Zoom page cursor is not one zm gave")
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new CliError("validation_error", "this Zoom page cursor is not one zm gave")
+  const row = value as Record<string, unknown>
+  const whole = [row.floor, row.end, row.skip].every((value) => Number.isSafeInteger(value))
+  if (!whole || (row.token !== null && !string(row.token)))
+    throw new CliError("validation_error", "this Zoom page cursor is not one zm gave")
+  return {
+    floor: row.floor as number,
+    end: row.end as number,
+    token: (row.token as string | null) ?? null,
+    skip: row.skip as number,
+  }
+}
+/** Zoom's `from`/`to` are whole days, read in `timezone`; the exact window is applied to each occurrence. */
+const zoomRange = (start: number, end: number) => ({
+  from: new Date(start).toISOString().slice(0, 10),
+  to: new Date(end).toISOString().slice(0, 10),
+  timezone: "UTC",
+})
+export const ZOOM_FINDS: MeetingFinds = Object.freeze({ fields: {}, upcoming: false })
+
 export class ZoomApiSource implements MeetingSource {
   readonly provider = "zoom"
   readonly transcriptFormat = "vtt"
@@ -87,11 +144,11 @@ export class ZoomApiSource implements MeetingSource {
   // A listed row's uuid is the meeting's, not the instance that ran, for every type: participants,
   // transcript and summary answer only for the instance uuid. This runs before the pull loop's
   // per-meeting guard, so a series Zoom no longer knows must not fail the whole sync.
-  private async instances(seriesId: string): Promise<Record<string, unknown>[]> {
+  private async instances(seriesId: string, range?: URLSearchParams): Promise<Record<string, unknown>[]> {
     let body: Record<string, unknown> | null
     try {
       body = await this.request(
-        `/past_meetings/${encodeURIComponent(seriesId)}/instances`,
+        `/past_meetings/${encodeURIComponent(seriesId)}/instances${range ? `?${range}` : ""}`,
         "meeting:read:list_past_instances",
       )
     } catch (error) {
@@ -101,6 +158,66 @@ export class ZoomApiSource implements MeetingSource {
     if (!body || !Array.isArray(body.meetings))
       throw new CliError("invalid_response", "Zoom returned invalid occurrences")
     return body.meetings.map(object)
+  }
+  /** A listed series' occurrences that ran, each by its instance uuid, the id `meetings()`, `find` and `get` share. */
+  private occurrences(
+    row: Record<string, unknown>,
+    instances: Record<string, unknown>[],
+    keep: (startedAt: number) => boolean,
+    seen: Set<string>,
+  ): SourceMeeting[] {
+    const seriesId = seriesIdOf(row)
+    const recurring = row.type === 3 || row.type === 8
+    const meetings: SourceMeeting[] = []
+    for (const instance of instances) {
+      const doubt = { zoneless: false }
+      const startedAt = this.time(instance.start_time, doubt)
+      const id = requiredString(instance.uuid)
+      if (startedAt === null) throw new CliError("invalid_response", "Zoom occurrence is missing its start time")
+      if (!keep(startedAt) || seen.has(id)) continue
+      seen.add(id)
+      const ended = instance.end_time === undefined ? null : this.time(instance.end_time, doubt)
+      const rawDuration = recurring ? null : number(row.duration)
+      const end = ended ?? (rawDuration !== null && rawDuration >= 0 ? startedAt + rawDuration * 60000 : Number.NaN)
+      const endedAt = Number.isFinite(end) && Math.abs(end) <= 8640000000000000 ? new Date(end).toISOString() : null
+      meetings.push({
+        series: {
+          id: seriesId,
+          provider: "zoom",
+          title: string(row.topic),
+          kind: recurring ? "recurring" : row.type === 1 ? "instant" : "scheduled",
+          joinUrl: string(row.join_url) ?? undefined,
+          recurrence: json(row.recurrence),
+        },
+        occurrence: {
+          id,
+          seriesId,
+          title: string(row.topic),
+          startedAt: new Date(startedAt).toISOString(),
+          endedAt,
+        },
+        description: string(row.agenda),
+        joinUrl: string(row.join_url),
+        timezone: string(row.timezone),
+        metadata: withIssue(
+          extras(row, [
+            "id",
+            "uuid",
+            "topic",
+            "type",
+            "start_time",
+            "end_time",
+            "duration",
+            "join_url",
+            "timezone",
+            "agenda",
+            "recurrence",
+          ]),
+          doubt.zoneless,
+        ),
+      })
+    }
+    return meetings
   }
   async meetings(since: string): Promise<SourceMeeting[]> {
     const lower = Date.parse(since)
@@ -112,60 +229,84 @@ export class ZoomApiSource implements MeetingSource {
     )
     const meetings: SourceMeeting[] = []
     const seen = new Set<string>()
-    for (const row of series) {
-      if (!(string(row.id) !== null || (typeof row.id === "number" && Number.isSafeInteger(row.id) && row.id > 0)))
-        throw new CliError("invalid_response", "Zoom meeting is missing its series id")
-      const seriesId = String(row.id)
-      const recurring = row.type === 3 || row.type === 8
-      const instances = await this.instances(seriesId)
-      for (const instance of instances) {
-        const doubt = { zoneless: false }
-        const startedAt = this.time(instance.start_time, doubt)
-        const id = requiredString(instance.uuid)
-        if (startedAt === null) throw new CliError("invalid_response", "Zoom occurrence is missing its start time")
-        if (startedAt < lower || seen.has(id)) continue
-        seen.add(id)
-        const rawDuration = recurring ? null : number(row.duration)
-        const end = rawDuration !== null && rawDuration >= 0 ? startedAt + rawDuration * 60000 : Number.NaN
-        const endedAt = Number.isFinite(end) && Math.abs(end) <= 8640000000000000 ? new Date(end).toISOString() : null
-        meetings.push({
-          series: {
-            id: seriesId,
-            provider: "zoom",
-            title: string(row.topic),
-            kind: recurring ? "recurring" : row.type === 1 ? "instant" : "scheduled",
-            joinUrl: string(row.join_url) ?? undefined,
-            recurrence: json(row.recurrence),
-          },
-          occurrence: {
-            id,
-            seriesId,
-            title: string(row.topic),
-            startedAt: new Date(startedAt).toISOString(),
-            endedAt,
-          },
-          description: string(row.agenda),
-          joinUrl: string(row.join_url),
-          timezone: string(row.timezone),
-          metadata: withIssue(
-            extras(row, [
-              "id",
-              "uuid",
-              "topic",
-              "type",
-              "start_time",
-              "duration",
-              "join_url",
-              "timezone",
-              "agenda",
-              "recurrence",
-            ]),
-            doubt.zoneless,
-          ),
-        })
-      }
-    }
+    for (const row of series)
+      for (const meeting of this.occurrences(row, await this.instances(seriesIdOf(row)), (at) => at >= lower, seen))
+        meetings.push(meeting)
     return meetings
+  }
+  readonly finds = ZOOM_FINDS
+  /**
+   * One stretch of at most `FIND_SPAN` of `window`, newest first, and the instances of at most `FIND_SERIES` of its
+   * series: 1 + `FIND_SERIES` requests. The cursor carries on in the same stretch, then the one before it; without a
+   * lower bound, back as far as Zoom lists (`FIND_REACH`). cli-core's page cap then says the answer is not complete.
+   */
+  async find(window: MeetingWindow, _terms: readonly MeetingTerm[], cursor: string | null): Promise<FoundMeetings> {
+    const at = cursor === null ? undefined : findCursorOf(cursor)
+    const end = at?.end ?? window.to ?? Date.now()
+    const floor = at?.floor ?? window.from ?? end - FIND_REACH
+    const start = Math.max(floor, end - FIND_SPAN)
+    const range = zoomRange(start, end)
+    const query = new URLSearchParams({ type: "previous_meetings", page_size: String(FIND_PAGE), ...range })
+    if (at?.token) query.set("next_page_token", at.token)
+    const body = await this.request(`/users/me/meetings?${query}`, "meeting:read:list_meetings")
+    if (!body || !Array.isArray(body.meetings)) throw new CliError("invalid_response", "Zoom returned an invalid list")
+    const rows = body.meetings.map(object)
+    const skip = at?.skip ?? 0
+    const taken = rows.slice(skip, skip + FIND_SERIES)
+    const inWindow = (time: number) =>
+      (window.from === undefined || time >= window.from) && (window.to === undefined || time <= window.to)
+    const seen = new Set<string>()
+    const meetings: FoundMeeting[] = []
+    const ranges = new URLSearchParams({ from: range.from, to: range.to })
+    for (const row of taken)
+      for (const meeting of this.occurrences(row, await this.instances(seriesIdOf(row), ranges), inWindow, seen))
+        meetings.push({ meeting })
+    const token = string(body.next_page_token) || null
+    if (token !== null && token === at?.token)
+      throw new CliError("invalid_response", "Zoom repeated a pagination token")
+    const next: FindCursor | null =
+      skip + taken.length < rows.length
+        ? { floor, end, token: at?.token ?? null, skip: skip + taken.length }
+        : token !== null
+          ? { floor, end, token, skip: 0 }
+          : start > floor
+            ? { floor, end: start - 1, token: null, skip: 0 }
+            : null
+    return { meetings, next: next && JSON.stringify(next) }
+  }
+  /**
+   * One meeting that ran, by its instance uuid or by its meeting number (then its latest instance): always answered
+   * by the instance uuid, so `show <number>` keeps the row sync writes. `null` for one that never ran.
+   */
+  async get(id: string): Promise<FullMeeting | null> {
+    const given = id.trim()
+    if (!given) throw new CliError("validation_error", "name a Zoom meeting by its uuid or number")
+    // A refusal, not a failure: `meetings show` then says why instead of "not found" for a meeting not stored yet.
+    const { scopes } = await this.tokens.tokens()
+    if (!["", ":admin", ":master"].some((grant) => scopes.includes(`${PAST_MEETING}${grant}`)))
+      throw new CliError(
+        "permission_error",
+        `Zoom scope ${PAST_MEETING} is missing; add it to the app and run zm <profile> session start again`,
+      )
+    const body = await this.request(`/past_meetings/${encodeUuid(given)}`, PAST_MEETING, 3001)
+    if (!body) return null
+    const [found] = this.occurrences(body, [body], () => true, new Set())
+    if (!found) return null
+    // A past meeting's answer has no join link or recurrence: a series here would blank the stored one, and a sync
+    // writes it from the meeting list.
+    const meeting = { ...found, series: null }
+    const uuid = meeting.occurrence.id
+    const [participants, transcript] = await Promise.all([this.participants(uuid), this.transcriptOnShow(uuid)])
+    return { meeting, participants, ...(transcript === undefined ? {} : { transcript }) }
+  }
+  /** A transcript Zoom is still making is left unread here, so `show` keeps the meeting and a later sync reads it. */
+  private async transcriptOnShow(uuid: string) {
+    try {
+      return await this.transcript(uuid)
+    } catch (error) {
+      if (isCliError(error) && error.code === "provider_error") return undefined
+      throw error
+    }
   }
   async participants(id: string): Promise<SourceParticipant[]> {
     const rows = await this.pages(

@@ -267,8 +267,8 @@ Stored meeting references use `meeting:<accountId>/<meetingId>`. A retained tran
 revision id, and a cue appends its position. Event and person linking accept root references:
 
 ```sh
-zm personal meetings update meeting:1/1 --event-id 1 --expected-event-id none --json
-zm personal meetings update meeting:1/1 --event-id 1 --expected-event-id none --yes --json
+zm personal meetings link meeting:1/1 --event-id 1 --expected-event-id none --json
+zm personal meetings link meeting:1/1 --event-id 1 --expected-event-id none --yes --json
 zm personal meetings link meeting:1/1 --participant-id 1 --person 1 --expected-person none --yes --json
 ```
 
@@ -434,7 +434,7 @@ then propose the links it intends to add. Review possible tag synonyms rather th
 label for the same subject. Memo is installed separately and must use the same database path.
 
 Searching by meaning instead of by words is covered in [topic search](topic-search.md).
-For an upcoming call, select the provider series from [the Zoom schedule](remote-meetings.md), then
+For an upcoming call, select the provider series from [the Zoom schedule](usage.md#find-a-scheduled-meeting-series), then
 [prepare its context](usage.md#prepare-for-an-upcoming-meeting). Add `--project RES` for one existing
 project to include cited name/alias candidates separately from confirmed links; inspect its
 continuation and coverage before treating the result as complete.

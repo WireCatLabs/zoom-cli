@@ -9,8 +9,8 @@ Evidence for items in [BACKLOG.md](BACKLOG.md) that does not fit on one line. Me
 `zm search all plan --json`, `zm meetings passage … --json`, `zm stats meetings show --json` all return
 `validation_error`). Profile-free commands (`commands`, `config`, `skill`, `doctor`, `guide`, `complete`, `upgrade`,
 `models`) work. Affected help examples, shown under `Example:` in `--help` and in `commands --json`:
-`meetings scheduled|projects scan|prepare|update|link|evidence|context|task-proposal|passage|embeddings`,
-`session status`, `watch`, every `recordings …` and `remote-meetings …` leaf, `search all|meetings|recordings`,
+`meetings scheduled|projects scan|prepare|link|evidence|context|task-proposal|passage|embeddings`,
+`session status`, `watch`, every `recordings …` leaf, `search all|meetings|recordings`,
 `batch`. Sources: `src/archive-commands.ts`, `src/recording-schedule-commands.ts`, `src/meeting-context-commands.ts`,
 `src/meeting-integration-commands.ts`, `src/watch-commands.ts:72`, `src/commands.ts:90`,
 `src/ingestion-search-commands.ts:63`, `src/meeting-semantic-commands.ts:135`. Some examples come from cli-core's
@@ -21,7 +21,7 @@ against the parser would keep it fixed.
 ## ZM-2
 
 Verified: `zm personal mcp` in a fresh HOME answers `zm_tools_search "cancel remote meeting"` with
-`remote-meetings cancel`, `writes: true`. docs/mcp.md:40-43 says this correctly. These say the opposite:
+`meetings cancel`, `writes: true`. docs/mcp.md:40-43 says this correctly. These say the opposite:
 
 - docs/security.md:36 — "The MCP server is read-only and exposes no … remote mutations"
 - docs/security.md:67 — "read-only MCP connection"
@@ -30,7 +30,7 @@ Verified: `zm personal mcp` in a fresh HOME answers `zm_tools_search "cancel rem
 - docs/index.md:31 — "Its MCP connection is read-only"
 - docs/search.md:102 — "The read-only MCP tool `search_meetings`" (the tool no longer exists)
 
-Options: make `remote-meetings` `readonly` over MCP unless the profile allows it (safer default for advertising),
+Options: make `meetings create|update|cancel` `readonly` over MCP unless the profile allows it (safer default for advertising),
 or keep today's default and fix the six claims. The `zm_tools_search` description also gives messenger examples
 ("unread", "send message", "chat members"); that text comes from cli-core's shared MCP tools.
 

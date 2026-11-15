@@ -10,6 +10,52 @@ import {
   type MeetingLinkChange,
 } from "./meeting-integration.js"
 
+interface LinkOptions {
+  eventId?: number | "none"
+  expectedEventId?: number | "none"
+  participantId?: number
+  person?: string
+  source?: string
+  expectedPerson?: string
+  yes?: boolean
+  dryRun?: boolean
+}
+
+/** One link per run: a meeting to an event, or one participant to a person. */
+const linkChange = (options: LinkOptions): MeetingLinkChange => {
+  const toPerson = options.participantId !== undefined || options.person !== undefined
+  if ((options.eventId !== undefined) === toPerson)
+    throw new CliError("validation_error", "give --event-id, or --participant-id with --person", {
+      param: "--event-id",
+    })
+  if (options.eventId !== undefined) {
+    if (options.source !== undefined || options.expectedPerson !== undefined)
+      throw new CliError("validation_error", "--source and --expected-person go with --person, not --event-id")
+    return {
+      action: "event.link",
+      eventId: options.eventId === "none" ? null : options.eventId,
+      ...(options.expectedEventId === undefined
+        ? {}
+        : { expectedEventId: options.expectedEventId === "none" ? null : options.expectedEventId }),
+    }
+  }
+  if (options.participantId === undefined || options.person === undefined)
+    throw new CliError("validation_error", "--participant-id and --person go together", { param: "--person" })
+  if (options.expectedEventId !== undefined)
+    throw new CliError("validation_error", "--expected-event-id goes with --event-id")
+  return {
+    action: "person.link",
+    participantId: options.participantId,
+    personUid: options.person,
+    ...(options.source === undefined
+      ? {}
+      : { targetAccountIds: options.source.split(",").map((item) => bytes(item.trim())) }),
+    ...(options.expectedPerson === undefined
+      ? {}
+      : { expectedPersonUid: options.expectedPerson === "none" ? null : options.expectedPerson }),
+  }
+}
+
 export const addMeetingIntegrationCommands = (
   program: Command,
   deps: {
@@ -21,11 +67,11 @@ export const addMeetingIntegrationCommands = (
 ) => {
   const meetings = program.commands.find((command) => command.name() === "meetings")
   if (!meetings) throw new CliError("configuration_error", "meeting command group is unavailable")
-  const label = (command: Command, example: string, mutates = false) =>
+  const label = (command: Command, examples: string[], mutates = false) =>
     annotate(command, {
       origin: "handwritten",
       effects: mutates ? LOCAL_WRITE : LOCAL_READ,
-      examples: [example],
+      examples,
     })
   const guards = (command: Command) =>
     command.option("--yes", "apply this local change once").option("--dry-run", "preview even when --yes is present")
@@ -50,77 +96,26 @@ export const addMeetingIntegrationCommands = (
     else deps.output(itemOf(result))
   }
   const nullableId = (value: string): number | "none" => (value === "none" ? "none" : bytes(value))
-  label(
-    guards(
-      meetings
-        .command("update")
-        .description("preview linking a stored meeting to an event; --yes applies it")
-        .argument("<reference>", "meeting reference, such as meeting:1/1")
-        .requiredOption("--event-id <id>", "stored event id, or none to unlink", nullableId)
-        .option("--expected-event-id <id>", "compare current event id, or none", nullableId),
-    ).action(
-      async (
-        reference: string,
-        options: { eventId: number | "none"; expectedEventId?: number | "none"; yes?: boolean; dryRun?: boolean },
-        command: Command,
-      ) =>
-        apply(
-          reference,
-          {
-            action: "event.link",
-            eventId: options.eventId === "none" ? null : options.eventId,
-            ...(options.expectedEventId === undefined
-              ? {}
-              : { expectedEventId: options.expectedEventId === "none" ? null : options.expectedEventId }),
-          },
-          options,
-          command,
-        ),
-    ),
-    "zm personal meetings update meeting:1/1 --event-id 1 --json",
-    true,
-  )
+  // `meetings update` is the change sent to Zoom (cli-core's meeting management); both local links are `link`.
   label(
     guards(
       meetings
         .command("link")
-        .description("preview linking a meeting participant to a stored person; --yes applies it")
+        .description("link a meeting to an event, or a participant to a person; --yes applies")
         .argument("<reference>", "meeting reference, such as meeting:1/1")
-        .requiredOption("--participant-id <id>", "participant id from this meeting", bytes)
-        .requiredOption("--person <uid>", "explicit stored person UID")
+        .option("--event-id <id>", "stored event id, or none to unlink", nullableId)
+        .option("--expected-event-id <id>", "with --event-id: compare current event id, or none", nullableId)
+        .option("--participant-id <id>", "with --person: participant id from this meeting", bytes)
+        .option("--person <uid>", "with --participant-id: explicit stored person UID")
         .option("--source <accounts>", "explicit additional account ids authorized for target-person lookup")
         .option("--expected-person <uid>", "compare current person UID, or none"),
-    ).action(
-      async (
-        reference: string,
-        options: {
-          participantId: number
-          person: string
-          source?: string
-          expectedPerson?: string
-          yes?: boolean
-          dryRun?: boolean
-        },
-        command: Command,
-      ) =>
-        apply(
-          reference,
-          {
-            action: "person.link",
-            participantId: options.participantId,
-            personUid: options.person,
-            ...(options.source === undefined
-              ? {}
-              : { targetAccountIds: options.source.split(",").map((item) => bytes(item.trim())) }),
-            ...(options.expectedPerson === undefined
-              ? {}
-              : { expectedPersonUid: options.expectedPerson === "none" ? null : options.expectedPerson }),
-          },
-          options,
-          command,
-        ),
+    ).action(async (reference: string, options: LinkOptions, command: Command) =>
+      apply(reference, linkChange(options), options, command),
     ),
-    "zm personal meetings link meeting:1/1 --participant-id 1 --person 1 --json",
+    [
+      "zm personal meetings link meeting:1/1 --event-id 1 --json",
+      "zm personal meetings link meeting:1/1 --participant-id 1 --person 1 --json",
+    ],
     true,
   )
 }

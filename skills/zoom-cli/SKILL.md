@@ -73,7 +73,7 @@ ceilings or split batches when needed. Partial batches exit zero: inspect `error
 Use `meetings people <name-or-email>` before choosing `--identity-id`; inspect ambiguity and
 `item.next` / `item.page.next_cursor`, even for empty pages. Names alone do not prove identity.
 `meetings link <ref> --participant-id <id> --person <uid>` previews a person association;
-`meetings update <ref> --event-id <id>` previews an event association. `--yes` applies authorized
+`meetings link <ref> --event-id <id>` previews an event association. `--yes` applies authorized
 local changes; expected-current flags guard against changed links. Additional target accounts must
 be explicit. Never infer that a linked participant spoke a particular cue.
 
@@ -188,7 +188,7 @@ permissions as the command line; a call answers as the command does. Over MCP a 
 archive, but matches exact words only and gives no line for a meeting; prefer `search meetings` for stored meetings.
 
 `contacts list` reads company and external Zoom contacts live (`name:`, `email:`, `type:` narrow it); `contacts show` takes
-the `id` it returns, a Zoom user id or an email. `remote-meetings` uses numeric remote ids. Create/update/cancel ask first: without a terminal `--yes`
+the `id` it returns, a Zoom user id or an email. `meetings create|update|cancel|invitation` take Zoom meeting numbers and ask first: without a terminal `--yes`
 applies an authorized change once (else exit 7), and `--dry-run` always previews. Exit 14 means an uncertain dispatched
 write: inspect remote state before retrying. Never automatically replay creation or cancellation.
 Tokens stay in the keyring. Missing scopes require app changes and a new login; cached session status

@@ -29,7 +29,7 @@ Zoom's reviewers try every permission the app asks for, so each must work before
    zm personal session status --check --json
    zm personal meetings sync --since-time 2026-10-01
    zm personal recordings list --json
-   zm personal remote-meetings list --json
+   zm personal meetings scheduled --json
    zm personal contacts list --json
    ```
 
@@ -61,10 +61,10 @@ else: reviewers reject scopes an app does not use.
 | `cloud_recording:read:list_recording_files` | Reads recording file details and meeting chat for the local archive. |
 | `user:read:user` | Confirms which Zoom user is signed in. |
 | `meeting:read:meeting` | Shows details of an upcoming meeting so the user can prepare for it. |
-| `meeting:read:invitation` | Shows a meeting's invitation text with `zm remote-meetings invitation`. |
-| `meeting:write:meeting` | Creates a meeting when the user runs `zm remote-meetings create`. |
-| `meeting:update:meeting` | Changes a meeting when the user runs `zm remote-meetings update`. |
-| `meeting:delete:meeting` | Cancels a meeting when the user runs `zm remote-meetings cancel`. |
+| `meeting:read:invitation` | Shows a meeting's invitation text with `zm meetings invitation`. |
+| `meeting:write:meeting` | Creates a meeting when the user runs `zm meetings create`. |
+| `meeting:update:meeting` | Changes a meeting when the user runs `zm meetings update`. |
+| `meeting:delete:meeting` | Cancels a meeting when the user runs `zm meetings cancel`. |
 | `team_chat:read:list_contacts` | Lists the user's company and external contacts with `zm contacts list`. |
 | `team_chat:read:contact` | Shows one contact and their phone numbers with `zm contacts show`. |
 | `agentic_search:read:search` | Searches the user's Zoom chat, docs and meetings live with `zm zoom search`; results are shown, not stored. |
@@ -176,9 +176,9 @@ Test plan for the reviewer:
 > Read: `zm personal meetings sync --since-time 2026-10-01`, `zm personal search meetings "<a word from a recent
 > meeting>"`, `zm personal recordings list`, `zm personal contacts list`, `zm personal zoom search "<a word from a recent chat>"`
 > (use the test account above: search needs a paid Zoom license). Manage meetings (each asks first; `--yes`
-> applies): `zm personal remote-meetings create --title "Review test" --start-time 2026-12-01T10:00:00Z
-> --duration-minutes 30 --yes`, then `remote-meetings update <id> --title "Review test 2" --yes` and
-> `remote-meetings cancel <id> --yes`. Uninstall: remove the app under Manage → Added Apps. All data stays on the
+> applies): `zm personal meetings create --title "Review test" --start-time 2026-12-01T10:00:00Z
+> --duration-minutes 30 --yes`, then `meetings update <id> --title "Review test 2" --yes` and
+> `meetings cancel <id> --yes`. Uninstall: remove the app under Manage → Added Apps. All data stays on the
 > reviewer's computer. Source: `https://github.com/WireCatLabs/zoom-cli`.
 
 ## 9. After you submit

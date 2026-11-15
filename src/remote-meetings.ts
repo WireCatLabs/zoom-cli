@@ -4,11 +4,13 @@ import {
   dispatchMeetingMutation,
   type ManagedMeeting,
   type ManagedMeetingChange,
+  type MeetingManagement,
   validateMeetingChange,
 } from "@wirecat/cli-core/meetings"
+import type { Command } from "commander"
 import { object, string } from "./errors.js"
 import { required } from "./recordings.js"
-import { operationSignal, type RemoteOptions, type RemoteRequest, ZoomRemote } from "./remote-http.js"
+import { type RemoteOptions, type RemoteRequest, ZoomRemote } from "./remote-http.js"
 import { zoomMeetingPath as idPath } from "./remote-meeting-id.js"
 import type { TokenManager } from "./tokens.js"
 
@@ -94,28 +96,6 @@ export class ZoomRemoteMeetings {
   constructor(tokens: Pick<TokenManager, "tokens">, fetcher: typeof fetch, options: RemoteOptions = {}) {
     this.remote = new ZoomRemote(tokens, fetcher, options)
   }
-  async list(options: { signal?: AbortSignal } = {}): Promise<RemoteMeeting[]> {
-    const signal = operationSignal(options.signal)
-    const query = new URLSearchParams({ type: "upcoming", page_size: "100" })
-    const seen = new Set<string>()
-    const result = new Map<string, RemoteMeeting>()
-    for (;;) {
-      const body = await this.remote.request(`/users/me/meetings?${query}`, "meeting:read:list_meetings", { signal })
-      if (!Array.isArray(body.meetings)) throw new CliError("invalid_response", "Zoom returned an invalid meeting list")
-      for (const row of body.meetings) {
-        const item = normalized(row)
-        result.set(item.id, item)
-      }
-      const next = string(body.next_page_token)
-      if (!next) return [...result.values()]
-      if (seen.has(next)) throw new CliError("invalid_response", "Zoom repeated a pagination token")
-      seen.add(next)
-      query.set("next_page_token", next)
-    }
-  }
-  async show(id: string, options: { signal?: AbortSignal } = {}): Promise<RemoteMeeting> {
-    return normalized(await this.remote.request(idPath(id), "meeting:read:meeting", options))
-  }
   async invitation(id: string, options: { signal?: AbortSignal } = {}): Promise<{ id: string; invitation: string }> {
     const body = await this.remote.request(`${idPath(id)}/invitation`, "meeting:read:invitation", options)
     return { id, invitation: required(body.invitation) }
@@ -195,16 +175,20 @@ const zoomChange = (change: Readonly<ManagedMeetingChange>): MeetingChange => ({
   ...(change.agenda !== undefined ? { agenda: change.agenda } : {}),
 })
 
+export type RemoteMeetingsService = Pick<ZoomRemoteMeetings, "invitation" | "create" | "update" | "cancel">
+
+// Zoom schedules, so a create names its start; there is no instant meeting to start from here.
+const ZOOM_FIELDS = { fields: ["title", "startTime", "durationMinutes", "timezone", "agenda"] } as const
+
 /** The remote client must already be bound to the selected account's token manager. */
-export const createZoomMeetingManagement = (remote: ZoomRemoteMeetings, account: string) =>
+export const createZoomMeetingManagement = (remote: RemoteMeetingsService, account: string) =>
   createMeetingManagement(
     { provider: "zoom", account },
     {
-      list: async ({ signal }) => (await remote.list({ signal })).map(managedMeeting),
-      get: async (id, { signal }) => managedMeeting(await remote.show(id, { signal })),
+      fields: { create: ZOOM_FIELDS, update: ZOOM_FIELDS },
       invitation: (id, { signal }) => remote.invitation(id, { signal }),
       create: async (change, { signal }) => {
-        const receipt = await remote.create(zoomChange(change), { apply: true, signal })
+        const receipt = await remote.create({ ...zoomChange(change), type: 2 }, { apply: true, signal })
         if (!receipt.meeting) throw new CliError("outcome_unknown", "Zoom did not acknowledge the created meeting")
         return managedMeeting(receipt.meeting)
       },
@@ -216,3 +200,61 @@ export const createZoomMeetingManagement = (remote: ZoomRemoteMeetings, account:
       },
     },
   )
+
+/**
+ * The management `meetings create|update|cancel|invitation` mount with: its declaration is the same for every profile,
+ * and each call opens the selected profile's account only when it runs.
+ */
+export const zoomMeetingManagement = (open: () => MeetingManagement): MeetingManagement => {
+  const declared = createZoomMeetingManagement(
+    {
+      invitation: unbound,
+      create: unbound,
+      update: unbound,
+      cancel: unbound,
+    },
+    "unbound",
+  )
+  return {
+    ...declared,
+    invitation: (id, options) => open().invitation(id, options),
+    create: (change, options) => open().create(change, options),
+    update: (id, change, options) => open().update(id, change, options),
+    cancel: (id, options) => open().cancel(id, options),
+  }
+}
+/**
+ * The selected profile's management: a preview names the account and reaches no Zoom app, so only a real send
+ * builds the client (`make`).
+ */
+export const profileMeetingManagement = (make: () => RemoteMeetingsService, account: () => string) =>
+  zoomMeetingManagement(() => createZoomMeetingManagement(lazyRemote(make), account()))
+
+/** A remote client built on its first call, so a port that is never called needs no Zoom app or token. */
+export const lazyRemote = (make: () => RemoteMeetingsService): RemoteMeetingsService => {
+  let made: RemoteMeetingsService | undefined
+  const remote = () => (made ??= make())
+  return {
+    invitation: (id, options) => remote().invitation(id, options),
+    create: (change, options) => remote().create(change, options),
+    update: (id, change, options) => remote().update(id, change, options),
+    cancel: (id, options) => remote().cancel(id, options),
+  }
+}
+const unbound = (): never => {
+  throw new CliError("configuration_error", "no Zoom account is open for this command")
+}
+
+const leaves = (command: Command): Command[] => (command.commands.length ? command.commands.flatMap(leaves) : [command])
+/** The leaves of the groups added since `before` that read the store; a management call reaches only Zoom. */
+export const storeLeaves = (program: Command, before: Set<Command>, management?: MeetingManagement): Set<Command> => {
+  const managed = new Set<string>(
+    (management?.capabilities ?? []).filter((name) => ["create", "update", "cancel", "invitation"].includes(name)),
+  )
+  return new Set(
+    program.commands
+      .filter((group) => !before.has(group))
+      .flatMap(leaves)
+      .filter((leaf) => !(leaf.parent?.name() === "meetings" && managed.has(leaf.name()))),
+  )
+}
