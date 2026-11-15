@@ -311,13 +311,13 @@ const original = "WEBVTT\n\n00:00.000 --> 00:01.000\nAlice Example: Original inv
 writeFileSync(vtt, original)
 json("meetings", "import", folder)
 json("meetings", "import", folder)
-const meetings = json("meetings", "list").items
+const meetings = json("meetings", "list", "--backend", "archive").items
 assert.equal(meetings.length, 1)
 assert.equal(typeof meetings[0].id, "string")
 const meetingId = String(meetings[0].id)
 writeFileSync(vtt, original.replace("Original", "Corrected"))
 json("meetings", "import", folder)
-assert.equal(json("meetings", "show", meetingId).transcripts.length, 1)
+assert.equal(json("meetings", "show", meetingId, "--backend", "archive").transcripts.length, 1)
 assert.equal(json("meetings", "transcript", meetingId, "--history").items.length, 2)
 assert.equal(json("search", "meetings", "Original").items.length, 0)
 assert.equal(json("search", "meetings", "Corrected").items.length, 1)
@@ -402,7 +402,7 @@ assert.equal(importedReplay.created, false)
 assert.equal(importedReplay.inserted_transcripts, 0)
 assert.equal(importedReplay.replayed_transcripts, 1)
 assert.equal(importedReplay.superseded_transcripts, 0)
-assert.equal(json("meetings", "show", archivedMeetingId).transcripts.length, 1)
+assert.equal(json("meetings", "show", archivedMeetingId, "--backend", "archive").transcripts.length, 1)
 const manifestPath = join(archive, `.zoom-archive-${digest(uuid)}.json`)
 const correctedArchive = original.replace("Original", "Revised archive")
 writeFileSync(asset, correctedArchive)
@@ -416,11 +416,11 @@ assert.equal(correctedReceipt.inserted_transcripts, 1)
 assert.equal(correctedReceipt.replayed_transcripts, 0)
 assert.equal(correctedReceipt.superseded_transcripts, 1)
 json("recordings", "archive", "import", archive)
-assert.equal(json("meetings", "show", archivedMeetingId).transcripts.length, 1)
+assert.equal(json("meetings", "show", archivedMeetingId, "--backend", "archive").transcripts.length, 1)
 assert.equal(json("meetings", "transcript", archivedMeetingId, "--history").items.length, 2)
 assert.equal(json("search", "meetings", "Original").items.length, 0)
 assert.equal(json("search", "meetings", "Revised archive").items.length, 1)
-assert.equal(json("meetings", "show", meetingId).transcripts.length, 1)
+assert.equal(json("meetings", "show", meetingId, "--backend", "archive").transcripts.length, 1)
 assert.equal(
   json("meetings", "transcript", meetingId, "--history").items.length,
   2,
@@ -433,7 +433,7 @@ invoke(["meetings", "import", folder, "--json"], 2)
 json("config", "set", "permissions", "{}")
 writeFileSync(vtt, original.replace("Original invented plan", "Foreign invented boundary"))
 json("meetings", "import", folder)
-const foreignMeetingId = String(json("meetings", "list").items[0].id)
+const foreignMeetingId = String(json("meetings", "list", "--backend", "archive").items[0].id)
 assert.notEqual(foreignMeetingId, meetingId)
 environment.ZM_PROFILE = "invented-platform"
 const { installedMeetingIntegration } = await import("./installed-meeting-integration.mjs")
@@ -530,7 +530,7 @@ try {
     arguments: { project: "RES", account_id: 999 },
   })
   assert.equal(refusedScope.isError, true)
-  const result = await callTool("zm_read", { command: "meetings list", arguments: {} })
+  const result = await callTool("zm_read", { command: "meetings list", arguments: { backend: "archive" } })
   assert.notEqual(result.isError, true, JSON.stringify(result))
   const firstScope = result.structuredContent
   assert.ok(firstScope.items.some((meeting) => String(meeting.id) === meetingId))
@@ -539,8 +539,10 @@ try {
     false,
   )
   environment.ZM_PROFILE = "invented-foreign-platform"
-  assert.ok(json("meetings", "list").items.some((meeting) => String(meeting.id) === foreignMeetingId))
-  const secondResult = await callTool("zm_read", { command: "meetings list", arguments: {} })
+  assert.ok(
+    json("meetings", "list", "--backend", "archive").items.some((meeting) => String(meeting.id) === foreignMeetingId),
+  )
+  const secondResult = await callTool("zm_read", { command: "meetings list", arguments: { backend: "archive" } })
   assert.notEqual(secondResult.isError, true)
   const secondScope = secondResult.structuredContent
   assert.deepEqual(
