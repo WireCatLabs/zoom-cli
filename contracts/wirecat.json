@@ -452,7 +452,7 @@
         "meetings",
         "link"
       ],
-      "summary": "preview linking a stored meeting to an event, or a participant to a stored person; --yes applies it",
+      "summary": "link a meeting to an event, or a participant to a person; --yes applies",
       "effects": {
         "remote": "none",
         "local": "write"

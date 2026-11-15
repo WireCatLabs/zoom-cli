@@ -101,9 +101,7 @@ export const addMeetingIntegrationCommands = (
     guards(
       meetings
         .command("link")
-        .description(
-          "preview linking a stored meeting to an event, or a participant to a stored person; --yes applies it",
-        )
+        .description("link a meeting to an event, or a participant to a person; --yes applies")
         .argument("<reference>", "meeting reference, such as meeting:1/1")
         .option("--event-id <id>", "stored event id, or none to unlink", nullableId)
         .option("--expected-event-id <id>", "with --event-id: compare current event id, or none", nullableId)

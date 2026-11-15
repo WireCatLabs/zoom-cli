@@ -591,7 +591,7 @@ zm meetings update <meeting> [options]
 
 **Returns:** meeting change — action, provider, account, applied, id, occurrence_id, change, meeting, and 1 more; every field: zm commands info meetings update
 
-**Example:** `zm personal meetings update --json`
+**Example:** `zm personal meetings update 123456789 --title "Example review" --dry-run --json`
 
 ### `zm meetings cancel`
 
@@ -613,7 +613,7 @@ zm meetings cancel <meeting> [options]
 
 **Returns:** meeting change — action, provider, account, applied, id, occurrence_id, change, meeting, and 1 more; every field: zm commands info meetings cancel
 
-**Example:** `zm personal meetings cancel --json`
+**Example:** `zm personal meetings cancel 123456789 --dry-run --json`
 
 ### `zm meetings invitation`
 
@@ -629,7 +629,7 @@ zm meetings invitation <meeting>
 
 **Returns:** meeting invitation — id, invitation, untrusted; every field: zm commands info meetings invitation
 
-**Example:** `zm personal meetings invitation --json`
+**Example:** `zm personal meetings invitation 123456789 --json`
 
 ### `zm meetings scheduled`
 
@@ -737,7 +737,7 @@ zm meetings prepare <series-id> [options]
 
 ### `zm meetings link`
 
-preview linking a stored meeting to an event, or a participant to a stored person; --yes applies it
+link a meeting to an event, or a participant to a person; --yes applies
 
 **Changes local data.**
 

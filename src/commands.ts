@@ -132,6 +132,9 @@ const exampleFor = (path: string): string => {
     "meetings people": '"Alice Example"',
     "meetings projects evidence": 'RES "identity_id:12"',
     "meetings import": "./downloaded-transcripts",
+    "meetings update": '123456789 --title "Example review" --dry-run',
+    "meetings cancel": "123456789 --dry-run",
+    "meetings invitation": "123456789",
   }
   return `zm ${profile}${path}${argumentsByPath[path] ? ` ${argumentsByPath[path]}` : ""} --json`
 }
