@@ -138,7 +138,7 @@ it("says a plain meetings list is not complete when Zoom has more stretches to r
     configPath: join(directory, "config.json"),
     env: { HOME: directory, ZM_STATE_DIR: join(directory, "state") },
     tokens: manager,
-    fetch: async (input: RequestInfo | URL) => {
+    fetch: async (input: Parameters<typeof fetch>[0]) => {
       const url = new URL(String(input))
       strict(url)
       requests.push(url.pathname)
