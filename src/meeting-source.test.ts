@@ -40,3 +40,28 @@ it("reads Zoom live through the configured API source, not a detached method", a
   expect(await source.find?.(window, [], null)).toEqual({ meetings: [], next: null })
   expect(requests).toEqual(["/v2/users/me/meetings"])
 })
+
+it("reads nothing live from a folder of downloaded files, and builds the source again after reset", async () => {
+  let config = { source: "files", filesFolder: "/example/folder", clientId: null } as unknown as ZoomConfig
+  let reads = 0
+  const { source, reset } = configuredMeetingSource({
+    deps: {
+      readFiles: async () => {
+        reads++
+        return []
+      },
+    },
+    getConfig: () => config,
+    tokens: () => ({ options: { clientId: "" } }) as TokenManager,
+    fetch: () => fetch,
+    zones: new ZoneAssumptions(),
+  })
+  expect([source.finds, source.find, source.get]).toEqual([undefined, undefined, undefined])
+  await source.meetings("2026-10-01T00:00:00Z")
+  await source.meetings("2026-10-01T00:00:00Z")
+  reset()
+  await source.meetings("2026-10-01T00:00:00Z")
+  expect(reads).toBe(2)
+  config = { source: "api", clientId: null } as ZoomConfig
+  expect(source.finds).toBeDefined()
+})

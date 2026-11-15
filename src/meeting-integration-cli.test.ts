@@ -409,3 +409,17 @@ it("mounts bounded local transcription with explicit model, guarded preview and 
   expect(latest(output)).toMatchObject({ applied: true, inserted_transcripts: 1, meeting_id: String(saved.meeting.id) })
   expect(JSON.stringify(latest(output))).not.toContain("Alice Example local recognition")
 })
+
+it("refuses a link that mixes the event and person forms before it opens the store", async () => {
+  const { deps, writes, connect } = await setup()
+  for (const args of [
+    [],
+    ["--event-id", "2", "--participant-id", "3", "--person", "4"],
+    ["--event-id", "2", "--expected-person", "4"],
+    ["--participant-id", "3"],
+    ["--participant-id", "3", "--person", "4", "--expected-event-id", "none"],
+  ])
+    expect(await run(["meetings", "link", "meeting:1/1", ...args, "--json"], deps), args.join(" ")).toBe(2)
+  expect(writes).not.toHaveBeenCalled()
+  expect(connect).not.toHaveBeenCalled()
+})

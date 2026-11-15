@@ -1,5 +1,4 @@
 import { CliError } from "@wirecat/cli-base"
-import { metaOf } from "@wirecat/cli-base/commands"
 import { readOnlyLockOf, setupPermissionCeiling } from "@wirecat/cli-core/cli"
 import {
   CEILING_KEY,
@@ -14,7 +13,7 @@ import { PROFILE_FREE } from "./commands.js"
 import type { ZoomConfig } from "./config.js"
 import { refusalOf, refuseChangeWhenReadOnly, ZM } from "./read-only.js"
 
-/** A change to Zoom asks first (`meetings.create`…, shared). A built-in default only tightens what the owner set (WC-PERM-7). */
+/** A change to Zoom asks first (`meetings.create`…, shared). A default only tightens what the owner set (WC-PERM-7). */
 export const DEFAULT_PERMISSIONS: Readonly<Record<string, Level>> = SHARED_DEFAULT_PERMISSIONS
 
 export const discoveryLevels = (own: Readonly<Record<string, Level>>, env: NodeJS.ProcessEnv) => {
@@ -95,8 +94,7 @@ const refuse = (key: string, level: Level, profile: string, what: string) =>
 
 /**
  * Checks a command against its profile's permissions before anything connects. `deny` stops it; `readonly` stops it
- * when it changes something, as `ZM_READ_ONLY` would; `ask` before a change to Zoom wants `--yes` or a yes at the
- * terminal, and `allow` applies it without one. A flag only answers `ask` (WC-PERM-10). `--dry-run` previews.
+ * when it changes something, as `ZM_READ_ONLY` would. A change to Zoom asks later, in `askBeforeWrite`.
  */
 export const checkPermission = (command: Command, context: PermissionContext): Promise<void> | undefined => {
   const key = permissionKeyOf(command)
@@ -117,16 +115,6 @@ export const checkPermission = (command: Command, context: PermissionContext): P
       { key, level },
     )
   if (level === "readonly" && changes) throw refuse(at, level, profile, `refused to ${changes}`)
-  const options = command.opts<{ yes?: boolean; dryRun?: boolean }>()
-  const confirms = metaOf(command).effects?.remote === "write" && command.options.some(({ long }) => long === "--yes")
-  if (!confirms || options.dryRun || options.yes) return
-  if (level === "allow") {
-    command.setOptionValue("yes", true)
-    return
-  }
-  return askOwner(command, at, profile, context.confirm).then(() => {
-    command.setOptionValue("yes", true)
-  })
 }
 
 const askOwner = async (command: Command, at: string, profile: string, confirm: PermissionContext["confirm"]) => {

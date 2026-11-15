@@ -10,7 +10,7 @@ import {
 import type { Command } from "commander"
 import { object, string } from "./errors.js"
 import { required } from "./recordings.js"
-import { operationSignal, type RemoteOptions, type RemoteRequest, ZoomRemote } from "./remote-http.js"
+import { type RemoteOptions, type RemoteRequest, ZoomRemote } from "./remote-http.js"
 import { zoomMeetingPath as idPath } from "./remote-meeting-id.js"
 import type { TokenManager } from "./tokens.js"
 
@@ -96,28 +96,6 @@ export class ZoomRemoteMeetings {
   constructor(tokens: Pick<TokenManager, "tokens">, fetcher: typeof fetch, options: RemoteOptions = {}) {
     this.remote = new ZoomRemote(tokens, fetcher, options)
   }
-  async list(options: { signal?: AbortSignal } = {}): Promise<RemoteMeeting[]> {
-    const signal = operationSignal(options.signal)
-    const query = new URLSearchParams({ type: "upcoming", page_size: "100" })
-    const seen = new Set<string>()
-    const result = new Map<string, RemoteMeeting>()
-    for (;;) {
-      const body = await this.remote.request(`/users/me/meetings?${query}`, "meeting:read:list_meetings", { signal })
-      if (!Array.isArray(body.meetings)) throw new CliError("invalid_response", "Zoom returned an invalid meeting list")
-      for (const row of body.meetings) {
-        const item = normalized(row)
-        result.set(item.id, item)
-      }
-      const next = string(body.next_page_token)
-      if (!next) return [...result.values()]
-      if (seen.has(next)) throw new CliError("invalid_response", "Zoom repeated a pagination token")
-      seen.add(next)
-      query.set("next_page_token", next)
-    }
-  }
-  async show(id: string, options: { signal?: AbortSignal } = {}): Promise<RemoteMeeting> {
-    return normalized(await this.remote.request(idPath(id), "meeting:read:meeting", options))
-  }
   async invitation(id: string, options: { signal?: AbortSignal } = {}): Promise<{ id: string; invitation: string }> {
     const body = await this.remote.request(`${idPath(id)}/invitation`, "meeting:read:invitation", options)
     return { id, invitation: required(body.invitation) }
@@ -197,10 +175,7 @@ const zoomChange = (change: Readonly<ManagedMeetingChange>): MeetingChange => ({
   ...(change.agenda !== undefined ? { agenda: change.agenda } : {}),
 })
 
-export type RemoteMeetingsService = Pick<
-  ZoomRemoteMeetings,
-  "list" | "show" | "invitation" | "create" | "update" | "cancel"
->
+export type RemoteMeetingsService = Pick<ZoomRemoteMeetings, "invitation" | "create" | "update" | "cancel">
 
 // Zoom schedules, so a create names its start; there is no instant meeting to start from here.
 const ZOOM_FIELDS = { fields: ["title", "startTime", "durationMinutes", "timezone", "agenda"] } as const
@@ -211,8 +186,6 @@ export const createZoomMeetingManagement = (remote: RemoteMeetingsService, accou
     { provider: "zoom", account },
     {
       fields: { create: ZOOM_FIELDS, update: ZOOM_FIELDS },
-      list: async ({ signal }) => (await remote.list({ signal })).map(managedMeeting),
-      get: async (id, { signal }) => managedMeeting(await remote.show(id, { signal })),
       invitation: (id, { signal }) => remote.invitation(id, { signal }),
       create: async (change, { signal }) => {
         const receipt = await remote.create({ ...zoomChange(change), type: 2 }, { apply: true, signal })
@@ -235,8 +208,6 @@ export const createZoomMeetingManagement = (remote: RemoteMeetingsService, accou
 export const zoomMeetingManagement = (open: () => MeetingManagement): MeetingManagement => {
   const declared = createZoomMeetingManagement(
     {
-      list: unbound,
-      show: unbound,
       invitation: unbound,
       create: unbound,
       update: unbound,
@@ -246,8 +217,6 @@ export const zoomMeetingManagement = (open: () => MeetingManagement): MeetingMan
   )
   return {
     ...declared,
-    list: (options) => open().list(options),
-    get: (id, options) => open().get(id, options),
     invitation: (id, options) => open().invitation(id, options),
     create: (change, options) => open().create(change, options),
     update: (id, change, options) => open().update(id, change, options),
@@ -266,8 +235,6 @@ export const lazyRemote = (make: () => RemoteMeetingsService): RemoteMeetingsSer
   let made: RemoteMeetingsService | undefined
   const remote = () => (made ??= make())
   return {
-    list: (options) => remote().list(options),
-    show: (id, options) => remote().show(id, options),
     invitation: (id, options) => remote().invitation(id, options),
     create: (change, options) => remote().create(change, options),
     update: (id, change, options) => remote().update(id, change, options),

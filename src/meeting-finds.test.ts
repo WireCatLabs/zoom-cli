@@ -116,6 +116,28 @@ it("walks a window wider than a month a month at a time, and without a start sto
   await expect(source.find(october, [], "not a cursor")).rejects.toMatchObject({ code: "validation_error" })
 })
 
+it("refuses an invalid list, a repeated page token and an empty id", async () => {
+  await expect(zoom([], () => ({ meetings: null })).find(october, [], null)).rejects.toMatchObject({
+    code: "invalid_response",
+  })
+  const repeating = zoom([], () => ({ meetings: [], next_page_token: "page-2" }))
+  const first = await repeating.find(october, [], null)
+  await expect(repeating.find(october, [], first.next)).rejects.toMatchObject({ code: "invalid_response" })
+  await expect(zoom().get(" ")).rejects.toMatchObject({ code: "validation_error" })
+  for (const cursor of ['{"end":1}', "[]"])
+    await expect(zoom().find(october, [], cursor)).rejects.toMatchObject({ code: "validation_error" })
+  const unstarted = new ZoomApiSource(tokens(), async () => response({ ...series, uuid: "never-run==" }))
+  await expect(unstarted.get("123456789")).rejects.toMatchObject({ code: "invalid_response" })
+  const refusing = new ZoomApiSource(tokens(), async (input) =>
+    String(input).includes("/transcript")
+      ? response({ code: 124, message: "invalid access token" }, 401)
+      : String(input).includes("/participants")
+        ? response({ participants: [], next_page_token: "" })
+        : response({ ...series, ...ran[0], duration: 30 }),
+  )
+  await expect(refusing.get("first/run==")).rejects.toMatchObject({ code: "authentication_error" })
+})
+
 it("refuses a from without a to, as Zoom does", () => {
   expect(() => strict(new URL("https://api.zoom.us/v2/users/me/meetings?from=2026-10-01"))).toThrow(/from without to/)
 })

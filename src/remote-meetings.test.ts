@@ -30,33 +30,20 @@ const fixture = {
 }
 const source = (fetcher: typeof fetch) => new ZoomRemoteMeetings(tokens, fetcher, { sleep: async () => {} })
 
-it("lists and shows remote scheduled meetings, deduplicates ids and redacts host start URLs", async () => {
-  let calls = 0
-  const meetings = await source(async (input) => {
-    const url = new URL(String(input))
-    expect(url.searchParams.get("type")).toBe("upcoming")
-    return response({ meetings: [fixture], next_page_token: calls++ === 0 ? "example-page" : "" })
-  }).list()
-  expect(meetings).toHaveLength(1)
-  expect(meetings[0]).toMatchObject({ id: "123456", title: "Example planning", durationMinutes: 30 })
-  expect(JSON.stringify(meetings)).not.toMatch(/start_url|host-token/)
-  expect(await source(async () => response(fixture)).show("123456")).toEqual(meetings[0])
+it("reads invitations by Zoom's meeting number, and keeps host start URLs out of a created meeting", async () => {
   expect(await source(async () => response({ invitation: "Example invitation" })).invitation("123456")).toEqual({
     id: "123456",
     invitation: "Example invitation",
   })
-  expect(await source(async () => response({ id: "123456", duration: -1 })).show("123456")).toMatchObject({
-    type: null,
-    durationMinutes: null,
-    agenda: null,
-  })
   await expect(source(async () => response({})).invitation("123456")).rejects.toThrow(/required/)
-  await expect(source(async () => response({ meetings: null })).list()).rejects.toThrow(/list/)
-  await expect(source(async () => response({ meetings: [], next_page_token: "repeat" })).list()).rejects.toThrow(
-    /pagination/,
-  )
   for (const id of ["0", "/example//uuid", "-1", " ", "123\n", "123\r\n", 123 as never])
-    await expect(source(async () => response({})).show(id)).rejects.toThrow(/positive numeric/)
+    await expect(source(async () => response({})).invitation(id)).rejects.toThrow(/positive numeric/)
+  const change = { topic: "Example planning", startTime: "2026-10-11T12:00:00Z" }
+  const created = await source(async () => response(fixture)).create(change, { apply: true })
+  expect(created.meeting).toMatchObject({ id: "123456", title: "Example planning", durationMinutes: 30 })
+  expect(JSON.stringify(created)).not.toMatch(/start_url|host-token/)
+  const odd = await source(async () => response({ id: "123456", duration: -1 })).create(change, { apply: true })
+  expect(odd.meeting).toMatchObject({ type: null, durationMinutes: null, agenda: null })
 })
 it("previews every mutation without reading tokens or making requests", async () => {
   const meetings = new ZoomRemoteMeetings(
@@ -262,8 +249,6 @@ it("adapts Zoom management to provider-neutral SDK capabilities with preview and
   expect(await sdk.update("123456", { agenda: "Bob Sample agenda" })).toMatchObject({ applied: false })
   expect(await sdk.cancel("123456", { apply: true, dryRun: true })).toMatchObject({ applied: false })
   expect(requests).toEqual([])
-  expect(await sdk.list()).toMatchObject([{ id: "123456", kind: "scheduled", startTime: fixture.start_time }])
-  expect(await sdk.get("123456")).toMatchObject({ title: fixture.topic, kind: "scheduled" })
   expect(await sdk.invitation("123456")).toEqual({ id: "123456", invitation: "Alice Example invitation" })
   expect(
     await sdk.create(
@@ -305,7 +290,8 @@ it("keeps unknown Zoom kinds explicit and rejects unacknowledged adapter writes"
       source(async () => response({ ...fixture, type })),
       "Alice Example profile",
     )
-    expect(await sdk.get("123456")).toMatchObject({ kind })
+    const receipt = await sdk.create({ title: "Example", startTime: "2026-10-11T12:00:00Z" }, { apply: true })
+    expect(receipt.meeting).toMatchObject({ kind })
   }
   const remote = source(async () => {
     throw new Error("unexpected request")

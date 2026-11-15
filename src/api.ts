@@ -77,7 +77,9 @@ const findCursorOf = (cursor: string): FindCursor => {
   } catch {
     throw new CliError("validation_error", "this Zoom page cursor is not one zm gave")
   }
-  const row = object(value)
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new CliError("validation_error", "this Zoom page cursor is not one zm gave")
+  const row = value as Record<string, unknown>
   const whole = [row.floor, row.end, row.skip].every((value) => Number.isSafeInteger(value))
   if (!whole || (row.token !== null && !string(row.token)))
     throw new CliError("validation_error", "this Zoom page cursor is not one zm gave")

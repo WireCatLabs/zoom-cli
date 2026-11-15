@@ -434,24 +434,6 @@ describe("archive and explicit remote command wiring", () => {
       joinUrl: null,
     }
     deps.remoteMeetings = {
-      list: async () => {
-        calls.push("list")
-        return []
-      },
-      show: async () => {
-        calls.push("show")
-        return {
-          id: meeting.id,
-          uuid: meeting.uuid,
-          title: meeting.title,
-          startedAt: meeting.startedAt,
-          type: 2,
-          durationMinutes: 30,
-          timezone: "UTC",
-          agenda: null,
-          joinUrl: null,
-        }
-      },
       invitation: async () => {
         calls.push("invitation")
         return { id: "123456789", invitation: "Example invitation" }
@@ -740,6 +722,18 @@ it("closes a connection that arrives after cancellation and never exposes its da
   expect(close).toHaveBeenCalledTimes(1)
   expect(read).not.toHaveBeenCalled()
   expect(stdout).toEqual([])
+})
+
+it("refuses a malformed provider answer without showing it", async () => {
+  const { deps, stdout, stderr } = await setup()
+  setConfig(deps.configPath, "zoom.client_id", "example-client")
+  useProfile(deps.configPath, "example")
+  const junk = async () => ({ private: "fixture hidden provider data" }) as never
+  deps.recordings = { list: async () => [], show: junk, download: junk, catalog: vi.fn() }
+  expect(await run(["recordings", "show", "123456789", "--json"], deps)).toBe(13)
+  expect(value(stderr).error.code).toBe("invalid_response")
+  expect(stdout).toEqual([])
+  expect(stderr.join("")).not.toContain("fixture hidden provider data")
 })
 
 it("preserves uncertainty when Zoom acknowledges a change without its details", async () => {

@@ -8,8 +8,6 @@ import type { ProgramDeps } from "./program.js"
 import type { TokenManager } from "./tokens.js"
 import { SET_ZOOM_APP } from "./zoom-app.js"
 
-const unread = () => Promise.reject(new CliError("configuration_error", "this Zoom source cannot read meetings live"))
-
 /** The API or folder source the config names, built on first use; reset() drops it between parses. */
 export const configuredMeetingSource = ({
   deps,
@@ -39,14 +37,10 @@ export const configuredMeetingSource = ({
     })()
     return activeSource
   }
-  const live = (): Pick<MeetingSource, "finds" | "find" | "get"> | undefined =>
-    deps.source ?? (getConfig().source === "api" ? { finds: ZOOM_FINDS, find: unread, get: unread } : undefined)
-  const sourceWith = async <K extends "find" | "get">(name: K) => {
-    const active = await getSource()
-    const port = active[name]
-    if (!port) throw new CliError("configuration_error", "this Zoom source cannot read meetings live")
-    return port.bind(active) as NonNullable<MeetingSource[K]>
-  }
+  // Declared before the source is built, so a list knows what Zoom reads without a login.
+  const live = (name: "find" | "get") => (deps.source ? deps.source[name] !== undefined : getConfig().source === "api")
+  // A getter answered that the source has the port, so the built one does.
+  const ported = async () => (await getSource()) as Required<MeetingSource>
   const source: MeetingSource = {
     get provider() {
       return deps.source?.provider ?? "zoom"
@@ -77,13 +71,13 @@ export const configuredMeetingSource = ({
     },
     // Only the API reads Zoom live; a folder of downloaded files has no meeting that is not in it.
     get finds() {
-      return live()?.finds
+      return deps.source ? deps.source.finds : getConfig().source === "api" ? ZOOM_FINDS : undefined
     },
     get find(): MeetingSource["find"] {
-      return live()?.find && (async (window, terms, cursor) => (await sourceWith("find"))(window, terms, cursor))
+      return live("find") ? async (window, terms, cursor) => (await ported()).find(window, terms, cursor) : undefined
     },
     get get(): MeetingSource["get"] {
-      return live()?.get && (async (id) => (await sourceWith("get"))(id))
+      return live("get") ? async (id) => (await ported()).get(id) : undefined
     },
   }
   return {
