@@ -61,7 +61,8 @@
     "security:no-leak": "cli-testing security no-leak . contracts/no-leak.json",
     "version:check": "cli-dev version",
     "version:sync": "cli-dev version --sync",
-    "package:check": "node scripts/package-check.ts"
+    "package:check": "node scripts/package-check.ts",
+    "check:agent-docs": "node --experimental-strip-types scripts/check-agent-docs.ts"
   },
   "dependencies": {
     "@wirecat/cli-base": "0.102.1",

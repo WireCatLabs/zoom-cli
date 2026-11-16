@@ -18,6 +18,16 @@ an item here names it when zm only adopts it.
 - **Claim before code:** put `🚧 <branch>` on the line in the first push of the branch.
 - **Close in the PR that ships the work:** delete the line here in that PR.
 
+## Now (P1)
+
+- **ZM-30** · P1 · ops · **Do not release before this:** build on the cli-base that installs a skill's
+  `references/` (`skill install`, `skill show <part>`; WC-DOC-22, cli-base 0.106.0 or later) and the cli-core that
+  serves them over MCP (`skillResources`; cli-core 0.678.0 still serves only SKILL.md). The skill now links
+  `skills/zoom-cli/references/*.md`; with cli-base 0.102.1 `zm skill install` copies only SKILL.md and
+  `zm skill show search` fails. zm builds its own skill command (`src/agent-skill.ts`) and MCP skill (`src/run.ts`)
+  from the SKILL.md URL alone, so after the bump check all three: install into a temporary HOME and list the folder,
+  `zm skill show search`, and the MCP resource list.
+
 ## Next (P2)
 
 - **ZM-5** · P2 · 🚧 `feat/saved-meeting-searches` · Saved searches: `zm <profile> searches create/run/list/show/delete`,
