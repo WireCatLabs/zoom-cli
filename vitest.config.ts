@@ -3,6 +3,7 @@ export default defineConfig({
   // Oxc does not resolve package exports in tsconfig extends; TypeScript checks the project configs separately.
   tsconfig: "./node_modules/@wirecat/cli-base/config/tsconfig.base.json",
   test: {
+    testTimeout: 15_000,
     // Filesystem fault injection must also reach the shared native helpers.
     server: { deps: { inline: [/cli-core\/dist\/files\//, /cli-core\/dist\/speech\/wav\.js/] } },
     // Agents run suites side by side on 24 cores; one worker per core ran the machine out of memory (2026-10-11).

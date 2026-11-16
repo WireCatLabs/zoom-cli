@@ -39,6 +39,7 @@
     "lint:fix": "biome check --write .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:slow": "vitest run --reporter=json --outputFile=coverage/tests.json >/dev/null; cli-dev slow-tests",
     "smoke:bun": "bun run scripts/smoke.ts && node scripts/sandboxed.ts bun run scripts/smoke-bundle.ts",
     "smoke:node": "node scripts/sandboxed.ts node --experimental-strip-types scripts/smoke-bundle.ts",
     "prepublishOnly": "pnpm build",
@@ -65,8 +66,8 @@
     "check:agent-docs": "node --experimental-strip-types scripts/check-agent-docs.ts"
   },
   "dependencies": {
-    "@wirecat/cli-base": "0.106.0",
-    "@wirecat/cli-core": "0.681.0",
+    "@wirecat/cli-base": "0.107.0",
+    "@wirecat/cli-core": "0.683.0",
     "commander": "15.0.0",
     "valibot": "1.5.0"
   },
