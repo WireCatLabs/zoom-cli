@@ -372,7 +372,7 @@ zm meetings list [query] [options]
 | `--limit <n>` | meetings per page; the profile's defaults.limit when absent. |
 | `--page <n>` | which page, starting at 1. |
 
-**Returns:** meeting — ref, id, provider_id, provider, account, title, url, started_at, and 11 more; every field: zm commands info meetings list
+**Returns:** meeting — ref, id, provider_id, provider, account, title, url, started_at, and 12 more; every field: zm commands info meetings list
 
 **Next usually:** `zm meetings show <meeting>`, `zm meetings transcript <meeting>`, `zm meetings summary <meeting>`
 
@@ -394,7 +394,7 @@ zm meetings show <meeting> [options]
 |---|---|
 | `--backend <archive\|server\|both>` | where to read: the store (archive), the service (server), or both, kept in the store (default: both). |
 
-**Returns:** meeting details — ref, id, provider_id, provider, account, title, url, started_at, and 20 more; every field: zm commands info meetings show
+**Returns:** meeting details — ref, id, provider_id, provider, account, title, url, started_at, and 21 more; every field: zm commands info meetings show
 
 **Next usually:** `zm meetings transcript <meeting>`, `zm meetings summary <meeting>`, `zm meetings invitation <meeting>`
 
@@ -1547,8 +1547,12 @@ the instructions an agent is given for this tool
 print SKILL.md — `zm skill install` puts it where Claude Code, Codex, Gemini CLI and OpenClaw look for it, and where Hermes does on request; --for prints the copy already there
 
 ```sh
-zm skill show [options]
+zm skill show [name] [options]
 ```
+
+| Argument | | What it is |
+|---|---|---|
+| `name` | optional | a part of this skill, or a skill shipped for a task: zoom-live, setup, search, prepare, people-and-projects, archive. |
 
 | Option | What it does |
 |---|---|
