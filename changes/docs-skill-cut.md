@@ -6,5 +6,4 @@
   No rule was dropped. Names gone in 0.77.0 are corrected: `meetings link --event-id`, and
   `meetings create|update|cancel|invitation` instead of `remote-meetings`, and what `--dry-run` shows. The skill
   now tells agents that `meetings show` and `meetings list` ask Zoom by default and that `--offline` reads only the
-  store. An agent that reads the skill pays about
-  3,000 fewer tokens on every turn.
+  store. An agent that reads the skill pays about 3,000 fewer tokens on every turn.
