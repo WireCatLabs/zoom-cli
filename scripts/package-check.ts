@@ -9,11 +9,11 @@ const PACKED = [
   "LICENSE",
   "constants.json",
   "contracts/wirecat.json",
-  "skills/zoom-cli/SKILL.md",
+  "skills/zoom-cli/",
   "scenarios/",
 ]
 const PACKED_SAID =
-  "dist/, package.json, README.md, LICENSE, constants.json, contracts/wirecat.json, the agent skill and the guide scenarios"
+  "dist/, package.json, README.md, LICENSE, constants.json, contracts/wirecat.json, the agent skill with its references and the guide scenarios"
 
 const failed = releaseCheck([{ name: "package contents", run: packContents(root, PACKED, PACKED_SAID) }], {
   version: packageVersion(root),

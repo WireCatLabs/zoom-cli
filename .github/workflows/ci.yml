@@ -27,6 +27,7 @@ jobs:
       platforms: false
       checks: |
         pnpm smoke:node
+        pnpm check:agent-docs
 
   installed-platforms:
     needs: ci
