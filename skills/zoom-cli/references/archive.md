@@ -25,8 +25,9 @@ bounded history. With a meeting ID instead of the date bounds, `download` handle
 - Inspect `recordings archive locks` before `recordings archive recover`; recovery previews stale local dead-process
   locks, and `--yes` removes only authorized ones.
 - `zm personal search recordings <dir> 'budget'` and `recordings archive transcript <dir>` verify VTT before
-  reading and need no login or store. Archive search is literal and case-insensitive and returns shared search hits. `page.has_more`
-  requires a larger limit or a narrower query; there is no cursor. Transcript reads support `--uuid`/`--file-ids`.
+  reading and need no login or store. Archive search is literal and case-insensitive and returns shared search
+  hits. `page.has_more` requires a larger limit or a narrower query; there is no cursor. Transcript reads support
+  `--uuid`/`--file-ids`.
 - Archive reads do not import.
 
 ## Import

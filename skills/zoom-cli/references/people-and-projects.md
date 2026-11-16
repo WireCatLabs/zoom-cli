@@ -13,16 +13,11 @@ The core rules in [SKILL.md](../SKILL.md) apply. Use Memo for shared knowledge a
 - `meetings context person:<id>` follows explicit identity links.
 - `meetings task-proposal <ref> --type question|request|mention|promise` returns a proposal, not a saved task.
 
-## Search filters
-
-`search meetings` filters by dates, identity or person, event or series, project, tag or topic. Project filters
-require confirmed membership; tags and topics require explicit labels.
-
 ## Project evidence
 
 `zm personal meetings projects evidence <project>` searches one existing canonical project's name, key and aliases,
 including meetings without confirmed membership. Keep its coverage and frozen continuation; it reads the existing
-index and neither refreshes it nor assigns project membership. Over MCP it is the same command.
+index and neither refreshes it nor assigns project membership.
 
 When the project is unknown, use the search hit's `meeting` field for the parent reference, not its transcript-cue
 `ref`. `meetings projects scan <parent-ref> --json` compares one bounded local evidence page with existing global
@@ -36,7 +31,8 @@ no model or network.
   project for evidence search instead.
 - Resume with `evidence.coverage.next_cursor`, the same parent ref and `--cursor`; a title or project may repeat.
   Candidate truncation needs a larger limit or bytes, separately from cue continuation.
-- No cues, byte truncation and no cursor means an oversized cue, not an absence of discussion.
+- No cues, byte truncation and no cursor means an oversized cue, not an absence of discussion. Over MCP the scan is
+  the same command.
 - Confirm reviewed links through `memo projects meetings link` with the exact stored meeting ID and
   `--account zoom:zm-profile:<label>`. An existing proposal needs its own Memo fingerprint; candidate and vocabulary
   fingerprints do not substitute for it. The scan itself saves nothing.

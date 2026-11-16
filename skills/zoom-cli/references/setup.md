@@ -8,7 +8,8 @@ The core rules in [SKILL.md](../SKILL.md) apply.
   `Open this URL to approve Zoom login:` and give it to the person as a link; their browser must be on this computer.
   `--no-input` cannot approve it. The owner can also sign in from WireCat Desktop (Tools → Zoom → Manage).
 - Tokens stay in the keyring.
-- Missing scopes require changes to the Zoom app and a new login.
+- Missing scopes require changes to the Zoom app and a new login. `meetings show` from Zoom needs the optional
+  `meeting:read:past_meeting` scope.
 - `session status` is cached locally; `--check` verifies it remotely.
 
 ## The Zoom app and its client id

@@ -10,23 +10,26 @@ Words match prefixes, configured word forms and garbled spellings (`match: "corr
 The query takes `OR`, `(groups)`, `-word`, `"a phrase"`, `"a b"~N` (within N lines) and `from:"Name"`. Try the full
 name and the abbreviation separately; an empty result does not prove absence from incomplete archives.
 
-`--json=ref,excerpt,source.title,source.started_at,source.url` keeps a compact search result. Filters (dates,
-identity, person, event, series, project, tag, topic) are in [people-and-projects.md](people-and-projects.md).
+`--json=ref,excerpt,source.title,source.started_at,source.url` keeps a compact search result.
+
+`search meetings` filters by dates, identity or person, event or series, project, tag or topic. Project filters
+require confirmed membership; tags and topics require explicit labels. Who someone is:
+[people-and-projects.md](people-and-projects.md).
 
 ## Read transcript passages
 
 `zm personal meetings passage <ref> --before-n 3 --after-n 3 --format text`. Text and Markdown print timestamps,
 speakers and references, with coverage once. Start small and expand only where context requires it.
 `--json=items.ref,items.start_ms,items.speaker_name,items.text` keeps compact structured cues. Dotted paths traverse
-nested objects and arrays; pagination, coverage, next steps, missing data and execution metadata remain.
+nested objects and arrays; pagination, coverage, next steps, missing data and execution metadata remain. Passage
+boundary anchors are inclusive, so adjacent windows overlap: a widened passage repeats lines, not evidence.
 
 ## Evidence and history
 
 `zm personal meetings evidence meeting:<account>/<meeting>[/<transcript>[/<position>]]` reads bounded evidence.
-Resume cue pages with `--cursor`, or revision scans with `--after-transcript-id`, never both. Passage boundary anchors
-are inclusive, so adjacent windows overlap. Historical references remain readable and may be superseded;
-`meetings transcript <id> --history` includes retained versions. `meetings summary <id>` reads provider summaries;
-prefer transcript evidence for consequential claims.
+Resume cue pages with `--cursor`, or revision scans with `--after-transcript-id`, never both.
+Historical references remain readable and may be superseded; `meetings transcript <id> --history` includes retained
+versions. `meetings summary <id>` reads provider summaries; prefer transcript evidence for consequential claims.
 
 ## Several searches at once
 
