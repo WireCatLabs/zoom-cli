@@ -74,7 +74,9 @@ it("keeps CLI paging, calendar filters and participant reads scoped to the selec
   expect(
     (await invoke(["meetings", "people", "Alice", "--jsonl"])).filter((record) => record.type === "item"),
   ).toHaveLength(2)
-  expect((await invoke(["events", "list", "--json"]))[0].items).toEqual([eventItem(event)])
+  expect((await invoke(["events", "list", "--json"]))[0].items).toEqual([
+    { ...eventItem(event), untrusted: ["title", "description", "location"] },
+  ])
   expect(await invoke(["events", "list", "--jsonl"])).toMatchObject([
     { type: "item", data: eventItem(event) },
     { type: "end", complete: true },
