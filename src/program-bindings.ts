@@ -13,6 +13,7 @@ import {
   environmentOf,
   isBody,
   itemAnswer,
+  meetingAnswerBody,
   pagingOf,
   runBudgetOf,
   snakeKeys,
@@ -311,7 +312,7 @@ export const bindZoomProgram = (program: Command, given: ProgramDeps, lifecycle:
       () => profileAccountKey(profile()),
     ),
     askFirst: (command) => askBeforeWrite(command, { profile: named, config: getConfig, confirm: ask() }),
-    write: (value) => output(bodyOf(value)),
+    write: (value, _format, command) => output(meetingAnswerBody(command, value)),
     // inCommandRun would open a second run beside zm's own commandRuns, so a sync would be kept twice.
     inRun: (_command, body) => body(),
     budgetOf: runBudgetOf,
