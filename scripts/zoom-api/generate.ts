@@ -17,7 +17,26 @@ const artifacts = generate(
     typesGenerator({ path: "src/zoom-api/types.ts" }),
     valibotGenerator({ path: "src/zoom-api/schemas.ts", typesImport: "./types.js" }),
   ],
-  { banner: ["Source: spec/zoom/chat.json", "Run: pnpm zoom:generate"] },
+  {
+    banner: ["Source: spec/zoom/chat.json", "Run: pnpm zoom:generate"],
+    auth: {
+      securitySchemes: {
+        openapi_authorization: {
+          type: "oauth2",
+          flows: {
+            authorizationCode: {
+              authorizationUrl: "https://zoom.us/oauth/authorize",
+              tokenUrl: "https://zoom.us/oauth/token",
+              scopes: {},
+            },
+          },
+        },
+      },
+      security: [{ openapi_authorization: [] }],
+      reason:
+        "the trimmed spec keeps only the paths, so the scheme its operations name is lost; this is zm's own sign-in",
+    },
+  },
 )
 const check = process.argv.includes("--check")
 const stale = writeArtifacts(artifacts, {

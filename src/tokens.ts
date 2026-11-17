@@ -171,6 +171,9 @@ export class TokenManager {
    */
   remove(account = this.accountOf()): boolean {
     if (this.stores) {
+      // A removal over an unreachable keyring only warns; reading first names it, or "nothing to end" would leave
+      // the sign-in in the keyring.
+      this.stores.auto.read(account)
       const legacy = this.legacyOf(account)
       const old = legacy && !this.options.isolated ? (this.stores.legacy?.remove(legacy) ?? []) : []
       return this.stores.auto.remove(account).length + old.length > 0

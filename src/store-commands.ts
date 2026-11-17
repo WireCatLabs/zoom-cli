@@ -5,6 +5,7 @@ import {
   type Body,
   environmentOf,
   formatMeetingBatch,
+  passageForRun,
 } from "@wirecat/cli-core/cli"
 import type { MeetingBatchReader } from "@wirecat/cli-core/meetings"
 import { addMeetingPassageCommand } from "@wirecat/cli-core/meetings/cli"
@@ -128,7 +129,7 @@ export const addStoreCommands = (program: Command, context: StoreCommandContext)
     },
     output: (result, format) => {
       if (format === "json") buffer(rendered(bodyOf(result.packet), program.opts().jsonl ? "jsonl" : "json"))
-      else buffer(result.content)
+      else buffer(passageForRun(program, result, format).content)
     },
   })
   const meetingSemantic = async () => (await connected()).meetingSemantic

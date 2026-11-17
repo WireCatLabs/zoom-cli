@@ -66,8 +66,8 @@
     "check:agent-docs": "node --experimental-strip-types scripts/check-agent-docs.ts"
   },
   "dependencies": {
-    "@wirecat/cli-base": "0.107.0",
-    "@wirecat/cli-core": "0.683.0",
+    "@wirecat/cli-base": "0.109.0",
+    "@wirecat/cli-core": "0.687.0",
     "commander": "15.0.0",
     "valibot": "1.5.0"
   },
