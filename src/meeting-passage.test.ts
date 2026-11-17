@@ -170,3 +170,22 @@ it("opens the place of a search all hit: its cue_ref, with the speaker on the hi
   expect(answer.item).toMatchObject({ target_ref: f.reference, coverage: { included: 3 } })
   expect(f.network).not.toHaveBeenCalled()
 })
+it("marks transcript text in a scheduled agent's text and Markdown passage, and only there", async () => {
+  const MARK = "0123456789abcdef"
+  const f = await setup()
+  const passage = async (format: string, agent: boolean) => {
+    const env: NodeJS.ProcessEnv = agent ? { ZM_READ_ONLY: "1", ZM_UNTRUSTED_MARK: MARK } : {}
+    useProfile(f.deps.configPath, "AliceExample", env)
+    f.output.length = 0
+    expect(await run(["meetings", "passage", f.reference, "--format", format], { ...f.deps, env })).toBe(0)
+    return f.output.join("")
+  }
+  const block = new RegExp(`⟦untrusted:${MARK} [^⟧]*⟧[^⟦]*⟦/untrusted:${MARK}⟧`, "gu")
+  for (const format of ["text", "markdown"]) {
+    const content = await passage(format, true)
+    expect(content, format).toMatch(new RegExp(`⟦untrusted:${MARK} [^⟧]*⟧[^⟦]*agreed to review`, "u"))
+    expect(content.replace(block, ""), format).not.toContain("agreed to review")
+    expect(content.replace(block, ""), format).toContain(f.reference)
+    expect(await passage(format, false), format).not.toContain("⟦untrusted")
+  }
+})

@@ -2,7 +2,7 @@ import { mkdtemp } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
-import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
+import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-core/meetings/testing"
 import { expect, it } from "vitest"
 import { TEST_PROFILE, useProfile } from "../scripts/testing/profile.js"
 import { ZoomApiSource } from "./api.js"
@@ -184,4 +184,45 @@ it("says a plain meetings list is not complete when Zoom has more stretches to r
   const answer = JSON.parse(stdout.join(""))
   expect(answer.meta).toMatchObject({ complete: false, issues: [{ reason: "meetings.server-capped" }] })
   expect(requests.length).toBeLessThanOrEqual(3 * 2 * 21)
+})
+
+it("ends a meetings list the run stopped mid-read as cancelled, not answered from the store (CORE-70)", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "zm-test-finds-"))
+  const stdout: string[] = []
+  const stderr: string[] = []
+  const store = memoryMeetingStore()
+  const stored = sampleMeeting()
+  stored.meeting.accountId = 1
+  await store.saveMeeting(stored)
+  const stop = new AbortController()
+  const requested: string[] = []
+  const manager = tokens()
+  const deps = {
+    configPath: join(directory, "config.json"),
+    env: { HOME: directory, ZM_STATE_DIR: join(directory, "state") },
+    tokens: manager,
+    signal: stop.signal,
+    fetch: async (input: Parameters<typeof fetch>[0]) => {
+      requested.push(new URL(String(input)).pathname)
+      stop.abort()
+      throw new DOMException("This operation was aborted", "AbortError")
+    },
+    store,
+    accountId: 1,
+    openBrowser: async () => {},
+    data: (text: string) => stdout.push(text),
+    diagnostic: (text: string) => stderr.push(text),
+  }
+  setConfig(deps.configPath, "zoom.client_id", "example-client")
+  useProfile(deps.configPath, TEST_PROFILE, deps.env)
+  manager.forProfile(TEST_PROFILE).save({
+    accessToken: "example-access",
+    refreshToken: "example-refresh",
+    expiresAt: Number.MAX_SAFE_INTEGER,
+    scopes: READS,
+  })
+  expect(await run(["meetings", "list", "--json"], deps)).not.toBe(0)
+  expect(requested).toEqual(["/v2/users/me/meetings"])
+  expect(stdout.join("")).not.toContain(stored.meeting.title)
+  expect(JSON.parse(stderr.join("")).error).toMatchObject({ code: "cancelled" })
 })

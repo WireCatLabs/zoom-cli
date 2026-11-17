@@ -302,6 +302,7 @@ export const bindZoomProgram = (program: Command, given: ProgramDeps, lifecycle:
       )
     },
     now: deps.now,
+    signal,
     management: profileMeetingManagement(
       () => {
         api()
