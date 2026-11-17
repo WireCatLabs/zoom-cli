@@ -30,7 +30,9 @@
         {
           "type": "named",
           "name": "--profiles",
-          "value": "all"
+          "description": "The profiles this server serves: one name, a comma-separated list such as work,personal, or all for every profile on this computer",
+          "isRequired": true,
+          "placeholder": "personal"
         }
       ]
     }
