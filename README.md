@@ -22,7 +22,7 @@ what you promised in yesterday's call, and get the answer with a reference to th
 <!-- Demo slot: a 30–45 s recording of the exchange below goes here, as an absolute
      raw.githubusercontent.com URL so it also renders on npmjs.com. -->
 
-**Example** — invented people, illustrative output:
+**Example:**
 
 > **You:** I have a call with Bob Sample at three. What did we agree last time, and what do I owe him?
 
