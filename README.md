@@ -11,9 +11,10 @@ commitments after it.
 Claude Code, Codex, Gemini CLI or any MCP client. Ask what you discussed with someone last time, or
 what you promised in yesterday's call, and get the answer with a reference to the exact passage.
 
-[Documentation][docs/index.md] ·
-[Commands][docs/commands.md] ·
-[WireCat](https://wirecat.dev)
+[Docs](https://wirecat.dev/en/docs/zm) ·
+[Install](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/installation.md) ·
+[Usage](https://github.com/WireCatLabs/zoom-cli/blob/main/docs/usage.md) ·
+[Discord](https://discord.gg/DebENqbRrJ)
 
 [![npm](https://img.shields.io/npm/v/@wirecat/zoom-cli)](https://www.npmjs.com/package/@wirecat/zoom-cli)
 [![Node](https://img.shields.io/node/v/@wirecat/zoom-cli)](https://nodejs.org/)
