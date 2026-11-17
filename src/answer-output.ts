@@ -15,7 +15,7 @@ const record = (value: unknown): value is Record<string, unknown> =>
 const only = (value: Record<string, unknown>, keys: string[]) => Object.keys(value).every((key) => keys.includes(key))
 
 /**
- * cli-core's meeting commands and MCP tools return envelopes as plain objects, `listed()` lists or bare reports,
+ * cli-core's MCP tools and store reports return envelopes as plain objects, `listed()` lists or bare reports,
  * not `itemOf`/`listOf` bodies; zoom's own commands build bodies and never come through here.
  */
 export const bodyOf = (value: unknown): Body => {

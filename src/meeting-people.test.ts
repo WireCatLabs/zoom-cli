@@ -96,7 +96,7 @@ it("preserves empty participant scan pages and continuation budgets through CLI 
     page: { limit: 1, has_more: true, next_cursor: expect.any(String) },
     coverage: { scanned: 1, truncated_by: "scan_limit", archive_completeness: "unknown" },
   })
-  expect(first.next[0]).toMatchObject({
+  expect(JSON.parse(f.output.join("")).next[0]).toMatchObject({
     step: "page.next",
     args: { query: "алиса", limit: 1, scan_limit: 1, max_read_bytes: 100, cursor: first.page.next_cursor },
   })
@@ -110,9 +110,19 @@ it("preserves empty participant scan pages and continuation budgets through CLI 
   const last = readAnswer(f.output.join(""))
   expect(last.items).toMatchObject([{ display_name: "АЛИСА ПРИМЕР" }])
   expect(last.page).toEqual({ mode: "cursor", limit: 1, has_more: false })
-  expect(last).not.toHaveProperty("next")
+  expect(JSON.parse(f.output.join(""))).not.toHaveProperty("next")
   expect(f.close).toHaveBeenCalledTimes(3)
   expect(f.network).not.toHaveBeenCalled()
+})
+
+it("puts the people page's next step at the top of the answer, where an agent looks for it", async () => {
+  const f = await fixture()
+  const args = ["--offline", "meetings", "people", "алиса", "--limit", "1", "--scan-limit", "1", "--json"]
+  expect(await run(args, f.deps)).toBe(0)
+  const packet = JSON.parse(f.output.join(""))
+  readAnswer(f.output.join(""))
+  expect(packet.next[0]).toMatchObject({ step: "page.next", args: { cursor: packet.item.page.next_cursor } })
+  expect(packet.item).not.toHaveProperty("next")
 })
 
 it("keeps the bounded participant report in JSONL data with a final end record", async () => {

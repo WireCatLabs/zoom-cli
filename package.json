@@ -67,7 +67,7 @@
   },
   "dependencies": {
     "@wirecat/cli-base": "0.109.0",
-    "@wirecat/cli-core": "0.687.0",
+    "@wirecat/cli-core": "0.691.0",
     "commander": "15.0.0",
     "valibot": "1.5.0"
   },
