@@ -446,14 +446,26 @@ const meetingIntegration = await installedMeetingIntegration({
   invoke,
   diagnostics,
 })
-const people = json("meetings", "people", "Alice", "--limit", "1", "--scan-limit", "100", "--max-read-bytes", "10000")
+const peopleText = invoke([
+  "--json",
+  "meetings",
+  "people",
+  "Alice",
+  "--limit",
+  "1",
+  "--scan-limit",
+  "100",
+  "--max-read-bytes",
+  "10000",
+]).stdout
+const people = answer(peopleText)
 assert.equal(people.items.length, 1)
 assert.equal(typeof people.items[0].identity_id, "number")
 assert.notEqual(String(people.items[0].meeting_id), foreignMeetingId)
 assert.equal(people.coverage.archive_completeness, "unknown")
 assert.equal(people.page.limit, 1)
 assert.equal(people.page.has_more, true)
-assert.equal(people.next[0].step, "page.next")
+assert.equal(JSON.parse(peopleText).next[0].step, "page.next")
 const peopleJsonl = invoke([
   "meetings",
   "people",
