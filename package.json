@@ -63,7 +63,6 @@
     "version:check": "cli-dev version",
     "version:sync": "cli-dev version --sync",
     "package:check": "node scripts/package-check.ts",
-    "installed:check": "node --experimental-strip-types scripts/installed-check.ts",
     "check:agent-docs": "node --experimental-strip-types scripts/check-agent-docs.ts"
   },
   "dependencies": {
