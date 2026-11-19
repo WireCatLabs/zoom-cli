@@ -25,9 +25,12 @@ jobs:
       # Off until the unit suite passes on Windows and macOS: 22–25 tests there assume POSIX paths, modes,
       # symlinks and systemd. The installed-package proof below still runs on all three.
       platforms: false
+      # installed:check runs the installed-package proof below on Linux and Node 24 only: a pull request that breaks
+      # the proof fails here, not at release.
       checks: |
         pnpm smoke:node
         pnpm check:agent-docs
+        pnpm installed:check
 
   installed-platforms:
     needs: ci
