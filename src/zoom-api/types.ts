@@ -64,3 +64,9 @@ export type GetUserContactResponse = {
     | "Out_of_Office"
     | "Busy"
 }
+
+/** What each operation answers, by its id. */
+export interface Responses {
+  getUserContacts: GetUserContactsResponse
+  getUserContact: GetUserContactResponse
+}

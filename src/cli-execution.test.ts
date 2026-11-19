@@ -7,6 +7,7 @@ import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
 import { describe, expect, it, vi } from "vitest"
 import { readAnswer, readJsonlPage } from "../scripts/testing/answers.js"
 import { fakeConnection } from "../scripts/testing/connection.js"
+import { mcpClient } from "../scripts/testing/mcp.js"
 import { useProfile } from "../scripts/testing/profile.js"
 import { addProfile, profileAccountKey, readConfig, setConfig } from "./config.js"
 import { writeExportFile } from "./output-file.js"
@@ -603,12 +604,20 @@ it("lets --profiles name only the locked profile under ZM_PROFILE_LOCK", async (
   expect(stderr.join("")).toContain("locked to profile work")
 })
 
-it("says so when zm mcp serve has no profile to serve", async () => {
-  const { deps, stderr } = await setup()
-  const { ZM_PROFILE: _named, ...env } = process.env
-  deps.env = env
-  expect(await run(["mcp", "serve", "--profiles", "all"], deps)).toBe(3)
-  expect(stderr.join("")).toContain("no zm profile on this computer yet")
+it("serves its tools with no profile on the computer, and refuses each call with how to set one up", async () => {
+  const { deps, directory } = await setup()
+  deps.env = { HOME: directory, XDG_CONFIG_HOME: join(directory, "config"), XDG_DATA_HOME: join(directory, "data") }
+  const { client, close } = await mcpClient(deps, ["mcp", "serve", "--profiles", "all"])
+  const { tools } = await client.listTools()
+  expect(tools.length).toBeGreaterThan(0)
+  for (const tool of tools) expect(tool.inputSchema.required).toContain("profile")
+  const answer = await client.callTool({
+    name: "zm_read",
+    arguments: { profile: "work", command: "meetings list", arguments: {} },
+  })
+  expect(answer.isError).toBe(true)
+  expect(JSON.stringify(answer.content)).toContain("no zm profile on this computer yet")
+  expect(await close()).toBe(0)
 })
 
 it("classifies dispatched token failures as uncertain while preflight cancellation never dispatches", async () => {

@@ -1405,7 +1405,15 @@
         "--record",
         "--json"
       ],
-      "last": null,
+      "last": [
+        "runs",
+        "list",
+        "command:\"meetings sync\" status:success",
+        "--limit",
+        "50",
+        "--no-record",
+        "--json"
+      ],
       "lastShape": "runs",
       "what": "meetings and transcripts",
       "note": null
