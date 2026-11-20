@@ -80,7 +80,7 @@
     "@modelcontextprotocol/server": "2.4.0",
     "@types/node": "^22.20.5",
     "@vitest/coverage-v8": "^5.0.5",
-    "@wirecat/cli-testing": "0.7.0",
+    "@wirecat/cli-testing": "0.7.3",
     "cspell": "10.4.0",
     "esbuild": "0.28.2",
     "lefthook": "2.2.2",
