@@ -50,8 +50,8 @@ importers:
         specifier: ^5.0.5
         version: 5.0.5(vitest@5.0.5)
       '@wirecat/cli-testing':
-        specifier: 0.7.0
-        version: 0.7.0
+        specifier: 0.7.3
+        version: 0.7.3
       cspell:
         specifier: 10.4.0
         version: 10.4.0
@@ -1216,8 +1216,8 @@ packages:
       ssh2:
         optional: true
 
-  '@wirecat/cli-testing@0.7.0':
-    resolution: {integrity: sha512-1FTDRQOM6g6Z9lTA5dOBk+s8XNcfJUt33yKjZV8g4trCZbKrqWh2jvdhVLvgM8xAzh/61HqSWyCvbbVpegbO+Q==}
+  '@wirecat/cli-testing@0.7.3':
+    resolution: {integrity: sha512-oXVyHO31bAWQ6Y6JpLlFuxhCUj6xWYBgag8lJPMvmhIzevPpZWN8wvEPZC8mrNoRVBn8cqUQT6NDxf3huwVviA==}
     engines: {node: ^22.16.0 || >=24}
     hasBin: true
 
@@ -3379,7 +3379,7 @@ snapshots:
       - typescript
       - zod
 
-  '@wirecat/cli-testing@0.7.0':
+  '@wirecat/cli-testing@0.7.3':
     dependencies:
       '@modelcontextprotocol/client': 2.4.0
 
