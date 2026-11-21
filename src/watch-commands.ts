@@ -1,5 +1,5 @@
 import { annotate } from "@wirecat/cli-core/commands"
-import { type RunReport, type WatchSleep, watchMeetingIngestion } from "@wirecat/cli-meetings"
+import { type RunReport, type WatchSleep, watchMeetingIngestion } from "@wirecat/cli-messaging/meetings"
 import { type Command, Option } from "commander"
 import { ZoomError } from "./errors.js"
 import { duration } from "./execution.js"

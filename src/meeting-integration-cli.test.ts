@@ -7,8 +7,8 @@ import {
   dispatchMeetingMutation,
   type MeetingMediaDescriptor,
   transcribeMeeting,
-} from "@wirecat/cli-meetings"
-import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-meetings/testing"
+} from "@wirecat/cli-messaging/meetings"
+import { memoryMeetingStore, sampleMeeting } from "@wirecat/cli-messaging/meetings/testing"
 import { parseMeetingReference } from "@wirecat/cli-messaging"
 import { expect, it, vi } from "vitest"
 import { ZoomError } from "./errors.js"

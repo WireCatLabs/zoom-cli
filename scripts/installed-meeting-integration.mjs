@@ -18,7 +18,7 @@ const fixture = async (root, phase, input) => {
     if (phase === "seed") {
       const require = createRequire(join(root, "node_modules", "@wirecat", "zoom-cli", "package.json"))
       const { sampleMeeting, sampleEvent } = await import(
-        pathToFileURL(require.resolve("@wirecat/cli-meetings/testing")).href
+        pathToFileURL(require.resolve("@wirecat/cli-messaging/meetings/testing")).href
       )
       const key = { provider: "zoom", account: "zm-profile:invented-platform" }
       const foreignKey = { provider: "zoom", account: "zm-profile:invented-foreign-platform" }

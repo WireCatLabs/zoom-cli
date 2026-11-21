@@ -1,4 +1,4 @@
-import type { MeetingContextChange, MeetingContextReceipt, MeetingMutationOptions } from "@wirecat/cli-meetings"
+import type { MeetingContextChange, MeetingContextReceipt, MeetingMutationOptions } from "@wirecat/cli-messaging/meetings"
 import { canonicalMeetingReference, parseMeetingReference } from "@wirecat/cli-messaging"
 import { ZoomError } from "./errors.js"
 

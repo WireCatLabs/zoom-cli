@@ -15,7 +15,9 @@ const metadata = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf
 assert.equal(metadata.version, expectedVersion)
 const require = createRequire(join(packageRoot, "package.json"))
 const producerRequire = createRequire(require.resolve("@wirecat/cli-messaging"))
-assert.equal(require.resolve("@wirecat/cli-meetings"), producerRequire.resolve("@wirecat/cli-meetings"))
+assert.equal(require.resolve("@wirecat/cli-messaging/meetings"), producerRequire.resolve("@wirecat/cli-messaging/meetings"))
+assert.equal(metadata.dependencies["@wirecat/cli-meetings"], undefined)
+assert.throws(() => producerRequire.resolve("@wirecat/cli-meetings"), { code: "MODULE_NOT_FOUND" })
 assert.equal(require.resolve("@wirecat/cli-core"), producerRequire.resolve("@wirecat/cli-core"))
 const dependencyVersion = (name) => {
   let directory = dirname(require.resolve(name))
@@ -30,13 +32,11 @@ const dependencyVersion = (name) => {
   throw new Error(`installed dependency metadata missing: ${name}`)
 }
 const dependencies = {
-  meetings: dependencyVersion("@wirecat/cli-meetings"),
   messaging: dependencyVersion("@wirecat/cli-messaging"),
   core: dependencyVersion("@wirecat/cli-core"),
 }
 const declared = (name) => metadata.dependencies[name] ?? metadata.peerDependencies?.[name]
 assert.deepEqual(dependencies, {
-  meetings: declared("@wirecat/cli-meetings"),
   messaging: declared("@wirecat/cli-messaging"),
   core: declared("@wirecat/cli-core"),
 })

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+- Meeting workflows, CLI commands, MCP tools and adapter contracts now use the provider-neutral
+  `@wirecat/cli-messaging/meetings` exports. The separate cli-meetings dependency is removed.
+
 ### Added
 
 - **A front-page README** introduces `zm` as Zoom context for AI agents: quick start, scenarios and

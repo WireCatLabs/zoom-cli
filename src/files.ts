@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
 import { readdir, readFile } from "node:fs/promises"
 import { basename, join } from "node:path"
-import { type ImportFile, type MeetingSource, parseVtt, type SourceMeeting } from "@wirecat/cli-meetings"
+import { type ImportFile, type MeetingSource, parseVtt, type SourceMeeting } from "@wirecat/cli-messaging/meetings"
 import { ZoomError } from "./errors.js"
 
 export interface DownloadedFile {

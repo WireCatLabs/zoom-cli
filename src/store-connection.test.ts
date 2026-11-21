@@ -1,5 +1,5 @@
 import { CliError } from "@wirecat/cli-core"
-import { memoryMeetingStore } from "@wirecat/cli-meetings/testing"
+import { memoryMeetingStore } from "@wirecat/cli-messaging/meetings/testing"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { ZoomError } from "./errors.js"
 import type { StoreConnectRequest } from "./program.js"
