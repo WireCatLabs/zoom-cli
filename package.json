@@ -54,7 +54,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",
     "@wirecat/cli-base": "0.27.2",
-    "@wirecat/cli-core": "0.267.0",
+    "@wirecat/cli-core": "file:/tmp/meeting-evidence-sdk-final-preview/wirecat-cli-core-0.267.0.tgz",
     "commander": "15.0.0"
   },
   "devDependencies": {
