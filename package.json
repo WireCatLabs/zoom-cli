@@ -65,7 +65,7 @@
   },
   "dependencies": {
     "@wirecat/cli-base": "0.99.0",
-    "@wirecat/cli-core": "0.659.0",
+    "@wirecat/cli-core": "file:/home/leemour/.cache/wc-tmp-meeting-fields/wirecat-cli-core-0.662.0.tgz",
     "commander": "15.0.0",
     "valibot": "1.5.0"
   },
