@@ -99,7 +99,7 @@ for another zone. Existing continuation and coverage rules still apply.
 
 If a meeting has not been linked to a project or labelled yet, start with word search and inspect
 the evidence before organising it with [Memo's shared records](https://wirecat.dev/en/docs/memo/usage).
-Over MCP, run `search meetings` through `zm_write`: it updates the word index before searching.
+Over MCP, `search meetings` is a read: run it through `zm_read`. It updates the word index before searching.
 It uses the same filters and time syntax as the CLI, in the server-selected profile.
 
 `meetings people <query>` finds saved participant observations by name or email within the selected account.
@@ -114,8 +114,7 @@ Distinct identity IDs are candidates to review, never automatic person links. Ar
 `zm personal meetings list 'started_at:[2026-09-12 TO 2026-10-12]' --json`.
 JSON returns `items`, `page` and optional `next` steps. JSONL emits each meeting in an item record,
 then an end record with the page and completeness. Use `--page` to continue.
-The date query replaces the former list-only `--since-time` and `--until-time` flags;
-those flags remain available on transcript search and ingestion commands. `search all` uses the shared search
+Transcript search and ingestion commands take `--since-time` and `--until-time`. `search all` uses the shared search
 service and searches only meetings by default, those of the profile's own Zoom account. It reads them through
 the meeting search index and ranks them with the other sources. It answers a list of hits, as tg's `search all`
 does: a meeting hit has `scope` (transcript, chat or summary), the stored line `id`, and a transcript hit's

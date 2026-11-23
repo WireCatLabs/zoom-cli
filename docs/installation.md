@@ -212,6 +212,8 @@ npm install -g @wirecat/zoom-cli
 zm --version
 ```
 
+If you last signed in with zm 0.34 or earlier, run `zm <profile> session start` again: that older login is no longer used.
+
 Remove the command with:
 
 ```sh

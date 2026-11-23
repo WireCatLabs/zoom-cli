@@ -26,6 +26,8 @@ keyring, never the public configuration file. If that password store is unavaila
 `credential_storage: "file"`; it never asks. `--credential-storage file` chooses the file outright. The keyring is
 safer, so we do not recommend it. The next `session start` that reaches the keyring moves the tokens back.
 
+If you last signed in with zm 0.34 or earlier, run `zm <profile> session start` again: that older login is no longer used.
+
 ## Finish the browser callback
 
 Leave the terminal running. After **Allow**, the callback page at `https://wirecat.dev/zoom-callback`

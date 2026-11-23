@@ -106,7 +106,7 @@ zm personal config set permissions '{"meetings.create": "allow", "recordings": "
 |---|---|
 | `deny` | the command is refused |
 | `readonly` | it runs only when it changes nothing, as under `ZM_READ_ONLY` |
-| `ask` | a change to Zoom asks y/N at a terminal; without one it needs `--yes` (exit 7 otherwise) |
+| `ask` | a change to Zoom asks y/N at a terminal; without one it needs `--yes` (exit 7 otherwise). Over MCP it runs without asking |
 | `allow` | it runs; a change to Zoom applies without `--yes` |
 
 The most specific key wins (`recordings.download` over `recordings`). Built in, `meetings.create`, `meetings.update`
@@ -115,6 +115,9 @@ a broader key the owner sets never loosens it, a key as deep does. `--yes` only 
 `deny` or `readonly`. In a terminal, settings, login, help and the MCP server are never gated. A key that names no command, or
 a level that is not one of the four, is refused when set; one already saved stops every command until
 `zm <profile> config unset permissions.<key>` removes it. `ZM_READ_ONLY` applies on top of every level.
+
+Over MCP nobody is at a terminal to answer, so a change set to `ask` runs without asking you, the built-in `ask` on
+`meetings.create`, `meetings.update` and `meetings.cancel` included. Set a key to `readonly` or `deny` to stop an agent.
 
 Settings, skill installation, upgrade and archive timer changes over MCP require `mcp.authority` at `allow` or `ask`.
 It is denied by default. Set it from a terminal through the profile's `permissions` map,
@@ -162,8 +165,8 @@ zm config show
 ```
 
 This example uses an invented folder ID. Run `memo folders list` and substitute the ID of the
-folder you choose, and its provider: `local` for a plain folder, `obsidian` for a vault. A source
-saved earlier with provider `folder` still resolves. `notes:5` resolves that existing folder's stored identity; it does not create
+folder you choose, and its provider: `local` for a plain folder, `obsidian` for a vault.
+`notes:5` resolves that existing folder's stored identity; it does not create
 or import a folder. A document source selects one folder, a message source one messaging account,
 and a mail source one mail account. These grants cover the selected account or folder; there is
 currently no chat, sender or path restriction within it. Do not grant a whole account if that scope
