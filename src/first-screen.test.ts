@@ -2,6 +2,8 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { memoryKeyring } from "@wirecat/cli-base"
 import { describeProgram, flatten } from "@wirecat/cli-base/commands"
+import { takesProfile } from "@wirecat/cli-core/cli"
+import type { Command } from "commander"
 import { afterEach, expect, it, vi } from "vitest"
 import { createProgram, type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
@@ -82,10 +84,14 @@ it("lists commands as text by section, and as JSON with --json", async () => {
 it("every account example includes a profile before its command", async () => {
   const { deps } = setup()
   const { PROFILE_FREE } = await import("./commands.js")
-  for (const command of flatten(describeProgram(createProgram(deps)))) {
+  const program = createProgram(deps)
+  const at = (path: readonly string[]) =>
+    path.reduce<Command | undefined>((parent, name) => parent?.commands.find((one) => one.name() === name), program)
+  for (const command of flatten(describeProgram(program))) {
+    const found = at(command.path)
     for (const example of command.examples ?? []) {
       const words = example.split(/\s+/)
-      const needsProfile = !PROFILE_FREE.has(command.path[0] ?? "")
+      const needsProfile = !PROFILE_FREE.has(command.path[0] ?? "") && (found === undefined || takesProfile(found))
       expect(words.slice(0, needsProfile ? 2 : 1), example).toEqual(needsProfile ? ["zm", "personal"] : ["zm"])
       expect(words.slice(needsProfile ? 2 : 1, (needsProfile ? 2 : 1) + command.path.length), example).toEqual(
         command.path,

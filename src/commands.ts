@@ -6,12 +6,14 @@ import {
   commandsCommand,
   hasSharedContract,
   itemOf,
+  LOCAL_READ,
   NO_EFFECTS,
   overrideSharedContract,
   profileFree,
   REMOTE_READ,
   runsCommand,
   sharedStoreCommand,
+  takesProfile,
 } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { wholeList } from "./answer-output.js"
@@ -21,6 +23,7 @@ export interface StandardCommandsDeps {
   output: (body: Body) => void
   raw: (text: string) => void
   sessionStatus: (check: boolean) => Promise<unknown>
+  sessionList: () => Promise<unknown[]>
 }
 const addStandardCommandsDefinition = (program: Command, deps: StandardCommandsDeps): void => {
   program.addCommand(commandsCommand(ZM).copyInheritedSettings(program))
@@ -57,6 +60,15 @@ const addStandardCommandsDefinition = (program: Command, deps: StandardCommandsD
       examples: ["zm personal session status --json", "zm personal session status --check --dry-run --json"],
     },
   )
+  annotate(
+    profileFree(
+      session
+        .command("list")
+        .description("list the profiles on this computer and the state of each one's saved Zoom login")
+        .action(async () => deps.output(wholeList("session list", await deps.sessionList()))),
+    ),
+    { effects: LOCAL_READ, examples: ["zm session list --json"] },
+  )
 }
 
 export const annotateMeetingCommands = (program: Command): void => {
@@ -70,7 +82,9 @@ export const annotateMeetingCommands = (program: Command): void => {
     const path = item.path.join(" ")
     if (!metaOf(command).effects) throw new CliError("configuration_error", `command effects are missing: ${path}`)
     const examples = item.examples?.map((example) =>
-      PROFILE_FREE.has(item.path[0] ?? "") ? example : example.replace(`zm ${path}`, `zm personal ${path}`),
+      PROFILE_FREE.has(item.path[0] ?? "") || !takesProfile(command)
+        ? example
+        : example.replace(`zm ${path}`, `zm personal ${path}`),
     ) ?? [exampleFor(path)]
     if (JSON.stringify(examples) === JSON.stringify(item.examples)) continue
     const change = (one: Command) => {

@@ -92,6 +92,9 @@ the browser. Each profile's login is its own keyring entry, `oauth:zoom:<profile
 Older versions kept logins under `zoom-cli:<configuration directory>` as `<client id>:<profile>`; the
 first run copies one to the new entry and leaves the old one until `session end`.
 
+`zm session list --json` lists the profiles on this computer and the state of each one's saved login (`saved`,
+`expired`, `missing`, or `not_configured` while no Zoom app is set). It takes no profile and does not contact Zoom.
+
 `ZM_PROFILE_LOCK=personal` pins a process to one profile: a first word or `ZM_PROFILE` naming any
 other is refused with `permission_error`. Set it where an agent runs.
 

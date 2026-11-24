@@ -1,4 +1,4 @@
-import { CliError } from "@wirecat/cli-base"
+import { CliError, isCliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
 import {
   answerStdinOption,
@@ -138,7 +138,15 @@ export interface SessionCommandDeps {
 
 const PASTE_PROMPT = "If the browser does not come back by itself, the address it ended on (code=…&state=…)"
 
-/** The shared discovery, doctor and session status commands, plus Zoom's browser login. */
+const savedLogin = (manager: TokenManager, now: number) => {
+  const saved = manager.load()
+  return {
+    state: saved ? (saved.expiresAt > now ? "saved" : "expired") : "missing",
+    ...(saved ? { expiresAt: saved.expiresAt, scopes: saved.scopes } : {}),
+  }
+}
+
+/** The shared discovery, doctor and session status and list commands, plus Zoom's browser login. */
 export const addSessionCommands = (program: Command, context: SessionCommandDeps): void => {
   const { deps, getConfig, output, buffer, api, profile, tokens, fetch, signal } = context
   addStandardCommands(program, {
@@ -163,14 +171,32 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
             : getZoomProfile(tokens(), fetch(), { signal: signal() })),
         }
       }
-      const saved = tokens().load()
       return {
         configured: true,
-        state: saved ? (saved.expiresAt > (deps.now?.() ?? Date.now()) ? "saved" : "expired") : "missing",
         profile: selected,
         verified: false,
-        ...(saved ? { expiresAt: saved.expiresAt, scopes: saved.scopes } : {}),
+        ...savedLogin(tokens(), deps.now?.() ?? Date.now()),
       }
+    },
+    sessionList: async () => {
+      const config = getConfig()
+      const configured = zoomClientId(config, deps.env ?? process.env) !== undefined
+      return config.profiles.map((name) => {
+        let login: ReturnType<typeof savedLogin>
+        try {
+          login = savedLogin(deps.tokens.forProfile(name), deps.now?.() ?? Date.now())
+        } catch (error) {
+          // An unreachable keyring must not hide the profiles: `session status` names the cause.
+          if (isCliError(error) && error.code === "configuration_error")
+            return { profile: name, signed_in: null, state: "unknown" }
+          throw error
+        }
+        return {
+          profile: name,
+          signed_in: login.state !== "missing",
+          ...(configured ? login : { state: "not_configured" }),
+        }
+      })
     },
   })
   addUpgradeCommand(program, { data: buffer, diagnostic: deps.diagnostic })

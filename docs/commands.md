@@ -1012,6 +1012,16 @@ zm session status [options]
 
 **Example:** `zm personal session status --json`, `zm personal session status --check --dry-run --json`
 
+### `zm session list`
+
+list the profiles on this computer and the state of each one's saved Zoom login
+
+```sh
+zm session list
+```
+
+**Example:** `zm session list --json`
+
 ### `zm session start`
 
 log in to Zoom through your browser

@@ -14,6 +14,7 @@
   "store info": "read",
   "complete": "read",
   "session status": "read",
+  "session list": "read",
   "recordings list": "read",
   "recordings show": "read",
   "recordings download": "write",
