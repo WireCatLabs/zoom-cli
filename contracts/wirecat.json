@@ -622,6 +622,17 @@
     {
       "path": [
         "session",
+        "list"
+      ],
+      "summary": "list the profiles on this computer and the state of each one's saved Zoom login",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      }
+    },
+    {
+      "path": [
+        "session",
         "start"
       ],
       "summary": "log in to Zoom through your browser",
@@ -1295,8 +1306,17 @@
   },
   "desktop": {
     "tagline": "Zoom transcripts and recordings, searchable",
-    "profiles": null,
+    "profiles": {
+      "args": [
+        "session",
+        "list",
+        "--no-record",
+        "--json"
+      ],
+      "shape": "items"
+    },
     "doctor": [
+      "{profile}",
       "doctor",
       "--record",
       "--json"
@@ -1323,6 +1343,7 @@
     },
     "search": null,
     "setup": [
+      "{profile}",
       "session",
       "start"
     ],
@@ -1400,6 +1421,7 @@
     "tasks": null,
     "sync": {
       "run": [
+        "{profile}",
         "meetings",
         "sync",
         "--record",
@@ -1430,6 +1452,44 @@
       "app": "zoom-cli",
       "env": "ZM"
     },
-    "settings": null
+    "settings": null,
+    "accountRemove": {
+      "signOut": [
+        "{profile}",
+        "session",
+        "end",
+        "--record",
+        "--json"
+      ],
+      "remove": {
+        "minVersion": "0.0.0",
+        "keepData": [
+          "{profile}",
+          "account",
+          "remove",
+          "--keep-data",
+          "--record",
+          "--json"
+        ],
+        "deleteData": [
+          "{profile}",
+          "account",
+          "remove",
+          "--delete-data",
+          "--record",
+          "--json"
+        ],
+        "dryRun": "--dry-run",
+        "confirm": "--yes"
+      },
+      "removes": [
+        "signIn"
+      ],
+      "keeps": [
+        "settings",
+        "data",
+        "listed"
+      ]
+    }
   }
 }

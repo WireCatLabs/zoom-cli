@@ -38,6 +38,7 @@ const HOUSEKEEPING_ANSWERS = new Set([
   "mcp server status",
   "mcp server stop",
   "session end",
+  "session list",
   "session start",
   "session status",
   "skill install",
