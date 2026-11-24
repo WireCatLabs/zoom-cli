@@ -85,7 +85,7 @@ it("every account example includes a profile before its command", async () => {
   const { deps } = setup()
   const { PROFILE_FREE } = await import("./commands.js")
   const program = createProgram(deps)
-  const at = (path: string[]) =>
+  const at = (path: readonly string[]) =>
     path.reduce<Command | undefined>((parent, name) => parent?.commands.find((one) => one.name() === name), program)
   for (const command of flatten(describeProgram(program))) {
     const found = at(command.path)
