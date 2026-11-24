@@ -56,18 +56,43 @@ describe("session list", () => {
     expect(await run(["--json", "session", "list"], deps)).toBe(0)
 
     expect(readAnswer(stdout.at(-1) ?? "").items).toEqual([
-      { profile: "fresh", state: "missing" },
-      { profile: "old", state: "expired", expires_at: NOW - 60_000, scopes: ["user:read:user"] },
-      { profile: "work", state: "saved", expires_at: NOW + 60_000, scopes: ["user:read:user"] },
+      { profile: "fresh", signed_in: false, state: "missing" },
+      { profile: "old", signed_in: true, state: "expired", expires_at: NOW - 60_000, scopes: ["user:read:user"] },
+      { profile: "work", signed_in: true, state: "saved", expires_at: NOW + 60_000, scopes: ["user:read:user"] },
     ])
   })
 
-  it("says not_configured for each profile while no Zoom app is set", async () => {
+  it("says not_configured for each profile while no Zoom app is set, and still whether a login is saved", async () => {
     const { deps, stdout } = await setup({})
     addProfile(deps.configPath, "work")
 
     expect(await run(["--json", "session", "list"], deps)).toBe(0)
 
-    expect(readAnswer(stdout.at(-1) ?? "").items).toEqual([{ profile: "work", state: "not_configured" }])
+    expect(readAnswer(stdout.at(-1) ?? "").items).toEqual([
+      { profile: "work", signed_in: false, state: "not_configured" },
+    ])
+  })
+
+  it("still lists the profiles when the keyring does not answer, with their login unknown", async () => {
+    const { deps, stdout } = await setup({ ZM_ZOOM_CLIENT_ID: "example-client" })
+    addProfile(deps.configPath, "work")
+    deps.tokens = new TokenManager({
+      ...deps.tokens.options,
+      keyring: {
+        get: () => {
+          throw new Error("keyring down")
+        },
+        set: () => {
+          throw new Error("keyring down")
+        },
+        delete: () => {
+          throw new Error("keyring down")
+        },
+      },
+    })
+
+    expect(await run(["--json", "session", "list"], deps)).toBe(0)
+
+    expect(readAnswer(stdout.at(-1) ?? "").items).toEqual([{ profile: "work", signed_in: null, state: "unknown" }])
   })
 })

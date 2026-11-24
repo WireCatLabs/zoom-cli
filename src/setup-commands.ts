@@ -1,4 +1,4 @@
-import { CliError } from "@wirecat/cli-base"
+import { CliError, isCliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
 import {
   answerStdinOption,
@@ -181,12 +181,22 @@ export const addSessionCommands = (program: Command, context: SessionCommandDeps
     sessionList: async () => {
       const config = getConfig()
       const configured = zoomClientId(config, deps.env ?? process.env) !== undefined
-      return config.profiles.map((name) => ({
-        profile: name,
-        ...(configured
-          ? savedLogin(deps.tokens.forProfile(name), deps.now?.() ?? Date.now())
-          : { state: "not_configured" }),
-      }))
+      return config.profiles.map((name) => {
+        let login: ReturnType<typeof savedLogin>
+        try {
+          login = savedLogin(deps.tokens.forProfile(name), deps.now?.() ?? Date.now())
+        } catch (error) {
+          // An unreachable keyring must not hide the profiles: `session status` names the cause.
+          if (isCliError(error) && error.code === "configuration_error")
+            return { profile: name, signed_in: null, state: "unknown" }
+          throw error
+        }
+        return {
+          profile: name,
+          signed_in: login.state !== "missing",
+          ...(configured ? login : { state: "not_configured" }),
+        }
+      })
     },
   })
   addUpgradeCommand(program, { data: buffer, diagnostic: deps.diagnostic })
