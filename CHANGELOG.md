@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.81.0 — 24.11.2026
+
+### Added
+
+- **`zm session list` lists the profiles on this computer** and the state of each one's saved Zoom login, with no
+  profile named and without contacting Zoom. Each item says `signed_in`, as other CLIs' `session list` does. zm now
+  has all four session commands ([WC-ACCT-12](https://github.com/WireCatLabs/cli-base/blob/main/docs/standards/accounts.md#wc-acct-12--sign-in-is-session-start-status-and-end-and-session-list-names-the-profiles)).
+
+### Changed — may break callers
+
+- **The MCP Registry entry asks which profiles to serve.** It started `mcp serve --profiles all`, so a client that
+  installed the server from the registry reached every account on the computer without the owner choosing. Now
+  `--profiles` is a required argument with the example `personal`: the client asks for one profile, a
+  comma-separated list or `all`. Why: a CLI never picks an account for the owner
+  ([WC-MCP-9](https://github.com/WireCatLabs/cli-base/blob/main/docs/standards/mcp.md#wc-mcp-9--a-server-serves-the-profiles-it-is-told-with-one-connection-for-each)). Watch for: a client set up from the old entry keeps `--profiles all` until it is set up again; a
+  server added by hand or with `mcp config` does not change.
+
+### Fixed
+
+- **WireCat Desktop runs zm's sync, check and sign-in for the profile it means.** zm's manifest listed no profiles,
+  so it left the profile word out of `doctor`, `session start` and `meetings sync`. It now lists them with
+  `session list` and puts `{profile}` first in each, and it describes `account remove` for Desktop too.
+- **`zm mcp serve --profiles all` starts on a computer with no profile yet** (cli-core 0.707.0, was 0.691.0;
+  cli-base 0.124.0, was 0.109.0). It answers the handshake and lists its tools, and each tool call says how to set up
+  the first profile. Directories such as Glama start a server in an empty container only to read its tools, and
+  marked zm as one that cannot be deployed.
+
 ## 0.80.0 — 17.11.2026
 
 ### Changed — may break callers
