@@ -31,8 +31,9 @@ export interface ProgramDeps {
   archiveTranscripts?: ArchiveTranscriptService
   readFiles?: typeof readDownloadedFiles
   writeFile?: (path: string, content: string, options?: { signal?: AbortSignal }) => Promise<void>
-  openBrowser: (url: string, browser?: string) => Promise<void>
-  readPaste?: (signal: AbortSignal) => Promise<string>
+  openBrowser: (url: string, browser?: string, command?: Command) => Promise<void>
+  /** Zoom's sign-in host for `session start` and refreshes in `session status --check`; a test hands a fake one. */
+  signInFetch?: typeof fetch
   /** Where `session start --answer-stdin` reads its answers; process.stdin when left out. */
   stdin?: NodeJS.ReadableStream
   /** Where `mcp serve` writes the protocol; process.stdout when left out. */
@@ -47,7 +48,6 @@ export interface ProgramDeps {
   now?: () => number
   outputIsTTY?: boolean
   env?: NodeJS.ProcessEnv
-  checkSession?: (options?: { signal?: AbortSignal }) => Promise<unknown>
   signal?: AbortSignal
   sleep?: SleepLike
   streamData?: (text: string, signal: AbortSignal) => Promise<void>

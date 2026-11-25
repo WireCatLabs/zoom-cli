@@ -18,7 +18,12 @@ it("asks for the client ID, not a login, when an API source has none", async () 
 it("reads Zoom live through the configured API source, not a detached method", async () => {
   const { memoryKeyring } = await import("@wirecat/cli-base")
   const { TokenManager } = await import("./tokens.js")
-  const manager = new TokenManager({ clientId: "example-client", keyring: memoryKeyring(), service: "example", fetch })
+  const manager = new TokenManager({
+    clientId: "example-client",
+    keyring: memoryKeyring(),
+    service: "example",
+    fetch,
+  }).forProfile("example")
   manager.save({
     accessToken: "example-access",
     refreshToken: "example-refresh",

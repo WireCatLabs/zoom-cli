@@ -1,74 +1,21 @@
 import { CliError } from "@wirecat/cli-base"
-import { annotate, describeOptions, describeProgram, flatten, metaOf } from "@wirecat/cli-base/commands"
-import { formatSuggestions, suggest } from "@wirecat/cli-base/completion"
+import { annotate, describeProgram, flatten, metaOf } from "@wirecat/cli-base/commands"
 import {
-  type Body,
   commandsCommand,
   hasSharedContract,
-  itemOf,
-  LOCAL_READ,
   NO_EFFECTS,
   overrideSharedContract,
   profileFree,
-  REMOTE_READ,
   runsCommand,
   sharedStoreCommand,
   takesProfile,
 } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
-import { wholeList } from "./answer-output.js"
 import { ZM } from "./read-only.js"
 
-export interface StandardCommandsDeps {
-  output: (body: Body) => void
-  raw: (text: string) => void
-  sessionStatus: (check: boolean) => Promise<unknown>
-  sessionList: () => Promise<unknown[]>
-}
-const addStandardCommandsDefinition = (program: Command, deps: StandardCommandsDeps): void => {
+const addStandardCommandsDefinition = (program: Command): void => {
   program.addCommand(commandsCommand(ZM).copyInheritedSettings(program))
   program.addCommand(sharedStoreCommand().copyInheritedSettings(program))
-  annotate(
-    program
-      .command("complete")
-      .description("answer shell completion requests")
-      .argument("[words...]", "shell words ending in the partial word")
-      .action((words: string[]) => {
-        const suggestions = suggest({
-          commands: describeProgram(program),
-          globalOptions: describeOptions(program),
-          words,
-        })
-        if (program.opts().json || program.opts().jsonl) deps.output(wholeList("complete", suggestions))
-        else deps.raw(`${formatSuggestions(suggestions)}\n`)
-      }),
-    { effects: NO_EFFECTS, examples: ["zm complete -- meetings s"] },
-  )
-  const session = annotate(program.command("session"), { effects: NO_EFFECTS }).description(
-    "the saved Zoom login, separate from local data profiles",
-  )
-  annotate(
-    session
-      .command("status")
-      .description("show cached login state; remote verification is explicit")
-      .option("--check", "verify the session with Zoom")
-      .action(async (options: { check?: boolean }) =>
-        deps.output(itemOf(await deps.sessionStatus(options.check === true))),
-      ),
-    {
-      effects: REMOTE_READ,
-      examples: ["zm personal session status --json", "zm personal session status --check --dry-run --json"],
-    },
-  )
-  annotate(
-    profileFree(
-      session
-        .command("list")
-        .description("list the profiles on this computer and the state of each one's saved Zoom login")
-        .action(async () => deps.output(wholeList("session list", await deps.sessionList()))),
-    ),
-    { effects: LOCAL_READ, examples: ["zm session list --json"] },
-  )
 }
 
 export const annotateMeetingCommands = (program: Command): void => {

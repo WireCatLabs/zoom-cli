@@ -33,7 +33,6 @@ export {
   type LocalTranscriptionOptions,
   type LocalTranscriptionTarget,
 } from "./local-transcription.js"
-export { type LoginOptions, login, REDIRECT } from "./login.js"
 export { type ContextCapture, type ContextMetadata, captureContextSources } from "./meeting-communications-binding.js"
 export {
   createMeetingContextCapabilities,
@@ -109,6 +108,6 @@ export {
   type StoreConnectionOptions,
   type StoreConnectRequest,
 } from "./store-connection.js"
-export { TokenManager, type TokenOptions, type Tokens } from "./tokens.js"
+export { REDIRECT, TokenManager, type TokenOptions, type Tokens } from "./tokens.js"
 export { runUnifiedSearch, type UnifiedSearch, type UnifiedSearchRequest } from "./unified-search.js"
 export { createZoomUpcomingMeetingReader, type ZoomUpcomingCredentials } from "./upcoming-meetings.js"

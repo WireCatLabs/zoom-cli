@@ -58,7 +58,7 @@ import type { RemoteOptions } from "./remote-http.js"
 import { profileMeetingManagement, storeLeaves, ZoomRemoteMeetings } from "./remote-meetings.js"
 import { observedFetch } from "./request-events.js"
 import type { ZoomLifecycle } from "./run.js"
-import { addAppCommand, addConfigCommands, addSessionCommands } from "./setup-commands.js"
+import { addAppCommand, addConfigCommands, addSharedCommands } from "./setup-commands.js"
 import { addStoreCommands } from "./store-commands.js"
 import {
   connectSelectedProfile,
@@ -330,17 +330,7 @@ export const bindZoomProgram = (program: Command, given: ProgramDeps, lifecycle:
   addZoomMeetingCommands(program, meetingCommands)
   // The meeting reads cli-core mounts read the store opened before their action; zoom's own commands open it lazily.
   const storeCommands = storeLeaves(program, before, meetingCommands.management)
-  addSessionCommands(program, {
-    deps,
-    getConfig,
-    output,
-    buffer,
-    api,
-    profile,
-    tokens,
-    fetch: () => fetchWithSignal(deps.fetch),
-    signal,
-  })
+  addSharedCommands(program, { deps, buffer, output })
   const watch = createWatchService({
     deps,
     getConfig,

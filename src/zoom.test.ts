@@ -1,20 +1,19 @@
-import { createHash } from "node:crypto"
 import { mkdir, mkdtemp, readdir, readFile, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { brokenKeyring, CliError, memoryKeyring } from "@wirecat/cli-base"
+import { memoryKeyring } from "@wirecat/cli-base"
 import { importFiles, pull } from "@wirecat/cli-core/meetings"
 import { memoryMeetingStore } from "@wirecat/cli-core/meetings/testing"
+import { TOKEN_LOG_ALLOW } from "@wirecat/cli-core/oauth"
 import { describe, expect, it } from "vitest"
 import { readAnswer, readJsonl } from "../scripts/testing/answers.js"
 import { encodeUuid, ZoomApiSource } from "./api.js"
 import { readConfig, setConfig } from "./config.js"
 import { number, object, string } from "./errors.js"
 import { FilesSource, fileMeeting, importFile, readDownloadedFiles } from "./files.js"
-import { login, REDIRECT } from "./login.js"
 import { type ProgramDeps, run } from "./program.js"
 import { lazyRunLog } from "./run-log.js"
-import { TOKEN_LOG_ALLOW, TokenManager } from "./tokens.js"
+import { REDIRECT, TokenManager } from "./tokens.js"
 
 const scopes = [
   "meeting:read:list_meetings",
@@ -40,7 +39,7 @@ const tokenManager = (
     service: "example-service",
     fetch: fetcher,
     now: () => 0,
-  })
+  }).forProfile("example")
   return tokens
 }
 const authorize = (tokens: TokenManager, expiresAt = 3600000) => {
@@ -51,250 +50,35 @@ const vtt = "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nAlice Example: Example pla
 const file = { name: "2026-10-10_1530_example-planning.vtt", content: vtt }
 const temporary = () => mkdtemp(join(tmpdir(), "zm-test-"))
 
-describe("tokens", () => {
-  it("saves only to the injected keyring, refreshes once and reads actual grants", async () => {
-    let calls = 0
-    const tokens = authorize(
-      tokenManager(async (_url, init) => {
-        calls++
-        const form = new URLSearchParams(String(init?.body))
-        expect(form.get("client_id")).toBe("example-client")
-        expect(form.get("client_secret")).toBeNull()
-        expect(form.get("grant_type")).toBe("refresh_token")
-        expect(init?.headers).not.toHaveProperty("authorization")
-        return response({ access_token: "example-new", expires_in: 60 })
-      }),
-      0,
-    )
-    const [a, b] = await Promise.all([tokens.tokens(), tokens.tokens()])
-    expect(calls).toBe(1)
-    expect(a).toEqual(b)
-    expect(a.refreshToken).toBe("example-refresh")
-    expect(a.scopes).toEqual(scopes)
-    expect((await tokens.tokens()).accessToken).toBe("example-new")
-    const empty = tokenManager(async () =>
-      response({ access_token: "example-access", refresh_token: "example-refresh", expires_in: 60 }),
-    )
-    expect((await empty.exchange({ grant_type: "authorization_code" })).scopes).toEqual([])
-  })
-  it("refuses missing, corrupt or unavailable keyring entries and invalid token replies", async () => {
-    const tokens = tokenManager()
-    expect(tokens.load()).toBeNull()
-    await expect(tokens.tokens()).rejects.toThrow(/session start first/)
-    tokens.options.keyring.set("example-service", "example-client", "broken")
-    expect(() => tokens.load()).toThrow(/invalid/)
-    tokens.options.keyring.set(
-      "example-service",
-      "example-client",
-      JSON.stringify({ accessToken: "", refreshToken: "", expiresAt: 1, scopes: [] }),
-    )
-    expect(() => tokens.load()).toThrow(/invalid/)
-    const broken = new TokenManager({ ...tokens.options, keyring: brokenKeyring() })
-    expect(() => broken.load()).toThrow(/unavailable/)
-    expect(() => broken.save({ accessToken: "example", refreshToken: "example", expiresAt: 1, scopes: [] })).toThrow(
-      /save/,
-    )
-    for (const body of [{}, { access_token: "example", refresh_token: "example", expires_in: -1 }, null])
-      await expect(tokenManager(async () => response(body)).exchange({})).rejects.toThrow()
-    await expect(tokenManager(async () => response({}, 401)).exchange({})).rejects.toThrow(/HTTP 401/)
-  })
-})
 describe("token refresh log", () => {
-  const secrets = /example-(access|refresh|rotated|issued)/
-  const loggedRun = async () => {
+  it("records cli-core's oauth.token event for each refresh, never token material", async () => {
     const runsDir = join(await temporary(), "runs")
-    return { runsDir, run: lazyRunLog({ runsDir, command: "oauth token", version: "0.0.0", allow: TOKEN_LOG_ALLOW }) }
-  }
-  const events = async (runsDir: string) => {
-    const [day] = (await readdir(runsDir)).filter((name) => !name.startsWith("."))
-    const [id] = (await readdir(join(runsDir, day ?? ""))).filter((name) => name !== "index.jsonl")
-    const text = await readFile(join(runsDir, day ?? "", id ?? "", "events.jsonl"), "utf8")
-    return {
-      text,
-      records: text
-        .trimEnd()
-        .split("\n")
-        .map((line) => JSON.parse(line)),
-    }
-  }
-  it("writes nothing until a token exchange happens", async () => {
-    const { runsDir, run } = await loggedRun()
-    const tokens = authorize(new TokenManager({ ...tokenManager().options, log: run.log }))
-    await tokens.tokens()
-    await run.finish("success")
-    await expect(readdir(runsDir)).rejects.toThrow()
-  })
-  it("records each refresh outcome with status, rotation, save and pid, never token material", async () => {
-    const { runsDir, run } = await loggedRun()
-    const keyring = memoryKeyring()
+    const run = lazyRunLog({ runsDir, command: "oauth token", version: "0.0.0", allow: TOKEN_LOG_ALLOW })
     const replies = [
       response({ access_token: "example-issued-1", refresh_token: "example-rotated-1", expires_in: 1 }),
       response({ reason: "example-refresh rejected" }, 400),
-      response({ access_token: "example-issued-2", refresh_token: "example-rotated-1", expires_in: 1 }),
     ]
     const tokens = new TokenManager({
       ...tokenManager().options,
-      keyring,
       log: run.log,
-      now: () => 0,
       fetch: async () => replies.shift() ?? response({}, 500),
     })
     authorize(tokens, 0)
     await tokens.tokens()
-    await expect(tokens.tokens()).rejects.toThrow(/HTTP 400/)
-    keyring.set = () => {
-      throw new Error("example locked keyring")
-    }
-    await expect(tokens.tokens()).rejects.toThrow(/could not save/)
-    const controller = new AbortController()
-    const cancelled = new TokenManager({
-      ...tokens.options,
-      fetch: async () => {
-        controller.abort()
-        throw new Error("example aborted")
-      },
-    }).withSignal(controller.signal)
-    await expect(cancelled.tokens()).rejects.toThrow(/did not finish/)
-    const deadline = new AbortController()
-    const expired = new TokenManager({
-      ...tokens.options,
-      fetch: async () => {
-        deadline.abort(new CliError("timeout", "example deadline"))
-        throw new Error("example aborted")
-      },
-    }).withSignal(deadline.signal)
-    await expect(expired.tokens()).rejects.toThrow(/did not finish/)
+    await expect(tokens.tokens()).rejects.toMatchObject({ code: "authentication_error" })
     await run.finish("failed")
-    const { text, records } = await events(runsDir)
-    expect(records.map((record) => [record.body, record.attributes])).toEqual([
-      [
-        "zoom.token.exchange",
-        {
-          event: "zoom.token.exchange",
-          operation: "refresh_token",
-          pid: process.pid,
-          outcome: "saved",
-          status: 200,
-          rotated: true,
-          saved: true,
-        },
-      ],
-      [
-        "zoom.token.exchange",
-        {
-          event: "zoom.token.exchange",
-          operation: "refresh_token",
-          pid: process.pid,
-          outcome: "rejected",
-          status: 400,
-        },
-      ],
-      [
-        "zoom.token.exchange",
-        {
-          event: "zoom.token.exchange",
-          operation: "refresh_token",
-          pid: process.pid,
-          outcome: "save_failed",
-          status: 200,
-          rotated: false,
-          saved: false,
-        },
-      ],
-      [
-        "zoom.token.exchange",
-        {
-          event: "zoom.token.exchange",
-          operation: "refresh_token",
-          pid: process.pid,
-          reason: "cancelled",
-          outcome: "no_response",
-        },
-      ],
-      [
-        "zoom.token.exchange",
-        {
-          event: "zoom.token.exchange",
-          operation: "refresh_token",
-          pid: process.pid,
-          reason: "timeout",
-          outcome: "no_response",
-        },
-      ],
+    const [day] = (await readdir(runsDir)).filter((name) => !name.startsWith("."))
+    const [id] = (await readdir(join(runsDir, day ?? ""))).filter((name) => name !== "index.jsonl")
+    const text = await readFile(join(runsDir, day ?? "", id ?? "", "events.jsonl"), "utf8")
+    const records = text
+      .trimEnd()
+      .split("\n")
+      .map((line) => JSON.parse(line))
+    expect(records.map((record) => record.attributes)).toEqual([
+      expect.objectContaining({ event: "oauth.token", provider: "zoom", operation: "refresh_token", rotated: true }),
+      expect.objectContaining({ event: "oauth.token", operation: "refresh_token", outcome: "rejected", status: 400 }),
     ])
-    expect(text).not.toMatch(secrets)
-    expect(text).not.toContain("not allowed")
-  })
-})
-describe("PKCE login", () => {
-  it("validates callback state, exchanges PKCE and closes the listener", async () => {
-    let challenge = ""
-    let callback = ""
-    const tokens = tokenManager(async (_url, init) => {
-      const params = new URLSearchParams(String(init?.body))
-      expect(params.get("redirect_uri")).toBe(REDIRECT)
-      expect(
-        createHash("sha256")
-          .update(params.get("code_verifier") ?? "")
-          .digest("base64url"),
-      ).toBe(challenge)
-      expect(params.get("code")).toBe("example-code")
-      return response({
-        access_token: "example-access",
-        refresh_token: "example-refresh",
-        expires_in: 3600,
-        scope: "meeting:read:list_meetings",
-      })
-    })
-    const result = await login({
-      tokens,
-      openBrowser: async (url) => {
-        const parsed = new URL(url)
-        expect(parsed.searchParams.get("redirect_uri")).toBe(REDIRECT)
-        const state = parsed.searchParams.get("state") ?? ""
-        challenge = parsed.searchParams.get("code_challenge") ?? ""
-        callback = `http://127.0.0.1:${state.split(".")[0]}`
-        expect((await fetch(`${callback}/unknown`)).status).toBe(404)
-        expect((await fetch(`${callback}/callback?state=wrong&code=example`)).status).toBe(400)
-        await fetch(`${callback}/callback?${new URLSearchParams({ state, code: "example-code" })}`)
-      },
-    })
-    expect(result).toEqual({ loggedIn: true, scopes: ["meeting:read:list_meetings"], credentialStorage: "keyring" })
-    await expect(fetch(`${callback}/callback`)).rejects.toThrow()
-  })
-  it("accepts pasted callback parameters when browser launch fails", async () => {
-    let url = ""
-    const result = await login({
-      tokens: tokenManager(),
-      showUrl: (value) => {
-        url = value
-      },
-      openBrowser: async () => {
-        throw new Error("browser unavailable")
-      },
-      readPaste: async () =>
-        `https://wirecat.dev/zoom-callback?code=example-code&state=${new URL(url).searchParams.get("state")}`,
-    })
-    expect(result.loggedIn).toBe(true)
-    await expect(
-      login({ tokens: tokenManager(), openBrowser: async () => {}, readPaste: async () => "code=example&state=wrong" }),
-    ).rejects.toThrow(/matching/)
-  })
-  it("handles refused approval and timeout without leaving a listener", async () => {
-    await expect(
-      login({
-        tokens: tokenManager(),
-        openBrowser: async (url) => {
-          const state = new URL(url).searchParams.get("state") ?? ""
-          await fetch(
-            `http://127.0.0.1:${state.split(".")[0]}/callback?${new URLSearchParams({ state, error: "access_denied" })}`,
-          )
-        },
-      }),
-    ).rejects.toThrow(/not approved/)
-    await expect(login({ tokens: tokenManager(), openBrowser: async () => {}, timeoutMs: 10 })).rejects.toThrow(
-      /timed out/,
-    )
+    expect(text).not.toMatch(/example-(access|refresh|rotated|issued)/)
   })
 })
 const apiFixture = (): typeof fetch => async (input, init) => {
@@ -638,6 +422,8 @@ describe("downloaded files", () => {
     await expect(readDownloadedFiles(join(dir, "plain.txt"))).rejects.toMatchObject({ code: "validation_error" })
   })
 })
+const zoomUser: typeof fetch = async () =>
+  response({ id: "example-user", email: "user@example.com", display_name: "Example User" })
 const programSetup = async (overrides: Partial<ProgramDeps> = {}) => {
   const dir = await temporary()
   const configPath = join(dir, "config.json")
@@ -731,7 +517,9 @@ describe("zm", () => {
   it("keeps the login in a private file with --credential-storage file", async () => {
     const configDir = await temporary()
     const setup = await programSetup({
-      tokens: new TokenManager({ ...tokenManager().options, configDir }),
+      env: { ZM_CONFIG_DIR: configDir },
+      signInFetch: tokenManager().options.fetch,
+      fetch: zoomUser,
       openBrowser: async (url) => {
         const state = new URL(url).searchParams.get("state") ?? ""
         await fetch(
@@ -740,30 +528,39 @@ describe("zm", () => {
       },
     })
     setConfig(setup.deps.configPath, "zoom.client_id", "example-client")
-    const start = ["example", "--json", "session", "start", "--browser", "example-browser"]
+    const start = ["example", "--json", "session", "start"]
     expect(await run([...start, "--credential-storage", "file"], setup.deps)).toBe(0)
-    expect(readAnswer(setup.stdout[0] ?? "{}")).toMatchObject({ credential_storage: "file" })
+    expect(readAnswer(setup.stdout[0] ?? "{}")).toMatchObject({ signed_in: true })
     expect(JSON.parse(await readFile(join(configDir, "credentials.json"), "utf8"))).toHaveProperty([
       "oauth:zoom:example",
     ])
     expect(await run([...start, "--credential-storage", "cloud"], setup.deps)).toBe(2)
   })
   it("logs in through an injected browser and exposes only status and grants", async () => {
+    let authorized: URL | undefined
     const setup = await programSetup({
+      signInFetch: tokenManager().options.fetch,
+      fetch: zoomUser,
       openBrowser: async (url) => {
-        const state = new URL(url).searchParams.get("state") ?? ""
+        authorized = new URL(url)
+        const state = authorized.searchParams.get("state") ?? ""
         await fetch(
           `http://127.0.0.1:${state.split(".")[0]}/callback?${new URLSearchParams({ state, code: "example-code" })}`,
         )
       },
     })
     setConfig(setup.deps.configPath, "zoom.client_id", "example-client")
-    expect(await run(["example", "--json", "session", "start", "--browser", "example-browser"], setup.deps)).toBe(0)
+    expect(await run(["example", "--json", "session", "start"], setup.deps)).toBe(0)
+    expect(authorized?.searchParams.get("redirect_uri")).toBe(REDIRECT)
+    expect(authorized?.searchParams.get("code_challenge_method")).toBe("S256")
+    expect(authorized?.searchParams.has("scope")).toBe(false)
     expect(readAnswer(setup.stdout[0] ?? "{}")).toEqual({
-      logged_in: true,
+      signed_in: true,
       scopes,
       profile: "example",
-      credential_storage: "keyring",
+      user_id: "example-user",
+      email: "user@example.com",
+      display_name: "Example User",
     })
     expect(setup.stdout.join("")).not.toContain("example-access")
   })

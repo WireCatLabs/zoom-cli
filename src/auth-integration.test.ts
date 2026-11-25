@@ -1,5 +1,4 @@
 import { mkdtemp, writeFile } from "node:fs/promises"
-import { connect } from "node:net"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { PassThrough } from "node:stream"
@@ -10,7 +9,6 @@ import { readAnswer } from "../scripts/testing/answers.js"
 import { fakeConnection } from "../scripts/testing/connection.js"
 import { useProfile } from "../scripts/testing/profile.js"
 import { readConfig, setConfig } from "./config.js"
-import { login } from "./login.js"
 import { chooseProfile } from "./profile.js"
 import { type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
@@ -31,144 +29,14 @@ const callback = (url: string, params: Record<string, string>) => {
   const state = new URL(url).searchParams.get("state") ?? ""
   return `http://127.0.0.1:${state.split(".")[0]}/callback?${new URLSearchParams({ state, ...params })}`
 }
+/** The sign-in goes to Zoom's token host, which this fake answers, and checks the account at /users/me. */
+const signingIn = (deps: ProgramDeps, tokens: TokenManager = manager()) => {
+  deps.tokens = tokens
+  deps.signInFetch = tokens.options.fetch
+  deps.fetch = async () => reply({ id: "example-user", email: "user@example.com", display_name: "Example User" })
+}
 
-describe("authentication termination", () => {
-  it("fails promptly when a browser cannot launch and paste is unavailable", async () => {
-    let url = ""
-    await expect(
-      login({
-        tokens: manager(),
-        timeoutMs: 1000,
-        showUrl: (value) => {
-          url = value
-        },
-        openBrowser: async () => {
-          throw new Error("private launcher detail")
-        },
-      }),
-    ).rejects.toMatchObject({ code: "configuration_error", message: expect.stringMatching(/--browser/) })
-    await expect(fetch(callback(url, { code: "example-code" }))).rejects.toThrow()
-  })
-  it("accepts query paste and cancels the paste prompt before exchanging", async () => {
-    let url = ""
-    let signal: AbortSignal | undefined
-    const tokens = manager(async () => {
-      expect(signal?.aborted).toBe(true)
-      return reply({ access_token: "example-access", refresh_token: "example-refresh", expires_in: 60 })
-    })
-    expect(
-      await login({
-        tokens,
-        showUrl: (value) => {
-          url = value
-        },
-        openBrowser: async () => {},
-        readPaste: async (value) => {
-          signal = value
-          return `code=example-code&state=${new URL(url).searchParams.get("state")}`
-        },
-      }),
-    ).toEqual({ loggedIn: true, scopes: [], credentialStorage: "keyring" })
-  })
-  it("closes the listener after paste cancellation or malformed paste", async () => {
-    for (const readPaste of [
-      async () => {
-        throw new Error("example cancellation")
-      },
-      async () => "malformed",
-    ]) {
-      let url = ""
-      await expect(
-        login({
-          tokens: manager(),
-          showUrl: (value) => {
-            url = value
-          },
-          openBrowser: async () => {},
-          readPaste,
-        }),
-      ).rejects.toThrow()
-      await expect(fetch(callback(url, { code: "example-code" }))).rejects.toThrow()
-    }
-  })
-  it("keeps invalid callbacks pending, uses the first valid code, and closes stalled connections on exchange failure", async () => {
-    let url = ""
-    let socket: ReturnType<typeof connect> | undefined
-    let closed: Promise<void> | undefined
-    const tokens = manager(async (_url, init) => {
-      expect(new URLSearchParams(String(init?.body)).get("code")).toBe("first-example")
-      return new Response("example", { status: 401 })
-    })
-    await expect(
-      login({
-        tokens,
-        openBrowser: async (value) => {
-          url = value
-          const state = new URL(value).searchParams.get("state") ?? ""
-          const port = Number(state.split(".")[0])
-          socket = connect(port, "127.0.0.1")
-          closed = new Promise<void>((resolve) => socket?.once("close", () => resolve()))
-          await new Promise<void>((resolve) => socket?.once("connect", resolve))
-          expect((await fetch(`http://127.0.0.1:${port}/callback?code=example`)).status).toBe(400)
-          await Promise.all([
-            fetch(callback(value, { code: "first-example" })),
-            fetch(callback(value, { code: "second-example" })).catch(() => {}),
-          ])
-        },
-      }),
-    ).rejects.toThrow(/HTTP 401/)
-    await closed
-    expect(socket?.destroyed).toBe(true)
-    await expect(fetch(callback(url, {}))).rejects.toThrow()
-  })
-  it("rejects matching callbacks without a code and closes stalled connections on timeout", async () => {
-    await expect(
-      login({
-        tokens: manager(),
-        openBrowser: async (url) => {
-          await fetch(callback(url, {}))
-        },
-      }),
-    ).rejects.toThrow(/not approved/)
-    let closed: Promise<void> | undefined
-    await expect(
-      login({
-        tokens: manager(),
-        timeoutMs: 40,
-        openBrowser: async (url) => {
-          const port = Number(new URL(url).searchParams.get("state")?.split(".")[0])
-          const socket = connect(port, "127.0.0.1")
-          closed = new Promise<void>((resolve) => socket.once("close", () => resolve()))
-          await new Promise<void>((resolve) => socket.once("connect", resolve))
-        },
-      }),
-    ).rejects.toThrow(/timed out/)
-    await closed
-  })
-})
-
-describe("token validation and refresh recovery", () => {
-  it("sanitizes invalid JSON and transport failures without retrying token exchange", async () => {
-    let calls = 0
-    const tokens = manager(async () => {
-      calls++
-      throw new Error("example-private-transport")
-    })
-    await expect(tokens.exchange({})).rejects.toMatchObject({
-      code: "outcome_unknown",
-      message: "Zoom token exchange did not finish; run zm <profile> session start again before retrying",
-    })
-    expect(calls).toBe(1)
-    await expect(manager(async () => new Response("invalid JSON")).exchange({})).rejects.toMatchObject({
-      code: "outcome_unknown",
-    })
-    for (const extra of [{ scope: [] }, { refresh_token: 1 }, { expires_in: Number.MAX_VALUE }])
-      await expect(
-        manager(async () =>
-          reply({ access_token: "example", refresh_token: "example", expires_in: 60, ...extra }),
-        ).exchange({}),
-      ).rejects.toMatchObject({ code: "outcome_unknown" })
-  })
+describe("token refresh recovery", () => {
   it("refreshes at the boundary, retries a later command after failure, and preserves rotation", async () => {
     let calls = 0
     const tokens = manager(async (_url, init) => {
@@ -178,10 +46,10 @@ describe("token validation and refresh recovery", () => {
       return reply({
         access_token: "example-new-access",
         refresh_token: "example-new-refresh",
-        expires_in: 60,
+        expires_in: 3600,
         scope: "example:new",
       })
-    })
+    }).forProfile("example")
     tokens.save({
       accessToken: "example-old-access",
       refreshToken: "example-old-refresh",
@@ -243,9 +111,9 @@ describe("CLI configuration isolation", () => {
   it("signs in with --client-id over ZM_ZOOM_CLIENT_ID and saves it as zoom.client_id only once it succeeds", async () => {
     const { deps } = await setup()
     deps.env = { ZM_ZOOM_CLIENT_ID: "example-env-client" }
-    deps.tokens = manager()
-    deps.openBrowser = async () => {
-      throw new Error("no browser")
+    signingIn(deps)
+    deps.openBrowser = async (url) => {
+      await fetch(callback(url, { error: "access_denied" }))
     }
     expect(await run(["example", "session", "start", "--client-id", "example-flag-client"], deps)).not.toBe(0)
     expect(readConfig(deps.configPath).clientId).toBeNull()
@@ -257,13 +125,17 @@ describe("CLI configuration isolation", () => {
     expect(await run(["example", "session", "start", "--client-id", "example-flag-client"], deps)).toBe(0)
     expect(authorized).toBe("example-flag-client")
     expect(readConfig(deps.configPath).clientId).toBe("example-flag-client")
-    expect(deps.tokens.options.keyring.get("example", "oauth:zoom:example")).toBeTruthy()
+    expect(deps.tokens.options.keyring.get("zoom-cli", "oauth:zoom:example")).toBeTruthy()
   })
-  it("reports browser and token exchange failures with their structured exit codes", async () => {
+  it("reports a token exchange that did not finish as an unknown outcome", async () => {
     const { deps, stderr } = await setup()
     setConfig(deps.configPath, "zoom.client_id", "example-client")
-    expect(await run(["example", "session", "start"], deps)).toBe(3)
-    expect(JSON.parse(stderr.at(-1) ?? "{}").error.code).toBe("configuration_error")
+    signingIn(
+      deps,
+      manager(async () => {
+        throw new Error("example dropped connection")
+      }),
+    )
     deps.openBrowser = async (url) => {
       await fetch(callback(url, { code: "example-code" }))
     }
@@ -273,7 +145,7 @@ describe("CLI configuration isolation", () => {
   it("with --answer-stdin, gives the page as an open_url line and takes the pasted address on stdin", async () => {
     const { deps, stdout, stderr } = await setup()
     setConfig(deps.configPath, "zoom.client_id", "example-client")
-    deps.tokens = manager()
+    signingIn(deps)
     deps.openBrowser = async () => {}
     const stdin = new PassThrough()
     deps.stdin = stdin
@@ -330,7 +202,7 @@ describe("CLI configuration isolation", () => {
   })
   it("with --answer-stdin and no Zoom app, asks for the Client ID and saves it once the sign-in succeeds", async () => {
     const { deps, stderr } = await setup()
-    deps.tokens = manager()
+    signingIn(deps)
     let authorized = ""
     deps.openBrowser = async (url) => {
       authorized = new URL(url).searchParams.get("client_id") ?? ""
@@ -353,11 +225,11 @@ describe("CLI configuration isolation", () => {
     })
     expect(authorized).toBe("example-asked-client")
     expect(readConfig(deps.configPath).clientId).toBe("example-asked-client")
-    expect(deps.tokens.options.keyring.get("example", "oauth:zoom:example")).toBeTruthy()
+    expect(deps.tokens.options.keyring.get("zoom-cli", "oauth:zoom:example")).toBeTruthy()
   })
   it("with --answer-stdin, keeps an answered Client ID out of the config when the sign-in fails", async () => {
     const { deps } = await setup()
-    deps.tokens = manager()
+    signingIn(deps)
     deps.openBrowser = async (url) => {
       await fetch(callback(url, { error: "access_denied" }))
     }
@@ -370,7 +242,7 @@ describe("CLI configuration isolation", () => {
   it("with --answer-stdin, withdraws the paste question when the browser's callback comes first", async () => {
     const { deps, stderr } = await setup()
     setConfig(deps.configPath, "zoom.client_id", "example-client")
-    deps.tokens = manager()
+    signingIn(deps)
     deps.stdin = new PassThrough()
     deps.openBrowser = async (url) => {
       await fetch(callback(url, { code: "example-code" }))

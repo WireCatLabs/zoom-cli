@@ -150,7 +150,7 @@ it("binds credential refresh to the operation signal and preserves uncertain ref
     keyring: memoryKeyring(),
     fetch: refresh,
     now: () => 0,
-  })
+  }).forProfile("example")
   manager.save({ ...token, expiresAt: 0 })
   const api = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(body)))
   const sdk = createZoomUpcomingMeetingReader("example", manager, api)

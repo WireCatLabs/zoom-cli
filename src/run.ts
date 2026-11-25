@@ -1,4 +1,5 @@
 import {
+  appCompleteCommand,
   appDoctorCommand,
   appMcpCommand,
   type Configuration,
@@ -23,6 +24,7 @@ import type { ProgramDeps } from "./program.js"
 import { bindZoomProgram } from "./program-bindings.js"
 import { ZM } from "./read-only.js"
 import { zoomClientReport } from "./zoom-app.js"
+import { zoomSessionCommand } from "./zoom-session.js"
 
 export interface ZoomLifecycle {
   prepare?: () => Promise<void>
@@ -95,6 +97,8 @@ export const zoomDefinition = (deps: ProgramDeps, onFailure?: (error: unknown) =
     app: ZM,
     commands: () => [
       zoomRunsCommand(),
+      zoomSessionCommand(deps, shared.resolveSettings),
+      appCompleteCommand(ZM, { configuredProfiles: () => configured(deps.configPath)?.profiles ?? [] }),
       appDoctorCommand(ZM, shared, {
         packageName: "@wirecat/zoom-cli",
         oauthClient: () => zoomClientReport(configured(deps.configPath), deps.env ?? process.env),
@@ -139,5 +143,7 @@ export const runCommand = async (
     ...(deps.stdin ? { stdin: deps.stdin } : {}),
     ...(deps.stdout ? { stdout: deps.stdout } : {}),
     keyring: deps.tokens.options.keyring,
+    openBrowser: (url: string, command?: Command) => deps.openBrowser(url, undefined, command),
+    ...(deps.signInFetch ? { fetch: deps.signInFetch } : {}),
     ...(deps.confirm ? { answer: async (question: string) => ((await deps.confirm?.(question)) ? "yes" : "no") } : {}),
   })
