@@ -66,8 +66,8 @@
     "check:agent-docs": "node --experimental-strip-types scripts/check-agent-docs.ts"
   },
   "dependencies": {
-    "@wirecat/cli-base": "0.124.0",
-    "@wirecat/cli-core": "0.707.0",
+    "@wirecat/cli-base": "0.126.1",
+    "@wirecat/cli-core": "0.718.0",
     "commander": "15.0.0",
     "valibot": "1.5.0"
   },
@@ -80,7 +80,7 @@
     "@modelcontextprotocol/server": "2.4.0",
     "@types/node": "^22.20.5",
     "@vitest/coverage-v8": "^5.0.5",
-    "@wirecat/cli-testing": "0.7.0",
+    "@wirecat/cli-testing": "0.7.4",
     "cspell": "10.4.0",
     "esbuild": "0.28.2",
     "lefthook": "2.2.2",
