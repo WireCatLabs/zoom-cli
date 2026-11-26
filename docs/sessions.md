@@ -11,19 +11,18 @@ interactive terminal on the computer that will store the session:
 
 ```sh
 zm config set zoom.client_id <public-client-id>
-zm personal session start --browser firefox
+zm personal session start
 ```
 
 Agents: run `zm personal session start` in the background (it waits up to five minutes for the approval, and a shell
-tool shows nothing until the command exits), read the line `Open this URL to approve Zoom login:` and the URL
-under it, and give the URL to the person as a link. The browser that opens it must be on this computer, because
+tool shows nothing until the command exits), read the line `Open Zoom sign-in:` and the URL after it, and give the
+URL to the person as a link. The browser that opens it must be on this computer, because
 the callback reaches a listener here. `--quiet` keeps the URL.
 
-Omit `--browser firefox` to use the default browser. Zoom displays the app's requested permissions;
+The default browser opens. `--no-browser` only prints the URL. Zoom displays the app's requested permissions;
 sign in to the intended account and approve. The tool stores tokens in the operating system's
 keyring, never the public configuration file. If that password store is unavailable, login keeps them in
-`credentials.json` in zm's config folder, readable by you only, says so once on stderr and answers
-`credential_storage: "file"`; it never asks. `--credential-storage file` chooses the file outright. The keyring is
+`credentials.json` in zm's config folder, readable by you only, says so once on stderr; it never asks. `--credential-storage file` chooses the file outright. The keyring is
 safer, so we do not recommend it. The next `session start` that reaches the keyring moves the tokens back.
 
 If you last signed in with zm 0.34 or earlier, run `zm <profile> session start` again: that older login is no longer used.
@@ -32,14 +31,13 @@ If you last signed in with zm 0.34 or earlier, run `zm <profile> session start` 
 
 Leave the terminal running. After **Allow**, the callback page at `https://wirecat.dev/zoom-callback`
 forwards the response to a temporary listener on your computer. Successful receipt closes the listener;
-the command reports `logged_in: true` with granted scopes and returns to the shell prompt.
+the command reports `signed_in: true` with granted scopes and returns to the shell prompt.
 
-If nothing appears in the terminal after approval:
+If the browser may not come back to this computer, start the login with `--answer-stdin`:
 
-1. Look at the callback page in the browser. Copy the displayed `code=…&state=…` parameters or its
-   full callback URL.
-2. Paste into the **same terminal still waiting in `zm personal session start`**, then press Enter. Do not start
-   another process or paste the value as a new shell command.
+1. Run `zm personal session start --answer-stdin`. It asks for the address the browser shows after you allow access.
+2. Copy the full callback URL from the browser and paste it into **that same terminal**, then press Enter. Do not
+   start another process or paste the value as a new shell command.
 3. If the five-minute deadline expired, run login again and use the new callback. Each attempt has
    its own state and verification key; a callback from an older attempt is rejected.
 
@@ -64,8 +62,9 @@ zm personal session status --check --json
 Missing-scope errors name the required permission. The app owner adds it, saves the app and the
 user runs `zm personal session start` again. Configuration changes alone do not expand an existing token's scope.
 
-Without a terminal, login still prints the URL and waits for the callback; only the paste fallback needs a
-terminal. `--no-input` and CI refuse browser login. Login is not an MCP tool.
+Without a terminal, with `--no-input` or in CI, login opens no browser. It still prints the URL and waits for
+the callback, and with `--json --answer-stdin` it asks for the redirected address as a `needs` line. Login is not an
+MCP tool.
 
 ## Select a local profile
 
@@ -93,7 +92,8 @@ Older versions kept logins under `zoom-cli:<configuration directory>` as `<clien
 first run copies one to the new entry and leaves the old one until `session end`.
 
 `zm session list --json` lists the profiles on this computer and the state of each one's saved login (`saved`,
-`expired`, `missing`, or `not_configured` while no Zoom app is set). It takes no profile and does not contact Zoom.
+`missing`, or `unknown` when the keyring cannot be read). It takes no profile and does not contact Zoom.
+`zm <profile> session status` gives `expires_at`, when the access token runs out; a refresh moves it on.
 
 `ZM_PROFILE_LOCK=personal` pins a process to one profile: a first word or `ZM_PROFILE` naming any
 other is refused with `permission_error`. Set it where an agent runs.

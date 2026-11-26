@@ -188,7 +188,7 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `session status` | `--check` | ✅ |  |
 | `session list` |  | ✅ |  |
 | `session start` |  | ✅ |  |
-| `session start` | `--browser` | ✅ |  |
+| `session start` | `--no-browser` | ✅ |  |
 | `session start` | `--client-id` | ✅ |  |
 | `session start` | `--credential-storage` | ✅ |  |
 | `session start` | `--answer-stdin` | ✅ |  |

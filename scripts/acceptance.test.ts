@@ -258,11 +258,15 @@ describe("installed package", { concurrent: false, shuffle: false, timeout: 1500
     expect(readAnswer(saved.stdout)).toMatchObject({ profiles: [] })
   })
 
-  it("refuses noninteractive login before external access", () => {
+  it("refuses a login with no Zoom app before external access", () => {
+    expect(invoke("config", "unset", "zoom.client_id").status).toBe(0)
     const result = invoke("--no-input", "personal", "session", "start")
     expect(result.status).toBe(3)
     expect(result.stdout).toBe("")
-    expect(JSON.parse(result.stderr).error.code).toBe("configuration_error")
+    expect(JSON.parse(result.stderr).error).toMatchObject({
+      code: "configuration_error",
+      reason: "zoom.client-id-missing",
+    })
   })
 
   it("classifies invalid commands, requires a profile and rejects a profile without stored data", () => {

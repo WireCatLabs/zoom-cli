@@ -511,8 +511,6 @@ describe("zm", () => {
     expect(await run(["--json", "--jsonl", "config", "show"], deps)).toBe(2)
     expect(await run(["session", "start"], deps)).toBe(2)
     expect(await run(["example", "session", "start"], deps)).toBe(3)
-    setConfig(deps.configPath, "zoom.client_id", "example-client")
-    expect(await run(["--no-input", "example", "session", "start"], deps)).toBe(3)
   })
   it("keeps the login in a private file with --credential-storage file", async () => {
     const configDir = await temporary()

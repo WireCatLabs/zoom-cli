@@ -99,14 +99,13 @@ describe("CLI configuration isolation", () => {
     expect(stderr.join("")).toContain("the file is not valid JSON at line 1, column 1, so it is left out")
     expect(await run(["example", "meetings", "list"], deps)).toBe(3)
   })
-  it("rejects whitespace client ids, conflicts and disabled input before side effects", async () => {
+  it("rejects whitespace client ids and conflicting output flags before side effects", async () => {
     const { deps, stdout, stderr } = await setup()
     expect(await run(["config", "set", "zoom.client_id", "example client"], deps)).toBe(2)
     expect(stdout).toEqual([])
     expect(stderr).toHaveLength(1)
     setConfig(deps.configPath, "zoom.client_id", "example-client")
     expect(await run(["--json", "--jsonl", "config", "show"], deps)).toBe(2)
-    expect(await run(["--no-input", "example", "session", "start"], deps)).toBe(3)
   })
   it("signs in with --client-id over ZM_ZOOM_CLIENT_ID and saves it as zoom.client_id only once it succeeds", async () => {
     const { deps } = await setup()

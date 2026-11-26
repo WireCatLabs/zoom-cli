@@ -289,7 +289,7 @@ does not import that transcript into the meeting database until you request arch
 |---|---|
 | `config show` | show local configuration |
 | `config set <key> <value>` | configure the public client or file source |
-| `session start [--browser <program>]` | approve access through your browser |
+| `session start [--no-browser]` | approve access through your browser |
 | `commands --json` | discover command arguments, flags and examples |
 | `complete -- <words...>` | answer shell completion requests |
 | `doctor` | inspect the installation: version, paths, config problems, profiles, store; no keyring, login or network |

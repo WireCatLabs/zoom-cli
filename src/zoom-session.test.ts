@@ -4,7 +4,7 @@ import { join } from "node:path"
 import { type KeyringStore, memoryKeyring } from "@wirecat/cli-base"
 import { describe, expect, it } from "vitest"
 import { readAnswer } from "../scripts/testing/answers.js"
-import { addProfile, setConfig } from "./config.js"
+import { addProfile, readConfig, setConfig } from "./config.js"
 import { type ProgramDeps, run } from "./program.js"
 import { TokenManager } from "./tokens.js"
 
@@ -131,5 +131,18 @@ describe("zm session on cli-core's oauthSessionCommand", () => {
     addProfile(deps.configPath, "work")
     expect(await run(["--json", "session", "list"], deps)).toBe(0)
     expect(readAnswer(stdout.at(-1) ?? "").items).toEqual([{ profile: "work", signed_in: null, state: "unknown" }])
+  })
+
+  it("signs in an app without the optional user:read:user scope, and saves a client named for the sign-in", async () => {
+    const { deps, keyring, stdout } = setup()
+    deps.fetch = async () => Response.json({ code: 4711, message: "Invalid access token, does not contain scopes" })
+    deps.openBrowser = async (url) => {
+      const state = new URL(url).searchParams.get("state") ?? ""
+      await fetch(`http://127.0.0.1:${state.split(".")[0]}/callback?${new URLSearchParams({ state, code: "c" })}`)
+    }
+    expect(await run(["--json", "work", "session", "start", "--client-id", "example-flag-client"], deps)).toBe(0)
+    expect(readAnswer(stdout.at(-1) ?? "")).toEqual({ profile: "work", signed_in: true, scopes: [] })
+    expect(keyring.get("zoom-cli", "oauth:zoom:work")).toContain("example-new")
+    expect(readConfig(deps.configPath)).toMatchObject({ clientId: "example-flag-client", profiles: ["work"] })
   })
 })

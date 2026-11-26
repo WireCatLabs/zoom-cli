@@ -8,10 +8,9 @@ recording files and inspect an uncertain remote change before retrying it.
 
 ### I approved in the browser, but the terminal is still waiting
 
-The browser approved the app, but its callback has not reached the waiting process. Leave that
-terminal open. On the WireCat callback page, copy `code=…&state=…` or the full callback URL, paste
-it into **the same running `zm personal session start` terminal**, and press Enter. The command must report
-`logged_in: true` and return to the prompt. If it timed out, start a new login and use its new callback.
+The browser approved the app, but its callback has not reached the waiting process. Start a new login with
+`zm personal session start --answer-stdin`, approve again, copy the full callback URL from the browser, paste it
+into **that same terminal**, and press Enter. The command must report `signed_in: true` and return to the prompt.
 A callback from an earlier attempt cannot finish a later one.
 
 A browser on another device or a remote terminal can prevent automatic local forwarding.
@@ -27,15 +26,8 @@ Use [the full app checklist](zoom-app.md#create-your-own-app), then verify termi
 
 ### The browser does not start
 
-Try an installed browser explicitly:
-
-```sh
-zm personal session start --browser firefox
-```
-
-In an interactive terminal, open the authorization URL printed by that running login yourself,
-then paste its callback if necessary. Do not reuse an old URL. Without paste input, browser launch
-failure exits promptly. Without a terminal the URL is still printed; `--no-input` and CI refuse login.
+The login always prints its URL as `Open Zoom sign-in: …`. Open that URL in any browser on this computer
+while the login waits. Do not reuse an old URL. `--no-browser` skips the browser and only prints the URL.
 
 ### The app is unavailable or needs administrator approval
 
@@ -48,7 +40,7 @@ shows the settings to check. Authorized VTT files can still be imported without 
 
 The system password store is locked, not running, or not reachable from this session (a headless
 machine, an agent's shell, `ssh`). Login still works: it keeps the tokens in `credentials.json` in
-zm's config folder, readable by you only, and answers `credential_storage: "file"`. To move them back,
+zm's config folder, readable by you only, and says so once. To move them back,
 unlock the keyring and run `session start` again from a desktop session.
 
 ### Commands stop with "Zoom token request failed"

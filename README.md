@@ -144,7 +144,7 @@ More: [compared with other tools](https://github.com/WireCatLabs/zoom-cli/blob/m
 
 | Task | Commands |
 |---|---|
-| Set up and log in | `config show`, `config set <key> <value>`, `config unset <key>`, `session start [--browser <program>]`, `session status [--check]`, `session end`, `account remove --keep-data|--delete-data`, `doctor` |
+| Set up and log in | `config show`, `config set <key> <value>`, `config unset <key>`, `session start [--no-browser] [--client-id <id>] [--answer-stdin]`, `session status [--check]`, `session end`, `account remove --keep-data|--delete-data`, `doctor` |
 | Bring meetings in | `meetings sync [--since-time <time>] [--lookback-days <days>]`, `meetings import <folder>`, `watch [api\|files] [folder] --jsonl` |
 | Read stored meetings | `meetings list`, `meetings show <meeting>`, `meetings transcript <meeting>`, `meetings summary <meeting>`, `meetings export <meeting> --format markdown\|vtt`, `events list` |
 | Search | `search meetings <query>`, `meetings people <query>`, `search all <query>` |
@@ -348,7 +348,7 @@ More: [security][docs/security.md] · [security on wirecat.dev][wirecat/en/docs/
 - **No transcripts:** check generation, retention and permissions in the [app guide][docs/zoom-app.md].
   Enabling a setting does not restore deleted text; attended meetings may need `zm personal meetings import`.
 - **Missing-scope error:** add the named scope in your app, then `zm personal session start` again.
-- **Browser does not start:** `zm personal session start --browser firefox`, or paste the callback parameters.
+- **Browser does not start:** open the URL `zm personal session start` prints, or use `--answer-stdin` and paste the callback address.
 - **Lock left after a crash:** `zm personal recordings archive locks`, then `recover` with `--yes`.
 
 More: [troubleshooting][docs/troubleshooting.md] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]

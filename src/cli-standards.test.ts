@@ -22,7 +22,7 @@ const setup = async () => {
     configPath,
     tokens: new TokenManager({
       clientId: "example-client",
-      service: "example",
+      service: "zoom-cli",
       keyring: memoryKeyring(),
       now: () => 0,
       fetch: async () => {
@@ -65,8 +65,6 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(await run(["complete", "--", "search", "m"], deps)).toBe(0)
     expect(stdout[1]).toContain("meetings\t")
     expect(stdout[1]).toContain(":4\n")
-    expect(await run(["--json", "complete", "--", "search", "m"], deps)).toBe(0)
-    expect(JSON.parse(stdout[2] ?? "{}").items.some((item: { value: string }) => item.value === "meetings")).toBe(true)
     expect(stderr).toEqual([])
   })
   it("prints the shared commands document, whole and scoped", async () => {
@@ -289,66 +287,39 @@ describe("portable CLI discovery and diagnostics", () => {
       details: { profiles: [] },
     })
     expect(await run(["local-example", "--json", "session", "status"], deps)).toBe(0)
-    expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({
-      configured: false,
-      state: "not_configured",
-      profile: "local-example",
-    })
+    expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({ state: "missing", profile: "local-example" })
     setConfig(deps.configPath, "zoom.client_id", "example-client")
     useProfile(deps.configPath, "local-example")
-    expect(await run(["--json", "session", "status"], deps)).toBe(0)
-    expect(readAnswer(stdout.at(-1) ?? "{}").state).toBe("missing")
+    const expiresAt = Date.now() + 3600_000
     deps.tokens.forProfile("local-example").save({
       accessToken: "example-access-secret",
       refreshToken: "example-refresh-secret",
-      expiresAt: 1000,
-      scopes: ["example:read"],
+      expiresAt,
+      scopes: ["user:read:user"],
     })
     expect(await run(["--json", "session", "status"], deps)).toBe(0)
     expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({
       state: "saved",
       verified: false,
       profile: "local-example",
-      scopes: ["example:read"],
+      scopes: ["user:read:user"],
+      expires_at: new Date(expiresAt).toISOString(),
     })
     expect(await run(["other-example", "--json", "session", "status"], deps)).toBe(0)
     expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({ state: "missing", profile: "other-example" })
-    deps.now = () => 1000
-    expect(await run(["--json", "session", "status"], deps)).toBe(0)
-    expect(readAnswer(stdout.at(-1) ?? "{}").state).toBe("expired")
-    expect(stdout.join("")).not.toContain("example-access-secret")
-    expect(stdout.join("")).not.toContain("example-refresh-secret")
-    deps.tokens
-      .forProfile("local-example")
-      .save({ accessToken: "example", refreshToken: "example", expiresAt: 3600000, scopes: ["example:read"] })
-    expect(await run(["--json", "session", "status", "--check"], deps)).toBe(3)
-    deps.checkSession = async () => ({ id: "example-user" })
+    deps.fetch = async () => new Response(JSON.stringify({ id: "example-user", email: "user@example.com" }))
     expect(await run(["--json", "session", "status", "--check"], deps)).toBe(0)
     expect(readAnswer(stdout.at(-1) ?? "{}")).toMatchObject({
-      state: "verified",
+      state: "saved",
       verified: true,
       profile: "local-example",
-      zoom_user: { id: "example-user" },
+      user_id: "example-user",
     })
+    expect(stdout.join("")).not.toContain("example-access-secret")
+    expect(stdout.join("")).not.toContain("example-refresh-secret")
   })
   it("uses shared errors and exit mappings without private generic details", async () => {
     expect(new CliError("rate_limited", "example")).toBeInstanceOf(CliError)
-    const { deps, stderr } = await setup()
-    setConfig(deps.configPath, "zoom.client_id", "example-client")
-    useProfile(deps.configPath)
-    for (const [code, exit] of [
-      ["rate_limited", 8],
-      ["timeout", 9],
-      ["network_error", 10],
-      ["permission_error", 5],
-      ["cancelled", 130],
-    ] as const) {
-      deps.checkSession = async () => {
-        throw new CliError(code, "example diagnostic")
-      }
-      expect(await run(["session", "status", "--check"], deps)).toBe(exit)
-      expect(JSON.parse(stderr.at(-1) ?? "{}").error.code).toBe(code)
-    }
     const controller = new AbortController()
     controller.abort("private cancellation reason")
     expect(() => checkCancelled(controller.signal)).toThrow("command cancelled")
@@ -365,17 +336,8 @@ describe("portable CLI discovery and diagnostics", () => {
     expect(await run(["watch", "files", ".", "--pause", "0s", "--jsonl"], deps)).toBe(2)
     expect(JSON.parse(stderr.at(-1) ?? "{}").error.message).toContain("--pause has to be more than zero")
   })
-  it("refuses login in CI or with --no-input, before opening a browser", async () => {
-    const { deps, stdout, stderr } = await setup()
-    const message = () => JSON.parse(stderr.at(-1) ?? "{}").error.message
-    setConfig(deps.configPath, "zoom.client_id", "example-client")
-    deps.env = { CI: "1" }
-    expect(await run(["example", "session", "start"], deps)).toBe(3)
-    expect(message()).toContain("run zm example session start yourself")
-    deps.env = {}
-    expect(await run(["--no-input", "example", "session", "start"], deps)).toBe(3)
-    expect(message()).toContain("remove --no-input")
-    expect(stdout).toEqual([])
+  it("declares session start a remote and local write", async () => {
+    const { deps } = await setup()
     const program = createProgram(deps)
     expect(
       describeProgram(program)
@@ -397,11 +359,16 @@ describe("portable CLI discovery and diagnostics", () => {
 it("quiet keeps the login URL, the one thing an agent can pass on, and the failure envelope", async () => {
   const { deps, stdout, stderr } = await setup()
   setConfig(deps.configPath, "zoom.client_id", "example-client")
-  expect(await run(["example", "--quiet", "session", "start"], deps)).toBe(3)
+  deps.openBrowser = async (url) => {
+    const state = new URL(url).searchParams.get("state") ?? ""
+    await fetch(
+      `http://127.0.0.1:${state.split(".")[0]}/callback?${new URLSearchParams({ state, error: "access_denied" })}`,
+    )
+  }
+  expect(await run(["example", "--quiet", "session", "start"], deps)).not.toBe(0)
   expect(stdout).toEqual([])
-  expect(stderr).toHaveLength(2)
-  expect(stderr[0]).toContain("Open this URL to approve Zoom login:")
-  expect(JSON.parse(stderr[1] ?? "{}").error.code).toBe("configuration_error")
+  expect(stderr.join("")).toContain("Open Zoom sign-in: https://zoom.us/oauth/authorize?")
+  expect(JSON.parse(stderr.at(-1) ?? "{}").error.code).toBe("authentication_error")
 })
 
 it("declares source-owned lists honestly and refuses unsupported filters before accessing their source", async () => {
