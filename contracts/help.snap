@@ -32,6 +32,7 @@ Works with:
   linear                                Linear issues and projects, searchable with your other WireCat data
 
 Start here:   zm personal session start  (any profile name works)
+              zm session list            your profiles and their logged-in accounts
 Next:         zm commands                every command, by section
               zm guide                   scenarios: command sequences for common tasks
               zm help options            output, offline, timeouts, dry run
