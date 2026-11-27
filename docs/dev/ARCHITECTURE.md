@@ -7,14 +7,14 @@ This package contains Zoom-specific login and sources; it contains no SQL.
 
 | Module | Responsibility |
 |---|---|
-| [tokens.ts](../../src/tokens.ts) | keyring token storage with a private-file fallback, the move from the old per-folder entry, public-client exchange, refresh under a lock shared by every process, outcome records without token material |
+| [tokens.ts](../../src/tokens.ts) | the Zoom provider and a profile's sign-in for the API, kept and refreshed by cli-core's `credentialStorage` and `tokenKeeper` |
+| [zoom-session.ts](../../src/zoom-session.ts) | `session start, status, end and list` from cli-core's `oauthSessionCommand`: zm's entry format, the old per-folder entry, `--client-id` and the Zoom app it saves |
 | [run-log.ts](../../src/run-log.ts) | a cli-core run under `<state>/runs`, opened on its first record |
-| [login.ts](../../src/login.ts) | PKCE, loopback callback, paste fallback and listener cleanup |
 | [api.ts](../../src/api.ts) | pagination, occurrence UUIDs, participant sessions and downloads |
 | [files.ts](../../src/files.ts) | file contents, legacy names and source metadata |
 | [config.ts](../../src/config.ts) | public client and file-source settings |
 | [program.ts](../../src/program.ts), [run.ts](../../src/run.ts), [program-bindings.ts](../../src/program-bindings.ts) | Core program/runner adapters and Zoom provider/store bindings |
-| [setup-commands.ts](../../src/setup-commands.ts) | `config`, doctor, session status and browser login |
+| [setup-commands.ts](../../src/setup-commands.ts) | `config`, `app`, `upgrade`, `models` and `account remove` |
 | [store-commands.ts](../../src/store-commands.ts) | Zoom's commands over the shared store, each opening it only when its action runs |
 | [meeting-source.ts](../../src/meeting-source.ts) | the API or folder source the config names, built on first use |
 | [recording-schedule-setup.ts](../../src/recording-schedule-setup.ts) | saved schedule jobs, Linux user timers and per-job credentials |
@@ -93,8 +93,8 @@ Installed-package acceptance tests exercise these boundaries through the actual 
 Command discovery uses cli-base's live Commander registry and completion helpers. Output uses the
 shared renderer and exit-code mapping. Discovery/completion avoid config and credentials; local
 doctor is cli-core's shared one: it reads public config and paths without opening the store or the keyring. Session status inspects cached
-OAuth state; an explicitly requested remote check uses the user profile endpoint or an injected adapter.
-The executable supplies terminal/CI context so unattended login fails before browser launch.
+OAuth state; an explicitly requested remote check asks Zoom's user profile endpoint.
+The executable opens no browser under `--json`, `--no-input`, CI or without a terminal; login still prints the URL.
 
 A library caller can supply `connectStore({profile, externalId, intent})`, returning the meeting
 port, a positive numeric account id and an asynchronous close method. The program opens only for
@@ -234,7 +234,7 @@ Zoom’s configuration owns only Zoom settings; it does not embed the Core setti
 reader to one selected Zoom meeting/series. Credentials expose the narrow `withSignal` port;
 TokenManager implements it. Construction performs no login or keyring read. Each operation validates
 its identifier/window/bounds before requesting credentials, then binds refresh and HTTP reads to
-its signal. Interrupted credential refresh preserves outcome_unknown. The account string labels the caller’s selected data scope; OAuth supplies remote access.
+its signal. A refresh cancelled by that signal ends the read as `cancelled`. The account string labels the caller’s selected data scope; OAuth supplies remote access.
 
 `next(id, { after, until, limit, maxReadBytes, signal })` takes absolute milliseconds in a half-open
 window. `id` is a numeric Zoom meeting id, rather than a stored meeting id or recording UUID.

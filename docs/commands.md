@@ -91,6 +91,79 @@ zm runs path <run-id>
 
 **Example:** `zm runs path run-101`
 
+## `zm session`
+
+sign in to Zoom in the browser and manage this profile's sign-in
+
+### `zm session start`
+
+sign this profile in to Zoom in the browser; the account is checked before anything is kept, in the keyring or, with --credential-storage file, a private file
+
+**Changes remote Zoom data.**
+
+```sh
+zm session start [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--no-browser` | print the sign-in URL instead of opening a browser. |
+| `--credential-storage <storage>` | where the sign-in is kept: keyring, which falls back to a private file by itself, or file. Default: `keyring`. |
+| `--answer-stdin` | with --json and no terminal: print each question as a `needs` line on stderr and read its answer, one line, from stdin. |
+| `--client-id <id>` | the Public Client ID of your Zoom app; saved as zoom.client_id once you sign in. |
+
+**Example:** `zm personal session start`, `zm personal session start --no-browser`, `zm personal session start --json --answer-stdin`
+
+### `zm session status`
+
+show this profile's sign-in and its scopes, never a token; --check asks Zoom whose it is
+
+```sh
+zm session status [options]
+```
+
+| Option | What it does |
+|---|---|
+| `--check` | ask Zoom whether the sign-in still works, and whose it is. |
+
+**Example:** `zm personal session status`, `zm personal session status --check --json`
+
+### `zm session end`
+
+forget this profile's sign-in on this computer; the grant stays in Zoom, and a run with moved folders never removes the owner's sign-in
+
+**Changes local data.**
+
+```sh
+zm session end
+```
+
+**Example:** `zm personal session end`
+
+### `zm session list`
+
+list the profiles on this computer and whether each is signed in; picks none
+
+```sh
+zm session list
+```
+
+**Example:** `zm session list`, `zm session list --json`
+
+## `zm complete`
+
+shell completion: `zm complete zsh` prints the script to source
+
+```sh
+zm complete [words]
+```
+
+| Argument | | What it is |
+|---|---|---|
+| `words` | optional | zsh for the shell script, or command words to complete. |
+
+**Example:** `zm complete zsh`
+
 ## `zm doctor`
 
 the state this installation is in, without connecting unless --online
@@ -979,79 +1052,6 @@ zm store info
 **Returns:** store info — path, exists, schema, opens, error, bytes, journal_mode, pages, and 12 more; every field: zm commands info store info
 
 **Example:** `zm personal store info --json`
-
-## `zm complete`
-
-answer shell completion requests
-
-```sh
-zm complete [words]
-```
-
-| Argument | | What it is |
-|---|---|---|
-| `words` | optional | shell words ending in the partial word. |
-
-**Example:** `zm complete -- meetings s`
-
-## `zm session`
-
-the saved Zoom login, separate from local data profiles
-
-### `zm session status`
-
-show cached login state; remote verification is explicit
-
-```sh
-zm session status [options]
-```
-
-| Option | What it does |
-|---|---|
-| `--check` | verify the session with Zoom. |
-
-**Example:** `zm personal session status --json`, `zm personal session status --check --dry-run --json`
-
-### `zm session list`
-
-list the profiles on this computer and the state of each one's saved Zoom login
-
-```sh
-zm session list
-```
-
-**Example:** `zm session list --json`
-
-### `zm session start`
-
-log in to Zoom through your browser
-
-**Changes remote Zoom data.**
-
-```sh
-zm session start [options]
-```
-
-| Option | What it does |
-|---|---|
-| `--browser <program>` | browser program. |
-| `--client-id <id>` | the Public Client ID of your Zoom app; saved as zoom.client_id once you sign in. |
-| `--credential-storage <storage>` | where the login is kept: keyring (the default, which falls back to a private file by itself when no keyring works), or file, not recommended. Default: `keyring`. |
-| `--answer-stdin` | with --json and no terminal: print each question as a `needs` line on stderr and read its answer, one line, from stdin. |
-
-**Example:** `zm personal session start`
-
-### `zm session end`
-
-delete this profile's saved Zoom login; the stored meetings stay
-
-**Changes local data.**
-
-```sh
-zm session end
-```
-
-**Example:** `zm personal session end`
 
 ## `zm upgrade`
 

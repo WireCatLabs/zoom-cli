@@ -44,6 +44,60 @@
     },
     {
       "path": [
+        "session",
+        "start"
+      ],
+      "summary": "sign in to Zoom in the browser",
+      "effects": {
+        "remote": "write",
+        "local": "write"
+      }
+    },
+    {
+      "path": [
+        "session",
+        "status"
+      ],
+      "summary": "show this profile's sign-in; tokens are never printed",
+      "effects": {
+        "remote": "read",
+        "local": "read"
+      }
+    },
+    {
+      "path": [
+        "session",
+        "end"
+      ],
+      "summary": "sign this profile out on this computer",
+      "effects": {
+        "remote": "none",
+        "local": "write"
+      }
+    },
+    {
+      "path": [
+        "session",
+        "list"
+      ],
+      "summary": "list the profiles here and whether each is signed in",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      }
+    },
+    {
+      "path": [
+        "complete"
+      ],
+      "summary": "shell completion: `zm complete zsh` prints the script to source",
+      "effects": {
+        "remote": "none",
+        "local": "read"
+      }
+    },
+    {
+      "path": [
         "doctor"
       ],
       "summary": "the state this installation is in, without connecting unless --online",
@@ -597,60 +651,6 @@
       },
       "permission": "store.info",
       "entity": "store_info"
-    },
-    {
-      "path": [
-        "complete"
-      ],
-      "summary": "answer shell completion requests",
-      "effects": {
-        "remote": "none",
-        "local": "none"
-      }
-    },
-    {
-      "path": [
-        "session",
-        "status"
-      ],
-      "summary": "show cached login state; remote verification is explicit",
-      "effects": {
-        "remote": "read",
-        "local": "read"
-      }
-    },
-    {
-      "path": [
-        "session",
-        "list"
-      ],
-      "summary": "list the profiles on this computer and the state of each one's saved Zoom login",
-      "effects": {
-        "remote": "none",
-        "local": "read"
-      }
-    },
-    {
-      "path": [
-        "session",
-        "start"
-      ],
-      "summary": "log in to Zoom through your browser",
-      "effects": {
-        "remote": "write",
-        "local": "write"
-      }
-    },
-    {
-      "path": [
-        "session",
-        "end"
-      ],
-      "summary": "delete this profile's saved Zoom login; the stored meetings stay",
-      "effects": {
-        "remote": "none",
-        "local": "write"
-      }
     },
     {
       "path": [

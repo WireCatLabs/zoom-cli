@@ -136,7 +136,7 @@ it("validates bounded transport options before credentials or mutation dispatch"
   expect(f.fetcher).not.toHaveBeenCalled()
 })
 
-it("binds credential refresh to the operation signal and preserves uncertain refresh outcomes", async () => {
+it("binds credential refresh to the operation signal and stops a cancelled refresh before any read", async () => {
   const controller = new AbortController()
   const refresh = vi.fn<typeof fetch>(async (_input, init) => {
     expect(init?.signal?.aborted).toBe(false)
@@ -150,12 +150,12 @@ it("binds credential refresh to the operation signal and preserves uncertain ref
     keyring: memoryKeyring(),
     fetch: refresh,
     now: () => 0,
-  })
+  }).forProfile("example")
   manager.save({ ...token, expiresAt: 0 })
   const api = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(body)))
   const sdk = createZoomUpcomingMeetingReader("example", manager, api)
   await expect(sdk.next("123", { ...window, signal: controller.signal })).rejects.toMatchObject({
-    code: "outcome_unknown",
+    code: "cancelled",
   })
   expect(refresh).toHaveBeenCalledOnce()
   expect(api).not.toHaveBeenCalled()

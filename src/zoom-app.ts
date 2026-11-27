@@ -1,7 +1,7 @@
 import { CliError } from "@wirecat/cli-base"
 import { constants, constantsSchema, oauthApp, oauthClientReport } from "@wirecat/cli-core/constants"
 import * as v from "valibot"
-import { REDIRECT } from "./login.js"
+import { REDIRECT } from "./tokens.js"
 
 const schema = v.object({
   ...constantsSchema.entries,

@@ -1,50 +1,24 @@
-import { CliError, isCliError } from "@wirecat/cli-base"
+import { CliError } from "@wirecat/cli-base"
 import { annotate } from "@wirecat/cli-base/commands"
 import {
-  answerStdinOption,
   type Body,
-  commandWords,
   environmentOf,
   grantsAuthority,
   itemOf,
   LOCAL_READ,
   LOCAL_WRITE,
-  logsInOrOut,
   NO_EFFECTS,
-  REMOTE_WRITE,
-  refuseCommandName,
   settingRows,
-  signInSteps,
 } from "@wirecat/cli-core/cli"
 import type { Command } from "commander"
 import { zoomAccountRemoveCommand } from "./account-removal.js"
 import { addStandardCommands } from "./commands.js"
-import {
-  addProfile,
-  inspectConfig,
-  migrateConfig,
-  setConfig,
-  unsetConfig,
-  ZOOM_SETTINGS,
-  type ZoomConfig,
-} from "./config.js"
-import { CLIENT_ID_MISSING } from "./identity.js"
-import { login } from "./login.js"
+import { inspectConfig, migrateConfig, setConfig, unsetConfig, ZOOM_SETTINGS } from "./config.js"
 import { addModelsCommands } from "./models-commands.js"
 import { permissionKeys } from "./permissions.js"
 import type { ProgramDeps } from "./program.js"
-import { getZoomProfile } from "./recordings.js"
-import { TokenManager } from "./tokens.js"
 import { addUpgradeCommand } from "./upgrade.js"
-import {
-  CLIENT_ID_NEED,
-  checkedClientId,
-  SET_ZOOM_APP,
-  zoomApp,
-  zoomAppChecklist,
-  zoomAppSetup,
-  zoomClientId,
-} from "./zoom-app.js"
+import { zoomAppChecklist, zoomAppSetup } from "./zoom-app.js"
 
 const refuseAgentPermissions = (command: Command, key: string) => {
   if (environmentOf(command).agent && (key === "permissions" || key.startsWith("permissions.")))
@@ -112,177 +86,14 @@ export const addAppCommand = (
     })
 }
 
-export interface SessionCommandDeps {
-  deps: Pick<
-    ProgramDeps,
-    | "configPath"
-    | "diagnostic"
-    | "checkSession"
-    | "tokens"
-    | "now"
-    | "env"
-    | "outputIsTTY"
-    | "openBrowser"
-    | "readPaste"
-    | "stdin"
-  >
-  getConfig: () => ZoomConfig
-  output: (body: Body) => void
-  buffer: (text: string) => void
-  api: () => void
-  profile: () => string
-  tokens: () => TokenManager
-  fetch: () => typeof fetch
-  signal: () => AbortSignal | undefined
-}
-
-const PASTE_PROMPT = "If the browser does not come back by itself, the address it ended on (code=…&state=…)"
-
-const savedLogin = (manager: TokenManager, now: number) => {
-  const saved = manager.load()
-  return {
-    state: saved ? (saved.expiresAt > now ? "saved" : "expired") : "missing",
-    ...(saved ? { expiresAt: saved.expiresAt, scopes: saved.scopes } : {}),
-  }
-}
-
-/** The shared discovery, doctor and session status and list commands, plus Zoom's browser login. */
-export const addSessionCommands = (program: Command, context: SessionCommandDeps): void => {
-  const { deps, getConfig, output, buffer, api, profile, tokens, fetch, signal } = context
-  addStandardCommands(program, {
-    output,
-    raw: buffer,
-    sessionStatus: async (check) => {
-      const config = getConfig()
-      const selected = profile()
-      if (!zoomClientId(config, deps.env ?? process.env))
-        return { configured: false, state: "not_configured", profile: selected, verified: false }
-      if (check) {
-        if (program.opts().offline)
-          throw new CliError("configuration_error", "session verification requires network access; remove --offline")
-        api()
-        return {
-          configured: true,
-          state: "verified",
-          profile: selected,
-          verified: true,
-          zoomUser: await (deps.checkSession
-            ? deps.checkSession({ signal: signal() })
-            : getZoomProfile(tokens(), fetch(), { signal: signal() })),
-        }
-      }
-      return {
-        configured: true,
-        profile: selected,
-        verified: false,
-        ...savedLogin(tokens(), deps.now?.() ?? Date.now()),
-      }
-    },
-    sessionList: async () => {
-      const config = getConfig()
-      const configured = zoomClientId(config, deps.env ?? process.env) !== undefined
-      return config.profiles.map((name) => {
-        let login: ReturnType<typeof savedLogin>
-        try {
-          login = savedLogin(deps.tokens.forProfile(name), deps.now?.() ?? Date.now())
-        } catch (error) {
-          // An unreachable keyring must not hide the profiles: `session status` names the cause.
-          if (isCliError(error) && error.code === "configuration_error")
-            return { profile: name, signed_in: null, state: "unknown" }
-          throw error
-        }
-        return {
-          profile: name,
-          signed_in: login.state !== "missing",
-          ...(configured ? login : { state: "not_configured" }),
-        }
-      })
-    },
-  })
+/** The shared discovery and store commands, `upgrade`, `models` and `account remove`. */
+export const addSharedCommands = (
+  program: Command,
+  { deps, buffer, output }: { deps: ProgramDeps; buffer: (text: string) => void; output: (body: Body) => void },
+): void => {
+  addStandardCommands(program)
   addUpgradeCommand(program, { data: buffer, diagnostic: deps.diagnostic })
   addModelsCommands(program, { env: () => deps.env ?? process.env, output, diagnostic: deps.diagnostic })
-  const session = program.commands.find((command) => command.name() === "session")
-  if (!session) throw new CliError("configuration_error", "session command group is unavailable")
-  const start = session
-    .command("start")
-    .description("log in to Zoom through your browser")
-    .option("--browser <program>", "browser program")
-    .option("--client-id <id>", "the Public Client ID of your Zoom app; saved as zoom.client_id once you sign in")
-    .option(
-      "--credential-storage <storage>",
-      "where the login is kept: keyring (the default, which falls back to a private file by itself when no " +
-        "keyring works), or file, not recommended",
-      "keyring",
-    )
-    .addOption(answerStdinOption())
-    .action(async (opts: { browser?: string; clientId?: string; answerStdin?: boolean; credentialStorage: string }) => {
-      if (opts.credentialStorage !== "keyring" && opts.credentialStorage !== "file")
-        throw new CliError("validation_error", "--credential-storage takes keyring or file")
-      const storage: "keyring" | "file" = opts.credentialStorage
-      const config = getConfig()
-      const selected = profile()
-      refuseCommandName(selected, commandWords(program), "zm")
-      if (opts.clientId !== undefined) checkedClientId(opts.clientId)
-      const known = zoomApp({
-        env: deps.env ?? process.env,
-        configClientId: config.clientId,
-        clientId: opts.clientId,
-      })?.client.clientId
-      if (!known && opts.answerStdin !== true)
-        throw new CliError("configuration_error", SET_ZOOM_APP, { reason: CLIENT_ID_MISSING })
-      const globals = program.opts()
-      if (globals.offline) throw new CliError("configuration_error", "login requires network access; remove --offline")
-      if (globals.input === false)
-        throw new CliError("configuration_error", "login requires browser approval; remove --no-input")
-      if (deps.env?.CI)
-        throw new CliError(
-          "configuration_error",
-          `login requires browser approval; run zm ${selected} session start yourself`,
-        )
-      const steps = signInSteps({
-        diagnostic: (line) => deps.diagnostic(`${line}\n`),
-        json: globals.json === true || globals.jsonl === true,
-        answers: opts.answerStdin === true,
-        ...(deps.stdin ? { input: deps.stdin } : {}),
-      })
-      // An answered ID is kept like --client-id: saved only once the sign-in with it succeeds.
-      const clientId = known ?? checkedClientId(await steps.ask(CLIENT_ID_NEED, signal()))
-      const chosen = opts.clientId ?? (known ? undefined : clientId)
-      const done = await login({
-        tokens: (chosen ? new TokenManager({ ...tokens().options, clientId }) : tokens()).storedIn(storage),
-        signal: signal(),
-        openBrowser: (url) => deps.openBrowser(url, opts.browser),
-        readPaste: steps.answers
-          ? (stop) =>
-              steps
-                .ask({ field: "redirect", secret: true, prompt: PASTE_PROMPT }, stop)
-                // The browser's callback won the race; the question is withdrawn, not failed.
-                .catch((error: unknown) => (stop.aborted ? new Promise<string>(() => {}) : Promise.reject(error)))
-          : deps.readPaste,
-        showUrl: (url) =>
-          steps.answers
-            ? steps.openUrl(url, "Approve access to Zoom in the browser")
-            : // Without a terminal this line is all an agent can pass on, so --quiet keeps it.
-              deps.diagnostic(`Open this URL to approve Zoom login:\n${url}\n`),
-      })
-      // A refresh uses the configured app, so the app this sign-in used is kept with it (WC-SECR-25).
-      if (chosen) setConfig(deps.configPath, "zoom.client_id", chosen)
-      addProfile(deps.configPath, selected)
-      output(itemOf({ ...done, profile: selected }))
-    })
-  logsInOrOut(annotate(start, { effects: REMOTE_WRITE, lifetime: "interactive" }))
-  logsInOrOut(
-    annotate(
-      session
-        .command("end")
-        .description("delete this profile's saved Zoom login; the stored meetings stay")
-        .action(() => {
-          const selected = profile()
-          output(itemOf({ profile: selected, ended: tokens().remove(), meetings: "retained" }))
-        }),
-      { effects: LOCAL_WRITE, mcp: false, examples: ["zm personal session end"] },
-    ),
-  )
   annotate(program.command("account"), { effects: NO_EFFECTS })
     .description("the profile's login and data on this computer")
     .addCommand(zoomAccountRemoveCommand(deps))

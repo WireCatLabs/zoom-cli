@@ -40,8 +40,8 @@ const setup = () => {
   const signIn = (profile: string) => {
     addProfile(configPath, profile)
     keyring.set(
-      legacyLoginService({ env }),
-      `${CLIENT}:${profile}`,
+      "zoom-cli",
+      `oauth:zoom:${profile}`,
       JSON.stringify({ accessToken: "a", refreshToken: "r", expiresAt: 1, scopes: [] }),
     )
     mkdirSync(join(paths.state, "checkpoints", profile), { recursive: true })
@@ -70,11 +70,9 @@ const setup = () => {
 describe("zm session end", () => {
   it("deletes this profile's login only, and says nothing was there the second time", async () => {
     const t = setup()
-    expect((await t.call("--json", "personal", "session", "end")).item).toEqual({
-      profile: "personal",
-      ended: true,
-      meetings: "retained",
-    })
+    const ended = await t.call("--json", "personal", "session", "end")
+    expect(ended.error).toBeUndefined()
+    expect(ended.item).toEqual({ profile: "personal", ended: true, removed: ["keyring"] })
     expect(t.loggedIn("personal")).toBe(false)
     expect(t.loggedIn("work")).toBe(true)
     expect((await t.call("--json", "personal", "session", "end")).item).toMatchObject({ ended: false })

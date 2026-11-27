@@ -23,7 +23,7 @@ const tokens = () => {
     service: "example",
     fetch,
     now: () => 0,
-  })
+  }).forProfile("example")
   manager.save({ accessToken: "example-access", refreshToken: "example-refresh", expiresAt: 3600000, scopes })
   return manager
 }

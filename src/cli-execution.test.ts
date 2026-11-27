@@ -47,6 +47,11 @@ const setup = async () => {
   }
   return { deps, stdout, stderr, directory }
 }
+/** `session start` exchanges the code at Zoom's token host and checks the account at /users/me. */
+const signingIn = (deps: ProgramDeps) => {
+  deps.signInFetch = deps.tokens.options.fetch
+  deps.fetch = async () => response({ id: "example-user", email: "user@example.com", display_name: "Example User" })
+}
 const value = (rows: string[]) => {
   const text = rows.at(-1) ?? "{}"
   const packet = JSON.parse(text)
@@ -233,6 +238,7 @@ describe("command execution controls", () => {
     expect(await run(["recordings", "download", "example", "--output-dir", "invented"], deps)).toBe(0)
     expect(timers.mock.calls.some(([, ms]) => ms === 3600000)).toBe(true)
     timers.mockClear()
+    signingIn(deps)
     deps.openBrowser = async (url) => {
       const state = new URL(url).searchParams.get("state") ?? ""
       await fetch(
@@ -250,6 +256,7 @@ describe("login without a terminal", () => {
     const { deps, stdout, stderr } = await setup()
     setConfig(deps.configPath, "zoom.client_id", "example-client")
     deps.outputIsTTY = false
+    signingIn(deps)
     deps.openBrowser = async (url) => {
       const state = new URL(url).searchParams.get("state") ?? ""
       await fetch(
@@ -257,8 +264,8 @@ describe("login without a terminal", () => {
       )
     }
     expect(await run(["example", "--json", "--quiet", "session", "start"], deps)).toBe(0)
-    expect(stderr.join("")).toMatch(/^Open this URL to approve Zoom login:\nhttps:\/\/\S+\n$/)
-    expect(JSON.parse(stdout.join(""))).toMatchObject({ item: { logged_in: true, profile: "example" } })
+    expect(stderr.join("")).toMatch(/Open Zoom sign-in: https:\/\/zoom\.us\/oauth\/authorize\?\S+/)
+    expect(JSON.parse(stdout.join(""))).toMatchObject({ item: { signed_in: true, profile: "example" } })
     expect(readConfig(deps.configPath).profiles).toEqual(["example"])
   })
 })
@@ -501,7 +508,7 @@ it("shares token refresh across scoped managers and preserves grant rotation", a
       await Promise.resolve()
       return response({ access_token: "new-example", refresh_token: "rotated-example", expires_in: 3600 })
     },
-  })
+  }).forProfile("example")
   tokens.save({ accessToken: "old-example", refreshToken: "old-refresh", expiresAt: 0, scopes: ["example:read"] })
   const first = tokens.withSignal(new AbortController().signal)
   const second = tokens.withSignal(new AbortController().signal)
@@ -531,26 +538,6 @@ it("atomically exports without overwriting or following an existing destination 
   await expect(writeExportFile(join(directory, "missing", "example.md"), "Example")).rejects.toMatchObject({
     code: "configuration_error",
   })
-})
-
-it("cancels browser approval and closes the local callback listener without exchanging a grant", async () => {
-  const { deps } = await setup()
-  const { login } = await import("./login.js")
-  const controller = new AbortController()
-  let port = 0
-  const exchange = vi.spyOn(deps.tokens, "exchange")
-  await expect(
-    login({
-      tokens: deps.tokens,
-      signal: controller.signal,
-      openBrowser: async (url) => {
-        port = Number(new URL(url).searchParams.get("state")?.split(".")[0])
-        controller.abort(new CliError("cancelled", "example approval cancelled"))
-      },
-    }),
-  ).rejects.toMatchObject({ code: "cancelled" })
-  expect(exchange).not.toHaveBeenCalled()
-  await expect(fetch(`http://127.0.0.1:${port}/callback`)).rejects.toThrow()
 })
 
 it("shows and installs the packaged skill through the CLI using an isolated home", async () => {
@@ -620,59 +607,28 @@ it("serves its tools with no profile on the computer, and refuses each call with
   expect(await close()).toBe(0)
 })
 
-it("classifies dispatched token failures as uncertain while preflight cancellation never dispatches", async () => {
-  const { deps } = await setup()
-  for (const code of ["network_error", "timeout", "cancelled"] as const) {
-    const fetcher = vi.fn(async () => {
-      throw new CliError(code, "example private grant failure")
-    })
-    const tokens = new TokenManager({ ...deps.tokens.options, fetch: fetcher })
-    await expect(tokens.exchange({})).rejects.toMatchObject({
-      code: "outcome_unknown",
-      message: expect.stringContaining("session start again"),
-    })
-    expect(fetcher).toHaveBeenCalledOnce()
-  }
-  const controller = new AbortController()
-  controller.abort(new CliError("cancelled", "example preflight cancellation"))
-  const fetcher = vi.fn(deps.tokens.options.fetch)
-  const tokens = new TokenManager({ ...deps.tokens.options, fetch: fetcher, signal: controller.signal })
-  await expect(tokens.exchange({})).rejects.toMatchObject({ code: "cancelled" })
-  expect(fetcher).not.toHaveBeenCalled()
-})
-
-it("keeps token grants bound to the client sent and separates refresh singleflight by client", async () => {
+it("refreshes with the client a command started with, even when the config changes under it", async () => {
   const { deps } = await setup()
   let client = "example-first-client"
-  const keyring = memoryKeyring()
   const requests: string[] = []
   const tokens = new TokenManager({
     ...deps.tokens.options,
-    keyring,
+    keyring: memoryKeyring(),
     get clientId() {
       return client
     },
     fetch: async (_url, init) => {
       requests.push(new URLSearchParams(String(init?.body)).get("client_id") ?? "")
-      client = "example-second-client"
-      await Promise.resolve()
-      return response({ access_token: "example-new", refresh_token: "example-refresh", expires_in: 60 })
+      return response({ access_token: "example-new", refresh_token: "example-rotated", expires_in: 3600 })
     },
-  })
-  await tokens.exchange({})
-  expect(tokens.load("example-first-client")).not.toBeNull()
-  expect(tokens.load("example-second-client")).toBeNull()
-  client = "example-first-client"
-  const first = tokens.withSignal()
-  expect(first.options.clientId).toBe("example-first-client")
+  }).forProfile("example")
+  tokens.save({ accessToken: "example-old", refreshToken: "example-old-refresh", expiresAt: 0, scopes: [] })
+  const pinned = tokens.withSignal()
+  expect(pinned.options.clientId).toBe("example-first-client")
   client = "example-second-client"
-  expect(first.options.clientId).toBe("example-first-client")
-  const second = tokens.withSignal()
-  const expired = { accessToken: "example-old", refreshToken: "example-old-refresh", expiresAt: 0, scopes: [] }
-  tokens.save(expired, "example-first-client")
-  tokens.save(expired, "example-second-client")
-  await Promise.all([first.tokens(), second.tokens()])
-  expect(requests).toEqual(["example-first-client", "example-first-client", "example-second-client"])
+  expect(pinned.options.clientId).toBe("example-first-client")
+  await pinned.tokens()
+  expect(requests).toEqual(["example-first-client"])
 })
 
 it("accepts shared diagnostic, verbosity, input and recording controls without corrupting JSON", async () => {

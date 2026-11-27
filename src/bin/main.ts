@@ -1,6 +1,5 @@
 import { createReadStream } from "node:fs"
 import { join } from "node:path"
-import { createInterface } from "node:readline/promises"
 import { addAbortSignal } from "node:stream"
 import { fileURLToPath } from "node:url"
 import {
@@ -34,7 +33,8 @@ await startCli({
       { lazyRunLog },
       { createStoreConnector },
       { writeStream },
-      { TOKEN_LOG_ALLOW, TokenManager },
+      { TOKEN_LOG_ALLOW },
+      { TokenManager },
       { zoomClientId },
     ] = await Promise.all([
       import("@wirecat/cli-core/cli"),
@@ -45,6 +45,7 @@ await startCli({
       import("../run-log.js"),
       import("../store-connection.js"),
       import("../streaming.js"),
+      import("@wirecat/cli-core/oauth"),
       import("../tokens.js"),
       import("../zoom-app.js"),
     ])
@@ -105,18 +106,6 @@ await startCli({
         confirm:
           entry.tty && process.stdin.isTTY && process.stderr.isTTY ? (question) => entry.ask(question) : undefined,
         atStart: entry.atStart,
-        readPaste: process.stdin.isTTY
-          ? async (signal) => {
-              const input = createInterface({ input: process.stdin, output: process.stderr })
-              try {
-                return await input.question("If the callback does not complete, paste code=…&state=… here: ", {
-                  signal,
-                })
-              } finally {
-                input.close()
-              }
-            }
-          : undefined,
       })
       failed = code !== 0
       return code

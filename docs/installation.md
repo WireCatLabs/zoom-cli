@@ -115,9 +115,9 @@ zm personal session start
 1. Sign in to the Zoom account whose hosted meetings you want and review the permissions.
 2. Choose **Allow**. Zoom opens the WireCat callback page, which forwards the authorization to
    the waiting tool on this computer.
-3. Return to the terminal. Success is `logged_in: true` followed by the shell prompt. Browser
+3. Return to the terminal. Success is `signed_in: true` followed by the shell prompt. Browser
    approval alone does not finish the tool's login.
-4. If it keeps waiting, copy the callback page's `code=…&state=…` value or full callback URL,
+4. If it keeps waiting, start again with `--answer-stdin`, copy the full callback URL after you allow access,
    paste it into that **same waiting terminal**, and press Enter. Do not paste it into the agent
    chat or start it as a shell command. After the five-minute deadline, start a new login.
 
