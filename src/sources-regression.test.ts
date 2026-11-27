@@ -141,7 +141,15 @@ it("rejects invalid, oversized and failed transcript bodies with safe errors", a
     new Response("<html>Private example login page</html>"),
     new Response("WEBVTT\n\nprivate example\nPrivate example text\n"),
     new Response(null),
-    new Response(new Uint8Array(10 * 1024 * 1024 + 1)),
+    new Response(
+      new ReadableStream({
+        start(controller) {
+          const mib = new Uint8Array(1024 * 1024)
+          for (let index = 0; index <= 100; index++) controller.enqueue(mib)
+          controller.close()
+        },
+      }),
+    ),
     new Response(
       new ReadableStream({
         start(controller) {
@@ -332,8 +340,8 @@ it("refuses a folder transcript larger than zm downloads, before reading it", as
   const folder = await mkdtemp(join(tmpdir(), "zm-test-source-"))
   const name = "2026-10-10_1530_example.vtt"
   await writeFile(join(folder, name), vtt)
-  await truncate(join(folder, name), 10 * 1024 ** 2 + 1)
-  await expect(readDownloadedFiles(folder)).rejects.toThrow(/larger than 10 MiB/)
+  await truncate(join(folder, name), 100 * 1024 ** 2 + 1)
+  await expect(readDownloadedFiles(folder)).rejects.toThrow(/larger than 100 MiB/)
 })
 
 it("preflights actual folder imports and injected files before choosing normalized contents", async () => {
