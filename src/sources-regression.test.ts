@@ -141,7 +141,15 @@ it("rejects invalid, oversized and failed transcript bodies with safe errors", a
     new Response("<html>Private example login page</html>"),
     new Response("WEBVTT\n\nprivate example\nPrivate example text\n"),
     new Response(null),
-    new Response(new Uint8Array(10 * 1024 * 1024 + 1)),
+    new Response(
+      new ReadableStream({
+        start(controller) {
+          const mib = new Uint8Array(1024 * 1024)
+          for (let index = 0; index <= 100; index++) controller.enqueue(mib)
+          controller.close()
+        },
+      }),
+    ),
     new Response(
       new ReadableStream({
         start(controller) {
