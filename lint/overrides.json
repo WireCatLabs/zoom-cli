@@ -7,13 +7,6 @@
     "review_after": "2027-01-25"
   },
   {
-    "rule": "undeclared-host",
-    "target": "127.0.0.1",
-    "reason": "The loopback address of zm's own sign-in listener, where the browser returns after Zoom's consent; zm listens there and never fetches it.",
-    "owner": "@WireCatLabs",
-    "review_after": "2027-05-13"
-  },
-  {
     "rule": "option-role",
     "target": "meetings embeddings --after-hash",
     "reason": "Resumes building vectors after the last passage it embedded; no shared role names a resume point inside one command's own batch, and paging flags would promise a list it does not return.",
