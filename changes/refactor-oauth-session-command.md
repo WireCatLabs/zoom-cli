@@ -1,6 +1,6 @@
 ### Changed — may break callers
 
-- **`zm session` is cli-core's shared session command now** (`oauthSessionCommand`, cli-core 1.2.0, was 1.0.0). zm
+- **`zm session` is cli-core's shared session command now** (`oauthSessionCommand`, cli-core 2.0.0, was 1.0.0). zm
   reads the sign-ins it kept before, so nobody signs in again: the entry `oauth:zoom:<profile>` and the older
   `<client id>:<profile>` entry under the config folder's own service, which the first read copies. The answers
   take the shape every WireCat CLI with a browser sign-in gives. Watch for these fields:
@@ -25,5 +25,7 @@
   with `zm complete -- <words>`. The JSON answer is gone.
 - **The package no longer exports `login` and `LoginOptions`.** `TokenManager` reads a profile's sign-in only, after
   `forProfile`. `storedIn`, `storageOf` and `exchange` are gone.
-- **cli-core 1.2.0 moves the shared store to version 77** the first time zm opens it. Watch for: every other WireCat
-  CLI that uses the store needs a release on cli-core 1.2.0 or later; `<cli> upgrade` for each.
+- **zm runs on cli-core 2.0, which moves the shared store to version 78** the first time zm opens it; only tools on
+  cli-core 2.0 open it after that. Agents are `agent` and sender bots `bot:` in the store. Watch for: upgrade every
+  installed WireCat CLI to its cli-core 2.0 release, and stop `serve`, `mcp` and every sync while the store migrates.
+  See [cli-core's changelog](https://github.com/WireCatLabs/cli-core/blob/main/CHANGELOG.md).

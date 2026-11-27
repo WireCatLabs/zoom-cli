@@ -7,7 +7,7 @@ ran it · ⛔ not tested offline, with the reason and where it is checked instea
 Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 [TESTING.md](TESTING.md) for how, and for the states and failures that cut across commands.
 
-**345 ✅ · 21 ⛔ · 0 ❌** — 95 commands, 271 options.
+**344 ✅ · 22 ⛔ · 0 ❌** — 95 commands, 271 options.
 
 | Command | Option | | Note |
 |---|---|---|---|
@@ -17,6 +17,16 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `runs show` |  | ✅ |  |
 | `runs show` | `--problems` | ✅ |  |
 | `runs path` |  | ✅ |  |
+| `session start` |  | ✅ |  |
+| `session start` | `--no-browser` | ⛔ | cli-core's oauthSessionCommand; its oauth-session test drives start without a browser |
+| `session start` | `--credential-storage` | ✅ |  |
+| `session start` | `--answer-stdin` | ✅ |  |
+| `session start` | `--client-id` | ✅ |  |
+| `session status` |  | ✅ |  |
+| `session status` | `--check` | ✅ |  |
+| `session end` |  | ✅ |  |
+| `session list` |  | ✅ |  |
+| `complete` |  | ✅ |  |
 | `doctor` |  | ✅ |  |
 | `doctor` | `--online` | ⛔ | connects to Zoom and npm; cli-core's appDoctorCommand, whose app-mcp-command tests drive --online |
 | `doctor reports show` |  | ⛔ | cli-core's appDoctorCommand; its app-mcp-command test creates and shows a report |
@@ -183,16 +193,6 @@ Measured from the test run (`coverage/argv.jsonl`), not searched for — see
 | `commands` |  | ✅ |  |
 | `commands info` |  | ✅ |  |
 | `store info` |  | ✅ |  |
-| `complete` |  | ✅ |  |
-| `session status` |  | ✅ |  |
-| `session status` | `--check` | ✅ |  |
-| `session list` |  | ✅ |  |
-| `session start` |  | ✅ |  |
-| `session start` | `--no-browser` | ✅ |  |
-| `session start` | `--client-id` | ✅ |  |
-| `session start` | `--credential-storage` | ✅ |  |
-| `session start` | `--answer-stdin` | ✅ |  |
-| `session end` |  | ✅ |  |
 | `upgrade` |  | ✅ |  |
 | `upgrade` | `--check` | ✅ |  |
 | `models list` |  | ✅ |  |

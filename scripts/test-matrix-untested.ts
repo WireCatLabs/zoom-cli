@@ -12,6 +12,11 @@ export const UNTESTED: { command: string; option?: string; reason: string }[] = 
     reason:
       "cli-core 0.660.0 src/store/meetings-read-through.test.ts drives archive, server and both on a shared source",
   })),
+  {
+    command: "session start",
+    option: "--no-browser",
+    reason: "cli-core's oauthSessionCommand; its oauth-session test drives start without a browser",
+  },
   { command: "doctor reports show", reason: SHARED_REPORTS },
   { command: "doctor reports create", reason: SHARED_REPORTS },
   { command: "doctor reports create", option: "--run", reason: SHARED_REPORTS },
