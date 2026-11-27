@@ -332,8 +332,8 @@ it("refuses a folder transcript larger than zm downloads, before reading it", as
   const folder = await mkdtemp(join(tmpdir(), "zm-test-source-"))
   const name = "2026-10-10_1530_example.vtt"
   await writeFile(join(folder, name), vtt)
-  await truncate(join(folder, name), 10 * 1024 ** 2 + 1)
-  await expect(readDownloadedFiles(folder)).rejects.toThrow(/larger than 10 MiB/)
+  await truncate(join(folder, name), 100 * 1024 ** 2 + 1)
+  await expect(readDownloadedFiles(folder)).rejects.toThrow(/larger than 100 MiB/)
 })
 
 it("preflights actual folder imports and injected files before choosing normalized contents", async () => {

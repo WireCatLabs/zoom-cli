@@ -21,7 +21,7 @@ import { type RemoteOptions, ZoomRemote } from "./remote-http.js"
 import type { TokenManager } from "./tokens.js"
 
 /** A mislabeled HTML login page must not become an empty saved transcript. */
-export const TRANSCRIPT_MAX_BYTES = 10 * 1024 * 1024
+export const TRANSCRIPT_MAX_BYTES = 100 * 1024 * 1024
 
 const json = (value: unknown): JsonValue => {
   if (value === null || typeof value === "boolean" || typeof value === "string") return value
