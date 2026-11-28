@@ -34,10 +34,16 @@ export const DESKTOP: ManifestIdentity = {
   ...ZM,
   docs: "https://wirecat.dev/en/docs/zm",
   hosts: ZOOM_HOSTS,
+  // One port per WireCat tool, so two servers never collide (wirecat-desktop docs/dev/cli-registry.md).
+  mcpPort: 8752,
   tagline: "Zoom transcripts and recordings, searchable",
   syncs: "meetings and transcripts",
+  meetingsProvider: "zoom",
   signIn: {
     gives: "Lets your agent find your Zoom meetings and read their transcripts and summaries.",
     asks: "Your browser opens Zoom to approve access. Zoom first needs an app of your own, made once in the Zoom App Marketplace.",
+    methods: [
+      { id: "browser", label: "Browser", words: ["{profile}", "session", "start", "--json", "--answer-stdin"] },
+    ],
   },
 }

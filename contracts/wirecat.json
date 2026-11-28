@@ -1349,7 +1349,20 @@
     ],
     "signIn": {
       "gives": "Lets your agent find your Zoom meetings and read their transcripts and summaries.",
-      "asks": "Your browser opens Zoom to approve access. Zoom first needs an app of your own, made once in the Zoom App Marketplace."
+      "asks": "Your browser opens Zoom to approve access. Zoom first needs an app of your own, made once in the Zoom App Marketplace.",
+      "methods": [
+        {
+          "id": "browser",
+          "label": "Browser",
+          "words": [
+            "{profile}",
+            "session",
+            "start",
+            "--json",
+            "--answer-stdin"
+          ]
+        }
+      ]
     },
     "skill": {
       "status": [
@@ -1373,6 +1386,7 @@
       ]
     },
     "mcpServer": {
+      "port": 8752,
       "start": [
         "mcp",
         "server",
@@ -1489,6 +1503,25 @@
         "settings",
         "data",
         "listed"
+      ]
+    },
+    "meetings": {
+      "provider": "zoom",
+      "show": [
+        "{profile}",
+        "meetings",
+        "show",
+        "{id}",
+        "--no-record",
+        "--json"
+      ],
+      "transcript": [
+        "{profile}",
+        "meetings",
+        "transcript",
+        "{id}",
+        "--no-record",
+        "--json"
       ]
     }
   }
