@@ -34,6 +34,8 @@ export const DESKTOP: ManifestIdentity = {
   ...ZM,
   docs: "https://wirecat.dev/en/docs/zm",
   hosts: ZOOM_HOSTS,
+  // One port per WireCat tool, so two servers never collide (wirecat-desktop docs/dev/cli-registry.md).
+  mcpPort: 8752,
   tagline: "Zoom transcripts and recordings, searchable",
   syncs: "meetings and transcripts",
   signIn: {

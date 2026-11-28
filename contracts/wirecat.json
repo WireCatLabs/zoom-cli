@@ -1373,6 +1373,7 @@
       ]
     },
     "mcpServer": {
+      "port": 8752,
       "start": [
         "mcp",
         "server",
