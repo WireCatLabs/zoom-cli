@@ -23,17 +23,17 @@ To use your Zoom account, you connect your own Zoom app first; [the app guide](z
 
 - `review` makes a digest of recent meetings, and `mentions list` finds links shared in meeting chat.
 - Saved searches can be run again by name; meeting query fields include date, project, tag and topic.
-- Profile-aware examples can be copied as shown. `doctor` checks whether this computer can save a Zoom login.
+- `doctor` checks whether this computer can save a Zoom login.
 - MCP keeps supported commands discoverable; profile permissions decide which reads and writes may run.
 
 ## Later
 
-- Calls you only attend: record audio on this computer, without a bot, then transcribe locally (ZM-25).
-- Notes per meeting: decisions, open questions and action items citing transcript lines (ZM-26).
+- Calls you only attend: record audio on this computer, without a bot, then transcribe locally.
+- Notes per meeting: decisions, open questions and action items citing transcript lines.
 - Speaker names in transcripts made on this computer.
 - Meetings someone else hosted, without asking the host for a file.
 - A reviewed preparation brief that combines upcoming series, project suggestions and stored context, with
   its evidence and gaps.
 - Daily recording backups on macOS and Windows.
-- Google Meet and Microsoft Teams, as separate tools that use the same meeting store. They are not part of this
-  tool.
+- Microsoft Teams, as a separate tool that uses the same meeting store. Google Meet calls already arrive through
+  [the Google Calendar tool](https://wirecat.dev/en/docs/google-meet).

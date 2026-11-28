@@ -1,8 +1,20 @@
 # Configuration
 
-Change which app, source or local profile the tool uses, and check the settings before a pull or
-agent session. Public configuration selects the app and data paths; OAuth tokens remain in the
-system keyring. This reference gives the accepted keys and their defaults.
+Point `zm` at your Zoom app or a transcript folder, decide what each profile and its agent may do, and keep the run
+log as short as you like. Every setting here is public: the file names the app and the folders, while your login
+stays in the system keyring.
+
+Set a value with `zm config set`, check it with `zm config show`, and `zm doctor` says when a value is wrong.
+
+**On this page:**
+
+1. [Settings](#settings)
+2. [Problems in the file](#problems-in-the-file)
+3. [Find the configuration file](#find-the-configuration-file)
+4. [Permissions](#permissions)
+5. [Run log](#run-log)
+6. [Environment variables](#environment-variables)
+7. [Select communications for preparation](#select-communications-for-preparation)
 
 ## Settings
 
@@ -19,7 +31,7 @@ files folder and the time zone are not written: unset, they mean "none yet" and 
 |---|---|
 | `zoom.client_id` | Public Client ID of the [existing or new app](zoom-app.md); unset by default. API login needs it, `ZM_ZOOM_CLIENT_ID` or `--client-id` ([which app](#which-zoom-app-zm-uses)) |
 | `source` | Where `meetings sync` and `watch` read from: `api` (default) or `files` |
-| `files.folder` | Transcript folder for file-source pull/watch; unset by default |
+| `files.folder` | Transcript folder for a sync or watch from files; unset by default |
 | `context.sources` | JSON array of explicitly selected message, mail or document accounts for this profile; empty by default ([setup below](#select-communications-for-preparation)) |
 | `files.timezone` | the IANA zone of downloaded transcript filenames, for example `Europe/Madrid`; unset: this computer's zone |
 | `record` | `false` keeps only failed runs in the [run log](#run-log); unset or `true`: every run |
@@ -34,14 +46,14 @@ with, so after changing the client ID run `zm <profile> session start` again.
 
 ### Which Zoom app zm uses
 
-WireCat has no Zoom app yet, so you bring your own ([make one](zoom-app.md)). zm takes the first of these that
+zm has no Zoom app of its own, so you bring yours ([make one](zoom-app.md)). zm takes the first of these that
 names one:
 
 1. `zm <profile> session start --client-id <id>`. A successful sign-in saves the id as `zoom.client_id`, so later
    commands find the login it made;
 2. the `ZM_ZOOM_CLIENT_ID` environment variable;
 3. the `zoom.client_id` setting;
-4. WireCat's app, which is empty for now.
+4. WireCat's app, which is not set.
 
 `zm doctor --json` shows the choice under `oauth_client`: `{ "client": "own", "source": "env" }` or `"config"`, and
 with none `{ "client": null, "source": null, "reason": "WireCat has no Zoom app yet; …" }`. The keyring entry is
@@ -142,7 +154,7 @@ log without a profile; an answer's `meta.run_id` is the id `runs show` takes.
 | `ZM_CACHE_DIR` | overrides the cache directory |
 | `ZM_READ_ONLY` | `1` refuses changes to Zoom, the login, settings and what you added, with exit 5; reads and syncs from Zoom still run ([security](security.md#what-agents-can-do)) |
 | `WIRECAT_STATE_DIR` | moves the WireCat folder every WireCat CLI shares: the database and the speech models |
-| `MESSAGING_STORE` | selects an explicit shared database path for import, pull, watch, meeting reads and MCP reads |
+| `MESSAGING_STORE` | selects an explicit shared database path for import, sync, watch, meeting reads and MCP reads |
 | `OPENAI_API_KEY` | used by an explicitly selected OpenAI embedding endpoint ([topic search](topic-search.md)) |
 
 Directories otherwise follow the platform convention. The default shared database is `wirecat.db`

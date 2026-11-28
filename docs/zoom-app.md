@@ -1,17 +1,23 @@
 # Connect a Zoom app
 
-A Zoom app tells Zoom which permissions a program can request. Connect an existing app to `zm`,
-or create a user-managed app for your own account. By the end you will have the Public Client ID,
-redirect settings and scopes needed for browser login. This registration does not install a bot
-inside meetings or make recordings for you. You do not download a credentials file or create a
-separate OAuth client outside the app: enable Public Client OAuth inside it and copy the displayed ID.
+Connect `zm` to your Zoom account through a Zoom app of your own or your team's. Zoom gives meetings only to an app
+the account approved, so this one-time step is what lets your agent read your meetings. Already have transcript
+files? You can [import them](installation.md#import-without-a-zoom-app) without an app.
 
-`zm app` prints the values below as a short checklist (`zm app --json` for a program).
+At the end you have the app's Public Client ID, its callback address and its permissions, ready for the first
+sign-in. There is no credentials file to download and no separate OAuth client: you turn on Public Client OAuth
+inside the app and copy the ID it shows. The app adds no bot to your meetings and records nothing itself.
+`zm app` prints the same values as a short checklist (`zm app --json` for a program).
 
-Choose how to connect:
+**On this page:**
 
-- [Use an app you already created](#use-an-app-you-already-created)
-- [Create your own app](#create-your-own-app)
+1. [Use an app you already created](#use-an-app-you-already-created)
+2. [Create your own app](#create-your-own-app)
+3. [Create it from the manifest](#create-it-from-the-manifest)
+4. [Permissions for hosted meetings](#permissions-for-hosted-meetings)
+5. [Add archive or management access](#add-archive-or-management-access)
+6. [Before your first `zm meetings sync`](#before-your-first-zm-meetings-sync)
+7. [If your company manages your Zoom account](#if-your-company-manages-your-zoom-account)
 
 ## Use an app you already created
 
@@ -25,21 +31,19 @@ Choose how to connect:
 5. Configure that ID and start a new login:
 
 ```sh
-zm config set zoom.client_id <public-client-id>
+zm config set zoom.client_id AbCdEf123456
 zm config set source api
 zm personal session start
 ```
 
-Replace the placeholder without angle brackets. Sign in as the Zoom user whose meetings you want,
+Use your own Public Client ID in place of `AbCdEf123456`. Sign in as the Zoom user whose meetings you want,
 review the consent and approve. Wait for `signed_in: true` in the terminal. If browser approval leaves
 it waiting, follow [finish the browser callback](sessions.md#finish-the-browser-callback).
 
-zm has no built-in client ID. No WireCat app is available to other Zoom accounts: every user must
-bring their own General app until the owner's app passes Zoom Marketplace review. The owner's
-app is in Development and works only for its creator's Zoom account. `zm doctor --json` says so under
-`oauth_client` until you configure one.
+zm has no Zoom app of its own: use your own General app or a team app. `zm doctor --json` shows which one is set
+under `oauth_client`.
 
-Instead of the setting, you can pass the ID once with `zm personal session start --client-id <public-client-id>`
+Instead of the setting, you can pass the ID once with `zm personal session start --client-id AbCdEf123456`
 (a successful sign-in saves it as `zoom.client_id`) or set `ZM_ZOOM_CLIENT_ID`, which wins over the setting. See
 [which app zm uses](configuration.md#which-zoom-app-zm-uses).
 
@@ -132,9 +136,9 @@ with `zm personal session status --json`.
 | `meeting:read:meeting` | Show remote details and prepare a selected upcoming series with stored context |
 | `meeting:read:invitation` | Retrieve its invitation text |
 | `meeting:read:past_meeting` | Read a meeting that ran again from Zoom with `meetings show` |
-| `meeting:write:meeting` | Create a remote meeting |
-| `meeting:update:meeting` | Update a remote meeting |
-| `meeting:delete:meeting` | Cancel a remote meeting |
+| `meeting:write:meeting` | Create a meeting in Zoom |
+| `meeting:update:meeting` | Update a meeting in Zoom |
+| `meeting:delete:meeting` | Cancel a meeting in Zoom |
 | `team_chat:read:list_contacts` | List your company and external contacts with `contacts list` |
 | `team_chat:read:contact` | Show one contact and their phone numbers with `contacts show` |
 | `agentic_search:read:search` | Search chat, docs and meetings live with `zm personal zoom search` |
@@ -166,5 +170,5 @@ Attendance alone does not guarantee download access.
 
 Ask the administrator to allow app creation or installation and the specific permissions needed.
 If API authorization is unavailable, authorized transcript files can still be imported without an
-app. Once login succeeds, [pull your first period](installation.md#first-run) and check which meetings
+app. Once login succeeds, [sync your first week](installation.md#first-run) and check which meetings
 and transcripts actually arrived.

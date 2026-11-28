@@ -1,9 +1,16 @@
 # Topic search
 
-Find a discussion even when it uses different words from your question. Search by meaning compares
-numerical representations of text, called embeddings, produced by a component you select. It needs
-stored transcripts and an installed local embedding model or an explicitly configured remote service.
-Use [word search](search.md) immediately if you have not configured one.
+Find a discussion even when it uses different words from your question. Search by meaning compares embeddings,
+lists of numbers that a model makes from text, so a question can find a passage that says the same thing in
+other words. It needs stored transcripts and either a local model you installed or a remote service you name.
+Without one, use [word search](search.md) right away.
+
+**On this page:**
+
+1. [Choose where text is processed](#choose-where-text-is-processed)
+2. [Search by meaning](#search-by-meaning)
+3. [Generating vectors](#generating-vectors)
+4. [Searching](#searching)
 
 ## Choose where text is processed
 
@@ -12,7 +19,7 @@ endpoint receives transcript text when generating embeddings and your question w
 Name that endpoint deliberately and choose its model identifier and vector dimensions. The tool
 does not download models. Previewing generation does not load a model or send transcript text.
 
-The examples below use `e5-small` for a local model. Confirm it is installed before applying a
+The examples use `e5-small` for a local model. Confirm it is installed before applying a
 batch; its name alone does not install it. Local and remote results need the same model/dimensions
 as their stored vectors to be comparable.
 
@@ -29,7 +36,7 @@ zm personal search meetings "example plan" --model example-model --base-url http
 
 Before it reads, the search splits the current transcripts into passages again and embeds every passage that
 has no vector for that model yet, so a first search on a large store takes longer and, with a remote model,
-sends those passages to it. Continue with `--cursor <next_cursor>`: the pages continue one ranking.
+sends those passages to it. Continue with `--cursor` and the answer's `page.next_cursor`: the pages continue one ranking.
 
 To prepare vectors ahead of time instead, preview and build them in batches:
 
