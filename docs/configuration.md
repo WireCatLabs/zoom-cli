@@ -176,7 +176,7 @@ zm research config set context.sources '[{"id":"project-notes","kind":"document"
 zm config show
 ```
 
-This example uses an invented folder ID. Run `memo folders list` and substitute the ID of the
+This example uses an invented folder ID. Run `files folders list` and substitute the ID of the
 folder you choose, and its provider: `local` for a plain folder, `obsidian` for a vault.
 `notes:5` resolves that existing folder's stored identity; it does not create
 or import a folder. A document source selects one folder, a message source one messaging account,

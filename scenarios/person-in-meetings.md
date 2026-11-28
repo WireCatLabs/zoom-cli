@@ -11,7 +11,7 @@ steps:
 look:
   - more than one identity for the same name; a name alone does not prove who it is
   - a participant is not the speaker of every line in that meeting
-  - for the same person across messages, mail and notes, use memo guide person-brief
+  - for the same person across messages, mail and notes, use `wcat` guide person-brief
 ---
 
 Link a participant to a person with `zm personal meetings link` (it previews; `--yes` applies). Context follows only those

@@ -8,13 +8,13 @@ The tool retrieves the meetings, participants, transcripts and Zoom AI summaries
 transcript files you downloaded, backs up cloud recordings with checksums and searches stored meetings by words
 or meaning, with a reference to each passage. `meetings prepare` gathers cited context for one selected upcoming
 series. `stats meetings` shows who talked and how much. An agent can use all of this through the skill or MCP,
-together with Memo's projects, notes and people.
+together with `wcat`'s projects and people and the notes of `files`.
 
 Every command is listed in [the command reference](commands.md). Start with
 [meeting preparation](usage.md#prepare-for-an-upcoming-meeting) or [search and evidence](search.md).
 
-Memo can stage cited decisions, statements and project tasks from a stored meeting for owner review; see
-[review meeting findings](https://wirecat.dev/en/docs/memo/memories#meeting-findings). Meeting preparation reads
+`wcat` can stage cited decisions, statements and project tasks from a stored meeting for owner review; see
+[review meeting findings](https://wirecat.dev/en/docs/wcat/memories#meeting-findings). Meeting preparation reads
 saved context; it does not accept these findings or generate a summary.
 
 To use your Zoom account, you connect your own Zoom app first; [the app guide](zoom-app.md) shows how.

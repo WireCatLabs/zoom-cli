@@ -261,7 +261,7 @@ and excludes proposed project memberships. Matching names or transcript words ne
 including decisions recorded outside these meetings. Each has a `fact:` reference, subject/project
 references, update time and `shared_person`/`shared_project` flags. It uses the included prior calls
 as anchors and excludes proposed, reversed, deleted and later-updated facts. The fact reference lets
-you retrieve the full record and evidence through Memo before relying on it. This section contains
+you retrieve the full record and evidence through `wcat` before relying on it. This section contains
 accepted facts; `knowledge.coverage` keeps `fact_evidence: not-revalidated` and
 `other_sources: not-queried` visible. When communications are explicitly requested,
 `other_sources: see-communications` points to that separate source coverage instead.
@@ -273,7 +273,7 @@ saved comments, separate from accepted facts. The command uses current revisions
 associations. A meeting note must link to an included call in this profile; a shared project alone
 does not bring in notes about other meetings. Deleted notes, bot-authored notes, account-scoped
 person/project subjects and revisions updated after the preparation start are excluded. Retrieve
-the referenced note in Memo when you need its full associations.
+the referenced note in `wcat` when you need its full associations.
 
 Check `notes.coverage.has_more` and `notes.coverage.output_limited` for additional or omitted notes.
 `source_evidence: not-revalidated` means the note's supporting sources have not been checked;

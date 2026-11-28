@@ -108,7 +108,7 @@ first run copies one to the new entry and leaves the old one until `session end`
 `ZM_PROFILE_LOCK=personal` pins a process to one profile: a first word or `ZM_PROFILE` naming any
 other is refused with `permission_error`. Set it where an agent runs.
 
-`MESSAGING_STORE` selects the shared database. Use the same path for Zoom, Memo and your MCP
+`MESSAGING_STORE` selects the shared database. Use the same path for Zoom, `wcat`, `files` and your MCP
 client when connecting meeting evidence with notes and projects. File imports do not advance
 the sync cursor; when switching ingestion sources, an older explicit `--since-time` may be needed.
 

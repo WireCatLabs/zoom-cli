@@ -1,7 +1,7 @@
 # Preparing for an upcoming meeting
 
 The core rules in [SKILL.md](../SKILL.md) apply. Preparation saves nothing: it does not summarize, accept findings
-or create tasks. Use existing Memo workflows for reviewed writes, retaining meeting evidence and preconditions.
+or create tasks. Use existing `wcat` workflows for reviewed writes, retaining meeting evidence and preconditions.
 
 ## Find the series
 
@@ -62,7 +62,7 @@ Add `--project <existing-name-key-or-alias>` only for an explicitly selected pro
   `zm personal config set context.sources`. A grant covers one whole message or mail account or document folder; do
   not broaden scope for an agent. `zm personal config show` reveals the configured selections.
 - A document folder uses provider `local` (a plain folder) or `obsidian` (a vault) and account `notes:<folder-id>`
-  from `memo folders list`.
+  from `files folders list`.
 - `meetings prepare <series-id> --context-source <id> --context-query '<words>'` adds cited literal matches. Repeat
   the source flag as needed. Default communications history is fourteen days before the preparation start; explicit
   time bounds allow at most ninety days.

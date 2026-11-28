@@ -21,7 +21,7 @@ meetings that were synced or imported, so an empty answer does not mean the topi
 10. [Link meetings to events and people](#link-meetings-to-events-and-people)
 11. [Find a project before linking it](#find-a-project-before-linking-it)
 12. [Suggest projects for one meeting](#suggest-projects-for-one-meeting)
-13. [Notes, tags and memories with memo](#notes-tags-and-memories-with-memo)
+13. [Notes, tags and memories with `wcat` and `files`](#notes-tags-and-memories-with-wcat-and-files)
 14. [Task proposals](#task-proposals)
 
 <a id="search-stored-meetings" />
@@ -119,7 +119,7 @@ of the computer's zone, and a time without an offset is read in that zone; give 
 for another zone. Existing continuation and coverage rules still apply.
 
 If a meeting has not been linked to a project or labelled yet, start with word search and inspect
-the evidence before organising it with [Memo's shared records](https://wirecat.dev/en/docs/memo/usage).
+the evidence before organising it with [`wcat`'s shared records](https://wirecat.dev/en/docs/wcat/usage).
 Over MCP, `search meetings` is a read: run it through `zm_read`. It updates the word index before searching.
 It uses the same filters and time syntax as the CLI, in the server-selected profile.
 
@@ -310,7 +310,7 @@ zm personal meetings projects evidence RES 'identity_id:12 started_at:[2026-09-1
 
 The project key and identity ID are fictional. Review participant pages before choosing the
 intended identity; matching names alone do not establish a person link. If the project is missing
-or ambiguous, inspect the shared project catalog in Memo first. This command resolves existing
+or ambiguous, inspect the shared project catalog in `wcat` first. This command resolves existing
 names only; it does not invent aliases or create projects, labels, person links or membership.
 
 The answer is one `item`, keeping its canonical `project`, matched `term`, cited `hits`,
@@ -378,32 +378,32 @@ Candidate output limits are separate: increase `--limit` or `--bytes` when candi
 A byte-truncated page with no cues and no cursor means a single cue did not fit; it does not
 establish an absence of relevant discussion. Archive completeness remains unknown.
 
-After checking the evidence, `memo projects meetings link` can apply the confirmed local
+After checking the evidence, `wcat projects meetings link` can apply the confirmed local
 association using the exact stored meeting ID and account, such as
 `--account zoom:zm-profile:AliceExample`. This is a write, separate from the scan. When confirming
-an existing stored proposal, use that proposal's fingerprint from Memo; the scan does not create
+an existing stored proposal, use that proposal's fingerprint from `wcat`; the scan does not create
 one, and its vocabulary fingerprint is not a membership receipt. The
-[Memo project command reference](https://wirecat.dev/en/docs/memo/commands#memo-projects-meetings-link)
+[`wcat` project command reference](https://wirecat.dev/en/docs/wcat/commands#wcat-projects-meetings-link)
 explains the inputs. A suggested project remains unconfirmed until that reviewed write is applied.
 
-## Notes, tags and memories with memo
+## Notes, tags and memories with `wcat` and `files`
 
-Use [memo](https://github.com/WireCatLabs/cli-memo) for the existing shared notes, tags and memories
-interface. Both tools use the same store; point `MESSAGING_STORE` at the same file if it is
-overridden. For a Zoom profile named `AliceExample`, its provider account key is
-`zm-profile:AliceExample`:
+Use [`wcat`](https://github.com/WireCatLabs/wirecat) for the existing shared tags and memories, and
+[`files`](https://github.com/WireCatLabs/files-cli) for notes. All three tools use the same store; point
+`MESSAGING_STORE` at the same file if it is overridden. For a Zoom profile named `AliceExample`, its provider
+account key is `zm-profile:AliceExample`:
 
 ```sh
-memo tags add planning --meeting 1 --account zoom:zm-profile:AliceExample --json
-memo tags remove planning --meeting 1 --account zoom:zm-profile:AliceExample --json
-memo notes add --text "Alice Example follow-up" --meeting 1 --account zoom:zm-profile:AliceExample --json
-memo notes list 'about:"meeting:1/1"' --json
-memo facts add "Alice Example will review" --kind promise --scope work --subject meeting:1/1 --evidence meeting:1/1/1/0 --json
-memo facts list 'subject:"meeting:1/1"' --json
+wcat tags add planning --meeting 1 --account zoom:zm-profile:AliceExample --json
+wcat tags remove planning --meeting 1 --account zoom:zm-profile:AliceExample --json
+files notes add --text "Alice Example follow-up" --meeting 1 --account zoom:zm-profile:AliceExample --json
+files notes list 'about:"meeting:1/1"' --json
+wcat facts add "Alice Example will review" --kind promise --scope work --subject meeting:1/1 --evidence meeting:1/1/1/0 --json
+wcat facts list 'subject:"meeting:1/1"' --json
 ```
 
-Memo's add/remove commands write directly to the local store. Owner-authored facts are accepted;
-agent-authored facts submitted through Memo MCP stay proposed until reviewed. Memories keep summaries,
+The add/remove commands of `wcat` and `files` write directly to the local store. Owner-authored facts are accepted;
+agent-authored facts submitted through `wcat`'s MCP server stay proposed until reviewed. Memories keep summaries,
 digests and preferences separately. Meeting revision and cue evidence remains
 addressable after corrections. The references and ids above are invented examples; use ids from
 your stored meetings and selected account.
@@ -411,7 +411,7 @@ your stored meetings and selected account.
 ### Suggest labels without creating synonyms
 
 An agent can read the meeting's metadata and cited passages, then compare possible labels with
-Memo's shared vocabulary. Ask for a proposal first:
+`wcat`'s shared vocabulary. Ask for a proposal first:
 
 ```text prompt
 Suggest a small set of tags for this meeting. Reuse our existing names and aliases, show the
@@ -419,12 +419,12 @@ passages behind each suggestion, and flag likely synonyms for review. Do not cre
 labels while preparing the proposal.
 ```
 
-Memo already has these checks, so zm keeps no label list of its own:
+`wcat` already has these checks, so zm keeps no label list of its own:
 
 ```sh
-memo vocabulary list 'kind:tag' --max-entries 128 --max-read-bytes 65536 --json
-memo vocabulary check planning --kind tag --max-entries 128 --max-read-bytes 65536 --json
-memo vocabulary check --kind tag --max-entries 128 --max-read-bytes 65536 --max-comparisons 1000 --limit 20 --json
+wcat vocabulary list 'kind:tag' --max-entries 128 --max-read-bytes 65536 --json
+wcat vocabulary check planning --kind tag --max-entries 128 --max-read-bytes 65536 --json
+wcat vocabulary check --kind tag --max-entries 128 --max-read-bytes 65536 --max-comparisons 1000 --limit 20 --json
 ```
 
 The first command lists canonical names and aliases. The second checks a proposed name for an
@@ -437,11 +437,11 @@ Reuse the canonical name when preflight says `reuse`. For `review`, inspect the 
 their meeting evidence before choosing a label or an owner-reviewed alias. `create` means no
 existing lexical candidate was found, not that the concept is new. Similarity preserves accents
 and does not discover every translation or synonym. Keep those uncertain proposals for review.
-Memo guards label creation against duplicate-like names and stale creation fingerprints; a
+`wcat` guards label creation against duplicate-like names and stale creation fingerprints; a
 fingerprint is a preview precondition, not permission to accept a proposal automatically.
 
-After review, apply the selected existing tag with Memo's meeting/account arguments above and
-search meetings by that tag. Use [Memo's tag guide](https://wirecat.dev/en/docs/memo/tags) for the
+After review, apply the selected existing tag with `wcat`'s meeting/account arguments above and
+search meetings by that tag. Use [`wcat`'s tag guide](https://wirecat.dev/en/docs/wcat/tags) for the
 shared labeling workflow. Zoom's preparation and project scan save no labels or merges.
 
 ## Task proposals
@@ -452,7 +452,7 @@ an agent reads transcripts and evidence, then proposes a task for the passage it
 
 Before saving notes, tags or facts, ask your agent to show the existing project aliases and labels,
 then propose the links it intends to add. Review possible tag synonyms rather than creating another
-label for the same subject. Memo is installed separately and must use the same database path.
+label for the same subject. `wcat` and `files` are installed separately and must use the same database path.
 
 Searching by meaning instead of by words is covered in [topic search](topic-search.md).
 For an upcoming call, select the provider series from [the Zoom schedule](usage.md#find-a-scheduled-meeting-series), then
