@@ -1,9 +1,25 @@
 # The local archive
 
-Keep meeting text searchable and back up recording files before Zoom's retention removes them.
-Choose whether to retrieve hosted meeting information, import a transcript you already have or
-archive cloud audio and video. Text stored in the meeting database and media files in an archive
-folder are separate copies; a recording backup is not automatically searchable in the database.
+Keep every meeting searchable on your computer, and keep the recordings themselves after Zoom deletes them. Zoom
+keeps cloud recordings and transcripts only as long as the account's retention allows, so a copy here is what lets
+your agent read last year's calls.
+
+You choose what to keep: the text of your hosted meetings, transcript files you already have, or the audio and video.
+Meeting text goes into the local store, where search finds it. A recording backup is a folder of files, and it becomes
+searchable only after you import its transcripts.
+
+**On this page:**
+
+1. [Choose what to keep](#choose-what-to-keep)
+2. [Where meetings are stored](#where-meetings-are-stored)
+3. [Sync your hosted meetings](#pull-hosted-meetings)
+4. [Downloaded transcripts](#downloaded-transcripts)
+5. [Watch for new meetings](#watch-for-new-meetings)
+6. [Archive cloud recordings](#archive-cloud-recordings)
+7. [Locks and recovery](#locks-and-recovery)
+8. [Daily backups](#daily-backups)
+9. [Read and import archived transcripts](#read-and-import-archived-transcripts)
+10. [Transcribe local audio](#transcribe-local-audio)
 
 ## Choose what to keep
 
@@ -20,36 +36,35 @@ setting up repeated retrieval or a daily backup.
 
 ## Where meetings are stored
 
-Login, cloud recording downloads and remote meeting commands work independently of the meeting
-database. Import, pull, folder watching and meeting reads use the published shared SQLite adapter.
-Store connections open lazily and close before successful results are emitted. Meeting data persists
-in the shared WireCat database; `MESSAGING_STORE` selects an explicit database path. The shared model,
-exports and ingestion loop come from `@wirecat/cli-core/meetings`.
+Synced and imported meetings go into `wirecat.db`, the local store that the other WireCat tools share, so one search
+covers your meetings, chats and mail. `MESSAGING_STORE` points zm at another file. An older `messages.db` and its
+`-wal` and `-shm` files stay where they are. Login, recording downloads and changes to meetings in Zoom do not use
+the store. Recording downloads go to the folder you name and are not searchable until you
+[import them](#read-and-import-archived-transcripts).
 
-The shared store uses `wirecat.db`. Store opens preserve legacy `messages.db` files and their
-`-wal` and `-shm` sidecars. Manage legacy-file retention separately from importing or reading meetings.
+Select a [local profile](sessions.md#select-a-local-profile) before importing or syncing.
 
-Select a [local profile](sessions.md#select-a-local-profile) before importing or pulling.
+<a id="pull-hosted-meetings" />
 
-## Pull hosted meetings
+## Sync your hosted meetings
 
-With the API source selected, pull a recent period and inspect the result:
+With the API source selected, sync a recent period and inspect the result:
 
 ```sh
 zm config set source api
 zm personal meetings sync --lookback-days 7
 zm personal meetings list --json
-zm personal meetings transcript <meeting-id> --json
+zm personal meetings transcript 1 --json
 ```
 
-Use an ID from the list. `zm personal meetings sync` retrieves hosted occurrences with available participants,
+Use an ID from the list in place of `1`. `zm personal meetings sync` retrieves hosted occurrences with available participants,
 transcripts and AI summaries. It does not create missing transcripts. Check Zoom's
 [generation and retention settings](zoom-app.md#before-your-first-zm-meetings-sync) if the text is absent.
 
 Use `meetings sync --lookback-days 7` to revisit the last seven days, or an older explicit
 `meetings sync --since-time 2026-10-01` for earlier occurrences whose transcript appeared later. The cursor alone
-does not guarantee that late transcripts are revisited. Serialize pulls for the same account to avoid
-concurrent event creation. A failed occurrence leaves the cursor unchanged so the next pull can retry it.
+does not guarantee that late transcripts are revisited. Run one sync at a time for the same account, so two
+syncs do not create the same events. A failed occurrence leaves the cursor unchanged so the next sync can retry it.
 
 ## Downloaded transcripts
 
@@ -116,12 +131,12 @@ and download its available files to an explicit destination:
 
 ```sh
 zm personal recordings list --since-time 2026-10-01 --until-time 2026-10-10 --json
-zm personal recordings show <zoom-occurrence-uuid> --json
-zm personal recordings download <zoom-occurrence-uuid> --output-dir ./zoom-archive --json
+zm personal recordings show aBcD1234EfGh5678IjKl9w== --json
+zm personal recordings download aBcD1234EfGh5678IjKl9w== --output-dir ./zoom-archive --json
 zm personal recordings archive check ./zoom-archive --offline --json
 ```
 
-Replace `<zoom-occurrence-uuid>` with an occurrence UUID returned by the recording list, not a
+Use an occurrence UUID returned by the recording list in place of the invented one, not a
 local meeting ID or the numeric Zoom meeting number. The download receipt identifies saved and
 unavailable assets. Verification checks the local files against their manifest; it does not prove
 Zoom had every expected recording. If there are no recordings, check the date range, host account,
@@ -186,8 +201,8 @@ To plan a daily backup, choose an absolute destination and timer timezone:
 ```sh
 zm personal recordings schedule create --name daily --output-dir /home/AliceExample/zoom-archive --since-time 2026-01-01 --at 03:15 --timezone Europe/Madrid --json
 zm personal recordings schedule list --offline --json
-zm personal recordings schedule run <schedule-id> --jsonl
-zm personal recordings schedule disable <schedule-id> --yes --json
+zm personal recordings schedule run daily --jsonl
+zm personal recordings schedule disable daily --yes --json
 ```
 
 Creation previews by default. Add `--yes` to install a Linux systemd user timer; `--dry-run`
@@ -230,11 +245,10 @@ Import verifies every selected VTT asset before opening the store. The default l
 per file and 64 MiB in total; use `--max-bytes` and `--max-total-bytes` to change them. Select an
 occurrence with `--uuid`, or assets with comma-separated `--file-ids`. Each occurrence is appended
 atomically by its raw Zoom UUID, preserving other transcripts, summaries, participants and the
-pull cursor. Corrected content retains earlier revisions; identical asset hashes are idempotent.
+sync cursor. Corrected content retains earlier revisions; identical asset hashes are idempotent.
 An occurrence with no known start time can receive transcripts only if it already exists. Receipts
-report acknowledged or unavailable occurrences. When the exact receipt capability is available,
-they also report meeting creation and inserted, replayed and superseded transcript counts from the
-same transaction. Older adapters keep the acknowledgement without guessed counts.
+report acknowledged or unavailable occurrences, and can also count the meetings created and the transcripts
+inserted, replayed and superseded.
 Earlier acknowledged occurrences can remain committed if a later append fails.
 
 ## Transcribe local audio

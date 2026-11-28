@@ -48,7 +48,7 @@ walks through app settings, browser approval and callback completion.
 
 ```sh
 npm install -g @wirecat/zoom-cli
-zm config set zoom.client_id <public-client-id>
+zm config set zoom.client_id AbCdEf123456   # your app's Public Client ID
 zm personal session start                 # "personal" is the profile; approve in your browser
 zm personal meetings sync --lookback-days 7
 zm personal meetings list
@@ -194,7 +194,7 @@ meetings in the store; `zm work session start` makes a second one. `ZM_PROFILE` 
 session, and `ZM_PROFILE_LOCK` pins a process to one profile. Nothing picks a profile for you: without
 one, a command that uses an account stops and lists the profiles on this computer. Names have 1–64
 letters, digits, dots, underscores or hyphens. Login makes a profile; so does the first import on a computer with
-none. An import or pull naming an unknown profile beside others is refused, so a typo stores nothing.
+none. An import or sync naming an unknown profile beside others is refused, so a typo stores nothing.
 
 Meetings live in the shared WireCat database `wirecat.db`, next to data from other WireCat tools.
 `MESSAGING_STORE` selects another path. Store opens preserve legacy `messages.db` files and their
@@ -203,16 +203,16 @@ sidecars; manage their retention separately. Metadata, help, configuration and l
 More: [profiles][docs/sessions.md#select-a-local-profile] ·
 [where meetings are stored][docs/archive.md#where-meetings-are-stored] · [Zoom on wirecat.dev][wirecat/en/docs/zoom]
 
-## Pull, import and watch
+## Sync, import and watch
 
 ```sh
 zm personal meetings sync --lookback-days 7                       # hosted meetings, revisiting late transcripts
 zm personal meetings import ./downloaded-transcripts              # .vtt or zoom-searcher .txt files
-zm personal watch api --lookback-days 7 --jsonl                   # keep pulling in the foreground
+zm personal watch api --lookback-days 7 --jsonl                   # keep syncing in the foreground
 ```
 
 The cursor alone does not revisit transcripts that appear late; use `--lookback-days` or an older
-`--since-time`. A failed occurrence leaves the cursor unchanged for the next pull. Imported files follow
+`--since-time`. A failed occurrence leaves the cursor unchanged for the next sync. Imported files follow
 the exporter's `YYYY-MM-DD_HHMM_topic-slug.vtt` names, or `.txt` with a zoom-searcher header; their time is read in
 this computer's zone unless `files.timezone` names another, and the import says which. A `.txt`'s speakers become
 participants of that meeting only; speaker names never become identities across meetings.
@@ -374,7 +374,7 @@ repository's issues.
 | [Your Zoom app][docs/zoom-app.md] | creating the app, scopes, company accounts |
 | [Login, sessions and profiles][docs/sessions.md] | OAuth login, keyring, local profiles |
 | [Usage][docs/usage.md] | every command group, output, deadlines |
-| [The local archive][docs/archive.md] | pull, import, watch, recordings, backups, transcription |
+| [The local archive][docs/archive.md] | sync, import, watch, recordings, backups, transcription |
 | [Search and evidence][docs/search.md] | word search, evidence, people, links, memo |
 | [Topic search][docs/topic-search.md] | search by meaning with a model you choose |
 | [MCP and skills][docs/mcp.md] | the skill, the MCP server, optional tools |

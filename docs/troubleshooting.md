@@ -1,8 +1,19 @@
 # Troubleshooting
 
-Recover when login stalls, data is missing or an archive operation fails. Start with the symptom
-below, make the smallest relevant correction and repeat the stated check. Preserve completed
-recording files and inspect an uncertain remote change before retrying it.
+Get back to your meetings when the login is stuck after you approved in the browser, a meeting or transcript is
+missing, or a download stopped. Each case here has a check and a fix.
+
+Find your symptom, make the smallest fix and repeat the check it names. Keep recording files that already downloaded,
+and look at a meeting in Zoom before you repeat a change whose result was uncertain.
+
+**On this page:**
+
+1. [Login](#login)
+2. [Configuration](#configuration)
+3. [Zoom replies](#zoom-replies)
+4. [Missing meetings or transcripts](#missing-meetings-or-transcripts)
+5. [Archives](#archives)
+6. [A meeting change may not have applied](#remote-meeting-changes)
 
 ## Login
 
@@ -50,14 +61,15 @@ Each token request records its outcome in `~/.local/share/zoom-cli/runs/<date>/<
 a new refresh token, whether the keyring save worked, a timeout or cancellation, and the process id.
 It never holds a token. Two records with different process ids close together suggest two commands
 refreshing at once. Read them with `cat ~/.local/share/zoom-cli/runs/*/*/events.jsonl`, then run
-`zm personal session start` again. Runs older than 30 days are removed.
+`zm personal session start` again. A successful run is kept 7 days and a failed one 30
+([run log](configuration.md#run-log)).
 
 ### A required scope is missing
 
 The error names the exact permission. The app owner adds it in **Scopes** and saves; then the user
 runs `zm personal session start` again. Check the granted scopes with `zm personal session status --json` and retry the failed
-read. Tokens already issued do not gain newly configured scopes. Archive, remote meeting details,
-remote verification and meeting changes have [separate permissions](zoom-app.md#add-archive-or-management-access).
+read. Tokens already issued do not gain newly configured scopes. Archive, meeting details from Zoom,
+session checks with Zoom and meeting changes have [separate permissions](zoom-app.md#add-archive-or-management-access).
 
 ## Configuration
 
@@ -79,16 +91,16 @@ OAuth callback values, tokens and private transcript text.
 
 | Symptom | Check and repair | Success check |
 |---|---|---|
-| No stored profile or empty list (exit 3, "no stored meetings for the selected profile") | Choose a profile and import or pull; reads do not register accounts | `zm personal meetings list --json` shows the selected profile's meetings |
+| No stored profile or empty list (exit 3, "no stored meetings for the selected profile") | Choose a profile and import or sync; reads do not register accounts | `zm personal meetings list --json` shows the selected profile's meetings |
 | No hosted meetings in the recent window | Confirm the logged-in Zoom user, API source and date range; try an older explicit `--since-time` | Compare returned dates with expected hosted occurrences |
-| Meeting exists but transcript is empty | Check Zoom's transcript generation/retention and host permissions; expired or never-saved text cannot be recreated by pull | Open the transcript after Zoom makes it available and you pull again |
+| Meeting exists but transcript is empty | Check Zoom's transcript generation/retention and host permissions; a sync cannot recreate expired or never-saved text | Open the transcript after Zoom makes it available and you sync again |
 | A meeting someone else hosted is missing | Sync never reads it: Zoom's API lists only meetings you scheduled. Ask the host for the VTT file, then `meetings import` it | Check imported date/title and text |
-| Transcript appeared after the first pull | Revisit with `zm personal meetings sync --lookback-days 7`, or an older explicit `--since-time` | Open the newly stored transcript |
-| Pull failed partway | Repair the reported error and retry; failed occurrences do not advance the cursor | Inspect the completion receipt and meeting list |
+| Transcript appeared after the first sync | Revisit with `zm personal meetings sync --lookback-days 7`, or an older explicit `--since-time` | Open the newly stored transcript |
+| Sync failed partway | Repair the reported error and retry; failed occurrences do not advance the cursor | Inspect the completion receipt and meeting list |
 | Import rejects a filename or time | Use `YYYY-MM-DD_HHMM_topic.vtt` and the filename's timezone; resolve conflicting or ambiguous times | Import succeeds with the intended date/title |
 | Search gives no matches | Check transcript availability, selected profile and indexing coverage before changing the query | Open a known passage and confirm its indexed/searchable state |
 
-Serialize pulls for the same account. See [transcript settings](zoom-app.md#before-your-first-zm-meetings-sync),
+Run one sync at a time for the same account. See [transcript settings](zoom-app.md#before-your-first-zm-meetings-sync),
 [file import](archive.md#downloaded-transcripts) and [search coverage](search.md#start-with-a-question).
 
 ## Archives
@@ -103,9 +115,11 @@ Serialize pulls for the same account. See [transcript settings](zoom-app.md#befo
 - **A download stopped:** repeat it with the same selected profile/destination to use supported
   verified resume. A checkpoint is progress history, not an integrity check; verify finished files.
 
-## Remote meeting changes
+<a id="remote-meeting-changes" />
 
-Exit code 14 means a write was dispatched and its result is uncertain. Read the remote meeting or
-inspect Zoom before repeating the change; the CLI never automatically retries remote writes.
+## A meeting change may not have applied
+
+Exit code 14 means a write was sent and its result is uncertain. Look at the meeting in Zoom
+before repeating the change; the CLI never automatically retries remote writes.
 After resolving the symptom, repeat the smallest relevant read to confirm recovery, then return to
 [your meeting task](usage.md).

@@ -25,7 +25,7 @@ Ask whether I want to connect my Zoom account or import transcript files I alrea
 If I choose Zoom, help me use my existing app or create one and find its Public Client ID.
 Let me approve login in my browser; do not ask me to paste tokens or callback codes into this chat.
 Install the tool's instructions for my agent, then find one stored meeting and show a cited passage.
-Explain what data is missing. Do not create or change remote meetings.
+Explain what data is missing. Do not create or change meetings in Zoom.
 ```
 
 The agent can prepare the tool and check results. You choose the app and account, approve Zoom's
@@ -73,8 +73,8 @@ an already-running agent too if it cannot see the newly installed command.
 
 ## Choose how to connect
 
-zm has no built-in client ID, and no WireCat app is available to other Zoom accounts.
-Bring your own Zoom General app, or use a team app a colleague has shared with your account.
+zm has no Zoom app of its own. Bring your own Zoom General app, or use a team app a colleague has shared with your
+account.
 
 | Your starting point | What to do |
 |---|---|
@@ -103,11 +103,11 @@ creator's account; its ID alone does not grant access to another person's meetin
 
 ## First run
 
-Replace `<public-client-id>` with your app's Public Client ID, without angle brackets. Run these
-commands one at a time in an ordinary terminal. Leave it open while approving in the browser:
+Run these commands one at a time in an ordinary terminal, with your app's Public Client ID in place of
+`AbCdEf123456`. Leave the terminal open while approving in the browser:
 
 ```sh
-zm config set zoom.client_id <public-client-id>
+zm config set zoom.client_id AbCdEf123456
 zm config set source api
 zm personal session start
 ```
@@ -169,11 +169,11 @@ using MCP, follow [MCP and skills](mcp.md) instead; the profile's permissions li
 
 ## Check your first result
 
-Use a meeting ID returned by list, replacing `<meeting-id>` without angle brackets:
+Use a meeting ID returned by list in place of `1`:
 
 ```sh
-zm personal meetings show <meeting-id> --json
-zm personal meetings transcript <meeting-id> --json
+zm personal meetings show 1 --json
+zm personal meetings transcript 1 --json
 ```
 
 You should see the saved meeting and any transcript Zoom supplied or you imported. A meeting can
@@ -212,7 +212,7 @@ npm install -g @wirecat/zoom-cli
 zm --version
 ```
 
-If you last signed in with zm 0.34 or earlier, run `zm <profile> session start` again: that older login is no longer used.
+If `zm personal session status` shows `state: missing` after an update, run `zm personal session start` again.
 
 Remove the command with:
 

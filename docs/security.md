@@ -1,8 +1,18 @@
 # Security
 
-Choose what meeting data your agent can read and where processing takes place. Zoom authorization,
-local storage and AI processing have separate boundaries: granting app access does not itself send
-a transcript to an AI service. This guide explains those boundaries before you connect or archive data.
+Decide what your agent may read and change before you connect it, and know where your meeting text goes. Access to
+Zoom, storage on this computer and the AI service that reads a transcript are set apart: approving the Zoom app sends
+no transcript to an AI service.
+
+Your Zoom login stays in the system keyring, your meetings stay in a file on this computer, and an agent gets only
+what the profile's permissions allow.
+
+**On this page:**
+
+1. [Credentials](#credentials)
+2. [What reaches the network](#what-reaches-the-network)
+3. [What stays on disk](#what-stays-on-disk)
+4. [What agents can do](#what-agents-can-do)
 
 ## Credentials
 
@@ -23,7 +33,7 @@ a transcript to an AI service. This guide explains those boundaries before you c
 
 ## What reaches the network
 
-- Zoom's API, for login, pull, recordings and remote meeting commands. `--offline` refuses network
+- Zoom's API, for login, sync, recordings and changes to meetings in Zoom. `--offline` refuses network
   requests.
 - A remote embedding endpoint only when you name it with `--base-url` ([topic search](topic-search.md)).
 - Metadata, help, configuration and `recordings archive` commands work without login.
@@ -50,14 +60,14 @@ a transcript to an AI service. This guide explains those boundaries before you c
   Restart the MCP server after changing or revoking selections. Preparation opens an existing
   compatible store read-only, without migration or index maintenance.
 - Local audio transcription uses an already installed model on your machine and downloads none.
-- Remote meeting changes, meeting links, transcription, archive job creation,
+- Changes to meetings in Zoom, meeting links, transcription, archive job creation,
   explicit `meetings embeddings` generation and lock recovery preview by default and need `--yes`; `--dry-run` wins where
   offered. Remote writes are never automatically retried.
 - Word search updates its index automatically. Search with `--model` generates missing vectors before
   ranking; a remote `--base-url` receives transcript passages as well as the query.
 - Task proposals never create a task.
 - `ZM_READ_ONLY=1` lets a run read and mirror, never change, as `TG_READ_ONLY` does in tg, max and wa.
-  Refused with exit 5 before it connects to anything, previews included: remote meeting changes, login,
+  Refused with exit 5 before it connects to anything, previews included: changes to meetings in Zoom, login,
   configuration, skill install, import, export, links, transcription, archive jobs and lock recovery, building
   vectors (`meetings embeddings`, search by meaning with `--model`) and an MCP server whose semantic queries go to a
   remote `--base-url`. Still running: reads, word search (which keeps its index current), `mcp serve`,
@@ -66,10 +76,10 @@ a transcript to an AI service. This guide explains those boundaries before you c
   including one added in a later version, is refused. Set it for an agent that should only read; `0` or an empty
   value turns it off.
 
-An AI app can send the tool results it reads to its own provider. Choose that app and its data policy
+The app that runs your agent, such as Claude Desktop, can send the tool results it reads to its own provider. Choose that app and its data policy
 separately from Zoom authorization. A remote embedding endpoint receives text for generation and
 queries only when explicitly selected; local model execution stays on your computer. Stored files
 and database content remain sensitive meeting data even though their manifests omit tokens.
 
 To withdraw Zoom access, [revoke the app authorization](sessions.md#remove-access). To control what
-an AI app can request, choose the [CLI skill or MCP connection](mcp.md).
+an agent can request, choose the [CLI skill or MCP connection](mcp.md).

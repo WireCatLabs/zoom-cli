@@ -12,7 +12,7 @@ zm personal meetings invitation 123456789 --json
 The id is Zoom's meeting number. The invitation needs the `meeting:read:invitation` scope from
 [the app guide](zoom-app.md#add-archive-or-management-access). To find an upcoming series, use
 [`meetings scheduled`](usage.md#find-a-scheduled-meeting-series), then
-[`meetings prepare <series-id>`](usage.md#prepare-for-an-upcoming-meeting) for its stored context.
+[`meetings prepare`](usage.md#prepare-for-an-upcoming-meeting) for its stored context.
 
 ## Create, update or cancel
 

@@ -1,8 +1,28 @@
 # Search and evidence
 
-Find what was said in your stored meetings, read the exact passage with a reference back to it, see
-what you discussed with a person, link meetings to events and people, and preview a follow-up task
-tied to its source.
+Find the moment a decision was made and quote it exactly. Your agent searches the meetings saved on this
+computer, and every transcript hit comes with a reference that opens the lines around it. You can also see what you
+discussed with one person, or link a meeting to its project.
+
+Word forms in English, Russian and Spanish match, and so do words that speech recognition garbled. Search covers only
+meetings that were synced or imported, so an empty answer does not mean the topic never came up.
+
+**On this page:**
+
+1. [Start with a question](#start-with-a-question)
+2. [Search by meaning or in an archive](#search-by-meaning-or-in-an-archive)
+3. [Why zm does not search on Zoom's side](#why-zm-does-not-search-on-zooms-side)
+4. [Narrow by people and work](#narrow-by-people-and-work)
+5. [Put filters in the query, and save a search](#put-filters-in-the-query-and-save-a-search)
+6. [Read evidence](#read-evidence)
+7. [Read around a search hit](#read-around-a-search-hit)
+8. [Read several queries or passages together](#read-several-queries-or-passages-together)
+9. [Person context](#person-context)
+10. [Link meetings to events and people](#link-meetings-to-events-and-people)
+11. [Find a project before linking it](#find-a-project-before-linking-it)
+12. [Suggest projects for one meeting](#suggest-projects-for-one-meeting)
+13. [Notes, tags and memories with memo](#notes-tags-and-memories-with-memo)
+14. [Task proposals](#task-proposals)
 
 <a id="search-stored-meetings" />
 
@@ -21,10 +41,11 @@ Search the stored meetings:
 
 ```sh
 zm personal search meetings "example plan" --json
-zm personal search meetings "example plan" --limit 20 --cursor <next_cursor> --json
+zm personal search meetings "example plan" --limit 20 --cursor eyJvZmZzZXQiOjIwfQ --json
 ```
 
-This searches the stored profile, not Zoom's live history. [Pull or import missing meetings](archive.md)
+The second command continues with the `page.next_cursor` of the first answer; the cursor shown is an invented one.
+This searches the stored profile, not Zoom's live history. [Sync or import missing meetings](archive.md)
 first. `search meetings` indexes whatever was stored since the last search before it reads, so there is no
 separate index step. All query words must match, through literal prefixes or stored word forms. The default
 configuration adds English, Russian and Spanish word stems; a store can disable or customize it. A word of four
@@ -65,11 +86,11 @@ Its hits are the ones `search all` answers with: `ref` (`recording:<file id>/<cu
 Zoom's API has no way to search transcript text. The [Meetings API reference](https://developers.zoom.us/docs/api/meetings/)
 only hands transcripts out as files: `GET /meetings/{meetingId}/transcript`, and recording files with
 `file_type` `TRANSCRIPT` (VTT) from `GET /meetings/{meetingId}/recordings` and `GET /archive_files`. None of its
-endpoints takes a text query (checked 2026-10-21). Searching text inside transcripts is a feature of the Zoom
+endpoints takes a text query. Searching text inside transcripts is a feature of the Zoom
 web portal only: "You can search for text within audio transcripts", and an admin can search every transcript in
 the account ([Using audio transcription for cloud recordings](https://support.zoom.com/hc/en/article?id=zm_kb&sysparm_article=KB0064927)).
 
-So zm personal downloads each transcript once and searches its own copy: that works offline, keeps meetings Zoom has
+So zm downloads each transcript once and searches its own copy: that works offline, keeps meetings Zoom has
 deleted, and lets a word match its other forms and garbled spellings.
 
 ## Narrow by people and work
@@ -310,7 +331,8 @@ Date ranges include whole UTC calendar days; quoted ISO timestamps give exact bo
 negation and confirmed project-membership filters are refused. Over MCP, `zm_read` runs it as
 `{ "command": "meetings projects evidence", "arguments": { … } }` with the same arguments; the server fixes the profile.
 
-For every relevant retained cue, open `zm personal meetings passage <ref> --format markdown` and check the
+For every relevant retained cue, open it with `meetings passage`, such as
+`zm personal meetings passage meeting:3/15/20/4 --format markdown`, and check the
 surrounding words. `association: "unconfirmed-word-evidence"` means candidate evidence: a key
 may be incidental, and repeated refs across names are the same evidence. Propose associations
 only after reviewing the passage. If no project record exists yet, ordinary word search remains
@@ -397,7 +419,7 @@ passages behind each suggestion, and flag likely synonyms for review. Do not cre
 labels while preparing the proposal.
 ```
 
-The existing Memo tools provide the checks; Zoom keeps no second label catalog:
+Memo already has these checks, so zm keeps no label list of its own:
 
 ```sh
 memo vocabulary list 'kind:tag' --max-entries 128 --max-read-bytes 65536 --json

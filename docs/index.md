@@ -1,9 +1,8 @@
 # Zoom — start here
 
-Use `zm`, the Zoom command-line tool, to find what was discussed, recover a decision with its
-original passage and prepare for a follow-up. It keeps available meeting information locally and
-gives your AI agent a way to read it. Your account's permissions and saved transcripts determine
-which Zoom data is available.
+Find what was said on any Zoom call, quote a decision with its original lines and get ready for the next call.
+`zm`, the Zoom command-line tool, keeps your meetings on this computer and gives your AI agent a way to read them.
+What it can read depends on your account's permissions and the transcripts Zoom saved.
 
 <a id="one-minute-to-the-first-result" />
 

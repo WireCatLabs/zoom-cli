@@ -1,33 +1,55 @@
-# Usage
+# Work with your meetings
 
-Read a stored meeting, open its transcript and export the parts you need. This guide helps you
-choose the right command and recognize whether it reads local data, contacts Zoom or changes
-something. [Install and connect](installation.md) first if no meetings have been imported or pulled.
+See what happened in last week's calls and get ready for the next one. Your agent reads the meetings saved on this
+computer: who talked how long, what each summary says, which links people shared in chat, and what you discussed last
+time with the people on the next call.
 
-## Read your first meeting
+Most of this reads only the saved copy and needs no internet. Preparing for a call and finding a series also ask Zoom
+for the schedule. In a terminal, a change to a meeting in Zoom waits for your yes; an agent connected over MCP is not
+asked, so set its [permissions](configuration.md#permissions) first.
+[Install and connect](installation.md) first if no meetings have been synced or imported yet.
+
+**On this page:**
+
+1. [Review the last week](#review-the-last-week)
+2. [Prepare for an upcoming meeting](#prepare-for-an-upcoming-meeting)
+3. [Count who talks and how much](#count-who-talks-and-how-much)
+4. [Find links shared in meeting chat](#find-links-shared-in-meeting-chat)
+5. [Read and export one meeting](#read-your-first-meeting)
+6. [Include selected messages, mail and documents](#include-selected-messages-mail-and-documents)
+7. [Choose local or remote data](#choose-local-or-remote-data)
+8. [Reference: what preparation returns](#reference-what-preparation-returns)
+9. [Commands](#commands)
+10. [Output for scripts and agents](#output-for-scripts-and-agents)
+11. [Deadlines and cancellation](#deadlines-and-cancellation)
+12. [Inspect sync progress](#inspect-sync-progress)
+
+## Review the last week
 
 ```sh
-zm personal meetings list --json
-zm personal meetings show <meeting-id> --json
-zm personal meetings transcript <meeting-id> --json
-zm personal meetings summary <meeting-id> --json
+zm personal review --json
+zm personal review --since-time 30d --project RES --json
 ```
 
-Replace `<meeting-id>` with an ID from the list. Check the date and title before relying on its text.
-A missing summary or transcript means that part was not supplied, not that nothing was discussed.
-Stored reads use your selected local profile and do not fetch newer Zoom data. Use
-[the archive guide](archive.md) to retrieve missing periods or import files.
+`review` lists the meetings since a point, newest first: the last 7 days unless `--since-time` says otherwise, at most
+`--limit` (50, up to 200). Each has its newest summary (overview and next steps), its confirmed projects, its
+transcript's lines and words, and the three people who talked longest. `missing` says how many meetings have no
+summary — Zoom writes one only when AI Companion summarised the meeting, and imported transcripts carry none — and how
+many transcripts hold fewer than 50 words, where an empty search means nothing was recorded rather than nothing said.
+It takes the same filters as `stats meetings`.
 
-To save a portable copy of the available content:
+## Prepare for an upcoming meeting
 
-```sh
-zm personal meetings export <meeting-id> --format markdown --json
+You have an upcoming Zoom call and want the relevant earlier discussion beside it. Ask your agent:
+
+```text prompt
+Prepare for the next Research Example planning call in Zoom. Identify the intended series first.
+Show the upcoming time, cited passages from earlier calls, confirmed project links, saved decisions,
+notes about earlier calls and linked people/projects, and directly sourced follow-up tasks. Show candidates if several
+series fit. Tell me what is missing or uncertain. Do not change anything.
 ```
 
-Read the returned export before saving it to a file. MCP can return exports as text but does not
-write files. [Search and evidence](search.md) keeps exact passage references when you need citations.
-
-## Find a scheduled meeting series
+### Find a scheduled meeting series
 
 When you know the subject of the next call but not its Zoom series ID, ask your agent to find
 candidate series first. This reads Zoom’s scheduled meetings for the connected account; it does
@@ -57,19 +79,10 @@ reads one provider page, with up to 100 candidates and a default 64 KiB read/out
 refused rather than silently dropping candidate series. The command needs
 `meeting:read:list_meetings` and network access; `--offline` refuses it before credentials are read.
 
-Choose the provider series ID, then continue with [meeting preparation](#prepare-for-an-upcoming-meeting)
+Choose the provider series ID, then continue with [the call's context](#prepare-the-calls-context)
 to verify the next occurrence and gather cited stored context. A local stored meeting ID is different.
 
-## Prepare for an upcoming meeting
-
-You have an upcoming Zoom call and want the relevant earlier discussion beside it. Ask your agent:
-
-```text prompt
-Prepare for the next Research Example planning call in Zoom. Identify the intended series first.
-Show the upcoming time, cited passages from earlier calls, confirmed project links, saved decisions,
-notes about earlier calls and linked people/projects, and directly sourced follow-up tasks. Show candidates if several
-series fit. Tell me what is missing or uncertain. Do not change anything.
-```
+### Prepare the call's context
 
 Use the provider series ID from [the Zoom schedule](#find-a-scheduled-meeting-series), with digits and no spaces,
 rather than the internal ID printed by `meetings list`. In a terminal:
@@ -80,46 +93,9 @@ zm personal meetings prepare 123456789 --json
 
 This reads the selected series from Zoom and joins it to your selected local profile's stored
 history. It needs the optional `meeting:read:meeting` permission in your
-[Zoom app](zoom-app.md#add-archive-or-management-access). It does not pull missing transcripts,
+[Zoom app](zoom-app.md#add-archive-or-management-access). It does not sync missing transcripts,
 change app permissions or start login. The default window looks seven days ahead and thirty days
 back, including at most five prior occurrences, five related meetings and ten cited cues per meeting.
-
-Check `item.upcoming.candidate` and `verified_next`: a candidate time can be useful without proving
-it is the next occurrence. Recurring series dates alone never establish that claim. The result's
-`meetings` hold meeting references, transcript cues and fingerprints, observed participant names
-with existing person links, confirmed projects, accepted meeting facts and directly sourced tasks.
-Past participants are not a prediction of who will attend next.
-
-`related.items` adds stored meetings outside this series through existing person links or confirmed
-project memberships shared with included history. Each has a meeting reference, cited cues and
-`shared_person`/`shared_project` flags; `related.anchors` shows the prior calls used to establish
-those connections. The search stays within this profile and history window, uses current links,
-and excludes proposed project memberships. Matching names or transcript words never creates a link.
-
-`knowledge.items` adds accepted facts about explicitly linked people and confirmed global projects,
-including decisions recorded outside these meetings. Each has a `fact:` reference, subject/project
-references, update time and `shared_person`/`shared_project` flags. It uses the included prior calls
-as anchors and excludes proposed, reversed, deleted and later-updated facts. The fact reference lets
-you retrieve the full record and evidence through Memo before relying on it. This section contains
-accepted facts; `knowledge.coverage` keeps `fact_evidence: not-revalidated` and
-`other_sources: not-queried` visible. When communications are explicitly requested,
-`other_sources: see-communications` points to that separate source coverage instead.
-
-`notes.items` adds owner-written notes and annotations about the included earlier calls, their
-explicitly linked people and confirmed global projects. Each includes a `note:` reference,
-title/text, revision, update time and a qualifying meeting/person/project reference. These are
-saved comments, separate from accepted facts. The command uses current revisions and confirmed
-associations. A meeting note must link to an included call in this profile; a shared project alone
-does not bring in notes about other meetings. Deleted notes, bot-authored notes, account-scoped
-person/project subjects and revisions updated after the preparation start are excluded. Retrieve
-the referenced note in Memo when you need its full associations.
-
-Check `notes.coverage.has_more` and `notes.coverage.output_limited` for additional or omitted notes.
-`source_evidence: not-revalidated` means the note's supporting sources have not been checked;
-`other_sources: not-queried` keeps imported documents, mail and messages outside this result's coverage
-unless communications are explicitly requested. Then `other_sources: see-communications` points to
-their separate coverage; these excerpts do not become owner-written notes.
-Selecting `--json=notes.items.ref` keeps that coverage visible beside the references.
 
 If you know which existing project to investigate, ask the agent to select it by its saved name,
 key or alias. For example:
@@ -141,39 +117,68 @@ meeting titles. It searches the same profile and history window, including calls
 link. A word match is a candidate to inspect; it does not establish that a meeting belongs to the
 project. The same passage may match several names, which is not extra corroboration.
 
-At most four search pages are included. An empty page can still lead to an alias with matches.
-When `project_evidence.continuation` is present, use its project, frozen query, limit and read budget
-with `meetings projects evidence`; pass its cursor when non-null. A null cursor means start without
-`--cursor`. This continues the stored search without reading the upcoming Zoom schedule again.
-Check pending indexing and unknown completeness even when the pages are empty. Changed vocabulary
-or scope invalidates the cursor; restart the selected-project search instead of guessing a new cursor.
-
-If the upcoming time appears without earlier calls, pull the relevant period through the Zoom API
+If the upcoming time appears without earlier calls, sync the relevant period through the Zoom API
 so the store has its exact series links. Imported transcript files may not contain that provider
 series ID. Preparation does not match calls by similar titles or participant names.
 
-Coverage distinguishes missing stored history, undated occurrences, extra rows and output limits.
-Archive completeness remains unknown. Documents, mail and messages remain unqueried unless you
-explicitly request configured communications sources. Projects you did not select remain unqueried; without usable prior occurrences, related history
-also remains unqueried. Stored fact evidence is not revalidated. Use
-[search and evidence](search.md) to investigate those gaps. Preparation does not generate a summary,
-record a decision, accept a finding or create a task.
+## Count who talks and how much
 
-For more control, use ISO timestamps with a zone for `--since-time`, `--before-time` and `--history-since-time`.
-`--meetings` caps each of exact-series and related history separately; `--cues` and `--context-limit`
-bound the context; `--max-read-bytes` bounds individual
-reads and `--bytes` bounds the entire preparation item. Exact-series evidence takes priority;
-`related.has_more` and `related.output_limited` identify extra or omitted related context.
-Accepted knowledge has independent `knowledge.coverage.has_more` and `knowledge.coverage.output_limited` flags;
-it returns at most twenty facts (or a smaller `--context-limit`) and yields bytes to meeting evidence.
-Optional project-evidence pages yield bytes first, before notes, accepted knowledge and meeting evidence.
-Each of their at most four pages makes one vocabulary read and one word read, each bounded by
-`--max-read-bytes`; these limits do not bound database scan/sort work.
-Notes have their own lookahead and output-limit flags, with at most twenty entries (or a smaller
-`--context-limit`). They fit after accepted facts and meeting evidence. Additional rows may remain
-when a bound is reached.
-Skipped unavailable sources set `meta.complete=false`; inspect their references before relying on
-the brief. Increase the relevant bound when the coverage identifies truncation.
+```sh
+zm personal stats meetings show --since-time 30d --json
+zm personal stats meetings top --project RES --limit 5 --json
+zm personal stats meetings history --by week --since-time 90d --json
+```
+
+`stats meetings history` counts meetings, their minutes and the meetings with a transcript per day, week (its
+Monday) or series, from the meetings alone. A meeting with no end counts as a meeting but adds no minutes. Under
+`--by series` the busiest series comes first, and every meeting outside a series shares one `no-series` row.
+
+`show` gives the meetings, lines, words and talk time in the selection, by week (weeks start on Monday in
+`--timezone`, the computer's zone by default), with the ten speakers who talked most. `top` lists speakers by talk
+time, with their lines, words, meetings and share of the talk. Both take `--since-time`, `--until-time`,
+`--event-id`, `--project` and `--topic-name`, read as `search meetings` reads them.
+
+A speaker is the person a participant is linked to, else the participant, else the name the transcript gives; a line
+with no speaker counts as `unknown`. Talk time is each line's length, so two people talking at once both count. A
+meeting with both Zoom's transcript and a local one counts Zoom's (the earliest) only; meetings with no transcript are
+not counted. Only numbers are read: no transcript text is shown.
+
+## Find links shared in meeting chat
+
+```sh
+zm personal mentions list started_at>=30d --json
+```
+
+`meetings sync` stores the chat Zoom saves with a cloud recording, when the login has
+`cloud_recording:read:list_recording_files`. `mentions list` lists the links in that chat, most shared first, with
+who shared each, in which meetings, when, and the Google file a Docs, Sheets or Drive link names. Tracking parameters
+such as `utm_source` are dropped, so one page shared twice counts once. A meeting without a cloud recording has no
+chat to read.
+
+<a id="read-your-first-meeting" />
+
+## Read and export one meeting
+
+```sh
+zm personal meetings list --json
+zm personal meetings show 1 --json
+zm personal meetings transcript 1 --json
+zm personal meetings summary 1 --json
+```
+
+Use an ID from the list in place of `1`. Check the date and title before relying on its text.
+A missing summary or transcript means that part was not supplied, not that nothing was discussed.
+Stored reads use your selected local profile and do not fetch newer Zoom data. Use
+[the archive guide](archive.md) to retrieve missing periods or import files.
+
+To save a portable copy of the available content:
+
+```sh
+zm personal meetings export 1 --format markdown --json
+```
+
+Read the returned export before saving it to a file. MCP can return exports as text but does not
+write files. [Search and evidence](search.md) keeps exact passage references when you need citations.
 
 ## Include selected messages, mail and documents
 
@@ -221,54 +226,6 @@ missing records or save findings. Use the producing tool's import/index commands
 coverage identifies missing indexed data. A refused old schema needs a normal store upgrade before
 preparation can read it.
 
-## Count who talks and how much
-
-```sh
-zm personal stats meetings show --since-time 30d --json
-zm personal stats meetings top --project RES --limit 5 --json
-zm personal stats meetings history --by week --since-time 90d --json
-```
-
-`stats meetings history` counts meetings, their minutes and the meetings with a transcript per day, week (its
-Monday) or series, from the meetings alone. A meeting with no end counts as a meeting but adds no minutes. Under
-`--by series` the busiest series comes first, and every meeting outside a series shares one `no-series` row.
-
-`show` gives the meetings, lines, words and talk time in the selection, by week (weeks start on Monday in
-`--timezone`, the computer's zone by default), with the ten speakers who talked most. `top` lists speakers by talk
-time, with their lines, words, meetings and share of the talk. Both take `--since-time`, `--until-time`,
-`--event-id`, `--project` and `--topic-name`, read as `search meetings` reads them.
-
-A speaker is the person a participant is linked to, else the participant, else the name the transcript gives; a line
-with no speaker counts as `unknown`. Talk time is each line's length, so two people talking at once both count. A
-meeting with both Zoom's transcript and a local one counts Zoom's (the earliest) only; meetings with no transcript are
-not counted. Only numbers are read: no transcript text is shown.
-
-## Review the last week
-
-```sh
-zm personal review --json
-zm personal review --since-time 30d --project RES --json
-```
-
-`review` lists the meetings since a point, newest first: the last 7 days unless `--since-time` says otherwise, at most
-`--limit` (50, up to 200). Each has its newest summary (overview and next steps), its confirmed projects, its
-transcript's lines and words, and the three people who talked longest. `missing` says how many meetings have no
-summary — Zoom writes one only when AI Companion summarised the meeting, and imported transcripts carry none — and how
-many transcripts hold fewer than 50 words, where an empty search means nothing was recorded rather than nothing said.
-It takes the same filters as `stats meetings`.
-
-## Find links shared in meeting chat
-
-```sh
-zm personal mentions list started_at>=30d --json
-```
-
-`meetings sync` stores the chat Zoom saves with a cloud recording, when the login has
-`cloud_recording:read:list_recording_files`. `mentions list` lists the links in that chat, most shared first, with
-who shared each, in which meetings, when, and the Google file a Docs, Sheets or Drive link names. Tracking parameters
-such as `utm_source` are dropped, so one page shared twice counts once. A meeting without a cloud recording has no
-chat to read.
-
 ## Choose local or remote data
 
 | Need | Command family | Where it works |
@@ -282,6 +239,78 @@ chat to read.
 
 A successful local read does not prove Zoom still has the same content. A successful cloud download
 does not import that transcript into the meeting database until you request archive import.
+
+## Reference: what preparation returns
+
+`meetings prepare` answers with the upcoming time, the earlier calls and what is linked to them. These fields say how
+far each part can be trusted.
+
+Check `item.upcoming.candidate` and `verified_next`: a candidate time can be useful without proving
+it is the next occurrence. Recurring series dates alone never establish that claim. The result's
+`meetings` hold meeting references, transcript cues and fingerprints, observed participant names
+with existing person links, confirmed projects, accepted meeting facts and directly sourced tasks.
+Past participants are not a prediction of who will attend next.
+
+`related.items` adds stored meetings outside this series through existing person links or confirmed
+project memberships shared with included history. Each has a meeting reference, cited cues and
+`shared_person`/`shared_project` flags; `related.anchors` shows the prior calls used to establish
+those connections. The search stays within this profile and history window, uses current links,
+and excludes proposed project memberships. Matching names or transcript words never creates a link.
+
+`knowledge.items` adds accepted facts about explicitly linked people and confirmed global projects,
+including decisions recorded outside these meetings. Each has a `fact:` reference, subject/project
+references, update time and `shared_person`/`shared_project` flags. It uses the included prior calls
+as anchors and excludes proposed, reversed, deleted and later-updated facts. The fact reference lets
+you retrieve the full record and evidence through Memo before relying on it. This section contains
+accepted facts; `knowledge.coverage` keeps `fact_evidence: not-revalidated` and
+`other_sources: not-queried` visible. When communications are explicitly requested,
+`other_sources: see-communications` points to that separate source coverage instead.
+
+`notes.items` adds owner-written notes and annotations about the included earlier calls, their
+explicitly linked people and confirmed global projects. Each includes a `note:` reference,
+title/text, revision, update time and a qualifying meeting/person/project reference. These are
+saved comments, separate from accepted facts. The command uses current revisions and confirmed
+associations. A meeting note must link to an included call in this profile; a shared project alone
+does not bring in notes about other meetings. Deleted notes, bot-authored notes, account-scoped
+person/project subjects and revisions updated after the preparation start are excluded. Retrieve
+the referenced note in Memo when you need its full associations.
+
+Check `notes.coverage.has_more` and `notes.coverage.output_limited` for additional or omitted notes.
+`source_evidence: not-revalidated` means the note's supporting sources have not been checked;
+`other_sources: not-queried` keeps imported documents, mail and messages outside this result's coverage
+unless communications are explicitly requested. Then `other_sources: see-communications` points to
+their separate coverage; these excerpts do not become owner-written notes.
+Selecting `--json=notes.items.ref` keeps that coverage visible beside the references.
+
+With `--project`, at most four search pages are included. An empty page can still lead to an alias with matches.
+When `project_evidence.continuation` is present, use its project, frozen query, limit and read budget
+with `meetings projects evidence`; pass its cursor when non-null. A null cursor means start without
+`--cursor`. This continues the stored search without reading the upcoming Zoom schedule again.
+Check pending indexing and unknown completeness even when the pages are empty. Changed vocabulary
+or scope invalidates the cursor; restart the selected-project search instead of guessing a new cursor.
+
+Coverage distinguishes missing stored history, undated occurrences, extra rows and output limits.
+Archive completeness remains unknown. Documents, mail and messages remain unqueried unless you
+explicitly request configured communications sources. Projects you did not select remain unqueried; without usable prior occurrences, related history
+also remains unqueried. Stored fact evidence is not revalidated. Use
+[search and evidence](search.md) to investigate those gaps. Preparation does not generate a summary,
+record a decision, accept a finding or create a task.
+
+For more control, use ISO timestamps with a zone for `--since-time`, `--before-time` and `--history-since-time`.
+`--meetings` caps each of exact-series and related history separately; `--cues` and `--context-limit`
+bound the context; `--max-read-bytes` bounds individual
+reads and `--bytes` bounds the entire preparation item. Exact-series evidence takes priority;
+`related.has_more` and `related.output_limited` identify extra or omitted related context.
+Accepted knowledge has independent `knowledge.coverage.has_more` and `knowledge.coverage.output_limited` flags;
+it returns at most twenty facts (or a smaller `--context-limit`) and yields bytes to meeting evidence.
+Optional project-evidence pages yield bytes first, before notes, accepted knowledge and meeting evidence.
+Each of their at most four pages makes one vocabulary read and one word read, each bounded by
+`--max-read-bytes`; these limits do not bound database scan/sort work.
+Notes have their own lookahead and output-limit flags, with at most twenty entries (or a smaller
+`--context-limit`). They fit after accepted facts and meeting evidence. Additional rows may remain
+when a bound is reached.
+Skipped unavailable sources set `meta.complete=false`; inspect their references before relying on
+the brief. Increase the relevant bound when the coverage identifies truncation.
 
 ## Commands
 
@@ -365,9 +394,9 @@ find for them, and `--yes` stores it.
 `{"type":"end","complete":true,"page":...}` record. Empty lists still emit the end record.
 Reports stay together inside one item record; each streaming acknowledgement has its own end record.
 Read `complete` and optional `issues` on the end record. Use `--json` when you need the full
-answer's `next`, `missing` and execution metadata. Command discovery is the shared contract-3
-document with separate `effects.remote` and `effects.local` declarations; help, version and shell
-completion retain their protocols.
+answer's `next`, `missing` and execution metadata. `zm commands --json` describes
+every command and says whether it reaches Zoom (`effects.remote`) or changes local data (`effects.local`). Help,
+version and shell completion keep their own formats.
 
 A skipped source makes `meta.complete` false and adds a source issue; `search all` says why on stderr.
 `search all` accepts partial results and exits zero; inspect `meta.issues` before treating the result as

@@ -1,16 +1,26 @@
 # Login, sessions and profiles
 
-Connect the intended Zoom account and check that browser approval reached the command-line tool.
-Then choose a local profile to keep its saved meetings together. App permission, an OAuth session
-and a profile are three separate things: changing a profile label does not log in to another user.
+Sign in to the right Zoom account once and keep its meetings apart from any other account's. A login stays on this
+computer, so later commands and your agent reach Zoom without asking you again.
+
+Each Zoom account gets a profile: a short name such as `personal` or `work`, which every command starts with. The name
+is only a label, so renaming a profile never signs you in as another Zoom user.
+
+**On this page:**
+
+1. [Log in](#log-in)
+2. [Finish the browser callback](#finish-the-browser-callback)
+3. [Check the session](#check-the-session)
+4. [Select a local profile](#select-a-local-profile)
+5. [Remove access](#remove-access)
 
 ## Log in
 
 Have the Public Client ID from [an existing or new Zoom app](zoom-app.md). Run login in an
-interactive terminal on the computer that will store the session:
+interactive terminal on the computer that will store the session, with your own ID in place of the example:
 
 ```sh
-zm config set zoom.client_id <public-client-id>
+zm config set zoom.client_id AbCdEf123456
 zm personal session start
 ```
 
@@ -23,9 +33,9 @@ The default browser opens. `--no-browser` only prints the URL. Zoom displays the
 sign in to the intended account and approve. The tool stores tokens in the operating system's
 keyring, never the public configuration file. If that password store is unavailable, login keeps them in
 `credentials.json` in zm's config folder, readable by you only, says so once on stderr; it never asks. `--credential-storage file` chooses the file outright. The keyring is
-safer, so we do not recommend it. The next `session start` that reaches the keyring moves the tokens back.
+safer, so use the file only where no keyring runs. The next `session start` that reaches the keyring moves the tokens back.
 
-If you last signed in with zm 0.34 or earlier, run `zm <profile> session start` again: that older login is no longer used.
+If `zm personal session status` shows `state: missing` after an update, run `zm personal session start` again.
 
 ## Finish the browser callback
 
@@ -80,10 +90,10 @@ profiles here in `details.profiles`. Names have 1–64 letters, digits, dots, un
 and start with a letter or digit; a command word such as `meetings` cannot be a profile.
 
 `zm <name> session start` logs that profile in and makes it. On a computer with no profile yet, the first import or
-pull makes one too, so a files-only setup needs no Zoom login. Beside other profiles, an import or pull that names an
+sync makes one too, so a files-only setup needs no Zoom login. Beside other profiles, an import or sync that names an
 unknown one is refused before anything is stored — `zm persnal meetings import …` fails and lists the profiles —
 so a new account starts with its login; `zm <name> config set permissions '{}'` also makes a profile, for one
-that only imports files. Read commands only look a profile up: pull or import once before expecting
+that only imports files. Read commands only look a profile up: sync or import once before expecting
 `meetings list` to find it.
 
 For another Zoom user, start a second profile — `zm work session start` — and choose that user in
@@ -100,7 +110,7 @@ other is refused with `permission_error`. Set it where an agent runs.
 
 `MESSAGING_STORE` selects the shared database. Use the same path for Zoom, Memo and your MCP
 client when connecting meeting evidence with notes and projects. File imports do not advance
-the pull cursor; when switching ingestion sources, an older explicit `--since-time` may be needed.
+the sync cursor; when switching ingestion sources, an older explicit `--since-time` may be needed.
 
 ## Remove access
 
@@ -111,4 +121,4 @@ app management for that. Uninstalling `zm` does not revoke Zoom authorization or
 
 Several Zoom users on one computer are several profiles: each has its own keyring entry and its own meetings.
 
-Once the session and profile are ready, [pull or import your first meeting](archive.md#pull-hosted-meetings).
+Once the session and profile are ready, [sync or import your first meeting](archive.md#pull-hosted-meetings).

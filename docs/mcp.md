@@ -1,9 +1,21 @@
 # MCP and skills
 
-Let an AI agent read your stored meeting text and return source-backed answers. Choose a skill
-for a terminal agent or MCP for an AI app that launches local tools. A skill is an instruction file;
-MCP is the protocol the app uses to call tools. Neither connection logs in or downloads meetings.
-[Import or pull at least one meeting](installation.md#first-run) before trying a transcript question.
+Ask your agent what was decided on last week's call and get the answer with the transcript lines behind it. Your
+agent reads the meetings saved on this computer through `zm`, so it quotes the meetings themselves rather than its
+memory.
+
+An agent with a terminal, such as Claude Code or Codex, gets a skill: an instruction file that tells it which `zm`
+commands to run. An app that runs your agent, such as Claude Desktop, connects over MCP, the protocol it uses to call
+local tools. Neither connection logs in or downloads meetings, so
+[sync or import at least one meeting](installation.md#first-run) before you ask about a transcript.
+
+**On this page:**
+
+1. [Choose the connection](#choose-the-connection)
+2. [The agent skill](#the-agent-skill)
+3. [The MCP server](#the-mcp-server)
+4. [Try the connection](#try-the-connection)
+5. [Selected communications in meeting preparation](#selected-communications-in-meeting-preparation)
 
 ## Choose the connection
 
@@ -11,7 +23,7 @@ MCP is the protocol the app uses to call tools. Neither connection logs in or do
 |---|---|---|
 | Codex or Gemini CLI on this computer | `zm skill install --for agents` | Installs instructions for using CLI commands |
 | Claude Code on this computer | `zm skill install --for claude` | Installs its CLI instructions |
-| An MCP-capable local AI app | Add the server entry below and restart the app | The same commands, as three tools |
+| An app that runs your agent and speaks MCP, such as Claude Desktop | Add the server entry below and restart the app | The same commands, as three tools |
 
 Both reach the same commands under the same [permissions](configuration.md#permissions) of the profile.
 
@@ -75,7 +87,7 @@ and test the entry for Codex or Claude Code.
 
 ### Browser apps over HTTP
 
-`zm personal mcp serve --http --public-url https://<name>.ts.net` serves on `127.0.0.1` for AI apps in a browser,
+`zm personal mcp serve --http --public-url https://zoom-laptop.example.ts.net` serves on `127.0.0.1` for agent apps in a browser,
 behind your own tunnel; `--port` changes the local port (default 8765). Writes follow the profile's permissions, as
 over stdio. A browser app logs in once with a code that the server prints on stderr (`mcp server status` shows it
 again); its access lasts one hour and its refresh 30 days. `zm personal mcp revoke` ends every login. `zm personal mcp server start`, `stop` and `status` run
@@ -84,7 +96,7 @@ that server in the background, and `--profiles` works with all of these.
 ### Several profiles from one server
 
 `zm mcp serve --profiles work,personal` serves the profiles it names from one server, and `zm mcp serve --profiles
-all` serves every profile here, so an AI app needs one Zoom entry, not one per profile. Each tool then takes a
+all` serves every profile here, so an app needs one Zoom entry, not one per profile. Each tool then takes a
 required `profile`, and the agent is told to ask when you named none. A call runs in that profile's own
 `zm <profile> mcp serve`, with that profile's permissions. The server names the profiles it serves on stderr when it
 starts.
@@ -104,7 +116,7 @@ profiles here, and so do a profile together with `--profiles` and a name that is
 ## Try the connection
 
 After installing the skill, start a new agent session if it has not discovered the instructions.
-After adding MCP, restart the AI app and confirm that its Zoom tools are available. Ask:
+After adding MCP, restart the app and confirm that its Zoom tools are available. Ask:
 
 ```text prompt
 List my stored meetings. Open the latest one and show its date, available transcript and one
@@ -112,7 +124,7 @@ passage supporting its main decision. Tell me if the data is incomplete.
 ```
 
 Check the selected meeting against `zm personal meetings list --json` in your terminal. If discovery works
-but no data appears, verify the same profile and store path, then pull or import data. A remote web chat cannot
+but no data appears, verify the same profile and store path, then sync or import data. A remote web chat cannot
 run this local command unless it has a supported connection to your machine.
 
 ## Selected communications in meeting preparation
