@@ -38,8 +38,12 @@ export const DESKTOP: ManifestIdentity = {
   mcpPort: 8752,
   tagline: "Zoom transcripts and recordings, searchable",
   syncs: "meetings and transcripts",
+  meetingsProvider: "zoom",
   signIn: {
     gives: "Lets your agent find your Zoom meetings and read their transcripts and summaries.",
     asks: "Your browser opens Zoom to approve access. Zoom first needs an app of your own, made once in the Zoom App Marketplace.",
+    methods: [
+      { id: "browser", label: "Browser", words: ["{profile}", "session", "start", "--json", "--answer-stdin"] },
+    ],
   },
 }
