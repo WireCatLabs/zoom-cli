@@ -68,7 +68,7 @@ a profile name. The examples use `personal`.
 - **Local changes preview first** (`meetings link`, `recordings archive recover`, `meetings embeddings`): `--yes`
   only applies what the owner authorized.
 - **Proposals are not saves.** `meetings task-proposal`, `meetings projects scan` and `meetings prepare` save nothing.
-  Tags and project links are written only through Memo's reviewed workflows; no tag write is part of Zoom
+  Tags and project links are written only through `wcat`'s reviewed workflows; no tag write is part of Zoom
   preparation.
 - **Do not broaden what an agent may read:** use only the communications sources configured for the profile.
 - **A remote model sees transcript text.** `search meetings --model` with a remote model sends transcript passages

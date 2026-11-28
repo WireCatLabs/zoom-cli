@@ -185,8 +185,8 @@ Task proposals carry stable meeting provenance and never call task persistence.
 Owner-selected event and participant identity links use the pure shared context workflow and the
 producer's account-bound atomic link ports. Preconditions, source ownership and target authorization
 are checked in the same transaction. Only the selected identity moves; names never establish links.
-Memo remains the shared notes, tags and memories interface over these same records. Zoom does not
-mount another set of those commands.
+`wcat` remains the shared tags and memories interface, and `files` the notes interface, over these same records.
+Zoom does not mount another set of those commands.
 
 Preparation reads owner notes through Core's optional preparation-notes port. The native adapter
 selects existing notes and confirmed associations within the included account/series/history

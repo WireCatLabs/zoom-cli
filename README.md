@@ -77,7 +77,7 @@ never inferred person links. Stored meeting lists accept metadata queries, for e
 **Find the project behind a call.** *"Which of my saved projects might this meeting concern?"*
 `meetings projects scan <ref>` compares one bounded page of local meeting evidence with existing
 project names, keys and aliases. It returns cited suggestions and ambiguity for review, saving no
-project link. The agent can check proposed labels against Memo's existing vocabulary too.
+project link. The agent can check proposed labels against `wcat`'s existing vocabulary too.
 
 **Follow up after it.** *"What did I promise in today's call?"* The agent reads
 `meetings transcript` and `meetings summary`, cites passages with `meetings evidence`, and
@@ -356,8 +356,8 @@ More: [troubleshooting][docs/troubleshooting.md] · [Zoom on wirecat.dev][wireca
 ## Part of WireCat
 
 `zm` is part of [WireCat](https://wirecat.dev), an open-source, local-first context layer for AI
-agents. Meetings land in the same local store as your Telegram, MAX and memo data, and
-`zm personal search all "<query>" --only meetings,notes` searches them together with your memo notes.
+agents. Meetings land in the same local store as your Telegram, MAX and `wcat` data, and
+`zm personal search all "<query>" --only meetings,notes` searches them together with your notes.
 Start with Zoom. Add more context when you need it. Your context. Any agent.
 
 More: [wirecat.dev](https://wirecat.dev) · [connect your AI agent][wirecat/en/docs/agents]
@@ -375,7 +375,7 @@ repository's issues.
 | [Login, sessions and profiles][docs/sessions.md] | OAuth login, keyring, local profiles |
 | [Usage][docs/usage.md] | every command group, output, deadlines |
 | [The local archive][docs/archive.md] | sync, import, watch, recordings, backups, transcription |
-| [Search and evidence][docs/search.md] | word search, evidence, people, links, memo |
+| [Search and evidence][docs/search.md] | word search, evidence, people, links, `wcat` |
 | [Topic search][docs/topic-search.md] | search by meaning with a model you choose |
 | [MCP and skills][docs/mcp.md] | the skill, the MCP server, optional tools |
 | [Managing Zoom meetings][docs/meeting-management.md] | invitation, create, update, cancel |

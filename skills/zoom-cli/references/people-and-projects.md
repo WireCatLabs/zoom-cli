@@ -1,6 +1,6 @@
 # People, projects, filters and tags
 
-The core rules in [SKILL.md](../SKILL.md) apply. Use Memo for shared knowledge and project associations.
+The core rules in [SKILL.md](../SKILL.md) apply. Use `wcat` for shared knowledge and project associations.
 
 ## People and links
 
@@ -33,19 +33,19 @@ no model or network.
   Candidate truncation needs a larger limit or bytes, separately from cue continuation.
 - No cues, byte truncation and no cursor means an oversized cue, not an absence of discussion. Over MCP the scan is
   the same command.
-- Confirm reviewed links through `memo projects meetings link` with the exact stored meeting ID and
-  `--account zoom:zm-profile:<label>`. An existing proposal needs its own Memo fingerprint; candidate and vocabulary
+- Confirm reviewed links through `wcat projects meetings link` with the exact stored meeting ID and
+  `--account zoom:zm-profile:<label>`. An existing proposal needs its own `wcat` fingerprint; candidate and vocabulary
   fingerprints do not substitute for it. The scan itself saves nothing.
 
 ## Tag suggestions
 
 The agent selects evidence and proposes a small list; no built-in model is invoked.
 
-- Reuse Memo's released `vocabulary list 'kind:tag'`, `vocabulary check <name> --kind tag` and
+- Reuse `wcat`'s released `vocabulary list 'kind:tag'`, `vocabulary check <name> --kind tag` and
   `vocabulary check --kind tag` with explicit catalog and comparison bounds.
 - Preflight reuses exact canonical names and aliases and flags lexical alternatives. An incomplete audit is not
   uniqueness proof, and `create` is not approval to create. Similarity is a review hint, not a reason to merge.
 - Keep supporting meeting and cue refs, vocabulary and creation fingerprints, and uncertain synonyms.
-- Apply only reviewed existing labels through Memo with `--meeting <id> --account zoom:zm-profile:<label>`; new names
+- Apply only reviewed existing labels through `wcat` with `--meeting <id> --account zoom:zm-profile:<label>`; new names
   and aliases require the existing reviewed vocabulary workflow. Do not add another label store or automatically
   accept a creation fingerprint. No tag write is part of Zoom preparation.
